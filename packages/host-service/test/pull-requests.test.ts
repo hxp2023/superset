@@ -22,6 +22,11 @@ describe("PullRequestRuntimeManager branch sync", () => {
 			select: mock(() => ({
 				from: mock(() => ({
 					all: allMock,
+					// The sweep's trailing orphan prune joins pull_requests
+					// against workspaces; report no orphans here.
+					leftJoin: mock(() => ({
+						where: mock(() => ({ all: mock(() => []) })),
+					})),
 				})),
 			})),
 			update: updateMock,
@@ -113,6 +118,11 @@ describe("PullRequestRuntimeManager branch sync", () => {
 			select: mock(() => ({
 				from: mock(() => ({
 					all: allMock,
+					// The sweep's trailing orphan prune joins pull_requests
+					// against workspaces; report no orphans here.
+					leftJoin: mock(() => ({
+						where: mock(() => ({ all: mock(() => []) })),
+					})),
 				})),
 			})),
 			update: updateMock,

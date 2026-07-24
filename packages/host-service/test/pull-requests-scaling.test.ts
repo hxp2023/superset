@@ -89,6 +89,11 @@ async function runSync(workspaceCount: number) {
 		select: mock(() => ({
 			from: mock(() => ({
 				all: mock(() => workspaces),
+				// The sweep's trailing orphan prune joins pull_requests against
+				// workspaces; report no orphans so it costs nothing here.
+				leftJoin: mock(() => ({
+					where: mock(() => ({ all: mock(() => []) })),
+				})),
 			})),
 		})),
 		// syncWorkspaceBranches only writes when state changed; nothing should change here.

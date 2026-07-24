@@ -8,6 +8,7 @@ import type { HostDb } from "../db";
 import { workspaces } from "../db/schema";
 import type { EventBus } from "../events";
 import type { WorkspaceSnapshot } from "../events/types";
+import { deletePullRequestIfOrphaned } from "../runtime/pull-requests/prune-orphaned";
 import type { ApiClient } from "../types";
 
 export type HostWorkspaceRow = typeof workspaces.$inferSelect;
@@ -202,6 +203,20 @@ export function deleteLocalWorkspace(
 ): void {
 	const existing = getLocalWorkspace(ctx.db, id);
 	ctx.db.delete(workspaces).where(eq(workspaces.id, id)).run();
+	if (existing?.pullRequestId) {
+		// This is the choke point for workspace deletion, so the linked PR row
+		// goes away with its last workspace instead of rotting in host.db
+		// until the runtime manager's next orphan sweep. Best-effort — a
+		// failure here must never fail the workspace delete.
+		try {
+			deletePullRequestIfOrphaned(ctx.db, existing.pullRequestId);
+		} catch (error) {
+			console.warn(
+				"[host-service:workspace-store] Failed to prune pull request row after workspace delete",
+				{ workspaceId: id, pullRequestId: existing.pullRequestId, error },
+			);
+		}
+	}
 	if (existing) {
 		ctx.eventBus.broadcastWorkspaceChanged({
 			workspaceId: id,

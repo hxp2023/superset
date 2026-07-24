@@ -1,4 +1,8 @@
 export {
+	deletePullRequestIfOrphaned,
+	pruneOrphanedPullRequests,
+} from "./prune-orphaned";
+export {
 	type CheckoutPullRequestMetadata,
 	PullRequestRuntimeManager,
 	type PullRequestRuntimeManagerOptions,

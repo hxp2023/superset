@@ -736,3 +736,35 @@ describe("default-branch guard", () => {
 		);
 	});
 });
+
+describe("PullRequestRuntimeManager orphan pruning", () => {
+	test("safety-net sweep deletes PR rows no workspace references", async () => {
+		const db = createRealDb();
+		seedProject(db);
+		seedPullRequest(db, {
+			id: "pr-linked",
+			prNumber: 1,
+			headBranch: "kept",
+			headSha: "sha-linked",
+		});
+		// Debris from a deleted workspace; seeded updatedAt is far outside the
+		// prune grace window.
+		seedPullRequest(db, {
+			id: "pr-orphan",
+			prNumber: 2,
+			headBranch: "gone",
+			headSha: "sha-orphan",
+		});
+		seedWorkspace(db, { id: "ws", branch: "kept", pullRequestId: "pr-linked" });
+		// Default git factory throws, so each per-workspace sync warns and
+		// no-ops — the sweep's prune must still run afterwards.
+		const manager = createManager(db);
+
+		// biome-ignore lint/complexity/useLiteralKeys: element access is the escape hatch into the private sweep; dot access is a TS visibility error
+		await withSilencedWarnings(() => manager["syncWorkspaceBranches"]());
+
+		expect(getPrById(db, "pr-orphan")).toBeUndefined();
+		expect(getPrById(db, "pr-linked")).toBeDefined();
+		expect(getWorkspace(db, "ws")?.pullRequestId).toBe("pr-linked");
+	});
+});

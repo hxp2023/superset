@@ -7,6 +7,7 @@ import { projects, pullRequests, workspaces } from "../../db/schema";
 import type { GitWatcher } from "../../events/git-watcher";
 import type { ExecGh } from "../../trpc/router/workspace-creation/utils/exec-gh";
 import { type GitFactory, resolveDefaultBranchName } from "../git";
+import { pruneOrphanedPullRequests } from "./prune-orphaned";
 import {
 	fetchOpenPullRequests,
 	fetchOpenPullRequestsFromGh,
@@ -475,6 +476,18 @@ export class PullRequestRuntimeManager {
 		// dedupes across workspaces in the same project via inFlightProjects.
 		for (const row of ids) {
 			await this.enqueueWorkspaceSync(row.id);
+		}
+
+		// Every link is settled now, so anything unreferenced is debris from
+		// deleted workspaces or retargeted branches — without this, every PR
+		// ever opened from a local workspace lives in host.db forever. The
+		// grace window inside spares rows upserted mid-refresh that haven't
+		// been link-assigned yet.
+		const pruned = pruneOrphanedPullRequests(this.db);
+		if (pruned > 0) {
+			console.log(
+				`[host-service:pull-request-runtime] Pruned ${pruned} orphaned pull request row(s)`,
+			);
 		}
 	}
 
