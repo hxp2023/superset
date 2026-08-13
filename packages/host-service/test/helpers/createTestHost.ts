@@ -13,6 +13,7 @@ import {
 } from "../../src/app";
 import type { HostDb } from "../../src/db";
 import * as schema from "../../src/db/schema";
+import type { HostAuthProvider } from "../../src/providers/host-auth";
 import type { AppRouter as HostAppRouter } from "../../src/trpc/router";
 import {
 	createFakeApiClient,
@@ -41,6 +42,9 @@ export interface TestHostOptions {
 	execGh?: (args: string[], options?: unknown) => Promise<unknown>;
 	chatRuntime?: unknown;
 	chatService?: unknown;
+	/** Override the host-auth provider (e.g. the real PskHostAuthProvider
+	 *  when a test exercises sandbox CLI-token acceptance). */
+	hostAuth?: HostAuthProvider;
 }
 
 export interface TestHost {
@@ -101,7 +105,7 @@ export async function createTestHost(
 		},
 		providers: {
 			auth: new FakeApiAuthProvider(),
-			hostAuth: new FakeHostAuthProvider(psk),
+			hostAuth: options.hostAuth ?? new FakeHostAuthProvider(psk),
 			credentials: new MemoryGitCredentialProvider(options.githubToken ?? null),
 			modelResolver: new FakeModelResolver(),
 		},
