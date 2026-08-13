@@ -6,13 +6,23 @@ import {
 import { buildExecArgs, type ResolvedSandboxSettings } from "./docker-args.ts";
 import { getDockerCliEnv } from "./docker-cli.ts";
 import { getHostAgentHookUrl } from "./host-runtime.ts";
-import { CONTAINER_BASH_RCFILE, getSandboxContainerName } from "./paths.ts";
-import { dropHookToken, getOrCreateHookToken } from "./sandbox-tokens.ts";
+import {
+	CONTAINER_BASH_RCFILE,
+	CONTAINER_HOST_DIR,
+	getSandboxContainerName,
+} from "./paths.ts";
+import { getOrCreateHookToken } from "./sandbox-tokens.ts";
 import type {
 	PtyLaunchSpec,
 	TerminalLaunchContext,
 	WorkspaceRuntime,
 } from "./workspace-runtime.ts";
+
+/** host-service base URL as reachable from inside a sandbox container. */
+function getContainerHostEndpoint(): string {
+	const port = process.env.HOST_SERVICE_PORT || process.env.PORT;
+	return port ? `http://host.docker.internal:${port}` : "";
+}
 
 export interface DockerRuntimeParams {
 	workspaceId: string;
@@ -48,6 +58,10 @@ export class DockerRuntime implements WorkspaceRuntime {
 			// notify.sh echoes this back; notifications.hook drops spoofed
 			// events carrying a wrong token for this workspace.
 			SUPERSET_AGENT_HOOK_TOKEN: getOrCreateHookToken(this.params.workspaceId),
+			// The bundled CLI short-circuits manifest/PID host discovery
+			// (meaningless across the container boundary) with these.
+			SUPERSET_HOST_ENDPOINT: getContainerHostEndpoint(),
+			SUPERSET_HOST_TOKEN_FILE: `${CONTAINER_HOST_DIR}/token`,
 		};
 		return {
 			shell: "docker",
@@ -75,7 +89,6 @@ export class DockerRuntime implements WorkspaceRuntime {
 	}
 
 	async destroy(): Promise<void> {
-		dropHookToken(this.params.workspaceId);
 		await destroyWorkspaceSandbox(this.params.workspaceId);
 	}
 }

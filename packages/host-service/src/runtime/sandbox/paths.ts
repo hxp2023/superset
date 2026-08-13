@@ -5,6 +5,8 @@ import { join } from "node:path";
 export const CONTAINER_SUPERSET_DIR = "/opt/superset";
 /** Mount target for the per-workspace isolated git dir. */
 export const CONTAINER_GIT_DIR = "/sandbox/git";
+/** Mount target for the per-workspace host-access dir (CLI token). */
+export const CONTAINER_HOST_DIR = "/sandbox/host";
 /** In-container SUPERSET_HOME_DIR contents live under CONTAINER_SUPERSET_DIR. */
 export const CONTAINER_BASH_RCFILE = `${CONTAINER_SUPERSET_DIR}/bash/rcfile`;
 

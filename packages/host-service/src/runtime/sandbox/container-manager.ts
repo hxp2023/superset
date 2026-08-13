@@ -18,11 +18,14 @@ import {
 import { ensureSandboxGit } from "./git-bootstrap.ts";
 import {
 	CONTAINER_GIT_DIR,
+	CONTAINER_HOST_DIR,
 	CONTAINER_SUPERSET_DIR,
 	getSandboxContainerName,
 	getWorkspaceSandboxPaths,
 } from "./paths.ts";
+import { dropCliToken, ensureCliTokenFile } from "./sandbox-cli-tokens.ts";
 import { ensureSandboxHome } from "./sandbox-home.ts";
+import { dropHookToken } from "./sandbox-tokens.ts";
 
 /** Thrown for user-actionable sandbox failures (docker down, pull failed). */
 export class SandboxError extends Error {
@@ -47,9 +50,20 @@ export function computeConfigHash(settings: ResolvedSandboxSettings): string {
 		.slice(0, 16);
 }
 
-function buildWorkspaceMounts(params: EnsureContainerParams): MountSpec[] {
+function buildWorkspaceMounts(
+	params: EnsureContainerParams,
+	cliTokenHostDir: string,
+): MountSpec[] {
 	const paths = getWorkspaceSandboxPaths(params.workspaceId);
 	return [
+		// Per-workspace CLI token for the bundled `superset` binary. Not
+		// nested under the read-only /opt/superset mount — docker can't
+		// create a mountpoint inside a read-only bind mount.
+		{
+			source: cliTokenHostDir,
+			target: CONTAINER_HOST_DIR,
+			readOnly: true,
+		},
 		// Worktree at its host path — path identity keeps host-side git,
 		// search, and diff working against the same absolute paths.
 		{ source: params.worktreePath, target: params.worktreePath },
@@ -102,6 +116,8 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 		worktreePath: params.worktreePath,
 		cloneDepth: params.settings.cloneDepth,
 	});
+	// Also re-registers the token in-memory after host-service restarts.
+	const cliToken = await ensureCliTokenFile(params.workspaceId);
 
 	const name = getSandboxContainerName(params.workspaceId);
 	const configHash = computeConfigHash(params.settings);
@@ -143,7 +159,7 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 			runtime: params.settings.runtime,
 			network: params.settings.network,
 			resources: params.settings.resources,
-			mounts: buildWorkspaceMounts(params),
+			mounts: buildWorkspaceMounts(params, cliToken.hostDir),
 		}),
 	);
 	await startContainer(name);
@@ -152,10 +168,12 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 	);
 }
 
-/** Remove the workspace's container and host-side sandbox state. */
+/** Remove the workspace's container, tokens, and host-side sandbox state. */
 export async function destroyWorkspaceSandbox(
 	workspaceId: string,
 ): Promise<void> {
+	dropHookToken(workspaceId);
+	dropCliToken(workspaceId);
 	const availability = await checkDockerAvailable();
 	if (availability.ok) {
 		await removeContainer(getSandboxContainerName(workspaceId));

@@ -143,6 +143,16 @@ describe.skipIf(!DOCKER_TESTS)("sandbox docker integration", () => {
 				settings: resolveSandboxSettings({ image: TEST_IMAGE }),
 			});
 
+			// The per-workspace CLI token is mounted read-only at /sandbox/host.
+			const tokenInContainer = await dockerExec(
+				containerName,
+				"cat /sandbox/host/token",
+			);
+			expect(tokenInContainer.trim().length).toBeGreaterThan(0);
+			await expect(
+				dockerExec(containerName, "echo x > /sandbox/host/token"),
+			).rejects.toThrow();
+
 			// In-container git resolves the isolated git dir via the mask.
 			const gitDir = await dockerExec(
 				containerName,
