@@ -7,6 +7,8 @@ import { z } from "zod";
 import { pullRequests } from "../../../db/schema";
 import { invalidateLabelCache } from "../../../ports/static-ports";
 import { coercePullRequestState } from "../../../runtime/pull-requests/utils/pull-request-mappers";
+import { destroyWorkspaceSandbox } from "../../../runtime/sandbox/container-manager";
+import { evictWorkspaceRuntime } from "../../../runtime/sandbox/registry";
 import { runTeardown, type TeardownResult } from "../../../runtime/teardown";
 import { disposeSessionsByWorkspaceId } from "../../../terminal/terminal";
 import type { HostServiceContext } from "../../../types";
@@ -402,6 +404,21 @@ async function runDestroyPhases(
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		warnings.push(`Failed to dispose terminal sessions: ${message}`);
+	}
+
+	// 3a½. Sandbox container + host-side sandbox state. After terminal
+	// disposal (the PTYs are docker-exec children of the container) and
+	// before worktree removal (the container bind-mounts the worktree). A
+	// failure never blocks the delete — the startup reconcile sweeps
+	// orphaned containers once docker is back.
+	if (local?.sandboxEnabled) {
+		try {
+			await destroyWorkspaceSandbox(input.workspaceId);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			warnings.push(`Failed to remove sandbox container: ${message}`);
+		}
+		evictWorkspaceRuntime(input.workspaceId);
 	}
 
 	// 3b. Worktree. Double-force unlocks the rare locked-worktree case and

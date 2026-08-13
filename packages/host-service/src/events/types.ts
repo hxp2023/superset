@@ -70,6 +70,8 @@ export interface WorkspaceSnapshot {
 	createdByUserId: string | null;
 	createdAt: number;
 	updatedAt: number;
+	/** True when the workspace's terminals run inside a sandbox container. */
+	sandboxed: boolean;
 }
 
 export interface WorkspaceChangedMessage {

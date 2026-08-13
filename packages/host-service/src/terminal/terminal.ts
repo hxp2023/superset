@@ -30,6 +30,7 @@ import { projects, terminalSessions, workspaces } from "../db/schema.ts";
 import type { EventBus } from "../events/index.ts";
 import { portManager } from "../ports/port-manager.ts";
 import { getWorkspaceRuntime } from "../runtime/sandbox/registry.ts";
+import type { PtyLaunchSpec } from "../runtime/sandbox/workspace-runtime.ts";
 import { sweepAgentBindingsAfterDaemonLoss } from "../terminal-agents/daemon-loss-sweep.ts";
 import { markTerminalAgentBindingEnded } from "../terminal-agents/persistence.ts";
 import {
@@ -2430,17 +2431,28 @@ export async function createTerminalSessionInternal({
 	);
 
 	// The workspace runtime decides where the PTY's process tree lives (host
-	// shell today, sandbox container when enabled) and builds the launch spec.
-	const runtime = getWorkspaceRuntime(workspaceId);
-	await runtime.prepare();
-	const launch = await runtime.buildPtyLaunch({
-		terminalId,
-		workspaceId,
-		workspacePath: workspace.worktreePath,
-		rootPath,
-		cwd,
-		themeType,
-	});
+	// shell, or the workspace's sandbox container) and builds the launch spec.
+	const runtime = getWorkspaceRuntime(db, workspaceId);
+	let launch: PtyLaunchSpec;
+	try {
+		await runtime.prepare();
+		launch = await runtime.buildPtyLaunch({
+			terminalId,
+			workspaceId,
+			workspacePath: workspace.worktreePath,
+			rootPath,
+			cwd,
+			themeType,
+		});
+	} catch (error) {
+		// Sandbox provisioning failures (docker down, image pull failed) are
+		// user-actionable terminal-create errors, not 500s.
+		return {
+			kind: "TERMINAL_START_FAILED",
+			error:
+				error instanceof Error ? error.message : "Failed to start terminal",
+		};
+	}
 
 	let daemon: DaemonClient;
 	try {

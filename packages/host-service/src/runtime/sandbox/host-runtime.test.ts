@@ -132,9 +132,17 @@ describe("HostRuntime", () => {
 		expect(getHostAgentHookUrl()).toBe("");
 	});
 
-	test("registry resolves every workspace to the host runtime today", () => {
-		const runtime = getWorkspaceRuntime("any-workspace");
+	test("registry resolves unsandboxed workspaces to the shared host runtime", () => {
+		// Registry falls back to the host runtime when the workspace row is
+		// missing or has sandboxEnabled=false — a fake empty db covers both.
+		const fakeDb = {
+			query: {
+				workspaces: { findFirst: () => ({ sync: () => undefined }) },
+				projects: { findFirst: () => ({ sync: () => undefined }) },
+			},
+		} as unknown as Parameters<typeof getWorkspaceRuntime>[0];
+		const runtime = getWorkspaceRuntime(fakeDb, "any-workspace");
 		expect(runtime.kind).toBe("host");
-		expect(runtime).toBe(getWorkspaceRuntime("another-workspace"));
+		expect(runtime).toBe(getWorkspaceRuntime(fakeDb, "another-workspace"));
 	});
 });

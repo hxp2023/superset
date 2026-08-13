@@ -91,6 +91,7 @@ export function toWorkspaceSnapshot(row: HostWorkspaceRow): WorkspaceSnapshot {
 		createdByUserId: row.createdByUserId,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt || row.createdAt,
+		sandboxed: row.sandboxEnabled,
 	};
 }
 
@@ -132,6 +133,8 @@ export interface InsertLocalWorkspaceValues {
 	type?: "main" | "worktree" | "session";
 	taskId?: string | null;
 	createdByUserId?: string | null;
+	/** Sticky sandbox decision resolved from config at create time. */
+	sandboxEnabled?: boolean;
 }
 
 /**
@@ -155,6 +158,7 @@ export function insertLocalWorkspace(
 			type: values.type ?? "worktree",
 			taskId: values.taskId ?? null,
 			createdByUserId: values.createdByUserId ?? null,
+			sandboxEnabled: values.sandboxEnabled ?? false,
 			createdAt: now,
 			updatedAt: now,
 		})

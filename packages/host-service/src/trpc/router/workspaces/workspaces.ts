@@ -10,6 +10,7 @@ import { z } from "zod";
 import { projects, workspaces } from "../../../db/schema";
 import { createGitEnvResolver } from "../../../runtime/git";
 import { type ResolvedRef, resolveRef } from "../../../runtime/git/refs";
+import { resolveSandboxEnabledForNewWorkspace } from "../../../runtime/sandbox/registry";
 import type { HostServiceContext } from "../../../types";
 import { getHostWorkerPool } from "../../../workers/host-worker-pool";
 import { gitFetchBaseRefTask } from "../../../workers/tasks/git";
@@ -477,6 +478,11 @@ async function registerLocalWorkspace(args: {
 			branch: args.branch,
 			name: args.name,
 			taskId: args.taskId ?? null,
+			sandboxEnabled: resolveSandboxEnabledForNewWorkspace(
+				ctx.db,
+				args.projectId,
+				args.worktreePath,
+			),
 		});
 	} catch (err) {
 		await args.rollbackWorktree();

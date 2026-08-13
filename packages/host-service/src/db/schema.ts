@@ -245,6 +245,17 @@ export const workspaces = sqliteTable(
 		archivedAt: integer("archived_at"),
 		// "merged" when the linked PR was merged at destroy time.
 		archiveReason: text("archive_reason").$type<"merged" | "deleted">(),
+		// Sticky sandbox decision snapshotted at create time from the resolved
+		// sandbox config — later config flips don't silently re-home a live
+		// workspace's terminals. Pre-existing rows stay unsandboxed.
+		sandboxEnabled: integer("sandbox_enabled", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		// Image digest the workspace's container was created from; drives
+		// "image updated — rebuild sandbox?" prompts.
+		sandboxImageDigest: text("sandbox_image_digest"),
+		// JSON {containerPort: hostPort} published at container create.
+		sandboxPortMapJson: text("sandbox_port_map_json").notNull().default("{}"),
 	},
 	(table) => [
 		index("workspaces_project_id_idx").on(table.projectId),

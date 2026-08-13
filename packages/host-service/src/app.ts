@@ -21,6 +21,7 @@ import { createGitEnvResolver, createGitFactory } from "./runtime/git";
 import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
 import { runProjectBackfill } from "./runtime/project-backfill";
 import { PullRequestRuntimeManager } from "./runtime/pull-requests";
+import { runSandboxReconcile } from "./runtime/sandbox/sandbox-reconcile";
 import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
 import {
 	SqliteTerminalAgentBindingPersistence,
@@ -229,6 +230,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 			isAuthenticated: true,
 		}).catch((err) => {
 			console.warn("[host-service] archived-workspace reconcile failed:", err);
+		});
+		// Remove sandbox containers for workspaces deleted while docker was
+		// down. No-op when docker isn't running.
+		await runSandboxReconcile(db).catch((err) => {
+			console.warn("[host-service] sandbox reconcile failed:", err);
 		});
 	})();
 
