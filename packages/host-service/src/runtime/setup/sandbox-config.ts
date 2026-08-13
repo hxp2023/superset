@@ -41,6 +41,12 @@ export interface SandboxConfig {
 	/** Env var names forwarded from the host env. Machine-local sources only. */
 	env?: string[];
 	git?: SandboxGitConfig;
+	/**
+	 * Mount the host's agent config (~/.claude, ~/.claude.json, ~/.codex)
+	 * read-write into the container so agents reuse host auth. Default true;
+	 * disable to require in-container login.
+	 */
+	agentConfig?: boolean;
 }
 
 const ENV_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -150,11 +156,13 @@ export function validateSandboxConfig(
 	const obj = value as Record<string, unknown>;
 	const result: SandboxConfig = {};
 
-	if (obj.enabled !== undefined) {
-		if (typeof obj.enabled !== "boolean") {
-			return invalid(source, "'enabled' must be a boolean");
+	for (const field of ["enabled", "agentConfig"] as const) {
+		const fieldValue = obj[field];
+		if (fieldValue === undefined) continue;
+		if (typeof fieldValue !== "boolean") {
+			return invalid(source, `'${field}' must be a boolean`);
 		}
-		result.enabled = obj.enabled;
+		result[field] = fieldValue;
 	}
 	for (const field of ["image", "runtime"] as const) {
 		const fieldValue = obj[field];
@@ -256,6 +264,7 @@ export function mergeSandboxConfigs(
 		ports: override.ports ?? base.ports,
 		mounts: override.mounts ?? base.mounts,
 		env: override.env ?? base.env,
+		agentConfig: override.agentConfig ?? base.agentConfig,
 		...(resources && { resources }),
 		...(git && { git }),
 	};

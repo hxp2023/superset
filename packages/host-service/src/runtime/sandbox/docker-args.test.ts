@@ -22,6 +22,7 @@ describe("buildContainerCreateArgs", () => {
 				{ source: "/wt", target: "/wt" },
 				{ source: "/mask", target: "/wt/.git", readOnly: true },
 			],
+			publishedPorts: [{ containerPort: 3000, hostPort: 3000 }],
 		});
 		expect(args).toEqual([
 			"create",
@@ -50,6 +51,8 @@ describe("buildContainerCreateArgs", () => {
 			"1024",
 			"--add-host",
 			"host.docker.internal:host-gateway",
+			"-p",
+			"127.0.0.1:3000:3000",
 			"--mount",
 			"type=bind,source=/wt,target=/wt",
 			"--mount",
@@ -69,7 +72,9 @@ describe("buildContainerCreateArgs", () => {
 			network: "bridge",
 			resources: { pidsLimit: 2048 },
 			mounts: [],
+			publishedPorts: [],
 		});
+		expect(args).not.toContain("-p");
 		expect(args).not.toContain("--runtime");
 		expect(args).not.toContain("--network");
 		expect(args).not.toContain("--cpus");
@@ -113,6 +118,7 @@ describe("resolveSandboxSettings", () => {
 			resources: { pidsLimit: 2048 },
 			extraMounts: [],
 			envPassthrough: [],
+			mountAgentConfig: true,
 		});
 	});
 

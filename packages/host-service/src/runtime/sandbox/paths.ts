@@ -7,6 +7,12 @@ export const CONTAINER_SUPERSET_DIR = "/opt/superset";
 export const CONTAINER_GIT_DIR = "/sandbox/git";
 /** Mount target for the per-workspace host-access dir (CLI token). */
 export const CONTAINER_HOST_DIR = "/sandbox/host";
+/**
+ * Home of the default sandbox image's user (root). Agent-config mounts
+ * target it; custom images with a different default user should disable
+ * `sandbox.agentConfig` until per-image homes are configurable.
+ */
+export const CONTAINER_HOME_DIR = "/root";
 /** In-container SUPERSET_HOME_DIR contents live under CONTAINER_SUPERSET_DIR. */
 export const CONTAINER_BASH_RCFILE = `${CONTAINER_SUPERSET_DIR}/bash/rcfile`;
 

@@ -122,17 +122,27 @@ describe.skipIf(!DOCKER_TESTS)("sandbox docker integration", () => {
 	test(
 		"ensure → isolated git → destroy round-trip",
 		async () => {
+			// agentConfig off: the test must not mount the real ~/.claude.
+			const settings = resolveSandboxSettings({
+				image: TEST_IMAGE,
+				agentConfig: false,
+				ports: [38472],
+			});
 			await ensureContainer({
 				workspaceId: WORKSPACE_ID,
 				worktreePath,
 				repoPath,
 				branch: "feature",
-				settings: resolveSandboxSettings({ image: TEST_IMAGE }),
+				settings,
 			});
 
 			const inspection = await inspectContainer(containerName);
 			expect(inspection.exists).toBe(true);
 			expect(inspection.running).toBe(true);
+
+			// Declared port published on loopback with the same number.
+			const portMapping = await run("docker", ["port", containerName]);
+			expect(portMapping).toContain("38472/tcp -> 127.0.0.1:38472");
 
 			// Idempotent re-ensure.
 			await ensureContainer({
@@ -140,7 +150,7 @@ describe.skipIf(!DOCKER_TESTS)("sandbox docker integration", () => {
 				worktreePath,
 				repoPath,
 				branch: "feature",
-				settings: resolveSandboxSettings({ image: TEST_IMAGE }),
+				settings,
 			});
 
 			// The per-workspace CLI token is mounted read-only at /sandbox/host.

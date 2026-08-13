@@ -11,6 +11,11 @@ export interface MountSpec {
 	readOnly?: boolean;
 }
 
+export interface PublishedPort {
+	containerPort: number;
+	hostPort: number;
+}
+
 export const MANAGED_LABEL = "com.superset.managed=true";
 export const WORKSPACE_ID_LABEL = "com.superset.workspace-id";
 export const CONFIG_HASH_LABEL = "com.superset.config-hash";
@@ -24,6 +29,8 @@ export interface ContainerCreateSpec {
 	network: "bridge" | "none";
 	resources: { cpus?: number; memoryMb?: number; pidsLimit: number };
 	mounts: MountSpec[];
+	/** Published on loopback only — never exposed beyond the host. */
+	publishedPorts: PublishedPort[];
 }
 
 export function buildMountArgs(mounts: MountSpec[]): string[] {
@@ -65,6 +72,10 @@ export function buildContainerCreateArgs(spec: ContainerCreateSpec): string[] {
 		// pre-provisions the same name for Linux engines.
 		"--add-host",
 		"host.docker.internal:host-gateway",
+		...spec.publishedPorts.flatMap((port) => [
+			"-p",
+			`127.0.0.1:${port.hostPort}:${port.containerPort}`,
+		]),
 		...buildMountArgs(spec.mounts),
 		spec.image,
 		"sleep",
@@ -110,6 +121,7 @@ export interface ResolvedSandboxSettings {
 	resources: { cpus?: number; memoryMb?: number; pidsLimit: number };
 	extraMounts: MountSpec[];
 	envPassthrough: string[];
+	mountAgentConfig: boolean;
 	cloneDepth?: number;
 }
 
@@ -134,6 +146,7 @@ export function resolveSandboxSettings(
 		},
 		extraMounts: (config.mounts ?? []).map(parseConfigMount),
 		envPassthrough: config.env ?? [],
+		mountAgentConfig: config.agentConfig ?? true,
 		...(config.git?.cloneDepth && { cloneDepth: config.git.cloneDepth }),
 	};
 }

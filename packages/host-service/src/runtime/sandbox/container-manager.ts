@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, join } from "node:path";
 import {
 	buildContainerCreateArgs,
 	CONFIG_HASH_LABEL,
@@ -18,11 +21,13 @@ import {
 import { ensureSandboxGit } from "./git-bootstrap.ts";
 import {
 	CONTAINER_GIT_DIR,
+	CONTAINER_HOME_DIR,
 	CONTAINER_HOST_DIR,
 	CONTAINER_SUPERSET_DIR,
 	getSandboxContainerName,
 	getWorkspaceSandboxPaths,
 } from "./paths.ts";
+import { selectPublishablePorts } from "./port-probe.ts";
 import { dropCliToken, ensureCliTokenFile } from "./sandbox-cli-tokens.ts";
 import { ensureSandboxHome } from "./sandbox-home.ts";
 import { dropHookToken } from "./sandbox-tokens.ts";
@@ -50,12 +55,30 @@ export function computeConfigHash(settings: ResolvedSandboxSettings): string {
 		.slice(0, 16);
 }
 
+/**
+ * Host agent config mounted read-write so agents inside the sandbox reuse
+ * host auth (and OAuth refreshes stay coherent both ways). Accepted v1
+ * trade-off — documented in the sandbox config; per-workspace agent homes
+ * with in-container login are the hardening follow-up.
+ */
+function buildAgentConfigMounts(): MountSpec[] {
+	const home = homedir();
+	return [".claude", ".claude.json", ".codex"]
+		.map((entry) => join(home, entry))
+		.filter((source) => existsSync(source))
+		.map((source) => ({
+			source,
+			target: `${CONTAINER_HOME_DIR}/${basename(source)}`,
+		}));
+}
+
 function buildWorkspaceMounts(
 	params: EnsureContainerParams,
 	cliTokenHostDir: string,
 ): MountSpec[] {
 	const paths = getWorkspaceSandboxPaths(params.workspaceId);
 	return [
+		...(params.settings.mountAgentConfig ? buildAgentConfigMounts() : []),
 		// Per-workspace CLI token for the bundled `superset` binary. Not
 		// nested under the read-only /opt/superset mount — docker can't
 		// create a mountpoint inside a read-only bind mount.
@@ -136,6 +159,14 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 		}
 	}
 
+	const portSelection = await selectPublishablePorts(params.settings.ports);
+	if (portSelection.skipped.length > 0) {
+		console.warn(
+			`[sandbox] host port(s) ${portSelection.skipped.join(", ")} busy; ` +
+				`not published for workspace ${params.workspaceId}`,
+		);
+	}
+
 	if (!(await imageExists(params.settings.image))) {
 		console.log(
 			`[sandbox] pulling image ${params.settings.image} for workspace ${params.workspaceId}`,
@@ -160,6 +191,7 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 			network: params.settings.network,
 			resources: params.settings.resources,
 			mounts: buildWorkspaceMounts(params, cliToken.hostDir),
+			publishedPorts: portSelection.published,
 		}),
 	);
 	await startContainer(name);
