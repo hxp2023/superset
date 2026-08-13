@@ -203,6 +203,14 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 /** Remove the workspace's container, tokens, and host-side sandbox state. */
 export async function destroyWorkspaceSandbox(
 	workspaceId: string,
+	options?: {
+		/**
+		 * Keep the on-disk sandbox state (notably the isolated git dir).
+		 * Set when exporting sandbox commits failed — deleting the git dir
+		 * then would destroy the only copy of the agent's commits.
+		 */
+		preserveState?: boolean;
+	},
 ): Promise<void> {
 	dropHookToken(workspaceId);
 	dropCliToken(workspaceId);
@@ -215,6 +223,7 @@ export async function destroyWorkspaceSandbox(
 				"container (if any) will be removed by the startup reconcile",
 		);
 	}
+	if (options?.preserveState) return;
 	await rm(getWorkspaceSandboxPaths(workspaceId).stateDir, {
 		recursive: true,
 		force: true,

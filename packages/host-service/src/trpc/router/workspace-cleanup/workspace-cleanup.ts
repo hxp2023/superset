@@ -8,6 +8,7 @@ import { pullRequests } from "../../../db/schema";
 import { invalidateLabelCache } from "../../../ports/static-ports";
 import { coercePullRequestState } from "../../../runtime/pull-requests/utils/pull-request-mappers";
 import { destroyWorkspaceSandbox } from "../../../runtime/sandbox/container-manager";
+import { exportSandboxRefs } from "../../../runtime/sandbox/git-sync";
 import { evictWorkspaceRuntime } from "../../../runtime/sandbox/registry";
 import { runTeardown, type TeardownResult } from "../../../runtime/teardown";
 import { disposeSessionsByWorkspaceId } from "../../../terminal/terminal";
@@ -412,8 +413,28 @@ async function runDestroyPhases(
 	// failure never blocks the delete — the startup reconcile sweeps
 	// orphaned containers once docker is back.
 	if (local?.sandboxEnabled) {
+		// Sandbox-local commits live only in the isolated git dir; export
+		// them into the main repo as refs/sandbox/<id>/* first, and keep the
+		// git dir on disk if the export fails so they're never destroyed.
+		let sandboxExportFailed = false;
+		if (project) {
+			try {
+				await exportSandboxRefs({
+					repoPath: project.repoPath,
+					workspaceId: input.workspaceId,
+				});
+			} catch (err) {
+				sandboxExportFailed = true;
+				const message = err instanceof Error ? err.message : String(err);
+				warnings.push(
+					`Failed to export sandbox commits (sandbox git state kept on disk): ${message}`,
+				);
+			}
+		}
 		try {
-			await destroyWorkspaceSandbox(input.workspaceId);
+			await destroyWorkspaceSandbox(input.workspaceId, {
+				preserveState: sandboxExportFailed,
+			});
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			warnings.push(`Failed to remove sandbox container: ${message}`);

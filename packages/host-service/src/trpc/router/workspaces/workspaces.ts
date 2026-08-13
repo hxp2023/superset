@@ -10,6 +10,7 @@ import { z } from "zod";
 import { projects, workspaces } from "../../../db/schema";
 import { createGitEnvResolver } from "../../../runtime/git";
 import { type ResolvedRef, resolveRef } from "../../../runtime/git/refs";
+import { syncSandboxCommits } from "../../../runtime/sandbox/git-sync";
 import { resolveSandboxEnabledForNewWorkspace } from "../../../runtime/sandbox/registry";
 import type { HostServiceContext } from "../../../types";
 import { getHostWorkerPool } from "../../../workers/host-worker-pool";
@@ -1320,6 +1321,50 @@ export const workspacesRouter = router({
 				console.warn("[workspaces.aiRename] failed", err);
 			});
 			return { success: true as const };
+		}),
+
+	/**
+	 * Import sandbox-local git history: export the workspace's isolated git
+	 * dir into the main repo as refs/sandbox/<id>/* and fast-forward the
+	 * workspace branch when host history hasn't diverged.
+	 */
+	syncSandbox: protectedProcedure
+		.input(z.object({ workspaceId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const local = getLocalWorkspace(ctx.db, input.workspaceId);
+			if (!local) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: `Workspace not found: ${input.workspaceId}`,
+				});
+			}
+			if (!local.sandboxEnabled) {
+				return { status: "no-sandbox-history" as const };
+			}
+			const project = local.projectId
+				? ctx.db.query.projects
+						.findFirst({ where: eq(projects.id, local.projectId) })
+						.sync()
+				: undefined;
+			if (!project) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Local project not found for workspace",
+				});
+			}
+			try {
+				return await syncSandboxCommits({
+					repoPath: project.repoPath,
+					worktreePath: local.worktreePath,
+					workspaceId: local.id,
+					branch: local.branch,
+				});
+			} catch (err) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: `Failed to sync sandbox commits: ${err instanceof Error ? err.message : String(err)}`,
+				});
+			}
 		}),
 
 	generateBranchName: protectedProcedure
