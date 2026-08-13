@@ -29,6 +29,7 @@ import type { HostDb } from "../db/index.ts";
 import { projects, terminalSessions, workspaces } from "../db/schema.ts";
 import type { EventBus } from "../events/index.ts";
 import { portManager } from "../ports/port-manager.ts";
+import { getWorkspaceRuntime } from "../runtime/sandbox/registry.ts";
 import { sweepAgentBindingsAfterDaemonLoss } from "../terminal-agents/daemon-loss-sweep.ts";
 import { markTerminalAgentBindingEnded } from "../terminal-agents/persistence.ts";
 import {
@@ -40,14 +41,6 @@ import {
 	getDaemonClient,
 	onDaemonDisconnect,
 } from "./daemon-client-singleton.ts";
-import {
-	buildV2TerminalEnv,
-	getShellLaunchArgs,
-	getTerminalBaseEnv,
-	resolveLaunchShell,
-	shellLaunchExpectsReadyMarker,
-	waitForTerminalBaseEnv,
-} from "./env.ts";
 import { listTerminalResourceSessions } from "./resource-sessions.ts";
 import {
 	getShellReadyMarkerEvidence,
@@ -155,17 +148,6 @@ export function parseThemeType(
 	value: string | null | undefined,
 ): "dark" | "light" | undefined {
 	return value === "dark" || value === "light" ? value : undefined;
-}
-
-/**
- * Build the host-service tRPC URL for the v2 agent hook. The agent shell
- * script POSTs to this; host-service fans out on the event bus so the
- * renderer (web or electron) can play the finish sound.
- */
-function getHostAgentHookUrl(): string {
-	const port = process.env.HOST_SERVICE_PORT || process.env.PORT;
-	if (!port) return "";
-	return `http://127.0.0.1:${port}/trpc/notifications.hook`;
 }
 
 type TerminalClientMessage =
@@ -2447,29 +2429,17 @@ export async function createTerminalSessionInternal({
 		DEFAULT_TERMINAL_ROWS,
 	);
 
-	// Use the preserved shell snapshot — never live process.env. Resolution
-	// runs in the background at startup so the server can listen immediately;
-	// wait for it here before the first PTY needs the snapshot.
-	await waitForTerminalBaseEnv();
-	const baseEnv = getTerminalBaseEnv();
-	const supersetHomeDir = process.env.SUPERSET_HOME_DIR || "";
-	const shell = resolveLaunchShell(baseEnv);
-	const shellArgs = getShellLaunchArgs({ shell, supersetHomeDir });
-	const ptyEnv = buildV2TerminalEnv({
-		baseEnv,
-		shell,
-		supersetHomeDir,
-		themeType,
-		cwd,
+	// The workspace runtime decides where the PTY's process tree lives (host
+	// shell today, sandbox container when enabled) and builds the launch spec.
+	const runtime = getWorkspaceRuntime(workspaceId);
+	await runtime.prepare();
+	const launch = await runtime.buildPtyLaunch({
 		terminalId,
 		workspaceId,
 		workspacePath: workspace.worktreePath,
 		rootPath,
-		supersetEnv:
-			process.env.NODE_ENV === "development" ? "development" : "production",
-		agentHookPort: process.env.SUPERSET_AGENT_HOOK_PORT || "",
-		agentHookVersion: process.env.SUPERSET_AGENT_HOOK_VERSION || "",
-		hostAgentHookUrl: getHostAgentHookUrl(),
+		cwd,
+		themeType,
 	});
 
 	let daemon: DaemonClient;
@@ -2512,12 +2482,12 @@ export async function createTerminalSessionInternal({
 		} else {
 			try {
 				openResult = await daemon.open(terminalId, {
-					shell,
-					argv: shellArgs,
-					cwd,
+					shell: launch.shell,
+					argv: launch.argv,
+					cwd: launch.cwd,
 					cols,
 					rows,
-					env: ptyEnv,
+					env: launch.env,
 				});
 			} catch (err) {
 				// After host-service restart the daemon may already own this
@@ -2584,8 +2554,7 @@ export async function createTerminalSessionInternal({
 	// Determine shell readiness support. Adopted sessions are already past
 	// shell startup, so treat them as immediately ready — the OSC 133;A
 	// marker has already flown by and we don't want to gate writes on it.
-	const shellSupportsReady =
-		!isAdopted && shellLaunchExpectsReadyMarker({ shell, supersetHomeDir });
+	const shellSupportsReady = !isAdopted && launch.expectsReadyMarker;
 
 	let shellReadyResolve: (() => void) | null = null;
 	const shellReadyPromise = shellSupportsReady
@@ -2631,7 +2600,7 @@ export async function createTerminalSessionInternal({
 		// Adopted sessions have already run their initialCommand in the prior
 		// host-service lifetime — flag it as queued so we don't double-fire it.
 		initialCommandQueued: isAdopted,
-		launchShellName: basename(shell),
+		launchShellName: basename(launch.shell),
 		portHintDecoder: new StringDecoder("utf8"),
 		modeTracker: createModeTracker(cols, rows),
 		epoch: randomBytes(8).toString("hex"),
