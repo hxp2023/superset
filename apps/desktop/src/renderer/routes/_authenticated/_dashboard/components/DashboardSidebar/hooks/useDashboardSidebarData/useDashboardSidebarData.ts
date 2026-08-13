@@ -299,6 +299,7 @@ export function useDashboardSidebarData() {
 						sectionId: localState.sectionId,
 						isHidden: localState.isHidden,
 						pinnedAt: localState.pinnedAt,
+						sandboxed: workspace.sandboxed,
 					},
 				];
 			}),

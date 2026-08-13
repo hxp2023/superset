@@ -9,6 +9,7 @@ import {
 	useRef,
 } from "react";
 import { HiCheck, HiMiniMinus, HiMiniXMark } from "react-icons/hi2";
+import { LuContainer } from "react-icons/lu";
 import type { DiffStats } from "renderer/hooks/host-service/useDiffStats";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -286,16 +287,33 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 								)}
 							/>
 						) : (
-							<span
-								className={cn(
-									"truncate text-[13px] leading-tight transition-colors",
-									isActive || isSelected
-										? "text-foreground"
-										: "text-foreground/80",
+							<span className="flex min-w-0 items-center gap-1">
+								<span
+									className={cn(
+										"truncate text-[13px] leading-tight transition-colors",
+										isActive || isSelected
+											? "text-foreground"
+											: "text-foreground/80",
+									)}
+								>
+									{name || branch}
+									{isSelected && <span className="sr-only">, selected</span>}
+								</span>
+								{workspace.sandboxed && (
+									<Tooltip delayDuration={300}>
+										<TooltipTrigger asChild>
+											<span className="shrink-0 text-muted-foreground">
+												<LuContainer
+													className="size-3"
+													aria-label="Sandboxed workspace"
+												/>
+											</span>
+										</TooltipTrigger>
+										<TooltipContent side="right" sideOffset={8}>
+											Sandboxed — terminals run in a Docker container
+										</TooltipContent>
+									</Tooltip>
 								)}
-							>
-								{name || branch}
-								{isSelected && <span className="sr-only">, selected</span>}
 							</span>
 						)}
 
