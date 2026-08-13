@@ -33,4 +33,6 @@ export interface HostServiceContext {
 	organizationId: string;
 	isAuthenticated: boolean;
 	clientMachineId?: string;
+	/** x-superset-hook-token header, verified for sandboxed workspaces. */
+	agentHookHeaderToken?: string;
 }

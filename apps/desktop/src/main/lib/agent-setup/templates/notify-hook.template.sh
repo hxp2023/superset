@@ -115,9 +115,18 @@ json_escape() {
 if [ -n "$SUPERSET_HOST_AGENT_HOOK_URL" ] && [ -n "$SUPERSET_TERMINAL_ID" ]; then
   PAYLOAD="{\"json\":{\"terminalId\":\"$(json_escape "$SUPERSET_TERMINAL_ID")\",\"eventType\":\"$(json_escape "$EVENT_TYPE")\",\"agent\":{\"agentId\":\"$(json_escape "$SUPERSET_AGENT_ID")\",\"sessionId\":\"$(json_escape "$SESSION_ID")\"}}}"
 
+  # Sandboxed workspaces inject a per-workspace token; host-service rejects
+  # present-but-wrong tokens and tolerates absence (older scripts).
+  if [ -n "$SUPERSET_AGENT_HOOK_TOKEN" ]; then
+    set -- -H "x-superset-hook-token: $SUPERSET_AGENT_HOOK_TOKEN"
+  else
+    set --
+  fi
+
   STATUS_CODE=$(curl -sX POST "$SUPERSET_HOST_AGENT_HOOK_URL" \
     --connect-timeout 2 --max-time 5 \
     -H "Content-Type: application/json" \
+    "$@" \
     -d "$PAYLOAD" \
     -o /dev/null -w "%{http_code}" 2>/dev/null)
 

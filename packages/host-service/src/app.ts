@@ -279,6 +279,8 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 					isAuthenticated,
 					clientMachineId:
 						c.req.header("x-superset-client-machine-id") ?? undefined,
+					agentHookHeaderToken:
+						c.req.header("x-superset-hook-token") ?? undefined,
 				} as Record<string, unknown>;
 			},
 		}),

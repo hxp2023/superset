@@ -37,7 +37,7 @@ function runNotifyHook(
 
 describe("getNotifyScriptContent", () => {
 	it("bumps the notify hook marker when hook semantics change", () => {
-		expect(NOTIFY_SCRIPT_MARKER).toBe("# Superset agent notification hook v8");
+		expect(NOTIFY_SCRIPT_MARKER).toBe("# Superset agent notification hook v9");
 	});
 
 	it("ignores hooks fired inside a subagent (agent_id present)", () => {

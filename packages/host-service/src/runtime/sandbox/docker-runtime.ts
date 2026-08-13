@@ -7,6 +7,7 @@ import { buildExecArgs, type ResolvedSandboxSettings } from "./docker-args.ts";
 import { getDockerCliEnv } from "./docker-cli.ts";
 import { getHostAgentHookUrl } from "./host-runtime.ts";
 import { CONTAINER_BASH_RCFILE, getSandboxContainerName } from "./paths.ts";
+import { dropHookToken, getOrCreateHookToken } from "./sandbox-tokens.ts";
 import type {
 	PtyLaunchSpec,
 	TerminalLaunchContext,
@@ -37,12 +38,17 @@ export class DockerRuntime implements WorkspaceRuntime {
 	}
 
 	async buildPtyLaunch(ctx: TerminalLaunchContext): Promise<PtyLaunchSpec> {
-		const env = buildContainerTerminalEnv({
-			ctx,
-			hostAgentHookUrl: this.getAgentHookUrl(),
-			envPassthrough: this.params.settings.envPassthrough,
-			hostEnv: process.env,
-		});
+		const env = {
+			...buildContainerTerminalEnv({
+				ctx,
+				hostAgentHookUrl: this.getAgentHookUrl(),
+				envPassthrough: this.params.settings.envPassthrough,
+				hostEnv: process.env,
+			}),
+			// notify.sh echoes this back; notifications.hook drops spoofed
+			// events carrying a wrong token for this workspace.
+			SUPERSET_AGENT_HOOK_TOKEN: getOrCreateHookToken(this.params.workspaceId),
+		};
 		return {
 			shell: "docker",
 			argv: buildExecArgs({
@@ -69,6 +75,7 @@ export class DockerRuntime implements WorkspaceRuntime {
 	}
 
 	async destroy(): Promise<void> {
+		dropHookToken(this.params.workspaceId);
 		await destroyWorkspaceSandbox(this.params.workspaceId);
 	}
 }
