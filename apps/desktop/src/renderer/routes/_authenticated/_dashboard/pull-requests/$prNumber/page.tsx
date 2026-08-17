@@ -1,6 +1,7 @@
 import { ScrollArea } from "@superset/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { TRPCClientError } from "@trpc/client";
 import { useMemo } from "react";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
@@ -180,12 +181,22 @@ function PullRequestDetailPage() {
 	}
 
 	if (error instanceof Error || !data) {
+		// This procedure is new; a host still running an older host-service
+		// build resolves the route to nothing and answers NOT_FOUND rather
+		// than a domain-level "no such PR" — surfacing that as a raw fetch
+		// error just confuses the update path with connectivity issues.
+		const isStaleHostService =
+			error instanceof TRPCClientError && error.data?.code === "NOT_FOUND";
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
 				{header}
 				<WorkItemDetailState
 					message={
-						error instanceof Error ? error.message : "Pull request not found."
+						isStaleHostService
+							? "This device's Superset is out of date and can't show pull request details yet. Update it, then try again."
+							: error instanceof Error
+								? error.message
+								: "Pull request not found."
 					}
 					isError
 					onRetry={() => void refetch()}
