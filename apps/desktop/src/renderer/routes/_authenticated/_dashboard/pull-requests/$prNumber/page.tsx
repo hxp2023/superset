@@ -1,19 +1,27 @@
-import { ScrollArea } from "@superset/ui/scroll-area";
+import { Badge } from "@superset/ui/badge";
+import { Button } from "@superset/ui/button";
+import { Tabs } from "@superset/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { cn } from "@superset/ui/utils";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
+import { createFileRoute } from "@tanstack/react-router";
+import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
+import {
+	LuPanelLeft,
+	LuPanelLeftClose,
+	LuPanelLeftOpen,
+	LuPlus,
+} from "react-icons/lu";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import { formatRelativeTime } from "renderer/lib/formatRelativeTime";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
-import { resolveProjectFilterParams } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter/project-filter-utils";
-import { WorkItemDetailHeader } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailHeader";
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
 import { useProjectHost } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectHost";
-import { PullRequestChecksSection } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestChecksSection";
 import { parsePositiveIntegerParam } from "renderer/routes/_authenticated/_dashboard/utils/parsePositiveIntegerParam";
 import {
 	normalizePRState,
 	PRIcon,
+	type PRState,
 } from "renderer/screens/main/components/PRIcon";
 import {
 	type LinkedPR,
@@ -21,21 +29,60 @@ import {
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
 import { Route as PullRequestsLayoutRoute } from "../layout";
-import { pullRequestsSearchFromFilters } from "../stores/pullRequestsFilterStore";
-import { normalizeAuthorFilter } from "../utils/normalizeAuthorFilter";
-import { normalizePullRequestReviewFilter } from "../utils/pullRequestReviewFilter";
+import { usePullRequestsSplitViewStore } from "../stores/pullRequestsSplitViewStore";
+import { githubAvatarUrl } from "../utils/githubAvatarUrl";
+import {
+	PULL_REQUEST_DETAIL_TABS,
+	type PullRequestDetailTab,
+	PullRequestDetailTabs,
+} from "./components/PullRequestDetailTabs";
+import { PullRequestTabBar } from "./components/PullRequestTabBar";
+import { REVIEW_TAG_STYLES } from "./utils/reviewTagStyles";
+
+interface PullRequestDetailSearch {
+	tab?: PullRequestDetailTab;
+}
+
+const DEFAULT_TAB: PullRequestDetailTab = "review";
+
+const PR_STATE_BADGE_STYLES: Record<PRState, string> = {
+	open: REVIEW_TAG_STYLES.green,
+	merged:
+		"bg-violet-500/10 text-violet-600 border-violet-500/20 dark:text-violet-400",
+	closed: REVIEW_TAG_STYLES.red,
+	draft: "bg-muted text-muted-foreground border-transparent",
+	queued: REVIEW_TAG_STYLES.amber,
+};
+
+// Just the text-color half of PR_STATE_BADGE_STYLES, so the icon inside the
+// badge reads as one color with its label instead of PRIcon's own palette.
+const PR_BADGE_ICON_COLOR: Record<PRState, string> = {
+	open: "text-[#00a558] dark:text-emerald-400",
+	merged: "text-violet-600 dark:text-violet-400",
+	closed: "text-[#f43b3a] dark:text-red-400",
+	draft: "text-muted-foreground",
+	queued: "text-[#a15c07] dark:text-amber-400",
+};
 
 export const Route = createFileRoute(
 	"/_authenticated/_dashboard/pull-requests/$prNumber/",
 )({
 	component: PullRequestDetailPage,
+	validateSearch: (
+		search: Record<string, unknown>,
+	): PullRequestDetailSearch => ({
+		tab: PULL_REQUEST_DETAIL_TABS.includes(search.tab as PullRequestDetailTab)
+			? (search.tab as PullRequestDetailTab)
+			: undefined,
+	}),
 });
 
 function PullRequestDetailPage() {
 	const { prNumber: prNumberRaw } = Route.useParams();
 	const prNumber = parsePositiveIntegerParam(prNumberRaw);
 	const search = PullRequestsLayoutRoute.useSearch();
-	const navigate = useNavigate();
+	const { tab } = Route.useSearch();
+	const routeNavigate = Route.useNavigate();
 	const projectId = search.project ?? null;
 	const {
 		hostId,
@@ -49,26 +96,23 @@ function PullRequestDetailPage() {
 	);
 	const resetDraft = useNewWorkspaceDraftStore((state) => state.resetDraft);
 	const openModal = useOpenNewWorkspaceModal();
-
-	// `project` identifies this PR's repo, not the list filter: falling back
-	// to it would rewrite an "all repositories" view to a single repo on back.
-	const backSearch = useMemo(
-		() =>
-			pullRequestsSearchFromFilters({
-				search: search.search ?? "",
-				projectFilters: resolveProjectFilterParams(search.projects, null, []),
-				authorFilter: normalizeAuthorFilter(search.author),
-				reviewFilter: normalizePullRequestReviewFilter(search.review),
-				includeClosed: search.state === "all",
-			}),
-		[
-			search.author,
-			search.projects,
-			search.review,
-			search.search,
-			search.state,
-		],
+	const isListCollapsed = usePullRequestsSplitViewStore(
+		(s) => s.isListCollapsed,
 	);
+	const toggleListCollapsed = usePullRequestsSplitViewStore(
+		(s) => s.toggleListCollapsed,
+	);
+
+	const activeTab = tab ?? DEFAULT_TAB;
+	const handleTabChange = (nextTab: PullRequestDetailTab) => {
+		routeNavigate({
+			search: (prev) => ({
+				...prev,
+				tab: nextTab === DEFAULT_TAB ? undefined : nextTab,
+			}),
+			replace: true,
+		});
+	};
 
 	const { data, isLoading, error, refetch } = useQuery({
 		queryKey: ["pull-request-detail", projectId, hostUrl, prNumber],
@@ -85,10 +129,6 @@ function PullRequestDetailPage() {
 		staleTime: 30_000,
 		gcTime: 10 * 60_000,
 	});
-
-	const handleBack = () => {
-		navigate({ to: "/pull-requests", search: backSearch });
-	};
 
 	const handleAddToWorkspace = () => {
 		if (!projectId || !hostId || !data) return;
@@ -108,16 +148,42 @@ function PullRequestDetailPage() {
 	const state = data
 		? normalizePRState(data.state, data.isDraft)
 		: defaultState;
+
+	// The list pane is always visible in the split view, so there's no "back"
+	// affordance here — just a toggle to reclaim its width for the detail pane.
 	const header = (
-		<WorkItemDetailHeader
-			itemNumber={data?.number ?? prNumber}
-			icon={<PRIcon state={state} className="size-4 shrink-0" />}
-			backLabel="Back to pull requests"
-			externalLabel="Open pull request in GitHub"
-			url={data?.url ?? null}
-			onBack={handleBack}
-			onAddToWorkspace={data ? handleAddToWorkspace : null}
-		/>
+		<div className="flex shrink-0 items-center justify-end px-4 pt-2">
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<button
+						type="button"
+						onClick={toggleListCollapsed}
+						aria-label={
+							isListCollapsed
+								? "Show pull request list"
+								: "Hide pull request list"
+						}
+						className="group flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<span className="group-hover:hidden">
+							<LuPanelLeft className="size-4" strokeWidth={1.5} />
+						</span>
+						<span className="hidden group-hover:block">
+							{isListCollapsed ? (
+								<LuPanelLeftOpen className="size-4" strokeWidth={1.5} />
+							) : (
+								<LuPanelLeftClose className="size-4" strokeWidth={1.5} />
+							)}
+						</span>
+					</button>
+				</TooltipTrigger>
+				<TooltipContent side="bottom">
+					{isListCollapsed
+						? "Show pull request list"
+						: "Hide pull request list"}
+				</TooltipContent>
+			</Tooltip>
+		</div>
 	);
 
 	if (prNumber === null) {
@@ -202,50 +268,103 @@ function PullRequestDetailPage() {
 	return (
 		<div className="@container flex min-h-0 flex-1 flex-col">
 			{header}
-			<ScrollArea className="min-h-0 flex-1">
-				<div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-6 @md:px-6 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:py-8">
-					<article className="min-w-0">
-						<div className="mb-4 flex min-w-0 items-start gap-3">
-							<PRIcon state={state} className="mt-1 size-5 shrink-0" />
-							<h1 className="min-w-0 break-words text-2xl font-semibold leading-tight text-wrap-pretty">
-								{data.title}
-							</h1>
-						</div>
 
-						<div className="mb-7 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-							<span>{project.name}</span>
-							<span aria-hidden>·</span>
-							<span className="capitalize">{stateLabel}</span>
-							{data.author && (
-								<>
-									<span aria-hidden>·</span>
-									<span className="min-w-0 break-words">by {data.author}</span>
-								</>
-							)}
-							{branchSummary && (
-								<>
-									<span aria-hidden>·</span>
-									<span className="min-w-0 break-all font-mono">
-										{branchSummary}
-									</span>
-								</>
-							)}
-						</div>
+			<Tabs
+				value={activeTab}
+				onValueChange={(value) =>
+					handleTabChange(value as PullRequestDetailTab)
+				}
+				className="flex min-h-0 flex-1 flex-col gap-0"
+			>
+				<div className="w-full px-4 pt-6 @md:px-6">
+					<div className="mb-4">
+						<PullRequestTabBar />
+					</div>
 
-						{data.body.trim() ? (
-							<MarkdownRenderer content={data.body} />
-						) : (
-							<p className="text-sm italic text-muted-foreground">
-								No description provided.
-							</p>
+					<div className="mb-3 flex min-w-0 items-start gap-3">
+						<h1 className="min-w-0 flex-1 break-words text-2xl font-semibold leading-tight text-wrap-pretty">
+							{data.title}
+						</h1>
+						<div className="flex shrink-0 items-center gap-1">
+							<Button
+								variant="ghost"
+								size="icon-xs"
+								title="Open in browser"
+								aria-label="Open pull request in GitHub"
+								onClick={() =>
+									window.open(data.url, "_blank", "noopener,noreferrer")
+								}
+							>
+								<HiOutlineArrowTopRightOnSquare className="size-3.5" />
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								title="Add to workspace"
+								aria-label="Add pull request to workspace"
+								className="h-7 gap-1.5 px-2 text-xs"
+								onClick={handleAddToWorkspace}
+							>
+								<LuPlus className="size-3.5" />
+								Add to workspace
+							</Button>
+						</div>
+					</div>
+
+					<div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
+						<Badge
+							variant="outline"
+							className={cn(
+								"gap-1 rounded-full border-0 font-medium capitalize",
+								PR_STATE_BADGE_STYLES[state],
+							)}
+						>
+							<PRIcon
+								state={state}
+								className={cn("size-3.5 shrink-0", PR_BADGE_ICON_COLOR[state])}
+							/>
+							{stateLabel}
+						</Badge>
+						{data.author && (
+							<span className="flex min-w-0 items-center gap-1.5">
+								<img
+									alt=""
+									src={githubAvatarUrl(data.author)}
+									className="size-4 shrink-0 rounded"
+								/>
+								<span className="min-w-0 break-words">{data.author}</span>
+							</span>
 						)}
-					</article>
-
-					<aside className="min-w-0 @4xl:sticky @4xl:top-6 @4xl:self-start">
-						<PullRequestChecksSection checks={data.checks} />
-					</aside>
+						<span aria-hidden>·</span>
+						<span>#{data.number}</span>
+						{data.createdAt && (
+							<>
+								<span aria-hidden>·</span>
+								<span>
+									{formatRelativeTime(new Date(data.createdAt).getTime())} ago
+								</span>
+							</>
+						)}
+						{branchSummary && (
+							<>
+								<span aria-hidden>·</span>
+								<span className="min-w-0 break-all font-mono">
+									{branchSummary}
+								</span>
+							</>
+						)}
+					</div>
 				</div>
-			</ScrollArea>
+
+				<PullRequestDetailTabs
+					projectId={projectId}
+					prNumber={prNumber}
+					prUrl={data.url}
+					hostUrl={hostUrl}
+					body={data.body}
+					checks={data.checks}
+				/>
+			</Tabs>
 		</div>
 	);
 }
