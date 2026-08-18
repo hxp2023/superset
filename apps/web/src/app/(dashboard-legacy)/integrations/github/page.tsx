@@ -10,9 +10,11 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { FaGithub } from "react-icons/fa";
 import { api } from "@/trpc/server";
+import { ActorPolicyControl } from "./components/ActorPolicyControl";
 import { ConnectionControls } from "./components/ConnectionControls";
 import { ErrorHandler } from "./components/ErrorHandler";
 import { RepositoryList } from "./components/RepositoryList";
+import { UserConnectionControls } from "./components/UserConnectionControls";
 
 export default async function GitHubIntegrationPage() {
 	const trpc = await api();
@@ -28,9 +30,15 @@ export default async function GitHubIntegrationPage() {
 		);
 	}
 
-	const installation = await trpc.integration.github.getInstallation.query({
-		organizationId: organization.id,
-	});
+	const [installation, userConnection, settings] = await Promise.all([
+		trpc.integration.github.getInstallation.query({
+			organizationId: organization.id,
+		}),
+		trpc.integration.github.getUserConnection.query({
+			organizationId: organization.id,
+		}),
+		trpc.organization.settings.get.query({ organizationId: organization.id }),
+	]);
 	const isConnected = !!installation;
 
 	return (
@@ -91,6 +99,55 @@ export default async function GitHubIntegrationPage() {
 							)}
 						</div>
 					)}
+				</CardContent>
+			</Card>
+
+			{userConnection.available && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Your GitHub account</CardTitle>
+						<CardDescription>
+							Connect your own account so pushes and pull requests made from
+							Superset are yours, not the app's. Commits are authored as you
+							either way.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<UserConnectionControls
+							organizationId={organization.id}
+							isConnected={!!userConnection.connection}
+							needsReconnect={
+								userConnection.connection?.needsReconnect ?? false
+							}
+						/>
+						{userConnection.connection?.login && (
+							<div className="mt-4 text-sm text-muted-foreground">
+								Connected as <strong>@{userConnection.connection.login}</strong>
+								{userConnection.connection.needsReconnect && (
+									<Badge variant="destructive" className="ml-2">
+										Needs reconnect
+									</Badge>
+								)}
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			)}
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Act on GitHub as</CardTitle>
+					<CardDescription>
+						Whose account pushes and opens pull requests from Superset when a
+						member has connected their own.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<ActorPolicyControl
+						organizationId={organization.id}
+						value={settings.githubActorPolicy}
+						canEdit={settings.canEdit}
+					/>
 				</CardContent>
 			</Card>
 
