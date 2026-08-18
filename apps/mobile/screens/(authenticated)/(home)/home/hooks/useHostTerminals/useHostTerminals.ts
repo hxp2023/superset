@@ -10,6 +10,13 @@ export interface TerminalsHost {
 	organizationId: string;
 	machineId: string;
 	isOnline: boolean;
+	/**
+	 * Poll cadence override. Session marks on a list can be lazier than the
+	 * tab strip of an open workspace — and the query key is shared, so when a
+	 * workspace screen also observes this host, its faster interval wins for
+	 * as long as it is open.
+	 */
+	refetchIntervalMs?: number;
 }
 
 export type TerminalAttention = "working" | "permission" | "failed" | "review";
@@ -98,6 +105,8 @@ export function useHostsTerminals(
 				.map((host) => ({
 					machineId: host.machineId,
 					hostUrl: hostServiceUrl(host.organizationId, host.machineId),
+					refetchIntervalMs:
+						host.refetchIntervalMs ?? TERMINALS_REFETCH_INTERVAL_MS,
 				})),
 		[hosts],
 	);
@@ -105,7 +114,7 @@ export function useHostsTerminals(
 	const queries = useQueries({
 		queries: online.map((host) => ({
 			queryKey: getHostTerminalsQueryKey(host.machineId),
-			refetchInterval: TERMINALS_REFETCH_INTERVAL_MS,
+			refetchInterval: host.refetchIntervalMs,
 			refetchIntervalInBackground: false,
 			refetchOnWindowFocus: false,
 			retry: 1,

@@ -58,6 +58,9 @@ export function useSandboxAccess(
 				const access = await ensureSandboxAccess(row.id);
 				return { url: access.url, expiresAt: access.expiresAt };
 			},
+			// No refetchIntervalInBackground: that flag is about browser window
+			// focus, which React Query never sees here — iOS freezes the timers
+			// wholesale, and the AppState listener below is the resume path.
 			refetchInterval: (query: {
 				state: { data?: { expiresAt: number } };
 			}): number => {
@@ -65,7 +68,6 @@ export function useSandboxAccess(
 				if (!expiresAt) return RETRY_MS;
 				return Math.max(RETRY_MS, (expiresAt - Date.now()) * REFRESH_AT);
 			},
-			refetchIntervalInBackground: true,
 		})),
 	});
 

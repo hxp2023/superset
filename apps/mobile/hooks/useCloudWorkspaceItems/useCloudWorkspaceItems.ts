@@ -48,6 +48,15 @@ export function sandboxWorkspacesQuery(target: SandboxTarget) {
  * host-service answering. The cloud row is the workspace's identity (it is
  * what created, named and lists it); the sandbox's own row only adds live git
  * state once it exists.
+ *
+ * Two fields are invented while the sandbox isn't serving, and both are load
+ * bearing only in what they prevent: `worktreeExists: true` keeps the list
+ * from filtering the row as a stale shell, and `worktreePath: ""` satisfies
+ * the shape — nothing reads a path off a list row (the workspace screen's
+ * attachment target uses the served row, which has the real one). `type` is
+ * not invented: the sandbox self-seeds its workspace as `main`. Anything new
+ * that reads more than that off a home-list row has to decide what an
+ * unserved sandbox should answer.
  */
 function itemFromCloudRow(
 	cloud: CloudWorkspaceRow,

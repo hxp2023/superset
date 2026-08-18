@@ -78,3 +78,19 @@ export function clearSandboxAccess(workspaceId: string): void {
 	if (access) previewTokenByUrl.delete(access.url);
 	accessByWorkspaceId.delete(workspaceId);
 }
+
+/**
+ * Drop every grant the current cloud list no longer vouches for. The registry
+ * is module state, so nothing unmounts it — without this, signing out,
+ * switching organizations, or a workspace deleted elsewhere would leave a
+ * stale grant resolving its id to a sandbox URL forever. The list is the
+ * source of truth for which sandboxes exist, so it is also the thing that
+ * retires their credentials.
+ */
+export function pruneSandboxAccess(keepIds: ReadonlySet<string>): void {
+	for (const [workspaceId, access] of accessByWorkspaceId) {
+		if (keepIds.has(workspaceId)) continue;
+		previewTokenByUrl.delete(access.url);
+		accessByWorkspaceId.delete(workspaceId);
+	}
+}

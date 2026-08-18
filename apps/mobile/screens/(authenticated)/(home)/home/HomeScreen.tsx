@@ -125,7 +125,11 @@ export function HomeScreen() {
 		isReady: cloudReady,
 	} = useCloudWorkspaceItems();
 	// Every addressed sandbox is a host of its own for the terminal fan-out,
-	// so cloud rows get session marks and attention like any other row.
+	// so cloud rows get session marks and attention like any other row. Lazier
+	// than the machine host on purpose: each sandbox is its own request, and a
+	// phone paying N requests every 5s for list decoration is the mistake
+	// desktop just walked back (#6570). Opening a workspace speeds up its own
+	// host via the shared query key.
 	const terminalHosts = useMemo<TerminalsHost[]>(
 		() => [
 			...(selectedHost ? [selectedHost] : []),
@@ -133,6 +137,7 @@ export function HomeScreen() {
 				organizationId: sandbox.organizationId,
 				machineId: sandbox.workspaceId,
 				isOnline: true,
+				refetchIntervalMs: 30_000,
 			})),
 		],
 		[selectedHost, sandboxes],

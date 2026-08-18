@@ -3,7 +3,9 @@ import type { RouterOutputs } from "@superset/trpc";
 import { useQuery } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 import { useFeatureFlag } from "posthog-react-native";
+import { useEffect } from "react";
 import { useSession } from "@/lib/auth/client";
+import { pruneSandboxAccess } from "@/lib/sandbox-access";
 import { apiClient } from "@/lib/trpc/client";
 
 export type CloudWorkspaceRow = RouterOutputs["cloudWorkspace"]["list"][number];
@@ -70,6 +72,15 @@ export function useCloudWorkspaces(): CloudWorkspacesValue {
 			}
 		},
 	});
+
+	// Whatever the list stops naming loses its credentials: an org switch or a
+	// FORBIDDEN answer lands here as a new (possibly empty) list and clears the
+	// grants the previous one earned.
+	const rows = query.data;
+	useEffect(() => {
+		if (!rows) return;
+		pruneSandboxAccess(new Set(rows.map((row) => row.id)));
+	}, [rows]);
 
 	return {
 		workspaces: query.data ?? NO_ROWS,
