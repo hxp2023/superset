@@ -130,8 +130,7 @@ export function TriggersEditor({
 		setSubmitted(false);
 	};
 
-	const add = (config: DraftTrigger["config"]) =>
-		edit([...drafts, { enabled: true, config }]);
+	const add = (config: DraftTrigger["config"]) => edit([...drafts, { config }]);
 
 	return (
 		<div className="flex flex-col gap-1">

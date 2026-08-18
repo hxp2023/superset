@@ -42,7 +42,6 @@ export async function POST(request: Request) {
 		.where(
 			and(
 				eq(automationTriggers.kind, "google_calendar"),
-				eq(automationTriggers.enabled, true),
 				eq(automations.enabled, true),
 				inArray(sql`${automationTriggers.config}->>'event'`, [
 					"event.starting_soon",

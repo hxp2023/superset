@@ -369,6 +369,24 @@ export function nextOccurrenceAfter(args: {
 	return next ? rruleDateToUtc(next, args.timezone) : null;
 }
 
+/**
+ * The most recent occurrence at or before `before`, or null when the
+ * recurrence has not started yet — how an exhausted schedule's last fire is
+ * recovered from the rule alone.
+ */
+export function lastOccurrenceBefore(args: {
+	rrule: string;
+	dtstart: Date;
+	timezone: string;
+	before: Date;
+}): Date | null {
+	const rule = RRule.fromString(
+		buildRuleString(args.rrule, args.dtstart, args.timezone),
+	);
+	const last = rule.before(utcToRruleDate(args.before, args.timezone), true);
+	return last ? rruleDateToUtc(last, args.timezone) : null;
+}
+
 /** Parses + validates an RRule body, returning the next occurrence. */
 export function parseRrule(args: {
 	rrule: string;

@@ -403,7 +403,6 @@ export const draftTriggerSchema = z.object({
 	// a save updates in place rather than deleting and recreating, which would
 	// otherwise roll a webhook trigger's key and lose a schedule's next run.
 	id: z.string().uuid().optional(),
-	enabled: z.boolean().default(true),
 	config: z.union([
 		scheduleTriggerConfigSchema,
 		webhookTriggerConfigSchema,

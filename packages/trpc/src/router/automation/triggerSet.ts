@@ -103,7 +103,7 @@ export async function saveTriggerSet(
 
 			const [row] = await tx
 				.update(automationTriggers)
-				.set({ config, enabled: trigger.enabled, nextRunAt })
+				.set({ config, nextRunAt })
 				.where(eq(automationTriggers.id, previous.id))
 				.returning({ id: automationTriggers.id });
 			if (row) saved.push(row.id);
@@ -117,7 +117,6 @@ export async function saveTriggerSet(
 				organizationId: params.organizationId,
 				kind: config.kind,
 				config,
-				enabled: trigger.enabled,
 				nextRunAt: nextRunAtFor(trigger.config),
 			})
 			.returning({ id: automationTriggers.id });

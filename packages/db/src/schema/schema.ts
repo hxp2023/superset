@@ -939,7 +939,8 @@ export const automationEvents = pgTable(
 		// matchable event plus any automation/trigger narrowing — so a delivery
 		// whose QStash publish failed can be re-dispatched without the provider's
 		// normalizer. Null only for rows written before this existed.
-		dispatchInput: jsonb("dispatch_input").$type<AutomationEventDispatchInput>(),
+		dispatchInput:
+			jsonb("dispatch_input").$type<AutomationEventDispatchInput>(),
 		// Set once every matched run has been handed to QStash (or nothing
 		// matched). Null past a grace period means the handoff failed and the
 		// sweep should retry it.

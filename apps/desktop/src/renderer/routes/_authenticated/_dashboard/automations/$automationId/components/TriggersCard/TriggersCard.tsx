@@ -1,6 +1,7 @@
 import type { DraftTrigger } from "@superset/shared/automation-triggers";
 import {
 	formatDateTimeInTimezone,
+	lastOccurrenceBefore,
 	nextOccurrenceAfter,
 } from "@superset/shared/rrule";
 import type { RouterOutputs } from "@superset/trpc";
@@ -62,32 +63,38 @@ export function TriggersCard({
 			const config = trigger.config as DraftTrigger["config"];
 			if (config.kind !== "schedule") continue;
 
-			// The evaluator disables a schedule once its last occurrence fires
-			// (COUNT/UNTIL) and leaves nextRunAt at that final time — so a
-			// disabled trigger's nextRunAt is when it last ran, not when it will.
-			if (automation.enabled && trigger.nextRunAt) {
-				entries.set(trigger.id, {
-					at: new Date(trigger.nextRunAt),
-					timezone: config.timezone,
-					exhausted: !trigger.enabled,
-				});
-				continue;
-			}
-			// A paused automation keeps a stale nextRunAt, so compute what this
-			// schedule would fire next — the row is previewable before resuming.
 			try {
-				const next = nextOccurrenceAfter({
+				const schedule = {
 					rrule: config.rrule,
 					dtstart: new Date(config.dtstart),
 					timezone: config.timezone,
-					after: new Date(),
-				});
-				if (next)
-					entries.set(trigger.id, {
-						at: next,
-						timezone: config.timezone,
-						exhausted: false,
+				};
+				const next = nextOccurrenceAfter({ ...schedule, after: new Date() });
+				// An exhausted recurrence (a run-once that ran) has no future
+				// occurrence; its row shows when it last fired instead.
+				if (!next) {
+					const last = lastOccurrenceBefore({
+						...schedule,
+						before: new Date(),
 					});
+					if (last)
+						entries.set(trigger.id, {
+							at: last,
+							timezone: config.timezone,
+							exhausted: true,
+						});
+					continue;
+				}
+				// The saved nextRunAt is the dispatcher's truth; the computed one
+				// covers a paused automation, whose stored value is stale.
+				entries.set(trigger.id, {
+					at:
+						automation.enabled && trigger.nextRunAt
+							? new Date(trigger.nextRunAt)
+							: next,
+					timezone: config.timezone,
+					exhausted: false,
+				});
 			} catch (error) {
 				console.warn(
 					`[TriggersCard] failed to compute next occurrence for trigger ${trigger.id}`,
@@ -134,7 +141,6 @@ export function TriggersCard({
 			<TriggersEditor
 				triggers={automation.triggers.map((t) => ({
 					id: t.id,
-					enabled: t.enabled,
 					config: t.config as DraftTrigger["config"],
 				}))}
 				onChange={onSaveTriggers}

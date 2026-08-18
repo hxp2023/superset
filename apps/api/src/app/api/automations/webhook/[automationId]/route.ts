@@ -80,7 +80,6 @@ export async function POST(
 			and(
 				eq(automationTriggers.automationId, automationId),
 				eq(automationTriggers.kind, "webhook"),
-				eq(automationTriggers.enabled, true),
 			),
 		);
 

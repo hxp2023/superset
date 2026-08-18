@@ -65,8 +65,7 @@ export async function dispatchMatchingTriggers(params: {
 				// The kind enum and the provider discriminant share values by
 				// construction; a provider whose kind name differed would need a
 				// map here, and none does.
-				eq(automationTriggers.kind, event.provider as never),
-				eq(automationTriggers.enabled, true),
+				eq(automationTriggers.kind, event.provider),
 				eq(automations.enabled, true),
 				params.automationId
 					? eq(automations.id, params.automationId)

@@ -62,7 +62,6 @@ export async function POST(request: Request): Promise<Response> {
 		.where(
 			and(
 				eq(automationTriggers.kind, "schedule"),
-				eq(automationTriggers.enabled, true),
 				eq(automations.enabled, true),
 				lte(automationTriggers.nextRunAt, now),
 			),
@@ -139,7 +138,9 @@ export async function POST(request: Request): Promise<Response> {
 		planned.map(async ({ triggerId, next }) => {
 			await dbWs
 				.update(automationTriggers)
-				.set(next ? { nextRunAt: next } : { enabled: false })
+				// A null next retires the trigger: the select above only reads
+				// rows whose next_run_at is set.
+				.set({ nextRunAt: next })
 				.where(eq(automationTriggers.id, triggerId));
 		}),
 	);

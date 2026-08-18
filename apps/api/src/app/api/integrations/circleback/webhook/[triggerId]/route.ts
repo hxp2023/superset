@@ -53,7 +53,6 @@ export async function POST(
 			// For an HMAC provider the column holds the signing key itself — a
 			// hash could not verify a signature.
 			secret: automationTriggers.secretHash,
-			triggerEnabled: automationTriggers.enabled,
 			automationEnabled: automations.enabled,
 		})
 		.from(automationTriggers)
@@ -101,9 +100,6 @@ export async function POST(
 	// delivery recorded during a pause would swallow the redelivery too.
 	if (!trigger.automationEnabled) {
 		return Response.json({ error: "Automation is disabled" }, { status: 400 });
-	}
-	if (!trigger.triggerEnabled) {
-		return Response.json({ error: "Trigger is disabled" }, { status: 409 });
 	}
 
 	const json = parseJson<unknown>(body);
