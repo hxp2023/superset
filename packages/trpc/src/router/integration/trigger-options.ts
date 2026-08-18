@@ -1,6 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
+import { githubTriggerOptions } from "./github/trigger-options";
+import { linearTriggerOptions } from "./linear/trigger-options";
 import { sentryTriggerOptions } from "./sentry/trigger-options";
 import { verifyOrgMembership } from "./utils";
 
@@ -32,6 +34,8 @@ export const triggerOptionSources: Record<
 	string,
 	Record<string, TriggerOptionSource>
 > = {
+	github: githubTriggerOptions,
+	linear: linearTriggerOptions,
 	sentry: sentryTriggerOptions,
 };
 

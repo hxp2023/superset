@@ -1,20 +1,16 @@
-import { db } from "@superset/db/client";
-import { githubInstallations } from "@superset/db/schema";
-import { eq } from "drizzle-orm";
+import {
+	type GithubMatchableEvent,
+	githubEventNames,
+} from "@superset/shared/automation-matching";
 
-import { recordAutomationEvent } from "@/lib/automations/recordAutomationEvent";
+import type { NormalizedDelivery } from "@/lib/automations/ingestAutomationEvent";
 
 /**
- * Records an incoming GitHub delivery as an `automation_events` row.
- *
- * This is the normalized event stream triggers are matched against. It keeps
- * its own copy of the payload because `ingest.webhook_events` is pruned, and
- * flattens the handful of fields matching and prompting actually need out of
- * payloads whose shape differs per event.
- *
- * Recording is deliberately separate from matching: nothing reads these rows
- * yet, so a mistake here shows up as a wrong row rather than an agent running
- * on the wrong pull request.
+ * Normalizes a GitHub delivery into the `automation_events` row triggers are
+ * matched against. It keeps its own copy of the payload because
+ * `ingest.webhook_events` is pruned, and flattens the handful of fields
+ * matching and prompting actually need out of payloads whose shape differs
+ * per event.
  */
 
 export type GithubPayload = {
@@ -134,72 +130,88 @@ export function urlFor(payload: GithubPayload): string | null {
 	);
 }
 
-export async function recordGithubEvent(params: {
+/**
+ * What GitHub triggers filter on. Every field here exists only inside the
+ * payload, and only for some events — the columns on `automation_events` are
+ * what every provider shares; this is what GitHub adds.
+ */
+export function matchableFrom(
+	payload: GithubPayload,
+	eventType: string,
+	repositoryId: string | null,
+	ref: string | null,
+): GithubMatchableEvent {
+	return {
+		provider: "github",
+		eventType,
+		names: githubEventNames({
+			eventType,
+			isDraft: payload.pull_request?.draft === true,
+			isMerged: payload.pull_request?.merged === true,
+			isPullRequestComment: payload.issue?.pull_request !== undefined,
+			reviewState: payload.review?.state ?? null,
+			runConclusion: payload.workflow_run?.conclusion ?? null,
+		}),
+		repositoryId,
+		ref,
+		actorId:
+			payload.sender?.id !== undefined ? String(payload.sender.id) : null,
+		actorLogin: payload.sender?.login ?? null,
+		actorIsExternal: null,
+		labels: (payload.pull_request?.labels ?? payload.issue?.labels ?? [])
+			.map((l) => l?.name)
+			.filter((n): n is string => typeof n === "string"),
+		body: payload.comment?.body ?? payload.review?.body ?? null,
+		// Only PR-shaped payloads carry the head repo; an issue_comment on a fork
+		// PR cannot be told apart and is treated as not a fork.
+		isFork: payload.pull_request?.head?.repo?.fork === true,
+		// Who opened the thing being commented on, which is a different person
+		// from whoever wrote the comment.
+		subjectAuthorId: (() => {
+			const id =
+				payload.pull_request?.user?.id ?? payload.issue?.user?.id ?? undefined;
+			return id !== undefined ? String(id) : null;
+		})(),
+	};
+}
+
+export function normalizeGithubDelivery(params: {
+	organizationId: string;
 	eventType: string;
 	deliveryId: string;
-	payload: unknown;
+	payload: GithubPayload;
 	webhookEventId: string;
-}): Promise<
-	| {
-			recorded: true;
-			eventId: string;
-			organizationId: string;
-			repositoryId: string | null;
-			ref: string | null;
-	  }
-	| { recorded: false; reason: string }
-> {
-	const payload = params.payload as GithubPayload;
-
-	const installationId = payload.installation?.id;
-	if (installationId === undefined) {
-		// Pings and a few org-level events carry no installation, so there is no
-		// organization to attribute them to.
-		return { recorded: false, reason: "no installation" };
-	}
-
-	const [installation] = await db
-		.select({ organizationId: githubInstallations.organizationId })
-		.from(githubInstallations)
-		.where(eq(githubInstallations.installationId, String(installationId)))
-		.limit(1);
-
-	if (!installation) {
-		return { recorded: false, reason: "unknown installation" };
-	}
-
+}): NormalizedDelivery {
+	const { payload } = params;
+	const eventType = qualifiedEventType(params.eventType, payload);
+	// The numeric id, not the full name: a repository can be renamed and
+	// triggers must keep matching it afterwards.
 	const repositoryId =
 		payload.repository?.id !== undefined ? String(payload.repository.id) : null;
 	const ref = payload.pull_request?.head?.ref ?? payload.ref ?? null;
-
-	// A redelivery of the same GitHub delivery id is the same event.
-	const inserted = await recordAutomationEvent(db, {
-		organizationId: installation.organizationId,
-		// GitHub installs are their own connection record, not an
-		// integration_connections row, so provenance is the delivery below.
-		integrationConnectionId: null,
-		provider: "github",
-		eventType: qualifiedEventType(params.eventType, payload),
-		externalEventId: params.deliveryId,
-		resourceKey: resourceKeyFor(payload, params.eventType),
-		title: titleFor(payload, params.eventType),
-		url: urlFor(payload),
-		// The numeric id, not the full name: a repository can be renamed and
-		// triggers must keep matching it afterwards.
-		repositoryId,
-		ref,
-		actorLogin: payload.sender?.login ?? null,
-		actorIsExternal: actorIsExternalFor(payload),
-		payload,
-		webhookEventId: params.webhookEventId,
-	});
-	if (!inserted) return { recorded: false, reason: "duplicate delivery" };
+	const event = matchableFrom(payload, eventType, repositoryId, ref);
 
 	return {
-		recorded: true,
-		eventId: inserted.id,
-		organizationId: installation.organizationId,
-		repositoryId,
-		ref,
+		event: {
+			organizationId: params.organizationId,
+			// GitHub installs are their own connection record, not an
+			// integration_connections row, so provenance is the delivery below.
+			integrationConnectionId: null,
+			provider: "github",
+			eventType,
+			// A redelivery of the same GitHub delivery id is the same event.
+			externalEventId: params.deliveryId,
+			resourceKey: resourceKeyFor(payload, params.eventType),
+			title: titleFor(payload, params.eventType),
+			url: urlFor(payload),
+			repositoryId,
+			ref,
+			actorLogin: payload.sender?.login ?? null,
+			actorIsExternal: actorIsExternalFor(payload),
+			payload,
+			webhookEventId: params.webhookEventId,
+		},
+		// An action nothing in the product names is recorded, never matched.
+		dispatch: event.names.length > 0 ? { event } : null,
 	};
 }

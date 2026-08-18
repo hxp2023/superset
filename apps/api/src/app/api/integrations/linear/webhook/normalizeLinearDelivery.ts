@@ -1,12 +1,12 @@
-import { db } from "@superset/db/client";
 import {
 	type LinearMatchableEvent,
 	linearEventNames,
 } from "@superset/shared/automation-matching";
-import { recordAutomationEvent } from "@/lib/automations/recordAutomationEvent";
+import type { NormalizedDelivery } from "@/lib/automations/ingestAutomationEvent";
 
 /**
- * Records a Linear delivery as an `automation_events` row, per connection.
+ * Normalizes a Linear delivery into the `automation_events` row for one
+ * connection.
  *
  * Only deliveries a trigger could name are recorded. Linear sends every
  * attachment and comment edit to the same webhook, and most `Issue.update`
@@ -83,25 +83,29 @@ export function titleFor(delivery: LinearDelivery): string {
 	return `${delivery.type}.${delivery.action}`;
 }
 
-export async function recordLinearEvent(params: {
+export function normalizeLinearDelivery(params: {
 	delivery: LinearDelivery;
+	event: LinearMatchableEvent;
 	/** Linear's delivery id when the header carried one; a redelivery reuses it. */
 	deliveryId: string;
 	connection: { id: string; organizationId: string };
 	webhookEventId: string;
-}): Promise<{ id: string } | null> {
-	const { delivery, connection } = params;
-	return recordAutomationEvent(db, {
-		organizationId: connection.organizationId,
-		integrationConnectionId: connection.id,
-		provider: "linear",
-		eventType: `${delivery.type}.${delivery.action}`,
-		externalEventId: params.deliveryId,
-		resourceKey: resourceKeyFor(delivery),
-		title: titleFor(delivery),
-		url: delivery.url ?? delivery.data.url ?? null,
-		actorLogin: delivery.actor?.name ?? null,
-		payload: delivery,
-		webhookEventId: params.webhookEventId,
-	});
+}): NormalizedDelivery {
+	const { delivery, event, connection } = params;
+	return {
+		event: {
+			organizationId: connection.organizationId,
+			integrationConnectionId: connection.id,
+			provider: "linear",
+			eventType: event.eventType,
+			externalEventId: params.deliveryId,
+			resourceKey: resourceKeyFor(delivery),
+			title: titleFor(delivery),
+			url: delivery.url ?? delivery.data.url ?? null,
+			actorLogin: delivery.actor?.name ?? null,
+			payload: delivery,
+			webhookEventId: params.webhookEventId,
+		},
+		dispatch: { event },
+	};
 }
