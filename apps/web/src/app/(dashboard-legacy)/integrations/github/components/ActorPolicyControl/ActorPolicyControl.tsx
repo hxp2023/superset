@@ -79,7 +79,9 @@ export function ActorPolicyControl({
 				}}
 			>
 				<SelectTrigger className="w-full max-w-xs">
-					<SelectValue />
+					<SelectValue>
+						{OPTIONS.find((option) => option.value === current)?.label}
+					</SelectValue>
 				</SelectTrigger>
 				<SelectContent>
 					{OPTIONS.map((option) => (
