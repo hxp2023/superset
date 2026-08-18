@@ -2,10 +2,11 @@ import {
 	ensureTeamsSubscriptions,
 	type SubscriptionKey,
 } from "@superset/trpc/integrations/microsoft-teams";
+
 import { verifyQstashRequest } from "@/lib/verifyQstash";
 import { handleNotification } from "../notify/handleNotification";
 import { loadConnection } from "../notify/notifications";
-import { teamsWorkSchema } from "../notify/queue";
+import { PROCESS_PATH, teamsWorkSchema } from "../notify/queue";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -21,11 +22,7 @@ export const maxDuration = 60;
  */
 export async function POST(request: Request): Promise<Response> {
 	const body = await request.text();
-	const rejected = await verifyQstashRequest(
-		request,
-		body,
-		"/api/integrations/microsoft-teams/process",
-	);
+	const rejected = await verifyQstashRequest(request, body, PROCESS_PATH);
 	if (rejected) return rejected;
 
 	const parsed = teamsWorkSchema.safeParse(JSON.parse(body));
@@ -43,7 +40,7 @@ export async function POST(request: Request): Promise<Response> {
 
 	if (work.kind === "change") {
 		const outcome = await handleNotification(connection, work.notification);
-		if (outcome.outcome === "recorded" && outcome.matched > 0) {
+		if (outcome.status === "dispatched" && outcome.matched > 0) {
 			console.log(
 				`[microsoft-teams/process] ${outcome.matched}/${outcome.considered} triggers matched:`,
 				outcome.eventId,
