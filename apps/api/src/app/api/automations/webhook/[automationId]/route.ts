@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { db } from "@superset/db/client";
 import {
 	automationEvents,
@@ -18,7 +18,7 @@ import { z } from "zod";
 
 import { env } from "@/env";
 import { dispatchMatchingTriggers } from "@/lib/automations/dispatchMatchingTriggers";
-import { stripNullChars } from "@/lib/strip-null-chars";
+import { recordAutomationEvent } from "@/lib/automations/recordAutomationEvent";
 
 export const dynamic = "force-dynamic";
 
@@ -66,9 +66,18 @@ export async function POST(
 		return Response.json({ error: "Invalid bearer token" }, { status: 401 });
 	}
 
-	const { success: withinLimit } = await rateLimit.limit(automationId);
+	// Keyed on the presented token, not the public automation id, so someone
+	// who only knows the URL cannot spend the real producer's budget.
+	const { success: withinLimit } = await rateLimit.limit(
+		createHash("sha256").update(token).digest("hex"),
+	);
 	if (!withinLimit) {
 		return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+	}
+
+	const contentLength = Number(request.headers.get("content-length"));
+	if (contentLength > MAX_BODY_BYTES) {
+		return Response.json({ error: "Body too large" }, { status: 413 });
 	}
 
 	const triggers = await db
@@ -115,25 +124,15 @@ export async function POST(
 		);
 	}
 
-	const [inserted] = await db
-		.insert(automationEvents)
-		.values({
-			organizationId,
-			integrationConnectionId: null,
-			provider: "webhook",
-			eventType: EVENT_TYPE,
-			externalEventId: randomUUID(),
-			resourceKey: null,
-			title: "Webhook",
-			url: null,
-			repositoryId: null,
-			ref: null,
-			actorLogin: null,
-			actorIsExternal: null,
-			payload: stripNullChars(payload),
-			webhookEventId: null,
-		})
-		.returning({ id: automationEvents.id });
+	const inserted = await recordAutomationEvent(db, {
+		organizationId,
+		integrationConnectionId: null,
+		provider: "webhook",
+		eventType: EVENT_TYPE,
+		externalEventId: randomUUID(),
+		title: "Webhook",
+		payload,
+	});
 
 	if (!inserted) {
 		return Response.json({ error: "Failed to record event" }, { status: 500 });
