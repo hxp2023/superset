@@ -1,7 +1,6 @@
 import type { DraftTrigger } from "@superset/shared/automation-triggers";
 import {
 	formatDateTimeInTimezone,
-	lastOccurrenceBefore,
 	nextOccurrenceAfter,
 } from "@superset/shared/rrule";
 import type { RouterOutputs } from "@superset/trpc";
@@ -54,47 +53,30 @@ export function TriggersCard({
 		// The zone travels with the date: schedules on one automation can sit in
 		// different timezones, so formatting them all in the automation-level one
 		// would label the tooltip wrongly for every schedule but the soonest.
-		const entries = new Map<
-			string,
-			{ at: Date; timezone: string; exhausted: boolean }
-		>();
+		const entries = new Map<string, { at: Date; timezone: string }>();
 
 		for (const trigger of automation.triggers) {
 			const config = trigger.config as DraftTrigger["config"];
 			if (config.kind !== "schedule") continue;
 
+			// The saved nextRunAt is the dispatcher's truth; the computed one
+			// covers a paused automation, whose stored value is stale.
+			if (automation.enabled && trigger.nextRunAt) {
+				entries.set(trigger.id, {
+					at: new Date(trigger.nextRunAt),
+					timezone: config.timezone,
+				});
+				continue;
+			}
 			try {
-				const schedule = {
+				const next = nextOccurrenceAfter({
 					rrule: config.rrule,
 					dtstart: new Date(config.dtstart),
 					timezone: config.timezone,
-				};
-				const next = nextOccurrenceAfter({ ...schedule, after: new Date() });
-				// An exhausted recurrence (a run-once that ran) has no future
-				// occurrence; its row shows when it last fired instead.
-				if (!next) {
-					const last = lastOccurrenceBefore({
-						...schedule,
-						before: new Date(),
-					});
-					if (last)
-						entries.set(trigger.id, {
-							at: last,
-							timezone: config.timezone,
-							exhausted: true,
-						});
-					continue;
-				}
-				// The saved nextRunAt is the dispatcher's truth; the computed one
-				// covers a paused automation, whose stored value is stale.
-				entries.set(trigger.id, {
-					at:
-						automation.enabled && trigger.nextRunAt
-							? new Date(trigger.nextRunAt)
-							: next,
-					timezone: config.timezone,
-					exhausted: false,
+					after: new Date(),
 				});
+				if (next)
+					entries.set(trigger.id, { at: next, timezone: config.timezone });
 			} catch (error) {
 				console.warn(
 					`[TriggersCard] failed to compute next occurrence for trigger ${trigger.id}`,
@@ -121,11 +103,7 @@ export function TriggersCard({
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<span>
-						{run.exhausted
-							? "Ran "
-							: automation.enabled
-								? "Next run "
-								: "Would run "}
+						{automation.enabled ? "Next run " : "Would run "}
 						{formatDistanceStrict(run.at, new Date(), { addSuffix: true })}
 					</span>
 				</TooltipTrigger>

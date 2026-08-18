@@ -385,7 +385,6 @@ export const automationRouter = {
 						automationId: row.id,
 						organizationId,
 						...legacySchedule,
-						enabled: row.enabled,
 					});
 				}
 
@@ -552,7 +551,6 @@ export const automationRouter = {
 						dtstart: nextDtstart,
 						timezone: nextTimezone,
 						nextRunAt: recomputedNextRunAt,
-						enabled: row.enabled,
 					});
 				}
 

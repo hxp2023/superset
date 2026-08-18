@@ -370,21 +370,12 @@ export function nextOccurrenceAfter(args: {
 }
 
 /**
- * The most recent occurrence at or before `before`, or null when the
- * recurrence has not started yet — how an exhausted schedule's last fire is
- * recovered from the rule alone.
+ * True when the rule ends (COUNT or UNTIL). Schedules are repeating only —
+ * a rule that runs out is refused at save so no trigger ever needs retiring.
  */
-export function lastOccurrenceBefore(args: {
-	rrule: string;
-	dtstart: Date;
-	timezone: string;
-	before: Date;
-}): Date | null {
-	const rule = RRule.fromString(
-		buildRuleString(args.rrule, args.dtstart, args.timezone),
-	);
-	const last = rule.before(utcToRruleDate(args.before, args.timezone), true);
-	return last ? rruleDateToUtc(last, args.timezone) : null;
+export function hasFiniteRecurrence(rrule: string): boolean {
+	const parts = parseRruleParts(rrule);
+	return parts !== null && ("COUNT" in parts || "UNTIL" in parts);
 }
 
 /** Parses + validates an RRule body, returning the next occurrence. */

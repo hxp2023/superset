@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasFiniteRecurrence } from "./rrule";
 
 /**
  * Trigger validation, shared by the editor and the API so a form can block Save
@@ -562,6 +563,14 @@ export function describeTriggerProblems(
 			case "circleback":
 				break;
 			case "schedule":
+				if (hasFiniteRecurrence(config.rrule)) {
+					problems.push({
+						index,
+						field: "rrule",
+						message: "Schedules repeat — remove COUNT or UNTIL.",
+					});
+				}
+				break;
 			case "webhook":
 				break;
 		}

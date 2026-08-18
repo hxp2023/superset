@@ -842,7 +842,6 @@ export const automationTriggers = pgTable(
 
 		kind: automationTriggerKind().notNull(),
 		config: jsonb().$type<TriggerConfig>().notNull(),
-		enabled: boolean().notNull().default(true),
 
 		// Schedule kind only. A column rather than config because the dispatcher
 		// indexes and sorts on it.
@@ -874,11 +873,9 @@ export const automationTriggers = pgTable(
 			sql`config->>'kind' = kind::text`,
 		),
 		index("automation_triggers_dispatcher_idx")
-			.on(t.enabled, t.nextRunAt)
+			.on(t.nextRunAt)
 			.where(sql`kind = 'schedule'`),
-		index("automation_triggers_matcher_idx")
-			.on(t.organizationId, t.kind)
-			.where(sql`enabled`),
+		index("automation_triggers_matcher_idx").on(t.organizationId, t.kind),
 		index("automation_triggers_automation_idx").on(t.automationId),
 		// Deliberately not unique on (automation_id) where kind = 'schedule'. An
 		// automation may carry several schedules — "every weekday at 9" and "on

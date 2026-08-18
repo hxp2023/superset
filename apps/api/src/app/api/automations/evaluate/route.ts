@@ -138,8 +138,9 @@ export async function POST(request: Request): Promise<Response> {
 		planned.map(async ({ triggerId, next }) => {
 			await dbWs
 				.update(automationTriggers)
-				// A null next retires the trigger: the select above only reads
-				// rows whose next_run_at is set.
+				// Always a date for rules the product accepts (finite recurrences
+				// are refused at save); legacy finite data writes null and simply
+				// leaves the select, which reads only set next_run_at.
 				.set({ nextRunAt: next })
 				.where(eq(automationTriggers.id, triggerId));
 		}),
