@@ -71,7 +71,7 @@ function renderPart(
 					key={index}
 					scope={config.labels}
 					onChange={(v) => set({ labels: v ?? { mode: "any" } })}
-					options={options.google?.gmailLabels ?? []}
+					options={options.google?.labels ?? []}
 					emptyLabel="Any label"
 					anyLabel="Any label"
 					disabled={disabled}

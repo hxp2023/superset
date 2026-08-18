@@ -1,6 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
+import { googleTriggerOptions } from "./google/trigger-options";
+import { microsoftTeamsTriggerOptions } from "./microsoft-teams/trigger-options";
 import { sentryTriggerOptions } from "./sentry/trigger-options";
 import { verifyOrgMembership } from "./utils";
 
@@ -33,6 +35,8 @@ export const triggerOptionSources: Record<
 	Record<string, TriggerOptionSource>
 > = {
 	sentry: sentryTriggerOptions,
+	microsoftTeams: microsoftTeamsTriggerOptions,
+	google: googleTriggerOptions,
 };
 
 export const triggerOptionsRouter = {
