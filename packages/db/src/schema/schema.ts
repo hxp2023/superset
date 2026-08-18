@@ -27,6 +27,7 @@ import {
 	desktopNoticeCtaActionValues,
 	desktopNoticeSeverityValues,
 	desktopNoticeTriggerValues,
+	gitCommitAuthorModeValues,
 	githubActorPolicyValues,
 	integrationProviderValues,
 	taskPriorityValues,
@@ -54,6 +55,10 @@ export const commandStatus = pgEnum("command_status", commandStatusValues);
 export const githubActorPolicy = pgEnum(
 	"github_actor_policy",
 	githubActorPolicyValues,
+);
+export const gitCommitAuthorMode = pgEnum(
+	"git_commit_author_mode",
+	gitCommitAuthorModeValues,
 );
 export const cloudWorkspaceStatus = pgEnum(
 	"cloud_workspace_status",
@@ -291,6 +296,30 @@ export type InsertOrganizationSettings =
 	typeof organizationSettings.$inferInsert;
 export type SelectOrganizationSettings =
 	typeof organizationSettings.$inferSelect;
+
+/**
+ * Per-user product settings, one row per user, created on first write. The
+ * personal sibling of organization_settings; same reasoning for typed columns.
+ */
+export const userSettings = pgTable("user_settings", {
+	userId: uuid("user_id")
+		.primaryKey()
+		.references(() => users.id, { onDelete: "cascade" }),
+	gitCommitAuthorMode: gitCommitAuthorMode("git_commit_author_mode")
+		.notNull()
+		.default("you_only"),
+	// Null means automatic: the account email. Anything else is what the
+	// person picked — one of their GitHub emails or a custom address.
+	gitCommitEmail: text("git_commit_email"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});
+
+export type InsertUserSettings = typeof userSettings.$inferInsert;
+export type SelectUserSettings = typeof userSettings.$inferSelect;
 
 // Stripe subscriptions (org-based billing)
 export const subscriptions = pgTable(

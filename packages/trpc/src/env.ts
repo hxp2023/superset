@@ -30,6 +30,7 @@ export const env = createEnv({
 		BLAXEL_SANDBOX_IMAGE: z.string().min(1),
 		// GitHub App credentials
 		GH_APP_ID: z.string().min(1),
+		GH_APP_SLUG: z.string().min(1),
 		GH_APP_PRIVATE_KEY: z.string().min(1),
 		GH_WEBHOOK_SECRET: z.string().min(1),
 		ANTHROPIC_API_KEY: z.string(),
