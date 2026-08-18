@@ -54,6 +54,7 @@ function renderPart(
 
 export const sentryProvider: TriggerProvider<SentryConfig> = {
 	kind: "sentry",
+	optionGroup: "sentry",
 	label: "Sentry",
 	icon: SiSentry,
 	menu: SENTRY_MENU,

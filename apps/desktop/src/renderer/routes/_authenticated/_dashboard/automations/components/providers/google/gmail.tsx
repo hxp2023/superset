@@ -92,6 +92,7 @@ function renderPart(
 
 export const gmailProvider: TriggerProvider<GmailConfig> = {
 	kind: "gmail",
+	optionGroup: "google",
 	label: "Gmail",
 	icon: SiGmail,
 	menu: GMAIL_MENU,

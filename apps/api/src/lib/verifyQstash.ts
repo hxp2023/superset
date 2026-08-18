@@ -31,7 +31,7 @@ export async function verifyQstashRequest(
 			return Response.json({ error: "Invalid signature" }, { status: 401 });
 		}
 	} catch (error) {
-		console.error(`[google${path}] signature verification failed:`, error);
+		console.error(`[qstash${path}] signature verification failed:`, error);
 		return Response.json(
 			{ error: "Signature verification failed" },
 			{ status: 401 },

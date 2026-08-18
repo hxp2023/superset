@@ -91,6 +91,7 @@ function renderPart(
 
 export const linearProvider: TriggerProvider<LinearConfig> = {
 	kind: "linear",
+	optionGroup: "linear",
 	label: "Linear",
 	icon: SiLinear,
 	menu: LINEAR_MENU,

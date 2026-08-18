@@ -108,6 +108,7 @@ function renderPart(
 
 export const githubProvider: TriggerProvider<GithubConfig> = {
 	kind: "github",
+	optionGroup: "github",
 	label: "GitHub",
 	icon: FaGithub,
 	menu: GITHUB_MENU,

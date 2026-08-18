@@ -92,6 +92,7 @@ function renderPart(
 
 export const googleCalendarProvider: TriggerProvider<GoogleCalendarConfig> = {
 	kind: "google_calendar",
+	optionGroup: "google",
 	label: "Google Calendar",
 	icon: SiGooglecalendar,
 	menu: CALENDAR_MENU,

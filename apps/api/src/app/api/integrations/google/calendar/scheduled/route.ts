@@ -8,6 +8,7 @@ import {
 import { z } from "zod";
 import { dispatchMatchingTriggers } from "@/lib/automations/dispatchMatchingTriggers";
 import { recordAutomationEvent } from "@/lib/automations/recordAutomationEvent";
+import { verifyQstashRequest } from "@/lib/verifyQstash";
 import {
 	accountDomain,
 	accountEmail,
@@ -15,7 +16,6 @@ import {
 	matchableCalendarEvent,
 	resourceKeyFor,
 } from "../../lib/calendarEvents";
-import { verifyQstashRequest } from "../../lib/verifyQstash";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";

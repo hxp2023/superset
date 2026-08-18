@@ -79,6 +79,7 @@ function renderPart(
 
 export const notionProvider: TriggerProvider<NotionConfig> = {
 	kind: "notion",
+	optionGroup: "notion",
 	label: "Notion",
 	icon: SiNotion,
 	menu: NOTION_MENU,

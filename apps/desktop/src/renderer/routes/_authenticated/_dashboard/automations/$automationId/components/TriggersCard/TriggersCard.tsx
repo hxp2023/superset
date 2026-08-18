@@ -11,7 +11,6 @@ import { useRecentProjects } from "renderer/hooks/host-projects/useRecentProject
 import type { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
 import { ProjectPicker } from "../../../components/ProjectPicker";
-import { useProviderOptions } from "../../../components/providers/useProviderOptions";
 import { RelayOfflineNotice } from "../../../components/RelayOfflineNotice";
 import { TriggersEditor } from "../../../components/TriggersEditor";
 import { WorkspacePicker } from "../../../components/WorkspacePicker";
@@ -43,7 +42,6 @@ export function TriggersCard({
 	onSaveTriggers,
 }: TriggersCardProps) {
 	const recentProjects = useRecentProjects();
-	const options = useProviderOptions(automation.organizationId);
 	const selectedProject = recentProjects.find(
 		(p) => p.id === automation.v2ProjectId,
 	);
@@ -140,7 +138,7 @@ export function TriggersCard({
 					config: t.config as DraftTrigger["config"],
 				}))}
 				onChange={onSaveTriggers}
-				options={options}
+				organizationId={automation.organizationId}
 				renderNextRun={renderNextRun}
 				readOnly={readOnly}
 			/>

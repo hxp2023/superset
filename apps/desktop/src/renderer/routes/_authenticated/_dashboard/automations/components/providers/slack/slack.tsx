@@ -136,6 +136,7 @@ function renderPart(
 
 export const slackProvider: TriggerProvider<SlackConfig> = {
 	kind: "slack",
+	optionGroup: "slack",
 	label: "Slack",
 	icon: FaSlack,
 	menu: SLACK_MENU,

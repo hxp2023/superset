@@ -12,12 +12,21 @@ import {
  * names nothing (an action no trigger exists for) is recorded and never
  * dispatched.
  */
-export type NormalizedDelivery = {
-	event: Omit<AutomationEventInput, "dispatchInput">;
-	dispatch: AutomationEventDispatchInput | null;
-};
+export type NormalizedDelivery =
+	| {
+			event: Omit<AutomationEventInput, "dispatchInput">;
+			dispatch: AutomationEventDispatchInput | null;
+	  }
+	/**
+	 * A delivery the provider could not turn into an event for a permanent
+	 * reason (revoked token, entity not shared with the integration). Nothing
+	 * is recorded and the sender is acknowledged; a retry would fail the same
+	 * way. Transient failures throw instead, so the sender retries.
+	 */
+	| { skip: string };
 
 export type IngestOutcome =
+	| { status: "skipped"; reason: string }
 	| { status: "duplicate" }
 	| { status: "recorded"; eventId: string }
 	| {
@@ -39,6 +48,7 @@ export async function ingestAutomationEvent(
 	database: PgDatabase<PgQueryResultHKT, Record<string, unknown>>,
 	delivery: NormalizedDelivery,
 ): Promise<IngestOutcome> {
+	if ("skip" in delivery) return { status: "skipped", reason: delivery.skip };
 	const inserted = await recordAutomationEvent(database, {
 		...delivery.event,
 		dispatchInput: delivery.dispatch,

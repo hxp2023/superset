@@ -88,6 +88,7 @@ function renderPart(
 
 export const microsoftTeamsProvider: TriggerProvider<MicrosoftTeamsConfig> = {
 	kind: "microsoft_teams",
+	optionGroup: "microsoftTeams",
 	label: "Microsoft Teams",
 	icon: BsMicrosoftTeams,
 	menu: TEAMS_MENU,
