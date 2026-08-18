@@ -1,7 +1,30 @@
 import { db } from "@superset/db/client";
 import { githubInstallations, githubRepositories } from "@superset/db/schema";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { installationOctokit } from "../../../lib/blaxel/clone-token";
+import type { TriggerOptionSource } from "../trigger-options";
+
+/** The synced repositories of the organization's installation, newest first. */
+export async function listGithubRepositories(organizationId: string) {
+	const installation = await db.query.githubInstallations.findFirst({
+		where: eq(githubInstallations.organizationId, organizationId),
+		columns: { id: true },
+	});
+	if (!installation) return [];
+	return db.query.githubRepositories.findMany({
+		where: eq(githubRepositories.installationId, installation.id),
+		orderBy: [desc(githubRepositories.updatedAt)],
+	});
+}
+
+/**
+ * repoId is GitHub's numeric id, which is what the matcher compares against —
+ * a full name would stop matching the moment someone renames the repo.
+ */
+const repositories: TriggerOptionSource = async ({ organizationId }) => {
+	const list = await listGithubRepositories(organizationId);
+	return list.map((repo) => ({ id: repo.repoId, label: repo.fullName }));
+};
 
 const PER_PAGE = 100;
 const MAX_PEOPLE = 1000;
@@ -29,9 +52,7 @@ function isPermissionError(error: unknown): boolean {
  * members; user installations list the collaborators of the synced
  * repositories, deduplicated.
  */
-export async function listGithubPeople(
-	organizationId: string,
-): Promise<Array<{ id: string; label: string }>> {
+const people: TriggerOptionSource = async ({ organizationId }) => {
 	const installation = await db.query.githubInstallations.findFirst({
 		where: eq(githubInstallations.organizationId, organizationId),
 		columns: {
@@ -75,7 +96,7 @@ export async function listGithubPeople(
 		// The App was installed without the members permission (or the
 		// repository is gone): an empty picker, not a red editor.
 		if (isPermissionError(error)) {
-			console.warn("[integration.github] listPeople refused:", error);
+			console.warn("[integration.github] people refused:", error);
 			return [];
 		}
 		throw error;
@@ -84,4 +105,6 @@ export async function listGithubPeople(
 	return [...seen]
 		.map(([id, login]) => ({ id, label: login }))
 		.sort((a, b) => a.label.localeCompare(b.label));
-}
+};
+
+export const githubTriggerOptions = { repositories, people };
