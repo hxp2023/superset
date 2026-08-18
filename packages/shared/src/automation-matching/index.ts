@@ -1,9 +1,36 @@
 import type { TriggerConfigInput } from "../automation-triggers";
+import {
+	type CirclebackMatchableEvent,
+	circlebackTriggerMatches,
+} from "./circleback";
 import type { BaseMatchableEvent, MatchContext, MatchResult } from "./core";
 import { type GithubMatchableEvent, githubTriggerMatches } from "./github";
+import {
+	type GmailMatchableEvent,
+	type GoogleCalendarMatchableEvent,
+	gmailTriggerMatches,
+	googleCalendarTriggerMatches,
+} from "./google";
+import { type LinearMatchableEvent, linearTriggerMatches } from "./linear";
+import {
+	type MicrosoftTeamsMatchableEvent,
+	microsoftTeamsTriggerMatches,
+} from "./microsoft-teams";
+import { type NotionMatchableEvent, notionTriggerMatches } from "./notion";
+import { type SentryMatchableEvent, sentryTriggerMatches } from "./sentry";
+import { type SlackMatchableEvent, slackTriggerMatches } from "./slack";
+import { type WebhookMatchableEvent, webhookTriggerMatches } from "./webhook";
 
+export * from "./circleback";
 export * from "./core";
 export * from "./github";
+export * from "./google";
+export * from "./linear";
+export * from "./microsoft-teams";
+export * from "./notion";
+export * from "./sentry";
+export * from "./slack";
+export * from "./webhook";
 
 /**
  * Every provider's normalized event, discriminated by `provider`.
@@ -14,7 +41,17 @@ export * from "./github";
  * on the event, never on `MatchContext` — a Slack matcher must not need to
  * know that a GitHub context key exists.
  */
-export type MatchableEvent = GithubMatchableEvent;
+export type MatchableEvent =
+	| GithubMatchableEvent
+	| WebhookMatchableEvent
+	| NotionMatchableEvent
+	| LinearMatchableEvent
+	| SlackMatchableEvent
+	| CirclebackMatchableEvent
+	| MicrosoftTeamsMatchableEvent
+	| SentryMatchableEvent
+	| GoogleCalendarMatchableEvent
+	| GmailMatchableEvent;
 
 /**
  * Whether a trigger config accepts an event, whatever provider it belongs to.
@@ -43,6 +80,56 @@ export function triggerMatches(
 		case "github":
 			return githubTriggerMatches(
 				config as Extract<TriggerConfigInput, { kind: "github" }>,
+				event,
+				context,
+			);
+		case "sentry":
+			return sentryTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "sentry" }>,
+				event,
+				context,
+			);
+		case "webhook":
+			return webhookTriggerMatches();
+		case "notion":
+			return notionTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "notion" }>,
+				event,
+				context,
+			);
+		case "linear":
+			return linearTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "linear" }>,
+				event,
+				context,
+			);
+		case "slack":
+			return slackTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "slack" }>,
+				event,
+				context,
+			);
+		case "circleback":
+			return circlebackTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "circleback" }>,
+				event,
+				context,
+			);
+		case "microsoft_teams":
+			return microsoftTeamsTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "microsoft_teams" }>,
+				event,
+				context,
+			);
+		case "google_calendar":
+			return googleCalendarTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "google_calendar" }>,
+				event,
+				context,
+			);
+		case "gmail":
+			return gmailTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "gmail" }>,
 				event,
 				context,
 			);

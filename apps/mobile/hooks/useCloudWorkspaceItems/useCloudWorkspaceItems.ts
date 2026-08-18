@@ -160,6 +160,12 @@ export function useCloudWorkspaceItems(): CloudWorkspaceItemsValue {
 				const key = keyFor(hostId);
 				if (key) void queryClient.invalidateQueries({ queryKey: key });
 			},
+			refetchHost: async (hostId) => {
+				const key = keyFor(hostId);
+				if (!key) return undefined;
+				await queryClient.refetchQueries({ queryKey: key });
+				return queryClient.getQueryData<HostWorkspaceRow[]>(key);
+			},
 		};
 	}, [queryClient]);
 

@@ -170,28 +170,56 @@ export const slackTriggerEventValues = [
 	"reaction_added",
 	"channel_created",
 ] as const;
+export type SlackTriggerEvent = (typeof slackTriggerEventValues)[number];
+
+/** An emoji short name as Slack sends it: `bug`, `white_check_mark`, `+1`. */
+const slackEmojiName = z.string().min(1).max(100);
 
 export const slackTriggerConfigSchema = z.object({
 	kind: z.literal("slack"),
 	event: z.enum(slackTriggerEventValues),
+	// The channel a message or reaction lands in. Not meaningful for
+	// channel_created — the channel does not exist yet — so null there.
 	channels: triggerScopeSchema,
-	// Only meaningful for reaction_added; null elsewhere.
+	// Only meaningful for reaction_added; null elsewhere. The ids are emoji
+	// short names typed by the person, so a workspace's custom emoji work
+	// without any list of them existing.
 	emoji: triggerScopeSchema,
 	actor: triggerActorSchema,
+	// A pattern over the message text, or over the channel name for
+	// channel_created.
 	messageFilter: textFilterSchema.nullable().default(null),
+	// message_in_channel only: whether a reply inside a thread counts. Defaults
+	// to top-level posts, since a busy thread would otherwise fire once a reply.
+	topLevelOnly: z.boolean().default(true),
+	// message_in_channel only: the reaction to add to the triggering message
+	// when the run completes; null for none.
+	completionReaction: slackEmojiName.nullable().default("white_check_mark"),
 });
 
 export const linearTriggerEventValues = [
 	"issue.created",
 	"issue.status_changed",
+	"issue.assigned",
 	"cycle.ended",
 ] as const;
+export type LinearTriggerEvent = (typeof linearTriggerEventValues)[number];
 
+/**
+ * One flat shape for every Linear event. Filters an event has no use for —
+ * labels on a cycle — sit at "any" and never narrow.
+ */
 export const linearTriggerConfigSchema = z.object({
 	kind: z.literal("linear"),
 	event: z.enum(linearTriggerEventValues),
 	teams: triggerScopeSchema,
 	projects: triggerScopeSchema,
+	labels: triggerScopeSchema,
+	// Workflow state ids the issue moved into. Only meaningful for
+	// issue.status_changed; "any" elsewhere.
+	toStatus: triggerScopeSchema,
+	// The issue's assignee, not who made the change. Ids are Linear user ids.
+	assignee: triggerActorSchema,
 });
 
 export const sentryTriggerEventValues = [
@@ -202,12 +230,168 @@ export const sentryTriggerEventValues = [
 	"issue.unresolved",
 	"issue.any",
 ] as const;
+export type SentryTriggerEvent = (typeof sentryTriggerEventValues)[number];
 
 export const sentryTriggerConfigSchema = z.object({
 	kind: z.literal("sentry"),
 	event: z.enum(sentryTriggerEventValues),
+	// Sentry's numeric project ids: a slug can be renamed, the id cannot.
 	projects: triggerScopeSchema,
+	// Optional narrowing over fatal/error/warning/info/debug; "any" by default.
 	level: triggerScopeSchema,
+});
+
+export const circlebackTriggerEventValues = ["meeting.completed"] as const;
+
+/**
+ * Circleback has no connection: it posts to a per-trigger URL and signs the
+ * body with a secret it generates and shows in its own UI. That secret is
+ * pasted into the trigger row and lives on the trigger row's secret column,
+ * never in this config — the config is returned to every member of the org.
+ */
+export const circlebackTriggerConfigSchema = z.object({
+	kind: z.literal("circleback"),
+	event: z.enum(circlebackTriggerEventValues),
+	tags: triggerScopeSchema,
+	attendees: triggerScopeSchema,
+	nameFilter: textFilterSchema.nullable().default(null),
+});
+
+/**
+ * Notion. `comment.mentioned` is not a Notion event: it is `comment.created`
+ * narrowed to comments whose rich text mentions a user, which the webhook
+ * route works out after fetching the comment.
+ */
+export const notionTriggerEventValues = [
+	"data_source.content_updated",
+	"comment.created",
+	"comment.mentioned",
+] as const;
+export type NotionTriggerEvent = (typeof notionTriggerEventValues)[number];
+
+const notionCommon = {
+	kind: z.literal("notion"),
+	dataSources: triggerScopeSchema,
+};
+
+const notionContentUpdatedEvent = z.object({
+	...notionCommon,
+	event: z.literal("data_source.content_updated"),
+});
+
+/**
+ * Comments live on a page, which may itself be a row of a data source, so
+ * both narrow: the data source the page belongs to and the page itself.
+ */
+const notionCommentCreatedEvent = z.object({
+	...notionCommon,
+	event: z.literal("comment.created"),
+	pages: triggerScopeSchema,
+	actor: triggerActorSchema,
+});
+
+const notionCommentMentionedEvent = z.object({
+	...notionCommon,
+	event: z.literal("comment.mentioned"),
+	pages: triggerScopeSchema,
+	// Who has to be @-mentioned for the comment to count. "me" is the common
+	// case; "anyone" fires on any comment that mentions somebody.
+	mentionedUser: triggerActorSchema,
+});
+
+export const notionTriggerConfigSchema = z.union([
+	notionContentUpdatedEvent,
+	notionCommentCreatedEvent,
+	notionCommentMentionedEvent,
+]);
+
+export const microsoftTeamsTriggerEventValues = [
+	"message_in_channel",
+	"channel_created",
+] as const;
+export type MicrosoftTeamsTriggerEvent =
+	(typeof microsoftTeamsTriggerEventValues)[number];
+
+/**
+ * Teams triggers scope by team, then by channel within it. `channel_created`
+ * has no channel to filter on — the channel is the thing being created — so it
+ * carries `channels: null` and reads `messageFilter` as a pattern over the new
+ * channel's name.
+ */
+export const microsoftTeamsTriggerConfigSchema = z.object({
+	kind: z.literal("microsoft_teams"),
+	event: z.enum(microsoftTeamsTriggerEventValues),
+	teams: triggerScopeSchema,
+	// Only meaningful for message_in_channel; null elsewhere.
+	channels: triggerScopeSchema,
+	// Only meaningful for message_in_channel; "anyone" elsewhere.
+	actor: triggerActorSchema,
+	messageFilter: textFilterSchema.nullable().default(null),
+});
+
+/**
+ * Google Calendar events carry different filters, so the config is a union on
+ * the event: a change carries the external-attendee narrowing, a starting-soon
+ * fire carries how far ahead it fires, and a cancellation carries neither.
+ */
+export const googleCalendarTriggerEventValues = [
+	"event.created",
+	"event.updated",
+	"event.cancelled",
+	"event.starting_soon",
+	"event.ended",
+] as const;
+export type GoogleCalendarTriggerEvent =
+	(typeof googleCalendarTriggerEventValues)[number];
+
+const googleCalendarCommon = {
+	kind: z.literal("google_calendar"),
+	calendars: triggerScopeSchema,
+	// Anyone on the event: organizer, creator or invitee. Ids are email
+	// addresses, since that is what a calendar event names people by.
+	attendee: triggerActorSchema,
+	titleFilter: textFilterSchema.nullable().default(null),
+};
+
+const googleCalendarChangeEvent = z.object({
+	...googleCalendarCommon,
+	event: z.enum(["event.created", "event.updated"]),
+	// A boolean rather than a scope: false is "do not narrow", true requires
+	// someone from outside the connected account's domain to be on the event.
+	hasExternalAttendee: z.boolean().default(false),
+});
+
+const googleCalendarStartingSoonEvent = z.object({
+	...googleCalendarCommon,
+	event: z.literal("event.starting_soon"),
+	minutesBefore: z.number().int().min(1).max(1440).default(15),
+});
+
+const googleCalendarSimpleEvent = z.object({
+	...googleCalendarCommon,
+	event: z.enum(["event.cancelled", "event.ended"]),
+});
+
+export const googleCalendarTriggerConfigSchema = z.union([
+	googleCalendarChangeEvent,
+	googleCalendarStartingSoonEvent,
+	googleCalendarSimpleEvent,
+]);
+
+export const gmailTriggerEventValues = ["message.received"] as const;
+export type GmailTriggerEvent = (typeof gmailTriggerEventValues)[number];
+
+export const gmailTriggerConfigSchema = z.object({
+	kind: z.literal("gmail"),
+	event: z.enum(gmailTriggerEventValues),
+	// Addresses or bare domains ("acme.com"), free-form: a sender is not a
+	// pickable value the way a channel is.
+	from: triggerScopeSchema,
+	to: triggerScopeSchema,
+	subjectFilter: textFilterSchema.nullable().default(null),
+	// Gmail label ids, not names: a label can be renamed, its id cannot.
+	labels: triggerScopeSchema,
+	hasAttachment: z.boolean().default(false),
 });
 
 /**
@@ -227,6 +411,11 @@ export const draftTriggerSchema = z.object({
 		slackTriggerConfigSchema,
 		linearTriggerConfigSchema,
 		sentryTriggerConfigSchema,
+		notionTriggerConfigSchema,
+		circlebackTriggerConfigSchema,
+		microsoftTeamsTriggerConfigSchema,
+		googleCalendarTriggerConfigSchema,
+		gmailTriggerConfigSchema,
 	]),
 });
 export type DraftTrigger = z.infer<typeof draftTriggerSchema>;
@@ -275,16 +464,103 @@ export function describeTriggerProblems(
 				break;
 			}
 			case "slack": {
-				if (isEmptyScope(config.channels)) {
+				if (
+					config.event !== "channel_created" &&
+					isEmptyScope(config.channels)
+				) {
 					add(index, "channels", "Specify at least one channel.");
 				}
 				if (config.event === "reaction_added" && isEmptyScope(config.emoji)) {
 					add(index, "emoji", "Specify at least one reaction.");
 				}
+				if (isEmptyActor(config.actor)) {
+					add(index, "actor", "Specify at least one person, or choose Anyone.");
+				}
 				break;
 			}
-			case "linear":
-			case "sentry":
+			case "notion": {
+				if (isEmptyScope(config.dataSources)) {
+					add(index, "dataSources", "Specify at least one data source.");
+				}
+				if ("actor" in config && isEmptyActor(config.actor)) {
+					add(index, "actor", "Specify at least one person, or choose Anyone.");
+				}
+				if ("mentionedUser" in config && isEmptyActor(config.mentionedUser)) {
+					add(
+						index,
+						"mentionedUser",
+						"Specify at least one person, or choose Anyone.",
+					);
+				}
+				break;
+			}
+			case "linear": {
+				if (isEmptyScope(config.teams)) {
+					add(index, "teams", "Specify at least one team.");
+				}
+				// Only the events whose sentence shows an assignee; a created or
+				// cycle trigger has no chip to clear such a problem with.
+				if (
+					(config.event === "issue.status_changed" ||
+						config.event === "issue.assigned") &&
+					isEmptyActor(config.assignee)
+				) {
+					add(
+						index,
+						"assignee",
+						"Specify at least one person, or choose Anyone.",
+					);
+				}
+				break;
+			}
+			case "microsoft_teams": {
+				if (isEmptyScope(config.teams)) {
+					add(index, "teams", "Specify at least one team.");
+				}
+				if (
+					config.event === "message_in_channel" &&
+					isEmptyScope(config.channels)
+				) {
+					add(index, "channels", "Specify at least one channel.");
+				}
+				if (isEmptyActor(config.actor)) {
+					add(index, "actor", "Specify at least one person, or choose Anyone.");
+				}
+				break;
+			}
+			case "sentry": {
+				if (isEmptyScope(config.projects)) {
+					add(index, "projects", "Specify at least one project.");
+				}
+				break;
+			}
+			case "google_calendar": {
+				if (isEmptyScope(config.calendars)) {
+					add(index, "calendars", "Specify at least one calendar.");
+				}
+				if (isEmptyActor(config.attendee)) {
+					add(
+						index,
+						"attendee",
+						"Specify at least one person, or choose Anyone.",
+					);
+				}
+				break;
+			}
+			case "gmail": {
+				// The sender is the primary scope, as the repository is for GitHub:
+				// a mailbox-wide trigger has to be chosen ("Any sender"), never
+				// arrived at by leaving the chip empty.
+				if (isEmptyScope(config.from)) {
+					add(
+						index,
+						"from",
+						"Specify at least one sender, or choose Any sender.",
+					);
+				}
+				break;
+			}
+			case "circleback":
 				break;
 			case "schedule":
 			case "webhook":

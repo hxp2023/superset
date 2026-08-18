@@ -1,6 +1,14 @@
 import type { TriggerConfigInput } from "@superset/shared/automation-triggers";
+import { circlebackProvider } from "./circleback/circleback";
 import { githubProvider } from "./github/github";
+import { gmailProvider } from "./google/gmail";
+import { googleCalendarProvider } from "./google/googleCalendar";
+import { linearProvider } from "./linear/linear";
+import { microsoftTeamsProvider } from "./microsoftTeams/microsoftTeams";
+import { notionProvider } from "./notion/notion";
 import { scheduleProvider } from "./schedule/schedule";
+import { sentryProvider } from "./sentry/sentry";
+import { slackProvider } from "./slack/slack";
 import type { TriggerProvider } from "./types";
 import { webhookProvider } from "./webhook/webhook";
 
@@ -20,7 +28,15 @@ export type {
 export const TRIGGER_PROVIDERS: TriggerProvider[] = [
 	scheduleProvider as TriggerProvider,
 	githubProvider as TriggerProvider,
+	sentryProvider as TriggerProvider,
+	linearProvider as TriggerProvider,
+	notionProvider as TriggerProvider,
+	slackProvider as TriggerProvider,
 	webhookProvider as TriggerProvider,
+	circlebackProvider as TriggerProvider,
+	microsoftTeamsProvider as TriggerProvider,
+	googleCalendarProvider as TriggerProvider,
+	gmailProvider as TriggerProvider,
 ];
 
 const byKind = new Map(TRIGGER_PROVIDERS.map((p) => [p.kind, p]));
