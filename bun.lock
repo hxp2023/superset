@@ -68,6 +68,7 @@
         "@better-auth/oauth-provider": "1.6.22",
         "@linear/sdk": "68.1.1",
         "@modelcontextprotocol/sdk": "1.30.0",
+        "@notionhq/client": "5.25.2",
         "@octokit/app": "16.1.2",
         "@octokit/rest": "22.0.1",
         "@octokit/webhooks": "14.2.0",
@@ -1124,7 +1125,9 @@
         "@anthropic-ai/sdk": "0.78.0",
         "@blaxel/core": "0.3.11",
         "@linear/sdk": "68.1.1",
+        "@notionhq/client": "5.25.2",
         "@octokit/app": "16.1.2",
+        "@slack/web-api": "7.15.0",
         "@superset/auth": "workspace:*",
         "@superset/db": "workspace:*",
         "@superset/email": "workspace:*",
@@ -2258,6 +2261,8 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
+
+    "@notionhq/client": ["@notionhq/client@5.25.2", "", {}, "sha512-kbaCZxiTxuWS7nTP29s3q9qbfMGd4cyfjMMdpVr7vK7SuB+0C6zBAP1sw8Gx/HKa+giWGnReuFovamN696Qy8w=="],
 
     "@nozbe/microfuzz": ["@nozbe/microfuzz@1.0.0", "", {}, "sha512-XKIg/guk+s1tkPTkHch9hfGOWgsKojT7BqSQddXTppOfVr3SWQhhTCqbgQaPTbppf9gc2kFeG0gpBZZ612UXHA=="],
 

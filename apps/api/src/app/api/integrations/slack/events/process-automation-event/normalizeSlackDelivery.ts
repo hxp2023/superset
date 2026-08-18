@@ -13,6 +13,8 @@ import {
 	slackEventNames,
 } from "@superset/shared/automation-matching";
 
+import type { NormalizedDelivery } from "@/lib/automations/ingestAutomationEvent";
+
 /**
  * The message subtypes that are still "a message in the channel". Edits,
  * deletes, joins and topic changes are also delivered as `message` events and
@@ -47,7 +49,7 @@ export type SlackAutomationEnvelope = {
  * matchable event triggers filter on, plus what the `automation_events` row
  * needs beyond that.
  */
-export type NormalizedSlackEvent = {
+type NormalizedSlackEvent = {
 	event: SlackMatchableEvent;
 	resourceKey: string;
 	title: string;
@@ -165,7 +167,7 @@ function matchable(
 	};
 }
 
-export function normalizeSlackEvent(
+function normalizeSlackEvent(
 	event: SlackAutomationEvent,
 ): NormalizedSlackEvent {
 	switch (event.type) {
@@ -220,4 +222,29 @@ export function normalizeSlackEvent(
 				url: `https://slack.com/archives/${event.channel.id}`,
 			};
 	}
+}
+
+export function normalizeSlackDelivery(params: {
+	organizationId: string;
+	connectionId: string;
+	envelope: SlackAutomationEnvelope;
+}): NormalizedDelivery {
+	const { envelope } = params;
+	const normalized = normalizeSlackEvent(envelope.event);
+	return {
+		event: {
+			organizationId: params.organizationId,
+			integrationConnectionId: params.connectionId,
+			provider: "slack",
+			eventType: normalized.event.eventType,
+			// Idempotent on Slack's event_id: a retried delivery is the same event.
+			externalEventId: envelope.event_id,
+			resourceKey: normalized.resourceKey,
+			title: normalized.title,
+			url: normalized.url,
+			actorLogin: normalized.event.actorLogin,
+			payload: envelope,
+		},
+		dispatch: { event: normalized.event },
+	};
 }

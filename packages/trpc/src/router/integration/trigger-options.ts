@@ -5,7 +5,9 @@ import { githubTriggerOptions } from "./github/trigger-options";
 import { googleTriggerOptions } from "./google/trigger-options";
 import { linearTriggerOptions } from "./linear/trigger-options";
 import { microsoftTeamsTriggerOptions } from "./microsoft-teams/trigger-options";
+import { notionTriggerOptions } from "./notion/trigger-options";
 import { sentryTriggerOptions } from "./sentry/trigger-options";
+import { slackTriggerOptions } from "./slack/trigger-options";
 import { verifyOrgMembership } from "./utils";
 
 /** One selectable value in a scope or actor chip. */
@@ -41,6 +43,9 @@ export const triggerOptionSources: Record<
 	sentry: sentryTriggerOptions,
 	microsoftTeams: microsoftTeamsTriggerOptions,
 	google: googleTriggerOptions,
+	notion: notionTriggerOptions,
+	sentry: sentryTriggerOptions,
+	slack: slackTriggerOptions,
 };
 
 export const triggerOptionsRouter = {
