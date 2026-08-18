@@ -24,10 +24,9 @@ export type AutomationEventInput = {
 	/**
 	 * What matching needs, stored so a failed QStash handoff can be retried by
 	 * the sweep. Null when the delivery names no product event: it is kept for
-	 * the record and never dispatched. Callers that still dispatch on their own
-	 * leave it unset; the sweep never touches those rows.
+	 * the record and never dispatched.
 	 */
-	dispatchInput?: AutomationEventDispatchInput | null;
+	dispatchInput: AutomationEventDispatchInput | null;
 };
 
 /**
@@ -61,9 +60,9 @@ export async function recordAutomationEvent(
 			// throw and lose the event.
 			payload: stripNullChars(input.payload) as Record<string, unknown>,
 			webhookEventId: input.webhookEventId ?? null,
-			dispatchInput: input.dispatchInput ?? null,
+			dispatchInput: input.dispatchInput,
 			// Nothing to dispatch is dispatched.
-			dispatchedAt: input.dispatchInput === null ? new Date() : null,
+			dispatchedAt: input.dispatchInput ? null : new Date(),
 		})
 		.onConflictDoNothing({
 			target: [

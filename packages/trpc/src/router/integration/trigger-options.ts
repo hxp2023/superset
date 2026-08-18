@@ -44,7 +44,6 @@ export const triggerOptionSources: Record<
 	microsoftTeams: microsoftTeamsTriggerOptions,
 	google: googleTriggerOptions,
 	notion: notionTriggerOptions,
-	sentry: sentryTriggerOptions,
 	slack: slackTriggerOptions,
 };
 
