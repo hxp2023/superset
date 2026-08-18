@@ -5,12 +5,12 @@ import { disconnectSentry } from "@superset/trpc/integrations/sentry";
 import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@/env";
-import { dispatchMatchingTriggers } from "@/lib/automations/dispatchMatchingTriggers";
+import { providerWebhook } from "@/lib/automations/providerWebhook";
 import {
 	matchableFrom,
-	recordSentryEvent,
+	normalizeSentryDelivery,
 	type SentryIssuePayload,
-} from "./recordSentryEvent";
+} from "./normalizeSentryDelivery";
 
 /**
  * Webhooks from the public Sentry integration.
@@ -57,97 +57,85 @@ async function connectionByInstallation(installationUuid: string) {
 	});
 }
 
-export async function POST(request: Request) {
-	const body = await request.text();
-	const signature = request.headers.get("sentry-hook-signature");
-	const timestamp = request.headers.get("sentry-hook-timestamp");
-	const resource = request.headers.get("sentry-hook-resource");
-	const requestId = request.headers.get("request-id");
+type SentryConnection = NonNullable<
+	Awaited<ReturnType<typeof connectionByInstallation>>
+>;
 
-	const secret = env.SENTRY_CLIENT_SECRET;
-	if (!secret || !signature || !signatureMatches(body, signature, secret)) {
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
-	}
-	if (!timestampFresh(timestamp)) {
-		return Response.json({ error: "Stale timestamp" }, { status: 401 });
-	}
-
-	let payload: SentryIssuePayload;
-	try {
-		payload = JSON.parse(body);
-	} catch {
-		return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
-	}
-
-	const installationUuid =
-		payload.installation?.uuid ?? payload.data?.installation?.uuid ?? null;
-
-	// installation.deleted / .created only touch connection state; a deletion
-	// drops the token so a later issue delivery for the same install is refused.
-	if (resource === "installation") {
-		if (installationUuid && payload.action === "deleted") {
-			const connection = await connectionByInstallation(installationUuid);
-			if (connection) {
-				await disconnectSentry(connection.id, "Integration removed in Sentry");
-			}
-		}
-		// installation.created is a no-op: the callback, which alone knows the
-		// Superset org, is what writes the connection.
-		return Response.json({ success: true });
-	}
-
-	if (resource !== "issue" || !payload.action) {
-		return Response.json({ success: true, message: "Ignored" });
-	}
-
-	const connection = installationUuid
-		? await connectionByInstallation(installationUuid)
-		: null;
-
-	// No active connection for this install: nothing to attribute the event to.
-	// 200 so Sentry does not retry what can never resolve.
-	if (!connection || connection.disconnectedAt) {
-		return Response.json({ success: true, message: "No connection" });
-	}
-
-	const event = matchableFrom(payload, `issue.${payload.action}`);
-	const deliveryId = requestId ?? `sentry-${crypto.randomUUID()}`;
-
-	const recorded = await recordSentryEvent({
-		organizationId: connection.organizationId,
-		connectionId: connection.id,
-		event,
-		deliveryId,
-		payload,
-	});
-	if (!recorded) {
-		console.log(
-			"[sentry/webhook] Not recorded as automation event (duplicate delivery):",
-			deliveryId,
-		);
-		return Response.json({ success: true, message: "duplicate delivery" });
-	}
-
-	// Nothing in the product names this action, so there is nothing to match.
-	if (event.names.length === 0) {
-		console.log(
-			`[sentry/webhook] Unhandled action ${resource}.${payload.action}, recorded only:`,
-			deliveryId,
-		);
-		return Response.json({ success: true, message: "Recorded" });
-	}
-
-	const result = await dispatchMatchingTriggers({
-		organizationId: connection.organizationId,
-		eventId: recorded.id,
-		event,
-	});
-	if (result.matched > 0) {
-		console.log(
-			`[sentry/webhook] ${result.matched}/${result.considered} triggers matched:`,
-			deliveryId,
-		);
-	}
-
-	return Response.json({ success: true });
+function installationUuidOf(payload: SentryIssuePayload): string | null {
+	return payload.installation?.uuid ?? payload.data?.installation?.uuid ?? null;
 }
+
+export const POST = providerWebhook<SentryIssuePayload, SentryConnection>({
+	provider: "sentry",
+	database: db,
+
+	verify: ({ rawBody, headers }) => {
+		const secret = env.SENTRY_CLIENT_SECRET;
+		const signature = headers.get("sentry-hook-signature");
+		if (
+			!secret ||
+			!signature ||
+			!signatureMatches(rawBody, signature, secret)
+		) {
+			return Response.json({ error: "Invalid signature" }, { status: 401 });
+		}
+		if (!timestampFresh(headers.get("sentry-hook-timestamp"))) {
+			return Response.json({ error: "Stale timestamp" }, { status: 401 });
+		}
+	},
+
+	connections: async (payload, { headers }) => {
+		const resource = headers.get("sentry-hook-resource");
+		const installationUuid = installationUuidOf(payload);
+
+		// installation.deleted / .created only touch connection state; a
+		// deletion drops the token so a later issue delivery for the same
+		// install is refused.
+		if (resource === "installation") {
+			if (installationUuid && payload.action === "deleted") {
+				const connection = await connectionByInstallation(installationUuid);
+				if (connection) {
+					await disconnectSentry(
+						connection.id,
+						"Integration removed in Sentry",
+					);
+				}
+			}
+			// installation.created is a no-op: the callback, which alone knows
+			// the Superset org, is what writes the connection.
+			return Response.json({ success: true });
+		}
+		if (resource !== "issue" || !payload.action) {
+			return Response.json({ success: true, message: "Ignored" });
+		}
+
+		const connection = installationUuid
+			? await connectionByInstallation(installationUuid)
+			: null;
+		// No active connection for this install: nothing to attribute the
+		// event to, and nothing a retry could resolve.
+		if (!connection || connection.disconnectedAt) return [];
+		return [connection];
+	},
+
+	normalize: (payload, connection, { headers }) => {
+		const event = matchableFrom(payload, `issue.${payload.action}`);
+		const deliveryId =
+			headers.get("request-id") ?? `sentry-${crypto.randomUUID()}`;
+		if (event.names.length === 0) {
+			console.log(
+				`[sentry/webhook] Unhandled action issue.${payload.action}, recorded only:`,
+				deliveryId,
+			);
+		}
+		return normalizeSentryDelivery({
+			organizationId: connection.organizationId,
+			connectionId: connection.id,
+			event,
+			deliveryId,
+			payload,
+		});
+	},
+
+	connectionId: (connection) => connection.id,
+});

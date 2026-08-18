@@ -1,10 +1,9 @@
-import { db } from "@superset/db/client";
 import {
 	type SentryMatchableEvent,
 	sentryEventNames,
 } from "@superset/shared/automation-matching";
 
-import { recordAutomationEvent } from "@/lib/automations/recordAutomationEvent";
+import type { NormalizedDelivery } from "@/lib/automations/ingestAutomationEvent";
 
 /**
  * Records a Sentry issue webhook as an `automation_events` row.
@@ -83,25 +82,30 @@ function titleFor(payload: SentryIssuePayload, eventType: string): string {
 	);
 }
 
-export async function recordSentryEvent(params: {
+export function normalizeSentryDelivery(params: {
 	organizationId: string;
 	connectionId: string;
 	event: SentryMatchableEvent;
 	deliveryId: string;
 	payload: SentryIssuePayload;
-}): Promise<{ id: string } | null> {
+}): NormalizedDelivery {
 	const { payload, event } = params;
-	// A redelivery of the same Sentry request id is the same event.
-	return recordAutomationEvent(db, {
-		organizationId: params.organizationId,
-		integrationConnectionId: params.connectionId,
-		provider: "sentry",
-		eventType: event.eventType,
-		externalEventId: params.deliveryId,
-		resourceKey: resourceKeyFor(payload),
-		title: titleFor(payload, event.eventType),
-		url: payload.data?.issue?.web_url ?? payload.data?.issue?.permalink ?? null,
-		actorLogin: event.actorLogin,
-		payload,
-	});
+	return {
+		event: {
+			organizationId: params.organizationId,
+			integrationConnectionId: params.connectionId,
+			provider: "sentry",
+			eventType: event.eventType,
+			// A redelivery of the same Sentry request id is the same event.
+			externalEventId: params.deliveryId,
+			resourceKey: resourceKeyFor(payload),
+			title: titleFor(payload, event.eventType),
+			url:
+				payload.data?.issue?.web_url ?? payload.data?.issue?.permalink ?? null,
+			actorLogin: event.actorLogin,
+			payload,
+		},
+		// An action nothing in the product names is recorded, never matched.
+		dispatch: event.names.length > 0 ? { event } : null,
+	};
 }

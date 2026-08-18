@@ -1,8 +1,20 @@
+import type { MatchableEvent } from "@superset/shared/automation-matching";
 import type {
 	TriggerActor as TriggerConfigActor,
 	TriggerConfigInput,
 	TriggerScope as TriggerConfigScope,
 } from "@superset/shared/automation-triggers";
+
+/**
+ * Everything `dispatchMatchingTriggers` needs for one automation_events row:
+ * the provider-normalized event, and the narrowing for inbound URLs that
+ * address one automation (raw webhook) or one trigger (Circleback).
+ */
+export type AutomationEventDispatchInput = {
+	event: MatchableEvent;
+	automationId?: string;
+	triggerId?: string;
+};
 
 export type LinearConfig = {
 	provider: "linear";

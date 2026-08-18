@@ -37,6 +37,7 @@ import {
 } from "./enums";
 import { githubRepositories } from "./github";
 import type {
+	AutomationEventDispatchInput,
 	IntegrationConfig,
 	TriggerConfig,
 	UserIdentityMetadata,
@@ -933,6 +934,16 @@ export const automationEvents = pgTable(
 		receivedAt: timestamp("received_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
+
+		// What the dispatcher needs to match this event again — the normalized
+		// matchable event plus any automation/trigger narrowing — so a delivery
+		// whose QStash publish failed can be re-dispatched without the provider's
+		// normalizer. Null only for rows written before this existed.
+		dispatchInput: jsonb("dispatch_input").$type<AutomationEventDispatchInput>(),
+		// Set once every matched run has been handed to QStash (or nothing
+		// matched). Null past a grace period means the handoff failed and the
+		// sweep should retry it.
+		dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
 	},
 	(t) => [
 		// Connection-scoped: two orgs can legitimately receive the same
@@ -940,6 +951,10 @@ export const automationEvents = pgTable(
 		unique("automation_events_dedup_unique")
 			.on(t.integrationConnectionId, t.provider, t.externalEventId)
 			.nullsNotDistinct(),
+		// The re-dispatch sweep reads only undispatched rows.
+		index("automation_events_undispatched_idx")
+			.on(t.receivedAt)
+			.where(sql`${t.dispatchedAt} IS NULL`),
 		index("automation_events_org_received_idx").on(
 			t.organizationId,
 			t.receivedAt,

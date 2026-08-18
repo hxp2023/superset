@@ -1,4 +1,7 @@
-import { automationEvents } from "@superset/db/schema";
+import {
+	type AutomationEventDispatchInput,
+	automationEvents,
+} from "@superset/db/schema";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { stripNullChars } from "@/lib/strip-null-chars";
 
@@ -18,6 +21,13 @@ export type AutomationEventInput = {
 	actorIsExternal?: boolean | null;
 	payload: unknown;
 	webhookEventId?: string | null;
+	/**
+	 * What matching needs, stored so a failed QStash handoff can be retried by
+	 * the sweep. Null when the delivery names no product event: it is kept for
+	 * the record and never dispatched. Callers that still dispatch on their own
+	 * leave it unset; the sweep never touches those rows.
+	 */
+	dispatchInput?: AutomationEventDispatchInput | null;
 };
 
 /**
@@ -51,6 +61,9 @@ export async function recordAutomationEvent(
 			// throw and lose the event.
 			payload: stripNullChars(input.payload) as Record<string, unknown>,
 			webhookEventId: input.webhookEventId ?? null,
+			dispatchInput: input.dispatchInput ?? null,
+			// Nothing to dispatch is dispatched.
+			dispatchedAt: input.dispatchInput === null ? new Date() : null,
 		})
 		.onConflictDoNothing({
 			target: [

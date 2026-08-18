@@ -7,8 +7,8 @@ import {
 import { nextOccurrenceAfter } from "@superset/shared/rrule";
 import { Client, Receiver } from "@upstash/qstash";
 import { and, eq, lte } from "drizzle-orm";
-
 import { env } from "@/env";
+import { redispatchUndispatched } from "@/lib/automations/redispatchUndispatched";
 
 export const dynamic = "force-dynamic";
 
@@ -175,9 +175,13 @@ export async function POST(request: Request): Promise<Response> {
 		);
 	}
 
+	// The same tick retries event handoffs that never reached QStash.
+	const redispatched = await redispatchUndispatched();
+
 	return Response.json({
 		enqueued: planned.length,
 		advanceFailed: advanceFailures.length,
 		unusable: unusable.length,
+		redispatched,
 	});
 }

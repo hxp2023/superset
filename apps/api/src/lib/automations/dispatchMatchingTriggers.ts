@@ -1,5 +1,6 @@
 import { dbWs } from "@superset/db/client";
 import {
+	automationEvents,
 	automations,
 	automationTriggers,
 	userIdentities,
@@ -118,6 +119,7 @@ export async function dispatchMatchingTriggers(params: {
 	);
 
 	if (matched.length === 0) {
+		await markDispatched(params.eventId);
 		return { matched: 0, considered: candidates.length };
 	}
 
@@ -137,5 +139,18 @@ export async function dispatchMatchingTriggers(params: {
 		})),
 	);
 
+	await markDispatched(params.eventId);
 	return { matched: matched.length, considered: candidates.length };
+}
+
+/**
+ * The handoff to QStash is the one step that cannot be retried by the sender
+ * or by QStash itself, so the row records that it happened. Rows left
+ * unmarked are picked up by the re-dispatch sweep.
+ */
+async function markDispatched(eventId: string) {
+	await dbWs
+		.update(automationEvents)
+		.set({ dispatchedAt: new Date() })
+		.where(eq(automationEvents.id, eventId));
 }
