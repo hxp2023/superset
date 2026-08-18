@@ -65,9 +65,13 @@
 				"app_home_opened",
 				"assistant_thread_context_changed",
 				"assistant_thread_started",
+				"channel_created",
 				"entity_details_requested",
 				"link_shared",
-				"message.im"
+				"message.channels",
+				"message.groups",
+				"message.im",
+				"reaction_added"
 			]
 		},
 		"interactivity": {
