@@ -1,7 +1,9 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
+import { notionTriggerOptions } from "./notion/trigger-options";
 import { sentryTriggerOptions } from "./sentry/trigger-options";
+import { slackTriggerOptions } from "./slack/trigger-options";
 import { verifyOrgMembership } from "./utils";
 
 /** One selectable value in a scope or actor chip. */
@@ -32,7 +34,9 @@ export const triggerOptionSources: Record<
 	string,
 	Record<string, TriggerOptionSource>
 > = {
+	notion: notionTriggerOptions,
 	sentry: sentryTriggerOptions,
+	slack: slackTriggerOptions,
 };
 
 export const triggerOptionsRouter = {
