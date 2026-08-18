@@ -21,19 +21,19 @@ const OPTIONS: Array<{
 	{
 		value: "bot",
 		label: "Superset",
-		description: "Always pushes and opens pull requests as the Superset app.",
+		description: "Always opens PRs as Superset",
 	},
 	{
 		value: "user_or_bot",
 		label: "User",
 		description:
-			"As the member when their GitHub account is connected, otherwise as Superset.",
+			"Opens as the user when their Git account is connected, otherwise as Superset",
 	},
 	{
 		value: "user_only",
 		label: "User only",
 		description:
-			"As the member; refused if their GitHub account isn't connected. Automations still run as Superset.",
+			"Opens as the user; fails if their Git account isn't connected. Automations and service users fall back to Superset",
 	},
 ];
 
@@ -67,8 +67,6 @@ export function ActorPolicyControl({
 		}),
 	);
 
-	const selected = OPTIONS.find((option) => option.value === current);
-
 	return (
 		<div className="flex flex-col gap-2">
 			<Select
@@ -86,12 +84,16 @@ export function ActorPolicyControl({
 				<SelectContent>
 					{OPTIONS.map((option) => (
 						<SelectItem key={option.value} value={option.value}>
-							{option.label}
+							<div className="flex flex-col items-start gap-0.5">
+								<span>{option.label}</span>
+								<span className="max-w-sm whitespace-normal text-xs text-muted-foreground">
+									{option.description}
+								</span>
+							</div>
 						</SelectItem>
 					))}
 				</SelectContent>
 			</Select>
-			<p className="text-sm text-muted-foreground">{selected?.description}</p>
 			{!canEdit && (
 				<p className="text-xs text-muted-foreground">
 					Only organization admins can change this.

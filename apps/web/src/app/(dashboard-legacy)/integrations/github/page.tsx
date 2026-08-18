@@ -136,10 +136,9 @@ export default async function GitHubIntegrationPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Act on GitHub as</CardTitle>
+					<CardTitle>Open PRs as</CardTitle>
 					<CardDescription>
-						Whose account pushes and opens pull requests from Superset when a
-						member has connected their own.
+						Author identity for Superset-created pushes and PRs
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
