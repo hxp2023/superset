@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { hasFiniteRecurrence } from "./rrule";
+import { hasFiniteRecurrence, rruleProblem } from "./rrule";
 
 /**
  * Trigger validation, shared by the editor and the API so a form can block Save
@@ -537,12 +537,20 @@ export function describeTriggerProblems(
 		}
 
 		// A schedule's rule is about its recurrence, not a scope, so it stays code.
-		if (config.kind === "schedule" && hasFiniteRecurrence(config.rrule)) {
-			problems.push({
-				index,
-				field: "rrule",
-				message: "Schedules repeat — remove COUNT or UNTIL.",
-			});
+		if (config.kind === "schedule") {
+			if (rruleProblem(config.rrule) === "unparseable") {
+				problems.push({
+					index,
+					field: "rrule",
+					message: "Enter a valid recurrence rule.",
+				});
+			} else if (hasFiniteRecurrence(config.rrule)) {
+				problems.push({
+					index,
+					field: "rrule",
+					message: "Schedules repeat — remove COUNT or UNTIL.",
+				});
+			}
 		}
 	});
 

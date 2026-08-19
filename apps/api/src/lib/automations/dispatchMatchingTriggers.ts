@@ -83,7 +83,11 @@ export async function dispatchMatchingTriggers(params: {
 			),
 		);
 
-	if (candidates.length === 0) return { matched: 0, considered: 0 };
+	if (candidates.length === 0) {
+		// Done, not stuck: without the mark the sweep would retry it forever.
+		await markDispatched(params.eventId);
+		return { matched: 0, considered: 0 };
+	}
 
 	const matched = candidates.filter(
 		(candidate) => triggerMatches(candidate.config, event).matches,

@@ -1,22 +1,34 @@
 const DEFAULT_MAX_BYTES = 1024 * 1024;
 
 /**
- * Reads the raw body with a size cap. The Content-Length check is cheap and
- * refuses before reading; the byte check after reading is the one that holds,
- * since the header is sender-controlled.
+ * Reads the raw body with a size cap enforced while streaming, so an
+ * oversized body is refused without ever being held in memory. The
+ * Content-Length pre-check just refuses honest senders cheaply.
  */
 export async function cappedBody(
 	request: Request,
 	maxBytes = DEFAULT_MAX_BYTES,
 ): Promise<string | Response> {
+	const tooLarge = () =>
+		Response.json({ error: "Body too large" }, { status: 413 });
 	if (Number(request.headers.get("content-length")) > maxBytes) {
-		return Response.json({ error: "Body too large" }, { status: 413 });
+		return tooLarge();
 	}
-	const body = await request.text();
-	if (Buffer.byteLength(body) > maxBytes) {
-		return Response.json({ error: "Body too large" }, { status: 413 });
+	if (!request.body) return "";
+	const reader = request.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let received = 0;
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		received += value.byteLength;
+		if (received > maxBytes) {
+			await reader.cancel();
+			return tooLarge();
+		}
+		chunks.push(value);
 	}
-	return body;
+	return Buffer.concat(chunks).toString("utf8");
 }
 
 /** JSON.parse that answers 400 instead of throwing. */

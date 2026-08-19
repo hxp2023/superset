@@ -117,7 +117,13 @@ export async function POST(request: Request): Promise<Response> {
 	}
 
 	if (planned.length === 0) {
-		return Response.json({ enqueued: 0, unusable: unusable.length });
+		// The event-handoff sweep still runs on a tick with no due schedules.
+		const redispatched = await redispatchUndispatched();
+		return Response.json({
+			enqueued: 0,
+			unusable: unusable.length,
+			redispatched,
+		});
 	}
 
 	await qstash.batchJSON(
