@@ -1,12 +1,11 @@
+import { Button } from "@superset/ui/button";
 import { ScrollArea } from "@superset/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { LuExternalLink, LuPlus } from "react-icons/lu";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
-import { resolveProjectFilterParams } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter/project-filter-utils";
-import { WorkItemDetailHeader } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailHeader";
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
 import { useProjectHost } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectHost";
 import { PullRequestChecksSection } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestChecksSection";
@@ -21,9 +20,6 @@ import {
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
 import { Route as PullRequestsLayoutRoute } from "../layout";
-import { pullRequestsSearchFromFilters } from "../stores/pullRequestsFilterStore";
-import { normalizeAuthorFilter } from "../utils/normalizeAuthorFilter";
-import { normalizePullRequestReviewFilter } from "../utils/pullRequestReviewFilter";
 
 export const Route = createFileRoute(
 	"/_authenticated/_dashboard/pull-requests/$prNumber/",
@@ -35,7 +31,6 @@ function PullRequestDetailPage() {
 	const { prNumber: prNumberRaw } = Route.useParams();
 	const prNumber = parsePositiveIntegerParam(prNumberRaw);
 	const search = PullRequestsLayoutRoute.useSearch();
-	const navigate = useNavigate();
 	const projectId = search.project ?? null;
 	const {
 		hostId,
@@ -49,26 +44,6 @@ function PullRequestDetailPage() {
 	);
 	const resetDraft = useNewWorkspaceDraftStore((state) => state.resetDraft);
 	const openModal = useOpenNewWorkspaceModal();
-
-	// `project` identifies this PR's repo, not the list filter: falling back
-	// to it would rewrite an "all repositories" view to a single repo on back.
-	const backSearch = useMemo(
-		() =>
-			pullRequestsSearchFromFilters({
-				search: search.search ?? "",
-				projectFilters: resolveProjectFilterParams(search.projects, null, []),
-				authorFilter: normalizeAuthorFilter(search.author),
-				reviewFilter: normalizePullRequestReviewFilter(search.review),
-				includeClosed: search.state === "all",
-			}),
-		[
-			search.author,
-			search.projects,
-			search.review,
-			search.search,
-			search.state,
-		],
-	);
 
 	const { data, isLoading, error, refetch } = useQuery({
 		queryKey: ["pull-request-detail", projectId, hostUrl, prNumber],
@@ -84,10 +59,6 @@ function PullRequestDetailPage() {
 		staleTime: 30_000,
 		gcTime: 10 * 60_000,
 	});
-
-	const handleBack = () => {
-		navigate({ to: "/pull-requests", search: backSearch });
-	};
 
 	const handleAddToWorkspace = () => {
 		if (!projectId || !hostId || !data) return;
@@ -107,16 +78,46 @@ function PullRequestDetailPage() {
 	const state = data
 		? normalizePRState(data.state, data.isDraft)
 		: defaultState;
+	// The list pane is always visible in the split view (or reachable via the
+	// list-collapse toggle in the shared layout), so there's no "back"
+	// affordance here — just the PR identity and its actions.
+	const itemNumber = data?.number ?? prNumber;
 	const header = (
-		<WorkItemDetailHeader
-			itemNumber={data?.number ?? prNumber}
-			icon={<PRIcon state={state} className="size-4 shrink-0" />}
-			backLabel="Back to pull requests"
-			externalLabel="Open pull request in GitHub"
-			url={data?.url ?? null}
-			onBack={handleBack}
-			onAddToWorkspace={data ? handleAddToWorkspace : null}
-		/>
+		<div className="@container flex shrink-0 items-center gap-2 border-b border-border px-4 py-3 @md:gap-3 @md:px-6 @md:py-4">
+			<PRIcon state={state} className="size-4 shrink-0" />
+			<span className="min-w-0 truncate font-mono text-sm tabular-nums text-muted-foreground">
+				{itemNumber === null ? "#—" : `#${itemNumber}`}
+			</span>
+			<div className="min-w-0 flex-1" />
+			<div className="ml-auto flex shrink-0 items-center gap-1">
+				{data?.url && (
+					<Button variant="ghost" size="icon" className="size-8" asChild>
+						<a
+							href={data.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							aria-label="Open pull request in GitHub"
+							title="Open pull request in GitHub"
+						>
+							<LuExternalLink className="size-4" />
+						</a>
+					</Button>
+				)}
+				{data && (
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-8 gap-1.5 px-2 @md:px-3"
+						onClick={handleAddToWorkspace}
+						aria-label="Add to workspace"
+						title="Add to workspace"
+					>
+						<LuPlus className="size-4" />
+						<span className="hidden @md:inline">Add to workspace</span>
+					</Button>
+				)}
+			</div>
+		</div>
 	);
 
 	if (prNumber === null) {
@@ -202,7 +203,7 @@ function PullRequestDetailPage() {
 		<div className="@container flex min-h-0 flex-1 flex-col">
 			{header}
 			<ScrollArea className="min-h-0 flex-1">
-				<div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-6 @md:px-6 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:py-8">
+				<div className="grid w-full gap-8 px-4 py-6 @md:px-6 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:py-8">
 					<article className="min-w-0">
 						<div className="mb-4 flex min-w-0 items-start gap-3">
 							<PRIcon state={state} className="mt-1 size-5 shrink-0" />
