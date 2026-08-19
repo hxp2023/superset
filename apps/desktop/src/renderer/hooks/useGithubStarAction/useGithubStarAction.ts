@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 
 export type GithubStarActionState =
@@ -14,6 +15,82 @@ export type GithubStarActionState =
  */
 export function canActivateStarAction(state: GithubStarActionState): boolean {
 	return state === "not_starred";
+}
+
+// How long a fresh star confirmation still counts as "just happened" for
+// useJustStarredWindow — long enough for AnimatedStarButton's confetti/label
+// celebration to finish before a surface that normally hides on "starred"
+// (GitHubStarPill, StarNagCard) unmounts it mid-animation.
+export const STAR_SUCCESS_ANIMATION_MS = 1700;
+
+/**
+ * Whether `state` is "starred" as a direct result of an action taken in this
+ * session — true for STAR_SUCCESS_ANIMATION_MS after the transition, so a
+ * surface that normally hides once starred can instead keep showing the
+ * button (with its confetti/label celebration) for that window before
+ * hiding. Not true for a repo that was *already* starred on mount — only a
+ * live not_starred/unknown -> starred transition counts.
+ *
+ * Centralizes a subtlety two call sites (GitHubStarPill, StarNagCard) used
+ * to reimplement by hand, with a real risk of drifting: the "just
+ * transitioned" value has to be computed twice — once synchronously during
+ * render (so a caller's visibility check can't lag a render behind the state
+ * flip) and once inside an effect keyed on `state` rather than on the
+ * render-time value itself (an effect keyed on the render-time value would
+ * see it flip back to false on the very next render and cancel its own
+ * just-started timer before it ever fires).
+ */
+export function useJustStarredWindow(state: GithubStarActionState): boolean {
+	const prevStateRef = useRef(state);
+	const prevState = prevStateRef.current;
+	prevStateRef.current = state;
+	const justTransitioned =
+		(prevState === "not_starred" || prevState === "unknown") &&
+		state === "starred";
+
+	const [staysVisible, setStaysVisible] = useState(false);
+	const prevStateForTimerRef = useRef(state);
+	useEffect(() => {
+		const prev = prevStateForTimerRef.current;
+		prevStateForTimerRef.current = state;
+		const justTransitionedForTimer =
+			(prev === "not_starred" || prev === "unknown") && state === "starred";
+		if (!justTransitionedForTimer) return;
+		setStaysVisible(true);
+		const timer = setTimeout(
+			() => setStaysVisible(false),
+			STAR_SUCCESS_ANIMATION_MS,
+		);
+		return () => clearTimeout(timer);
+	}, [state]);
+
+	return state === "starred" && (justTransitioned || staysVisible);
+}
+
+/**
+ * Fires `onShow` the first time `active` becomes true for a given `key`, and
+ * resets so it fires again the next time `active` goes true -> false ->
+ * true (or `key` changes while still active) — for once-per-showing "shown"
+ * impression tracking. `onShow` doesn't need to be memoized; only its latest
+ * value is ever called.
+ */
+export function useTrackShownOnce(
+	active: boolean,
+	onShow: () => void,
+	key: unknown = true,
+) {
+	const trackedKeyRef = useRef<unknown>(null);
+	const onShowRef = useRef(onShow);
+	onShowRef.current = onShow;
+	useEffect(() => {
+		if (!active) {
+			trackedKeyRef.current = null;
+			return;
+		}
+		if (trackedKeyRef.current === key) return;
+		trackedKeyRef.current = key;
+		onShowRef.current();
+	}, [active, key]);
 }
 
 // GitHub's starred-check API has been observed to flap between 204 and 404 on

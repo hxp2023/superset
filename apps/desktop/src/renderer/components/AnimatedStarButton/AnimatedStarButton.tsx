@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { GithubStarActionState } from "renderer/hooks/useGithubStarAction";
+import { STAR_SUCCESS_ANIMATION_MS } from "renderer/hooks/useGithubStarAction";
 import "./AnimatedStarButton.css";
 import { PlusMark } from "./components/PlusMark";
 
@@ -20,11 +21,6 @@ const CORNERS = ["top-left", "top-right", "bottom-right", "bottom-left"];
 // here would collide with that meaning.
 const CONFETTI_COLORS = ["#fbbf24", "#34d399", "#fbbf24"];
 const PARTICLE_COUNT = 8;
-
-// How long the post-star celebration (icon pop + confetti) stays visible.
-// Shared with GitHubStarPill and StarNagCard so they keep rendering the
-// button — instead of unmounting it — for exactly as long as this plays.
-export const STAR_SUCCESS_ANIMATION_MS = 1700;
 
 interface Particle {
 	id: number;

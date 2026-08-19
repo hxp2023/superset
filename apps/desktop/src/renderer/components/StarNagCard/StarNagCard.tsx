@@ -2,15 +2,13 @@ import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { SidebarCard } from "@superset/ui/sidebar-card";
 import { AnimatePresence, motion } from "framer-motion";
 import { useFeatureFlagEnabled } from "posthog-js/react";
-import { useEffect, useReducer, useRef, useState } from "react";
-import {
-	AnimatedStarButton,
-	STAR_SUCCESS_ANIMATION_MS,
-} from "renderer/components/AnimatedStarButton";
-import type { GithubStarActionState } from "renderer/hooks/useGithubStarAction";
+import { useEffect, useReducer } from "react";
+import { AnimatedStarButton } from "renderer/components/AnimatedStarButton";
 import {
 	canActivateStarAction,
 	useGithubStarAction,
+	useJustStarredWindow,
+	useTrackShownOnce,
 } from "renderer/hooks/useGithubStarAction";
 import { track } from "renderer/lib/analytics";
 import { useStarNagStore } from "renderer/stores/star-nag";
@@ -58,41 +56,17 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 	// Starring calls markCompleted() internally, which flips shouldShow to
 	// false immediately — without this, the card would unmount before the
 	// AnimatedStarButton's confetti/label animation gets a chance to play.
-	const [staysVisibleForAnimation, setStaysVisibleForAnimation] =
-		useState(false);
-	const prevStateRef = useRef<GithubStarActionState | null>(null);
+	const celebrating = useJustStarredWindow(state);
 
-	useEffect(() => {
-		const prev = prevStateRef.current;
-		prevStateRef.current = state;
-		const justStarred =
-			(prev === "not_starred" || prev === "unknown") && state === "starred";
-		if (justStarred) {
-			setStaysVisibleForAnimation(true);
-			const timer = setTimeout(
-				() => setStaysVisibleForAnimation(false),
-				STAR_SUCCESS_ANIMATION_MS,
-			);
-			return () => clearTimeout(timer);
-		}
-	}, [state]);
-
-	const renderVisible = shouldShow || staysVisibleForAnimation;
-	const isVisible = !isCollapsed && isEnabled && shouldShow;
+	const renderVisible = shouldShow || celebrating;
+	const isVisible = Boolean(!isCollapsed && isEnabled && shouldShow);
 
 	// Fire at most once per visible showing — without the reset, every
-	// sidebar collapse/expand cycle re-triggers this effect and inflates
-	// impressions relative to the other surfaces' once-per-showing trackers.
-	const trackedShownRef = useRef(false);
-	useEffect(() => {
-		if (!isVisible) {
-			trackedShownRef.current = false;
-			return;
-		}
-		if (trackedShownRef.current) return;
-		trackedShownRef.current = true;
-		track("star_nag_shown", { surface: "card" });
-	}, [isVisible]);
+	// sidebar collapse/expand cycle would inflate impressions relative to the
+	// other surfaces' once-per-showing trackers.
+	useTrackShownOnce(isVisible, () =>
+		track("star_nag_shown", { surface: "card" }),
+	);
 
 	function handleAction() {
 		track("star_nag_starred", { surface: "card" });
@@ -125,7 +99,7 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 						on, so the button doesn't render for those — the card chrome
 						(title, description, dismiss) stays up regardless, same pattern
 						as StarNagToast. */}
-						{(canActivateStarAction(state) || state === "starred") && (
+						{(canActivateStarAction(state) || celebrating) && (
 							<AnimatedStarButton
 								state={state}
 								busy={isBusy}
