@@ -1,3 +1,4 @@
+import { isEmptyScope } from "@superset/shared/automation-triggers";
 import { SiGmail } from "react-icons/si";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { SelectChip } from "../../TriggerSentence/components/SelectChip";
@@ -39,7 +40,7 @@ function renderSlot(
 					key={index}
 					scope={config.to}
 					// Clearing an optional filter means "any", not "none".
-					onChange={(v) => set({ to: v ?? { mode: "any" } })}
+					onChange={(v) => set({ to: isEmptyScope(v) ? { mode: "any" } : v })}
 					options={[]}
 					emptyLabel="Any recipient"
 					anyLabel="Any recipient"
@@ -63,7 +64,9 @@ function renderSlot(
 				<ScopeChip
 					key={index}
 					scope={config.labels}
-					onChange={(v) => set({ labels: v ?? { mode: "any" } })}
+					onChange={(v) =>
+						set({ labels: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={options.google?.labels ?? []}
 					emptyLabel="Any label"
 					anyLabel="Any label"

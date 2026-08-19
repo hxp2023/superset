@@ -1,5 +1,4 @@
 import { BsMicrosoftTeams } from "react-icons/bs";
-import { ActorChip } from "../../TriggerSentence/components/ActorChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
 import { Sentence } from "../components/Sentence";
@@ -46,12 +45,14 @@ function renderSlot(
 			);
 		case "actor":
 			return (
-				<ActorChip
+				<ScopeChip
 					key={index}
-					actor={config.actor}
+					scope={config.actor}
 					onChange={(v) => set({ actor: v })}
 					className={mark("actor")}
-					people={options.microsoftTeams?.people ?? []}
+					options={options.microsoftTeams?.people ?? []}
+					emptyLabel="Select people"
+					anyLabel="Anyone"
 					disabled={disabled}
 				/>
 			);

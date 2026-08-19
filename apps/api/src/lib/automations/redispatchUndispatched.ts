@@ -45,6 +45,7 @@ export async function redispatchUndispatched(): Promise<{
 				event: row.dispatchInput.event,
 				automationId: row.dispatchInput.automationId,
 				triggerId: row.dispatchInput.triggerId,
+				ownerUserId: row.dispatchInput.ownerUserId,
 			});
 		} catch (error) {
 			failed++;

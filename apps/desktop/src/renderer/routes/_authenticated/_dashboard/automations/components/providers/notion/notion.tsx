@@ -1,5 +1,5 @@
+import { isEmptyScope } from "@superset/shared/automation-triggers";
 import { SiNotion } from "react-icons/si";
-import { ActorChip } from "../../TriggerSentence/components/ActorChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { Sentence } from "../components/Sentence";
 import type { SentenceContext, TriggerProvider } from "../types";
@@ -39,7 +39,9 @@ function renderSlot(
 					key={index}
 					scope={c.pages}
 					// Clearing an optional filter means "any", not "none".
-					onChange={(v) => set({ pages: v ?? { mode: "any" } })}
+					onChange={(v) =>
+						set({ pages: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={[]}
 					emptyLabel="Any page"
 					anyLabel="Any page"
@@ -48,23 +50,27 @@ function renderSlot(
 			);
 		case "actor":
 			return (
-				<ActorChip
+				<ScopeChip
 					key={index}
-					actor={c.actor}
+					scope={c.actor}
 					onChange={(v) => set({ actor: v })}
 					className={mark("actor")}
-					people={options.notion?.people ?? []}
+					options={options.notion?.people ?? []}
+					emptyLabel="Select people"
+					anyLabel="Anyone"
 					disabled={disabled}
 				/>
 			);
 		case "mentionedUser":
 			return (
-				<ActorChip
+				<ScopeChip
 					key={index}
-					actor={c.mentionedUser}
+					scope={c.mentionedUser}
 					onChange={(v) => set({ mentionedUser: v })}
 					className={mark("mentionedUser")}
-					people={options.notion?.people ?? []}
+					options={options.notion?.people ?? []}
+					emptyLabel="Select people"
+					anyLabel="Anyone"
 					disabled={disabled}
 				/>
 			);

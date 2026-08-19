@@ -14,8 +14,8 @@ type UpsertIdentityInput = {
 };
 
 /**
- * Links an external account to a Superset user — what lets "me" on a trigger
- * resolve. Re-linking claims the account for whoever linked it last.
+ * Links an external account to a Superset user. Re-linking claims the account
+ * for whoever linked it last.
  */
 export async function upsertIdentity(
 	input: UpsertIdentityInput,

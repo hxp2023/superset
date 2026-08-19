@@ -1,6 +1,5 @@
 import type { MatchableEvent } from "@superset/shared/automation-matching";
 import type {
-	TriggerActor as TriggerConfigActor,
 	TriggerConfigInput,
 	TriggerScope as TriggerConfigScope,
 } from "@superset/shared/automation-triggers";
@@ -14,6 +13,12 @@ export type AutomationEventDispatchInput = {
 	event: MatchableEvent;
 	automationId?: string;
 	triggerId?: string;
+	/**
+	 * Restricts matching to one member's automations. Set by providers whose
+	 * connection is per member (Google): a member's calendar and mail events
+	 * must fire only that member's automations, never fan across the org.
+	 */
+	ownerUserId?: string;
 };
 
 export type LinearConfig = {
@@ -111,7 +116,6 @@ export type IntegrationConfig =
  */
 export type TriggerConfig = TriggerConfigInput;
 export type TriggerScope = TriggerConfigScope;
-export type TriggerActor = TriggerConfigActor;
 
 export type ScheduleTriggerConfig = Extract<
 	TriggerConfig,

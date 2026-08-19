@@ -1,5 +1,5 @@
+import { isEmptyScope } from "@superset/shared/automation-triggers";
 import { SiLinear } from "react-icons/si";
-import { ActorChip } from "../../TriggerSentence/components/ActorChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { Sentence } from "../components/Sentence";
 import type { SentenceContext, TriggerProvider } from "../types";
@@ -37,8 +37,11 @@ function renderSlot(
 					key={index}
 					scope={config.projects}
 					// Clearing an optional filter means "any", not "none": the chip
-					// says "Any project" either way, and null would make that a lie.
-					onChange={(v) => set({ projects: v ?? { mode: "any" } })}
+					// says "Any project" either way, and an empty list would make
+					// that a lie.
+					onChange={(v) =>
+						set({ projects: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={options.linear?.projects ?? []}
 					emptyLabel="Any project"
 					anyLabel="Any project"
@@ -50,7 +53,9 @@ function renderSlot(
 				<ScopeChip
 					key={index}
 					scope={config.labels}
-					onChange={(v) => set({ labels: v ?? { mode: "any" } })}
+					onChange={(v) =>
+						set({ labels: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={options.linear?.labels ?? []}
 					emptyLabel="Any label"
 					anyLabel="Any label"
@@ -62,7 +67,9 @@ function renderSlot(
 				<ScopeChip
 					key={index}
 					scope={config.toStatus}
-					onChange={(v) => set({ toStatus: v ?? { mode: "any" } })}
+					onChange={(v) =>
+						set({ toStatus: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={options.linear?.statuses ?? []}
 					emptyLabel="Any status"
 					anyLabel="Any status"
@@ -71,12 +78,14 @@ function renderSlot(
 			);
 		case "assignee":
 			return (
-				<ActorChip
+				<ScopeChip
 					key={index}
-					actor={config.assignee}
+					scope={config.assignee}
 					onChange={(v) => set({ assignee: v })}
 					className={mark("assignee")}
-					people={options.linear?.people ?? []}
+					options={options.linear?.people ?? []}
+					emptyLabel="Select people"
+					anyLabel="Anyone"
 					disabled={disabled}
 				/>
 			);

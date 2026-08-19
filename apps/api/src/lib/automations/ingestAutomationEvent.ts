@@ -63,6 +63,7 @@ export async function ingestAutomationEvent(
 			event: delivery.dispatch.event,
 			automationId: delivery.dispatch.automationId,
 			triggerId: delivery.dispatch.triggerId,
+			ownerUserId: delivery.dispatch.ownerUserId,
 		});
 		return { status: "dispatched", eventId: inserted.id, ...result };
 	} catch (error) {

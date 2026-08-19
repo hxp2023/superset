@@ -20,7 +20,6 @@ import {
 } from "@/lib/automations/ingestAutomationEvent";
 import {
 	accountDomain,
-	accountEmail,
 	calendarPayload,
 	matchableCalendarEvent,
 	resourceKeyFor,
@@ -258,7 +257,6 @@ function normalizeChange(params: {
 
 	const matchable = matchableCalendarEvent({
 		eventType,
-		accountEmail: accountEmail(connection),
 		calendarId,
 		event,
 		domain: params.domain,
@@ -279,6 +277,8 @@ function normalizeChange(params: {
 			actorIsExternal: matchable.hasExternalAttendee,
 			payload: calendarPayload(calendarId, event, matchable),
 		},
-		dispatch: { event: matchable },
+		// The connection is one member's calendar, so only that member's
+		// automations may match its events.
+		dispatch: { event: matchable, ownerUserId: connection.connectedByUserId },
 	};
 }

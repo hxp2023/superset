@@ -1,5 +1,4 @@
 import { FaSlack } from "react-icons/fa";
-import { ActorChip } from "../../TriggerSentence/components/ActorChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { SelectChip } from "../../TriggerSentence/components/SelectChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
@@ -46,9 +45,10 @@ function renderSlot(
 			return (
 				<EmojiNameChip
 					key={index}
-					names={config.emoji?.mode === "list" ? config.emoji.ids : []}
+					names={config.emoji.mode === "list" ? config.emoji.ids : []}
 					// Clearing an optional filter means "any", not "none": the chip
-					// says "Any reaction" either way, and null would make that a lie.
+					// says "Any reaction" either way, and an empty list would make
+					// that a lie.
 					onChange={(names) =>
 						set({
 							emoji: names.length
@@ -64,12 +64,14 @@ function renderSlot(
 			);
 		case "actor":
 			return (
-				<ActorChip
+				<ScopeChip
 					key={index}
-					actor={config.actor}
+					scope={config.actor}
 					onChange={(v) => set({ actor: v })}
 					className={mark("actor")}
-					people={options.slack?.people ?? []}
+					options={options.slack?.people ?? []}
+					emptyLabel="Select people"
+					anyLabel="Anyone"
 					disabled={disabled}
 				/>
 			);

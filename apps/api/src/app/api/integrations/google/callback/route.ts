@@ -107,10 +107,8 @@ export async function GET(request: Request) {
 	});
 	if (result.conflict) return fail("account_already_linked");
 
-	// The linked identity is what lets an attendee filter of "me" resolve to
-	// this person. Its external id is the address rather than Google's subject
-	// id because the matcher compares owner ids against what events carry, and
-	// calendar events name people by address.
+	// The identity's external id is the address rather than Google's subject
+	// id, because calendar events and mail headers name people by address.
 	await upsertIdentity({
 		userId,
 		organizationId,

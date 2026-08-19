@@ -1,3 +1,4 @@
+import { isEmptyScope } from "@superset/shared/automation-triggers";
 import { LuMic } from "react-icons/lu";
 import { env } from "renderer/env.renderer";
 import { EndpointChip } from "../../TriggerSentence/components/EndpointChip";
@@ -30,8 +31,9 @@ function renderSlot(
 					key={index}
 					scope={config.tags}
 					// Clearing an optional filter means "any", not "none": the chip
-					// says "Any tag" either way, and null would make that a lie.
-					onChange={(v) => set({ tags: v ?? { mode: "any" } })}
+					// says "Any tag" either way, and an empty list would make that a
+					// lie.
+					onChange={(v) => set({ tags: isEmptyScope(v) ? { mode: "any" } : v })}
 					options={[]}
 					emptyLabel="Any tag"
 					anyLabel="Any tag"
@@ -44,7 +46,9 @@ function renderSlot(
 				<ScopeChip
 					key={index}
 					scope={config.attendees}
-					onChange={(v) => set({ attendees: v ?? { mode: "any" } })}
+					onChange={(v) =>
+						set({ attendees: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={[]}
 					emptyLabel="Any attendee"
 					anyLabel="Any attendee"

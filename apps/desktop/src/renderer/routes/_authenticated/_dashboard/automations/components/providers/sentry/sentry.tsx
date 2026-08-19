@@ -1,3 +1,4 @@
+import { isEmptyScope } from "@superset/shared/automation-triggers";
 import { SiSentry } from "react-icons/si";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { Sentence } from "../components/Sentence";
@@ -35,8 +36,11 @@ function renderSlot(
 					key={index}
 					scope={config.level}
 					// Clearing an optional filter means "any", not "none": the chip
-					// says "Any level" either way, and null would make that a lie.
-					onChange={(v) => set({ level: v ?? { mode: "any" } })}
+					// says "Any level" either way, and an empty list would make that
+					// a lie.
+					onChange={(v) =>
+						set({ level: isEmptyScope(v) ? { mode: "any" } : v })
+					}
 					options={options.sentry?.levels ?? []}
 					emptyLabel="Any level"
 					anyLabel="Any level"

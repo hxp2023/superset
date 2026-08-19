@@ -15,7 +15,6 @@ import {
 import { verifyQstashRequest } from "@/lib/verifyQstash";
 import {
 	accountDomain,
-	accountEmail,
 	calendarPayload,
 	matchableCalendarEvent,
 	resourceKeyFor,
@@ -91,7 +90,6 @@ function normalizeFire(
 		fire.fire === "starting_soon" ? "event.starting_soon" : "event.ended";
 	const matchable = matchableCalendarEvent({
 		eventType,
-		accountEmail: accountEmail(connection),
 		calendarId: fire.calendarId,
 		event,
 		domain: accountDomain(connection),
@@ -115,6 +113,8 @@ function normalizeFire(
 				expectedAt: fire.expectedAt,
 			}),
 		},
-		dispatch: { event: matchable },
+		// The connection is one member's calendar, so only that member's
+		// automations may match its events.
+		dispatch: { event: matchable, ownerUserId: connection.connectedByUserId },
 	};
 }

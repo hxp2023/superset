@@ -95,9 +95,7 @@ export function normalizeMessage(
 	const fromAddress = parseAddresses(from)[0] ?? null;
 	const matchable: GmailMatchableEvent = {
 		provider: "gmail",
-		identityProvider: "google",
 		eventType: "message.received",
-		accountEmail: (connection.externalOrgId ?? "").toLowerCase(),
 		actorId: fromAddress,
 		actorLogin: fromAddress,
 		// The body stays in the mailbox; the subject is the filterable text.
@@ -138,6 +136,8 @@ export function normalizeMessage(
 				hasAttachment: matchable.hasAttachment,
 			},
 		},
-		dispatch: { event: matchable },
+		// The connection is one member's mailbox, so only that member's
+		// automations may match its messages.
+		dispatch: { event: matchable, ownerUserId: connection.connectedByUserId },
 	};
 }

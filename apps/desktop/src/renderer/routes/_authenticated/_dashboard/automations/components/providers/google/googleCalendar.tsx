@@ -1,5 +1,4 @@
 import { SiGooglecalendar } from "react-icons/si";
-import { ActorChip } from "../../TriggerSentence/components/ActorChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { SelectChip } from "../../TriggerSentence/components/SelectChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
@@ -39,12 +38,14 @@ function renderSlot(
 			);
 		case "attendee":
 			return (
-				<ActorChip
+				<ScopeChip
 					key={index}
-					actor={c.attendee}
+					scope={c.attendee}
 					onChange={(v) => set({ attendee: v })}
 					className={mark("attendee")}
-					people={options.google?.people ?? []}
+					options={options.google?.people ?? []}
+					emptyLabel="Select people"
+					anyLabel="Anyone"
 					allowCustom={{ placeholder: "Type an email, press Enter" }}
 					disabled={disabled}
 				/>

@@ -58,8 +58,8 @@ export async function GET(request: Request) {
 	}
 
 	// The person who connected is the one Linear account we know for certain
-	// belongs to a Superset user, so link it: it is what automation triggers
-	// resolve "me" through. Linear user ids are scoped to the Linear workspace.
+	// belongs to a Superset user, so link it. Linear user ids are scoped to
+	// the Linear workspace.
 	await upsertIdentity({
 		userId,
 		organizationId,

@@ -610,6 +610,13 @@
       "when": 1787094486824,
       "tag": "0086_drop_trigger_enabled",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1787099734268,
+      "tag": "0087_scope_unification",
+      "breakpoints": true
     }
   ]
 }
