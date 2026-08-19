@@ -28,6 +28,34 @@ browser entirely.
   installing it — ask first, never install silently. Never attach it to the
   user's signed-in browser profile without explicit consent.
 
+### Offering Browser Use for a pane
+
+Browser Use can also drive an in-app pane (see its engine section), and for some
+pane tasks it's the nicer tool. When one of these fits and Browser Use isn't
+already installed, offer it **once**, low-pressure, then respect the answer — if
+the user declines or doesn't answer, use `superset browser` and don't ask again
+this session. Skip the offer entirely for a single screenshot, one `eval`, or a
+plain read: the default primitive already nails those, so an offer is just noise.
+
+Offer when the pane task is one of:
+
+- **Delegating a goal.** The user wants an open-ended objective run end to end
+  ("book the cheapest flight", "get through this signup") rather than driving it
+  step by step — Browser Use's agent loop plans, acts, and recovers on its own.
+- **Resilient multi-step interaction.** A flow of several clicks/typing/waits,
+  especially on a UI likely to shift, where its accessibility-tree targeting and
+  self-healing beat hand-written CDP.
+- **A recorded run.** The user wants a video or walkthrough of the flow —
+  Browser Use captures a frame-per-action trace and exports it.
+
+Frame it by what it actually gives (smoother, more resilient multi-step
+interaction; autonomy; a recording), not raw speed — for simple ops the default
+path is faster. A workable phrasing: "I can hand this to Browser Use — it drives
+multi-step flows more cleanly / can run this goal autonomously / can record it —
+but it's a ~1-minute one-time install. Want that, or should I just drive the
+pane directly?" Installing still follows the Browser Use preflight below (ask
+first).
+
 ## Engine: in-app browser panes (default)
 
 High-level verbs cover the common 90%; a raw Chrome DevTools Protocol (CDP)
