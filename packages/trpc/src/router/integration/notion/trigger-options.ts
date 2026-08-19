@@ -4,9 +4,7 @@ import {
 	isFullUser,
 	iteratePaginatedAPI,
 } from "@notionhq/client";
-import { db } from "@superset/db/client";
-import { integrationConnections } from "@superset/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { activeConnection } from "../connections";
 import type { TriggerOption, TriggerOptionSource } from "../trigger-options";
 import { notionClient, plainText } from "./client";
 
@@ -20,13 +18,8 @@ const MAX_OPTIONS = 500;
  * the chip keeps its "anyone / me" entries rather than the editor going red.
  */
 async function connectedClient(organizationId: string): Promise<Client | null> {
-	const connection = await db.query.integrationConnections.findFirst({
-		where: and(
-			eq(integrationConnections.organizationId, organizationId),
-			eq(integrationConnections.provider, "notion"),
-			isNull(integrationConnections.disconnectedAt),
-		),
-		columns: { accessToken: true },
+	const connection = await activeConnection(organizationId, "notion", {
+		accessToken: true,
 	});
 	return connection ? notionClient(connection.accessToken) : null;
 }

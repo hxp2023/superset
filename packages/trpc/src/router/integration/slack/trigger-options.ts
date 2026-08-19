@@ -3,9 +3,7 @@ import {
 	type UsersListResponse,
 	WebClient,
 } from "@slack/web-api";
-import { db } from "@superset/db/client";
-import { integrationConnections } from "@superset/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { activeConnection } from "../connections";
 import type { TriggerOption, TriggerOptionSource } from "../trigger-options";
 
 /** A hard stop, not a page size: enough for any workspace this is pointed at. */
@@ -19,13 +17,8 @@ const MAX_PEOPLE = 1000;
  * procedure, which shows an empty list.
  */
 async function slackClient(organizationId: string): Promise<WebClient | null> {
-	const connection = await db.query.integrationConnections.findFirst({
-		where: and(
-			eq(integrationConnections.organizationId, organizationId),
-			eq(integrationConnections.provider, "slack"),
-			isNull(integrationConnections.disconnectedAt),
-		),
-		columns: { accessToken: true },
+	const connection = await activeConnection(organizationId, "slack", {
+		accessToken: true,
 	});
 	if (!connection) return null;
 	return new WebClient(connection.accessToken, {
