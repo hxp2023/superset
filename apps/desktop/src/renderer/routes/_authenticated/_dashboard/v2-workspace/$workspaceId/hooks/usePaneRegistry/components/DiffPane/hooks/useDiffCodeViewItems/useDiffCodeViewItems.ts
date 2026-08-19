@@ -7,7 +7,7 @@ import {
 } from "@pierre/diffs";
 import type { AppRouter } from "@superset/host-service";
 import { useWorkspaceClient, workspaceTrpc } from "@superset/workspace-client";
-import { useQueries } from "@tanstack/react-query";
+import { keepPreviousData, useQueries } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useMemo, useRef } from "react";
@@ -125,6 +125,13 @@ export function useDiffCodeViewItems({
 				queryKey: getQueryKey(workspaceTrpc.git.getDiffBulk, input, "query"),
 				queryFn: () => trpcClient.git.getDiffBulk.query(input),
 				staleTime: Number.POSITIVE_INFINITY,
+				// The query key includes this group's full `paths` array, so an
+				// ordinary worktree change (a file added/removed) rotates the key
+				// and would otherwise drop `query.data` to undefined until the
+				// refetch lands — vanishing that group's items and losing scroll
+				// position. Keep the previous group's data on screen through the
+				// gap instead.
+				placeholderData: keepPreviousData,
 			};
 		}),
 	});

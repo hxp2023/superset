@@ -1,7 +1,9 @@
+import { workspaceTrpc } from "@superset/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useRef, useState } from "react";
 import { LuFile, LuGitCompareArrows } from "react-icons/lu";
+import { getChangesetFileKey } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import { useWorkspaceGitStatus } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/providers/WorkspaceGitStatusProvider";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useSettings } from "renderer/stores/settings";
@@ -108,6 +110,17 @@ export function WorkspaceSidebar({
 		icon: LuGitCompareArrows,
 	};
 
+	// PR review comments are always relative to the base branch, so they map
+	// onto the "against-base" source group — matching the same query (and
+	// changeKey format) the Changes tab uses for that group lets us disambiguate
+	// a path that also has staged/unstaged edits, instead of falling back to
+	// "first item whose path matches" and landing on the wrong group.
+	const baseBranchQuery = workspaceTrpc.git.getBaseBranch.useQuery(
+		{ workspaceId },
+		{ staleTime: Number.POSITIVE_INFINITY },
+	);
+	const baseBranch = baseBranchQuery.data?.baseBranch ?? null;
+
 	const reviewTab = useReviewTab({
 		workspaceId,
 		onOpenComment,
@@ -115,7 +128,14 @@ export function WorkspaceSidebar({
 			? (path, line, openInNewTab, side) => {
 					// Force annotations on so the user lands on the comment, not an empty line.
 					useSettings.getState().update("showDiffComments", true);
-					onSelectDiffFile(path, openInNewTab ?? false, line, side);
+					const changeKey = getChangesetFileKey({
+						path,
+						status: "modified",
+						additions: 0,
+						deletions: 0,
+						source: { kind: "against-base", baseBranch },
+					});
+					onSelectDiffFile(path, openInNewTab ?? false, line, side, changeKey);
 				}
 			: undefined,
 	});
