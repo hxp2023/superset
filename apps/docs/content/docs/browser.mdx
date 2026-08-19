@@ -65,6 +65,10 @@ Some targets are out of the panes' reach: a real Chrome window outside Superset,
 
 ### Browser Use 3.0
 
+<Callout type="info" title="Optional third-party software">
+	Browser Use is built by [Browser Use](https://browser-use.com), not by Superset, and nothing in Superset requires it — the in-app pane engine works with no extra install. Only add it if you want standalone automation, and note that attaching it to your running Chrome hands agents your signed-in sessions.
+</Callout>
+
 Browser Use 3.0 is a CLI that lets agents execute Python against a browser over the Chrome DevTools Protocol. It isn't bundled with Superset — agents check for it and ask before installing. To install it yourself (requires [uv](https://docs.astral.sh/uv/)):
 
 ```bash
