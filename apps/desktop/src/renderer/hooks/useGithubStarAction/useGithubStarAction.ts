@@ -6,6 +6,16 @@ export type GithubStarActionState =
 	| "unknown"
 	| "starred";
 
+/**
+ * Whether a surface should let the user act on the star button right now.
+ * A "loading" or "unknown" read isn't trustworthy enough to treat as either
+ * confirmation — every surface (and activate() itself) gates on this same
+ * check rather than re-deriving `state === "not_starred"` independently.
+ */
+export function canActivateStarAction(state: GithubStarActionState): boolean {
+	return state === "not_starred";
+}
+
 // GitHub's starred-check API has been observed to flap between 204 and 404 on
 // rapid successive calls (see the "flaky checkStarred" fix) — so a
 // "not_starred" read moments after we mark the repo starred is more likely
@@ -115,7 +125,7 @@ export function useGithubStarAction(options?: UseGithubStarActionOptions) {
 	const state: GithubStarActionState = isSuccess ? checkResult : "loading";
 
 	const activate = () => {
-		if (state !== "not_starred") return;
+		if (!canActivateStarAction(state)) return;
 		// Deliberately NOT optimistic: writing "starred" into the cache before
 		// the mutation resolves would make StarNagObserver's checkResult effect
 		// treat the optimistic value as confirmation and mark completed — even

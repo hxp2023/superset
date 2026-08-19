@@ -8,7 +8,10 @@ import {
 	STAR_SUCCESS_ANIMATION_MS,
 } from "renderer/components/AnimatedStarButton";
 import type { GithubStarActionState } from "renderer/hooks/useGithubStarAction";
-import { useGithubStarAction } from "renderer/hooks/useGithubStarAction";
+import {
+	canActivateStarAction,
+	useGithubStarAction,
+} from "renderer/hooks/useGithubStarAction";
 import { track } from "renderer/lib/analytics";
 import { useStarNagStore } from "renderer/stores/star-nag";
 
@@ -74,13 +77,8 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 		}
 	}, [state]);
 
-	// A "loading" or "unknown" read isn't trustworthy enough to act on, so the
-	// card only shows its button once `state` is confirmed "not_starred" —
-	// same rule as every other star-nag surface.
-	const renderVisible =
-		(shouldShow && state === "not_starred") || staysVisibleForAnimation;
-	const isVisible =
-		!isCollapsed && isEnabled && shouldShow && state === "not_starred";
+	const renderVisible = shouldShow || staysVisibleForAnimation;
+	const isVisible = !isCollapsed && isEnabled && shouldShow;
 
 	// Fire at most once per visible showing — without the reset, every
 	// sidebar collapse/expand cycle re-triggers this effect and inflates
@@ -123,12 +121,18 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 						description="Superset is open source. If it's helped you today, a GitHub star helps other developers find it."
 						onDismiss={handleDismiss}
 					>
-						<AnimatedStarButton
-							state={state}
-							busy={isBusy}
-							onActivate={handleAction}
-							className="mt-3 w-full justify-center"
-						/>
+						{/* A "loading" or "unknown" read isn't trustworthy enough to act
+						on, so the button doesn't render for those — the card chrome
+						(title, description, dismiss) stays up regardless, same pattern
+						as StarNagToast. */}
+						{(canActivateStarAction(state) || state === "starred") && (
+							<AnimatedStarButton
+								state={state}
+								busy={isBusy}
+								onActivate={handleAction}
+								className="mt-3 w-full justify-center"
+							/>
+						)}
 					</SidebarCard>
 				</motion.div>
 			)}

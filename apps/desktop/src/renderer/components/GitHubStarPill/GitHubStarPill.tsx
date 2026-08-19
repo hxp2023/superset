@@ -6,7 +6,10 @@ import {
 	STAR_SUCCESS_ANIMATION_MS,
 } from "renderer/components/AnimatedStarButton";
 import type { GithubStarActionState } from "renderer/hooks/useGithubStarAction";
-import { useGithubStarAction } from "renderer/hooks/useGithubStarAction";
+import {
+	canActivateStarAction,
+	useGithubStarAction,
+} from "renderer/hooks/useGithubStarAction";
 import { track } from "renderer/lib/analytics";
 
 interface GitHubStarPillProps {
@@ -100,7 +103,7 @@ export function GitHubStarPill({
 			return;
 		}
 		if (trackedShownSurfaceRef.current === surface) return;
-		if (state !== "not_starred") return;
+		if (!canActivateStarAction(state)) return;
 		trackedShownSurfaceRef.current = surface;
 		track("star_nag_shown", { surface });
 	}, [state, surface]);
@@ -108,7 +111,7 @@ export function GitHubStarPill({
 	if (state === "loading" && !reserveSpace) return null;
 
 	const isVisible =
-		state === "not_starred" ||
+		canActivateStarAction(state) ||
 		(state === "starred" && (justStarred || staysVisibleForAnimation));
 
 	const handleClick = () => {

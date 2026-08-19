@@ -98,7 +98,7 @@ export function AnimatedStarButton({
 		<button
 			type="button"
 			onClick={onActivate}
-			disabled={busy || state === "loading"}
+			disabled={busy || (state !== "not_starred" && state !== "starred")}
 			className={cn(
 				"star-button group",
 				compact && "star-button--compact",

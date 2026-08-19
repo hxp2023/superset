@@ -1,7 +1,10 @@
 import { Button } from "@superset/ui/button";
 import { Label } from "@superset/ui/label";
 import { Star } from "lucide-react";
-import { useGithubStarAction } from "renderer/hooks/useGithubStarAction";
+import {
+	canActivateStarAction,
+	useGithubStarAction,
+} from "renderer/hooks/useGithubStarAction";
 import { track } from "renderer/lib/analytics";
 import { HighlightText } from "renderer/routes/_authenticated/settings/components/HighlightText";
 
@@ -41,7 +44,12 @@ export function GithubStarRow({ searchQuery }: GithubStarRowProps) {
 					variant="outline"
 					size="sm"
 					onClick={handleClick}
-					disabled={state !== "not_starred" || isBusy}
+					disabled={!canActivateStarAction(state) || isBusy}
+					title={
+						state === "unknown"
+							? "Couldn't confirm star status from the GitHub CLI — check that `gh` is installed and signed in"
+							: undefined
+					}
 				>
 					<Star className="size-3.5" />
 					Star

@@ -2,7 +2,10 @@ import { toast } from "@superset/ui/sonner";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { AnimatedStarButton } from "renderer/components/AnimatedStarButton";
-import { useGithubStarAction } from "renderer/hooks/useGithubStarAction";
+import {
+	canActivateStarAction,
+	useGithubStarAction,
+} from "renderer/hooks/useGithubStarAction";
 import { track } from "renderer/lib/analytics";
 import { useStarNagStore } from "renderer/stores/star-nag";
 
@@ -49,7 +52,7 @@ function StarNagToastContent({ toastId }: { toastId: string | number }) {
 			{/* A "loading" or "unknown" read isn't trustworthy enough to act on —
 			same rule as every other star-nag surface — so the button just doesn't
 			render for those; the toast itself still auto-dismisses/closes normally. */}
-			{(state === "not_starred" || state === "starred") && (
+			{(canActivateStarAction(state) || state === "starred") && (
 				<AnimatedStarButton
 					state={state}
 					busy={isBusy}
