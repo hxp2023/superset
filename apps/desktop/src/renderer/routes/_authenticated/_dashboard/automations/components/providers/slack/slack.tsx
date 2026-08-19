@@ -3,13 +3,14 @@ import { ActorChip } from "../../TriggerSentence/components/ActorChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { SelectChip } from "../../TriggerSentence/components/SelectChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
+import { Sentence } from "../components/Sentence";
 import type { SentenceContext, TriggerProvider } from "../types";
 import { EmojiNameChip } from "./components/EmojiNameChip";
 import {
-	type SentencePart,
 	SLACK_MENU,
 	SLACK_SENTENCES,
 	type SlackConfig,
+	type Slot,
 } from "./grammar";
 
 const THREAD_OPTIONS = [
@@ -21,20 +22,13 @@ const THREAD_OPTIONS = [
  * Renders one slot of a Slack sentence. Each slot names the config field it
  * edits, so `set` patches by that name and `mark` finds it in the problems.
  */
-function renderPart(
+function renderSlot(
 	config: SlackConfig,
-	part: SentencePart,
+	slot: Slot,
 	index: number,
 	{ set, mark, options, disabled }: SentenceContext,
 ) {
-	if ("text" in part) {
-		return (
-			<span key={index} className="text-[13px] text-muted-foreground">
-				{part.text}
-			</span>
-		);
-	}
-	switch (part.slot) {
+	switch (slot) {
 		case "channels":
 			return (
 				<ScopeChip
@@ -140,18 +134,11 @@ export const slackProvider: TriggerProvider<SlackConfig> = {
 	label: "Slack",
 	icon: FaSlack,
 	menu: SLACK_MENU,
-	renderSentence: (config, ctx) => {
-		// The event comes from a persisted config. If its grammar entry is ever
-		// removed or renamed, the row must still render rather than take the
-		// editor down, so an unknown event reads as its raw name.
-		const parts = SLACK_SENTENCES[config.event];
-		if (!parts) {
-			return (
-				<span className="text-[13px] text-muted-foreground">
-					{config.event}
-				</span>
-			);
-		}
-		return parts.map((part, index) => renderPart(config, part, index, ctx));
-	},
+	renderSentence: (config, ctx) => (
+		<Sentence
+			parts={SLACK_SENTENCES[config.event]}
+			fallback={config.event}
+			renderSlot={(slot, index) => renderSlot(config, slot, index, ctx)}
+		/>
+	),
 };
