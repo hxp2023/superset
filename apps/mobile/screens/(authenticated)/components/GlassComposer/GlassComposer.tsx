@@ -340,7 +340,10 @@ export const GlassComposer = forwardRef<
 		<View
 			style={contentHeight === null ? undefined : { height: contentHeight }}
 		>
-			<PasteInputView onPasteImages={handlePasteImages}>
+			<PasteInputView
+				enabled={showAttachments}
+				onPasteImages={handlePasteImages}
+			>
 				<Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
 					<VStack
 						spacing={ABOVE_GAP}

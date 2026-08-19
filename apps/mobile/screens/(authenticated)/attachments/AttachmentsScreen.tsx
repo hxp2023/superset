@@ -37,18 +37,18 @@ export function AttachmentsScreen() {
 			Alert.alert("Camera access is not allowed");
 			return false;
 		}
+		let result: ImagePicker.ImagePickerResult;
 		try {
-			const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-			if (result.canceled) return false;
-			attachments.add(
-				await Promise.all(result.assets.map(imageAssetToAttachment)),
-			);
-			return true;
+			result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
 		} catch {
-			// launchCameraAsync rejects where there is no camera (simulator).
+			// Rejects where there is no camera (simulator).
 			Alert.alert("Camera is not available");
 			return false;
 		}
+		if (result.canceled) return false;
+		const items = await Promise.all(result.assets.map(imageAssetToAttachment));
+		attachments.add(items.filter((item) => item !== null));
+		return true;
 	};
 
 	const mainRows = [

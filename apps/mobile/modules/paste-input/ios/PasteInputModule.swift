@@ -7,6 +7,10 @@ public final class PasteInputModule: Module {
 
     View(PasteInputView.self) {
       Events("onPasteImages")
+
+      Prop("enabled") { (view, enabled: Bool) in
+        view.isPasteEnabled = enabled
+      }
     }
   }
 }
@@ -19,6 +23,7 @@ public final class PasteInputModule: Module {
  */
 final class PasteInputView: ExpoView {
   let onPasteImages = EventDispatcher()
+  var isPasteEnabled = true
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -28,7 +33,7 @@ final class PasteInputView: ExpoView {
   override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
     if action == #selector(UIResponderStandardEditActions.paste(_:)) {
       // Metadata check — never triggers the system paste prompt.
-      return UIPasteboard.general.hasImages
+      return isPasteEnabled && UIPasteboard.general.hasImages
     }
     return super.canPerformAction(action, withSender: sender)
   }
@@ -44,8 +49,8 @@ final class PasteInputView: ExpoView {
       guard (try? data.write(to: url)) != nil else { continue }
       payload.append([
         "uri": url.absoluteString,
-        "width": image.size.width,
-        "height": image.size.height
+        "width": image.size.width * image.scale,
+        "height": image.size.height * image.scale
       ])
     }
     guard !payload.isEmpty else { return }

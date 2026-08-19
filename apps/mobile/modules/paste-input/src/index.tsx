@@ -18,6 +18,7 @@ const NativePasteInputView = requireNativeView("PasteInput");
 export function PasteInputView(
 	props: PropsWithChildren<{
 		style?: StyleProp<ViewStyle>;
+		enabled?: boolean;
 		onPasteImages: (event: PasteImagesEvent) => void;
 	}>,
 ) {

@@ -90,7 +90,7 @@ const createAttachmentId = () => {
 // HEIC and the rest arrive as original bytes and the agent API rejects HEIC.
 export const imageAssetToAttachment = async (
 	asset: ImagePicker.ImagePickerAsset,
-): Promise<PromptInputAttachmentInput> => {
+): Promise<PromptInputAttachmentInput | null> => {
 	if (asset.mimeType === "image/jpeg" || asset.mimeType === "image/png") {
 		return {
 			mediaType: asset.mimeType,
@@ -100,16 +100,21 @@ export const imageAssetToAttachment = async (
 			uri: asset.uri,
 		};
 	}
-	const converted = await manipulateAsync(asset.uri, [], {
-		compress: 0.8,
-		format: SaveFormat.JPEG,
-	});
-	return {
-		mediaType: "image/jpeg",
-		name: asset.fileName?.replace(/\.[^.]+$/, ".jpg") ?? undefined,
-		type: "image",
-		uri: converted.uri,
-	};
+	try {
+		const converted = await manipulateAsync(asset.uri, [], {
+			compress: 0.8,
+			format: SaveFormat.JPEG,
+		});
+		return {
+			mediaType: "image/jpeg",
+			name: asset.fileName?.replace(/\.[^.]+$/, ".jpg") ?? undefined,
+			type: "image",
+			uri: converted.uri,
+		};
+	} catch {
+		// Never attach undecodable originals: they may carry EXIF GPS.
+		return null;
+	}
 };
 
 /** Formats UIImage decodes whose bytes can carry EXIF GPS. */
@@ -123,7 +128,7 @@ const EXIF_IMAGE_TYPES = new Set([
 ]);
 
 // The document picker always hands back original bytes — EXIF GPS included.
-// PNG stays PNG for transparency; a decode failure keeps the pick as-is.
+// PNG stays PNG for transparency.
 const documentAssetToAttachment = async (
 	asset: DocumentPicker.DocumentPickerAsset,
 ): Promise<PromptInputAttachmentInput> => {
@@ -140,7 +145,17 @@ const documentAssetToAttachment = async (
 				type: "image",
 				uri: converted.uri,
 			};
-		} catch {}
+		} catch {
+			// Undecodable image bytes may carry EXIF GPS — hand them over as a
+			// plain file, not an image.
+			return {
+				mediaType: asset.mimeType,
+				name: asset.name,
+				size: asset.size,
+				type: "file",
+				uri: asset.uri,
+			};
+		}
 	}
 	return {
 		mediaType: asset.mimeType,
@@ -186,7 +201,10 @@ const useAttachmentsContextValue = (): AttachmentsContext => {
 			if (result.canceled) {
 				return false;
 			}
-			add(await Promise.all(result.assets.map(imageAssetToAttachment)));
+			const attachments = await Promise.all(
+				result.assets.map(imageAssetToAttachment),
+			);
+			add(attachments.filter((attachment) => attachment !== null));
 			return true;
 		} catch {
 			Alert.alert("Could not open Photos");
