@@ -25,11 +25,15 @@ const UNTRACKED_IO_CONCURRENCY = 64;
 // file size, and comfortably covers the 8KB binary sniff window.
 const UNTRACKED_READ_CHUNK_SIZE = 64 * 1024;
 
-async function mapWithConcurrency<T>(
+/** Runs `fn` over `items` with at most `limit` in flight at once, returning
+ * results in input order. Shared by any caller that needs to bound
+ * concurrent subprocess/file-descriptor usage across a batch. */
+export async function mapWithConcurrency<T, R>(
 	items: T[],
 	limit: number,
-	fn: (item: T) => Promise<void>,
-): Promise<void> {
+	fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+	const results = new Array<R>(items.length);
 	let next = 0;
 	const workers = Array.from(
 		{ length: Math.min(limit, items.length) },
@@ -37,11 +41,12 @@ async function mapWithConcurrency<T>(
 			while (true) {
 				const i = next++;
 				if (i >= items.length) return;
-				await fn(items[i] as T);
+				results[i] = await fn(items[i] as T, i);
 			}
 		},
 	);
 	await Promise.all(workers);
+	return results;
 }
 
 /** Map git's single-letter status codes to GitHub-aligned FileStatus */
