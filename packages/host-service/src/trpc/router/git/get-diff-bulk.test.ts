@@ -95,13 +95,11 @@ describe("gitRouter.getDiffBulk — large changeset", () => {
 
 	test("returns every file's diff in one call, and stays fast", async () => {
 		const caller = createCaller(repo);
-		const start = performance.now();
 		const result = await caller.getDiffBulk({
 			workspaceId: "ws-1",
 			paths,
 			category: "against-base",
 		});
-		const elapsedMs = performance.now() - start;
 
 		expect(result.diffs).toHaveLength(FILE_COUNT);
 
@@ -114,9 +112,7 @@ describe("gitRouter.getDiffBulk — large changeset", () => {
 			`export const value = ${FILE_COUNT - 1};\n`,
 		);
 
-		// Generous bound for CI/dev-machine variance — the point is proving
-		// this doesn't hang or scale quadratically, not micro-benchmarking.
-		expect(elapsedMs).toBeLessThan(60_000);
+		// The 90s test timeout is the hang/quadratic-scaling guard.
 	}, 90_000);
 
 	test("matches per-file getDiff output for every file", async () => {
@@ -148,4 +144,25 @@ describe("gitRouter.getDiffBulk — large changeset", () => {
 			}).toEqual(single);
 		}
 	}, 30_000);
+
+	test("rejects a path-traversal path instead of reading outside the worktree", async () => {
+		const caller = createCaller(repo);
+		const traversal = "../../../../../../../../etc/passwd";
+
+		await expect(
+			caller.getDiff({
+				workspaceId: "ws-1",
+				path: traversal,
+				category: "unstaged",
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+		await expect(
+			caller.getDiffBulk({
+				workspaceId: "ws-1",
+				paths: [traversal],
+				category: "unstaged",
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
 });

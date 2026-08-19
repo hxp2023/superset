@@ -1,5 +1,5 @@
 import { rm } from "node:fs/promises";
-import { isAbsolute, join, normalize, sep } from "node:path";
+import { join } from "node:path";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -32,6 +32,7 @@ import { scheduleBaseRefFetch } from "./utils/base-ref-freshness";
 import { rethrowEnvironmentalGitError } from "./utils/classify-git-error";
 import { gitConfigWrite } from "./utils/config-write";
 import {
+	assertSafeRelativePath,
 	getDefaultBranchName,
 	loadFileDiffContent,
 	resolveBaseComparison,
@@ -88,28 +89,6 @@ function resolveGitTaskEnv(
 	worktreePath: string,
 ): Promise<Record<string, string>> {
 	return createGitEnvResolver(ctx.credentials)(worktreePath);
-}
-
-function assertSafeRelativePath(filePath: string): void {
-	if (isAbsolute(filePath)) {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Absolute paths are not allowed",
-		});
-	}
-	const normalized = normalize(filePath);
-	if (normalized.split(sep).includes("..")) {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Path traversal is not allowed",
-		});
-	}
-	if (normalized === "" || normalized === ".") {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Cannot target worktree root",
-		});
-	}
 }
 
 /** Delete for a discard. Recursive because an untracked or staged-as-added
@@ -583,6 +562,7 @@ export const gitRouter = router({
 		.meta({ timeoutMs: 30_000 })
 		.input(getDiffInputShape)
 		.query(async ({ ctx, input }) => {
+			assertSafeRelativePath(input.path);
 			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
 			const git = await ctx.git(worktreePath);
 			const refs = await resolveDiffCategoryRefs(git, input.category, input);
@@ -614,6 +594,7 @@ export const gitRouter = router({
 			}),
 		)
 		.query(async ({ ctx, input }) => {
+			for (const path of input.paths) assertSafeRelativePath(path);
 			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
 			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
 			// Ref resolution and every file's `git show` pair run inside the

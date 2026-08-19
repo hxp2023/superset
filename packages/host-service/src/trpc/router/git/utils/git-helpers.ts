@@ -8,7 +8,7 @@ import {
 	stat,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, normalize, relative, resolve, sep } from "node:path";
 import {
 	BINARY_SNIFF_BYTES,
 	isBinaryMediaFile,
@@ -477,6 +477,31 @@ export async function getChangedFilesForDiff(
 			}));
 	} catch {
 		return [];
+	}
+}
+
+/** Rejects a caller-supplied relative path that could escape the worktree
+ * (absolute, `..` traversal, or the worktree root itself) — required before
+ * any git/fs operation joins it onto a worktree path. */
+export function assertSafeRelativePath(filePath: string): void {
+	if (isAbsolute(filePath)) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Absolute paths are not allowed",
+		});
+	}
+	const normalized = normalize(filePath);
+	if (normalized.split(sep).includes("..")) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Path traversal is not allowed",
+		});
+	}
+	if (normalized === "" || normalized === ".") {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Cannot target worktree root",
+		});
 	}
 }
 

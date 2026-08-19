@@ -9,7 +9,7 @@ import type { AppRouter } from "@superset/host-service";
 import { useWorkspaceClient, workspaceTrpc } from "@superset/workspace-client";
 import { useQueries } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
-import type { inferRouterInputs } from "@trpc/server";
+import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useMemo, useRef } from "react";
 import {
 	type ChangesetFile,
@@ -19,10 +19,10 @@ import type { DiffAnnotationMetadata } from "../useDiffAnnotations";
 
 type GetDiffInput = inferRouterInputs<AppRouter>["git"]["getDiff"];
 type GetDiffBulkInput = inferRouterInputs<AppRouter>["git"]["getDiffBulk"];
-type DiffContent = {
-	oldFile: { name: string; contents: string };
-	newFile: { name: string; contents: string };
-};
+type DiffContent = Omit<
+	inferRouterOutputs<AppRouter>["git"]["getDiffBulk"]["diffs"][number],
+	"path"
+>;
 
 interface UseDiffCodeViewItemsOptions {
 	workspaceId: string;
@@ -131,9 +131,13 @@ export function useDiffCodeViewItems({
 
 	// One lookup per group resolution (not per file, not per render) — keeps
 	// the per-file work below linear in file count instead of the quadratic
-	// rebuild the old per-file `useQueries` produced.
+	// rebuild the old per-file `useQueries` produced. `revision` is a hash of
+	// this file's own contents, not the group's fetch timestamp — a group
+	// query covers every file sharing a category, so keying off
+	// `dataUpdatedAt` would invalidate every other file's parsed-diff and
+	// highlight caches whenever any one file in the group changed.
 	const diffContentByItemId = useMemo(() => {
-		const map = new Map<string, DiffContent & { dataUpdatedAt: number }>();
+		const map = new Map<string, DiffContent & { revision: number }>();
 		diffGroups.forEach((group, index) => {
 			const query = diffGroupQueries[index];
 			if (!query?.data) return;
@@ -144,7 +148,9 @@ export function useDiffCodeViewItems({
 				map.set(member.itemId, {
 					oldFile: entry.oldFile,
 					newFile: entry.newFile,
-					dataUpdatedAt: query.dataUpdatedAt,
+					revision: hashString(
+						`${entry.oldFile.contents}\0${entry.newFile.contents}`,
+					),
 				});
 			}
 		});
@@ -160,11 +166,12 @@ export function useDiffCodeViewItems({
 	}, [files]);
 
 	// Parsing a file's diff (parseDiffFromFile) is the expensive part of
-	// building an item — cache it per item id, keyed by the group's
-	// dataUpdatedAt, so a render triggered by something unrelated (collapsed
-	// state, an annotation on a different file) doesn't re-parse every file.
+	// building an item — cache it per item id, keyed by the file's content
+	// revision, so a render triggered by something unrelated (collapsed
+	// state, an annotation on a different file, another file in the same
+	// group refetching) doesn't re-parse every file.
 	const fileDiffCacheRef = useRef(
-		new Map<string, { dataUpdatedAt: number; fileDiff: FileDiffMetadata }>(),
+		new Map<string, { revision: number; fileDiff: FileDiffMetadata }>(),
 	);
 
 	const items = useMemo<CodeViewItem<DiffAnnotationMetadata>[]>(() => {
@@ -236,7 +243,7 @@ export function useDiffCodeViewItems({
 
 			const cached = cache.get(itemId);
 			const fileDiff =
-				cached && cached.dataUpdatedAt === content.dataUpdatedAt
+				cached && cached.revision === content.revision
 					? cached.fileDiff
 					: parseDiffFromFile(
 							{
@@ -246,18 +253,19 @@ export function useDiffCodeViewItems({
 								// already-highlighted AST across remounts (e.g.
 								// navigating away from a workspace and back), which
 								// this hook's own fileDiffCacheRef can't cover since
-								// it's wiped on unmount. dataUpdatedAt changes
-								// whenever the underlying diff content changes.
-								cacheKey: `${itemId}:${content.dataUpdatedAt}:old`,
+								// it's wiped on unmount. revision changes only when
+								// this file's own contents change, not when a
+								// sibling in the same bulk group refetches.
+								cacheKey: `${itemId}:${content.revision}:old`,
 							},
 							{
 								...content.newFile,
 								name: file.path,
-								cacheKey: `${itemId}:${content.dataUpdatedAt}:new`,
+								cacheKey: `${itemId}:${content.revision}:new`,
 							},
 						);
-			if (!cached || cached.dataUpdatedAt !== content.dataUpdatedAt) {
-				cache.set(itemId, { dataUpdatedAt: content.dataUpdatedAt, fileDiff });
+			if (!cached || cached.revision !== content.revision) {
+				cache.set(itemId, { revision: content.revision, fileDiff });
 			}
 
 			const baseAnnotations = getAnnotationsForFile(annotationsByPath, file);
@@ -268,7 +276,7 @@ export function useDiffCodeViewItems({
 					: (extra ?? baseAnnotations);
 			const version = hashString(
 				[
-					content.dataUpdatedAt,
+					content.revision,
 					file.path,
 					file.oldPath ?? "",
 					file.status,
