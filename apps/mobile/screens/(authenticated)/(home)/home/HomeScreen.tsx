@@ -603,7 +603,10 @@ export function HomeScreen() {
 				onChangeText={(event) => setSearchQuery(event.nativeEvent.text)}
 				onCancelButtonPress={() => setSearchQuery("")}
 			/>
-			{selectedHost && !selectedHost.isOnline && cloudItems.length === 0 ? (
+			{selectedHost &&
+			!selectedHost.isOnline &&
+			cloudReady &&
+			cloudItems.length === 0 ? (
 				<View
 					className="bg-background flex-1"
 					style={{

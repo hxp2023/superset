@@ -7,7 +7,7 @@ import {
 	type LucideIcon,
 } from "lucide-react-native";
 import { type ReactNode, useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Alert, View } from "react-native";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
@@ -91,8 +91,8 @@ function CloudWorkspaceFailedState({ cloud }: { cloud: CloudWorkspaceRow }) {
 		try {
 			await removeCloudWorkspace(cloud.id);
 			router.back();
-		} catch (error) {
-			console.error("[cloud-workspace] failed to delete", error);
+		} catch {
+			Alert.alert("Delete failed");
 			setIsDeleting(false);
 		}
 	};

@@ -75,12 +75,19 @@ export function useCloudWorkspaces(): CloudWorkspacesValue {
 
 	// Whatever the list stops naming loses its credentials: an org switch or a
 	// FORBIDDEN answer lands here as a new (possibly empty) list and clears the
-	// grants the previous one earned.
+	// grants the previous one earned. Losing the scope entirely — sign-out,
+	// flag off — disables the query, so that case prunes explicitly rather
+	// than waiting for data that will never come.
 	const rows = query.data;
+	const hasScope = enabledByFlag && organizationId !== null;
 	useEffect(() => {
+		if (!hasScope) {
+			pruneSandboxAccess(new Set());
+			return;
+		}
 		if (!rows) return;
 		pruneSandboxAccess(new Set(rows.map((row) => row.id)));
-	}, [rows]);
+	}, [hasScope, rows]);
 
 	return {
 		workspaces: query.data ?? NO_ROWS,

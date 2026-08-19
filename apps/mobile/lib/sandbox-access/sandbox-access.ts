@@ -23,6 +23,12 @@ const STALE_BEFORE_MS = 60_000;
 const accessByWorkspaceId = new Map<string, SandboxAccess>();
 const previewTokenByUrl = new Map<string, string>();
 const inflight = new Map<string, Promise<SandboxAccess>>();
+/**
+ * Bumped whenever a workspace's grants are retired, so a mint that was
+ * already in flight when the retirement happened cannot land afterwards and
+ * quietly resurrect credentials for a workspace this client gave up.
+ */
+const epochByWorkspaceId = new Map<string, number>();
 
 export function getSandboxAccess(workspaceId: string): SandboxAccess | null {
 	return accessByWorkspaceId.get(workspaceId) ?? null;
@@ -53,6 +59,7 @@ export function ensureSandboxAccess(
 	const pending = inflight.get(workspaceId);
 	if (pending) return pending;
 
+	const epoch = epochByWorkspaceId.get(workspaceId) ?? 0;
 	const mint = apiClient.cloudWorkspace.access
 		.mutate({ id: workspaceId })
 		.then((granted) => {
@@ -61,6 +68,17 @@ export function ensureSandboxAccess(
 				token: granted.token,
 				expiresAt: new Date(granted.expiresAt).getTime(),
 			};
+			if ((epochByWorkspaceId.get(workspaceId) ?? 0) !== epoch) {
+				// Retired mid-mint; hand the grant to the caller (its request is
+				// legitimate) but don't re-register credentials nothing owns.
+				return access;
+			}
+			// A renewed preview can move URLs; the old address must stop
+			// resolving a token or a cached client keeps authenticating with it.
+			const previous = accessByWorkspaceId.get(workspaceId);
+			if (previous && previous.url !== access.url) {
+				previewTokenByUrl.delete(previous.url);
+			}
 			accessByWorkspaceId.set(workspaceId, access);
 			previewTokenByUrl.set(access.url, access.token);
 			return access;
@@ -74,6 +92,10 @@ export function ensureSandboxAccess(
 
 /** Forget a workspace that is gone; its URL stops carrying a token. */
 export function clearSandboxAccess(workspaceId: string): void {
+	epochByWorkspaceId.set(
+		workspaceId,
+		(epochByWorkspaceId.get(workspaceId) ?? 0) + 1,
+	);
 	const access = accessByWorkspaceId.get(workspaceId);
 	if (access) previewTokenByUrl.delete(access.url);
 	accessByWorkspaceId.delete(workspaceId);
@@ -88,9 +110,7 @@ export function clearSandboxAccess(workspaceId: string): void {
  * retires their credentials.
  */
 export function pruneSandboxAccess(keepIds: ReadonlySet<string>): void {
-	for (const [workspaceId, access] of accessByWorkspaceId) {
-		if (keepIds.has(workspaceId)) continue;
-		previewTokenByUrl.delete(access.url);
-		accessByWorkspaceId.delete(workspaceId);
+	for (const workspaceId of accessByWorkspaceId.keys()) {
+		if (!keepIds.has(workspaceId)) clearSandboxAccess(workspaceId);
 	}
 }
