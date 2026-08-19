@@ -1,5 +1,6 @@
 import { Button } from "@superset/ui/button";
 import { Label } from "@superset/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { Star } from "lucide-react";
 import {
 	canActivateStarAction,
@@ -39,17 +40,32 @@ export function GithubStarRow({ searchQuery }: GithubStarRowProps) {
 				<span className="text-xs text-muted-foreground">
 					Starred — thank you!
 				</span>
+			) : state === "unknown" ? (
+				// A disabled shadcn Button has pointer-events-none baked into its
+				// base classes, so a `title` attribute on the button itself would
+				// never receive the hover needed to show it — wrap it (same pattern
+				// as DeleteProjectSection) so the tooltip trigger sits outside the
+				// disabled element.
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span>
+							<Button variant="outline" size="sm" disabled>
+								<Star className="size-3.5" />
+								Star
+							</Button>
+						</span>
+					</TooltipTrigger>
+					<TooltipContent side="left">
+						Couldn't confirm star status — check that the GitHub CLI (`gh`) is
+						installed, signed in, and that you have a network connection
+					</TooltipContent>
+				</Tooltip>
 			) : (
 				<Button
 					variant="outline"
 					size="sm"
 					onClick={handleClick}
 					disabled={!canActivateStarAction(state) || isBusy}
-					title={
-						state === "unknown"
-							? "Couldn't confirm star status from the GitHub CLI — check that `gh` is installed and signed in"
-							: undefined
-					}
 				>
 					<Star className="size-3.5" />
 					Star

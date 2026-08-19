@@ -61,7 +61,10 @@ export function GitHubStarPill({
 	const isVisible = canActivateStarAction(state) || celebrating;
 
 	const handleClick = () => {
-		track("star_nag_starred", { surface });
+		// A click during the post-star celebration window (state === "starred")
+		// reaches this handler but activate() no-ops for it — don't record a
+		// "starred" event for a click that didn't actually do anything.
+		if (canActivateStarAction(state)) track("star_nag_starred", { surface });
 		activate();
 	};
 

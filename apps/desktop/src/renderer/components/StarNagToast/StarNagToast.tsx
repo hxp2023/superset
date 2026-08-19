@@ -20,7 +20,12 @@ function StarNagToastContent({ toastId }: { toastId: string | number }) {
 	}, [state, toastId]);
 
 	function handleAction() {
-		track("star_nag_starred", { surface: "toast" });
+		// A click during the post-star celebration window (state === "starred")
+		// reaches this handler but activate() no-ops for it — don't record a
+		// "starred" event for a click that didn't actually do anything.
+		if (canActivateStarAction(state)) {
+			track("star_nag_starred", { surface: "toast" });
+		}
 		activate();
 	}
 
@@ -51,7 +56,11 @@ function StarNagToastContent({ toastId }: { toastId: string | number }) {
 			</p>
 			{/* A "loading" or "unknown" read isn't trustworthy enough to act on —
 			same rule as every other star-nag surface — so the button just doesn't
-			render for those; the toast itself still auto-dismisses/closes normally. */}
+			render for those; the toast itself still auto-dismisses/closes normally.
+			Unlike GitHubStarPill/StarNagCard, "starred" isn't time-boxed via
+			useJustStarredWindow here — the effect above already dismisses the
+			whole toast 2s after a real star, so there's no separate window to
+			bound. */}
 			{(canActivateStarAction(state) || state === "starred") && (
 				<AnimatedStarButton
 					state={state}

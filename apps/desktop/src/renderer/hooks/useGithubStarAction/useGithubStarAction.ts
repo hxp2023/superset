@@ -72,14 +72,16 @@ export function useJustStarredWindow(state: GithubStarActionState): boolean {
  * resets so it fires again the next time `active` goes true -> false ->
  * true (or `key` changes while still active) — for once-per-showing "shown"
  * impression tracking. `onShow` doesn't need to be memoized; only its latest
- * value is ever called.
+ * value is ever called. `key` must be a primitive — the dedupe guard relies
+ * on `===` equality, so a fresh object/array reference every render would
+ * never match and defeat the "once" guarantee entirely.
  */
 export function useTrackShownOnce(
 	active: boolean,
 	onShow: () => void,
-	key: unknown = true,
+	key: string | number | boolean | null | undefined = true,
 ) {
-	const trackedKeyRef = useRef<unknown>(null);
+	const trackedKeyRef = useRef<typeof key>(null);
 	const onShowRef = useRef(onShow);
 	onShowRef.current = onShow;
 	useEffect(() => {
@@ -178,10 +180,14 @@ interface UseGithubStarActionOptions {
  * hook's concern — StarNagCard and StarNagToast derive that straight from
  * useStarNagStore (shouldShowThresholdCard()/isEligible()), and the pill and
  * Settings row are deliberately always-truthful with no suppression at all.
- * Every surface additionally only renders its button while `state ===
- * "not_starred"` (see each surface's visibility gate) — a "loading" or
- * "unknown" read isn't trustworthy enough to act on, so the button simply
- * doesn't show rather than offering a fallback for an unconfirmed state.
+ * A "loading" or "unknown" read isn't trustworthy enough to act on, so
+ * canActivateStarAction() gates clicking to `state === "not_starred"` only
+ * — but that's not the same as each surface's *visibility* gate. Three of
+ * the four (GitHubStarPill, StarNagCard, StarNagToast) also keep showing
+ * their button through the brief "starred" celebration window right after
+ * a fresh star (see useJustStarredWindow), and GithubStarRow always shows
+ * its button, just disabled when not actionable. Read each surface's own
+ * gate rather than assuming "not_starred-only" from here.
  *
  * checkResult -> store side effects (markCompleted/markUnstarred) are NOT
  * handled here — StarNagObserver owns that, once, so the four independently

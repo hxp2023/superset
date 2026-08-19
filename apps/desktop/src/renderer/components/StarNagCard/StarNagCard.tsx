@@ -59,17 +59,23 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 	const celebrating = useJustStarredWindow(state);
 
 	const renderVisible = shouldShow || celebrating;
-	const isVisible = Boolean(!isCollapsed && isEnabled && shouldShow);
+	const cardVisible = Boolean(!isCollapsed && isEnabled && shouldShow);
 
-	// Fire at most once per visible showing — without the reset, every
-	// sidebar collapse/expand cycle would inflate impressions relative to the
-	// other surfaces' once-per-showing trackers.
-	useTrackShownOnce(isVisible, () =>
+	// Fire at most once per visible showing of the *button* specifically
+	// (not just the card) — the card can be visible with its title/
+	// description/dismiss while the button itself is hidden (loading/
+	// unknown), and that's not a "shown" impression of the star ask.
+	useTrackShownOnce(cardVisible && canActivateStarAction(state), () =>
 		track("star_nag_shown", { surface: "card" }),
 	);
 
 	function handleAction() {
-		track("star_nag_starred", { surface: "card" });
+		// A click during the post-star celebration window (state === "starred")
+		// reaches this handler but activate() no-ops for it — don't record a
+		// "starred" event for a click that didn't actually do anything.
+		if (canActivateStarAction(state)) {
+			track("star_nag_starred", { surface: "card" });
+		}
 		activate();
 	}
 

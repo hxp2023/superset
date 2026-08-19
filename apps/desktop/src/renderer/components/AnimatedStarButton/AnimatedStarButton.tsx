@@ -76,7 +76,14 @@ export function AnimatedStarButton({
 	useEffect(() => {
 		const prevState = prevStateRef.current;
 		prevStateRef.current = state;
-		if (prevState !== "starred" && state === "starred") {
+		// Matches useJustStarredWindow's transition condition (not just "wasn't
+		// starred before") — a cold mount that resolves straight from "loading"
+		// to "starred" (the repo was already starred before this session) isn't
+		// a fresh star and shouldn't burst confetti for it.
+		if (
+			(prevState === "not_starred" || prevState === "unknown") &&
+			state === "starred"
+		) {
 			setJustStarred(true);
 			if (!prefersReducedMotion) setParticles(createBurst());
 			const clearTimer = setTimeout(() => {
