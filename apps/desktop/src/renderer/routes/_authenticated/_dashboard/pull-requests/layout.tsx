@@ -1,11 +1,13 @@
 import { cn } from "@superset/ui/utils";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { resolveProjectFilterParams } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter/project-filter-utils";
+import { parsePositiveIntegerParam } from "renderer/routes/_authenticated/_dashboard/utils/parsePositiveIntegerParam";
 import { useWorkspaceSidebarStore } from "renderer/stores/workspace-sidebar-state";
 import { PullRequestListToggle } from "./components/PullRequestListToggle";
 import { PullRequestsView } from "./components/PullRequestsView";
 import { usePullRequestsSplitViewStore } from "./stores/pullRequestsSplitViewStore";
+import { PULL_REQUESTS_VIEW_TABS } from "./utils/viewerRelationship";
 
 export type PullRequestsSearch = {
 	search?: string;
@@ -13,8 +15,11 @@ export type PullRequestsSearch = {
 	projects?: string;
 	author?: string;
 	review?: string;
-	state?: "open" | "all";
+	state?: "open" | "all" | "merged";
+	tab?: "all" | "reviewing" | "authored";
 };
+
+const VIEW_TAB_VALUES = PULL_REQUESTS_VIEW_TABS.map((tab) => tab.value);
 
 export const Route = createFileRoute(
 	"/_authenticated/_dashboard/pull-requests",
@@ -26,8 +31,11 @@ export const Route = createFileRoute(
 		projects: typeof search.projects === "string" ? search.projects : undefined,
 		author: typeof search.author === "string" ? search.author : undefined,
 		review: typeof search.review === "string" ? search.review : undefined,
-		state: ["open", "all"].includes(search.state as string)
+		state: ["open", "all", "merged"].includes(search.state as string)
 			? (search.state as PullRequestsSearch["state"])
+			: undefined,
+		tab: VIEW_TAB_VALUES.includes(search.tab as never)
+			? (search.tab as PullRequestsSearch["tab"])
 			: undefined,
 	}),
 });
@@ -40,8 +48,12 @@ export const Route = createFileRoute(
  * unmounts, so scroll position and in-flight pagination survive.
  */
 function PullRequestsLayout() {
-	const { search, project, projects, author, review, state } =
+	const { search, project, projects, author, review, state, tab } =
 		Route.useSearch();
+	const params = useParams({ strict: false }) as { prNumber?: string };
+	const selectedPrNumber = params.prNumber
+		? parsePositiveIntegerParam(params.prNumber)
+		: null;
 	const isListCollapsed = usePullRequestsSplitViewStore(
 		(s) => s.isListCollapsed,
 	);
@@ -74,6 +86,9 @@ function PullRequestsLayout() {
 						initialAuthor={author}
 						initialReview={review}
 						initialState={state}
+						initialViewTab={tab}
+						selectedPrNumber={selectedPrNumber}
+						selectedPrProjectId={project ?? null}
 					/>
 				</div>
 			)}
