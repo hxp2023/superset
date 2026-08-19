@@ -2,6 +2,7 @@ import { SiGmail } from "react-icons/si";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { SelectChip } from "../../TriggerSentence/components/SelectChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
+import { Sentence } from "../components/Sentence";
 import type { SentenceContext, TriggerProvider } from "../types";
 import {
 	ATTACHMENT_OPTIONS,
@@ -9,23 +10,15 @@ import {
 	GMAIL_SENTENCE,
 	type GmailConfig,
 	type GmailSlot,
-	type SentencePart,
 } from "./grammar";
 
-function renderPart(
+function renderSlot(
 	config: GmailConfig,
-	part: SentencePart<GmailSlot>,
+	slot: GmailSlot,
 	index: number,
 	{ set, mark, options, disabled }: SentenceContext,
 ) {
-	if ("text" in part) {
-		return (
-			<span key={index} className="text-[13px] text-muted-foreground">
-				{part.text}
-			</span>
-		);
-	}
-	switch (part.slot) {
+	switch (slot) {
 		case "from":
 			return (
 				<ScopeChip
@@ -96,6 +89,10 @@ export const gmailProvider: TriggerProvider<GmailConfig> = {
 	label: "Gmail",
 	icon: SiGmail,
 	menu: GMAIL_MENU,
-	renderSentence: (config, ctx) =>
-		GMAIL_SENTENCE.map((part, index) => renderPart(config, part, index, ctx)),
+	renderSentence: (config, ctx) => (
+		<Sentence
+			parts={GMAIL_SENTENCE}
+			renderSlot={(slot, index) => renderSlot(config, slot, index, ctx)}
+		/>
+	),
 };
