@@ -119,7 +119,6 @@ export function WorkspaceSidebar({
 		{ workspaceId },
 		{ staleTime: Number.POSITIVE_INFINITY },
 	);
-	const baseBranch = baseBranchQuery.data?.baseBranch ?? null;
 
 	const reviewTab = useReviewTab({
 		workspaceId,
@@ -128,13 +127,23 @@ export function WorkspaceSidebar({
 			? (path, line, openInNewTab, side) => {
 					// Force annotations on so the user lands on the comment, not an empty line.
 					useSettings.getState().update("showDiffComments", true);
-					const changeKey = getChangesetFileKey({
-						path,
-						status: "modified",
-						additions: 0,
-						deletions: 0,
-						source: { kind: "against-base", baseBranch },
-					});
+					// Only disambiguate once the real base branch is known — while
+					// baseBranchQuery is still loading, omit changeKey so this falls
+					// back to the old (safe) "first item whose path matches" behavior
+					// instead of building a changeKey with a guessed-empty base branch
+					// that won't match the real item once it resolves.
+					const changeKey = baseBranchQuery.isSuccess
+						? getChangesetFileKey({
+								path,
+								status: "modified",
+								additions: 0,
+								deletions: 0,
+								source: {
+									kind: "against-base",
+									baseBranch: baseBranchQuery.data.baseBranch,
+								},
+							})
+						: undefined;
 					onSelectDiffFile(path, openInNewTab ?? false, line, side, changeKey);
 				}
 			: undefined,
