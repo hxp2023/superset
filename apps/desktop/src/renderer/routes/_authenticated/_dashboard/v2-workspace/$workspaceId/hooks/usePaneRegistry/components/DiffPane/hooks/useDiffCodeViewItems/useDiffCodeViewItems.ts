@@ -242,10 +242,18 @@ export function useDiffCodeViewItems({
 							{
 								...content.oldFile,
 								name: file.oldPath ?? file.path,
+								// Lets @pierre/diffs' WorkerPoolManager reuse an
+								// already-highlighted AST across remounts (e.g.
+								// navigating away from a workspace and back), which
+								// this hook's own fileDiffCacheRef can't cover since
+								// it's wiped on unmount. dataUpdatedAt changes
+								// whenever the underlying diff content changes.
+								cacheKey: `${itemId}:${content.dataUpdatedAt}:old`,
 							},
 							{
 								...content.newFile,
 								name: file.path,
+								cacheKey: `${itemId}:${content.dataUpdatedAt}:new`,
 							},
 						);
 			if (!cached || cached.dataUpdatedAt !== content.dataUpdatedAt) {
