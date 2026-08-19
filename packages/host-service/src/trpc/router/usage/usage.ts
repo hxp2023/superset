@@ -19,6 +19,7 @@ import {
 } from "./default-account";
 import { removeClaudeProfile, removeCodexHome } from "./profile-remove";
 import { seedClaudeProfileOnboarding } from "./profile-seed";
+import { shareClaudeProfileState } from "./profile-share";
 import { discoverClaudeProfiles, discoverCodexHomes } from "./profiles";
 import type { UsageAccount } from "./types";
 
@@ -149,11 +150,14 @@ export const usageRouter = router({
 			// Secondary profiles read hooks from their own dir, so agents launched
 			// there would otherwise lose lifecycle/status reporting; fresh Claude
 			// profiles also need onboarding marked done or the first launch runs
-			// the first-boot wizard. Best-effort: a failed merge must not undo
-			// the switch.
+			// the first-boot wizard. Claude profiles first get their shared state
+			// linked into ~/.claude (one history/settings across accounts —
+			// profile-share.ts), so the hook merge lands in the shared settings
+			// file. Best-effort: a failed merge must not undo the switch.
 			if (input.selection !== null) {
 				try {
 					if (input.provider === "claude") {
+						shareClaudeProfileState(input.selection);
 						ensureClaudeManagedHooksAt(input.selection);
 						seedClaudeProfileOnboarding(input.selection);
 					} else {
@@ -214,9 +218,10 @@ export const usageRouter = router({
 		}),
 
 	/**
-	 * One-time preparation for a freshly added Claude profile: mark onboarding
-	 * complete so the first agent launch doesn't open the first-boot wizard.
-	 * Only accepts discovered profile dirs.
+	 * One-time preparation for a freshly added Claude profile: link its shared
+	 * state into ~/.claude (profile-share.ts) and mark onboarding complete so
+	 * the first agent launch doesn't open the first-boot wizard. Only accepts
+	 * discovered profile dirs.
 	 */
 	prepareClaudeProfile: protectedProcedure
 		.input(z.object({ configDir: z.string() }))
@@ -228,6 +233,7 @@ export const usageRouter = router({
 					message: `No Claude profile found at ${input.configDir}.`,
 				});
 			}
+			shareClaudeProfileState(input.configDir);
 			seedClaudeProfileOnboarding(input.configDir);
 			return { success: true as const };
 		}),
