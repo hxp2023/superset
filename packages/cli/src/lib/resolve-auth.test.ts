@@ -1,5 +1,7 @@
 import { afterAll, afterEach, describe, expect, it } from "bun:test";
 import fs from "node:fs";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
 
@@ -20,13 +22,19 @@ function clearConfig(): void {
 // would leak into every test. Clear it for the suite, restore in afterAll.
 const originalEnvKey = process.env.SUPERSET_API_KEY;
 const originalOrganizationId = process.env.SUPERSET_ORGANIZATION_ID;
+const originalTerminalId = process.env.SUPERSET_TERMINAL_ID;
+const originalWorkspaceId = process.env.SUPERSET_WORKSPACE_ID;
 delete process.env.SUPERSET_API_KEY;
 delete process.env.SUPERSET_ORGANIZATION_ID;
+delete process.env.SUPERSET_TERMINAL_ID;
+delete process.env.SUPERSET_WORKSPACE_ID;
 
 afterEach(() => {
 	clearConfig();
 	delete process.env.SUPERSET_API_KEY;
 	delete process.env.SUPERSET_ORGANIZATION_ID;
+	delete process.env.SUPERSET_TERMINAL_ID;
+	delete process.env.SUPERSET_WORKSPACE_ID;
 });
 
 afterAll(() => {
@@ -43,7 +51,74 @@ afterAll(() => {
 	} else {
 		process.env.SUPERSET_ORGANIZATION_ID = originalOrganizationId;
 	}
+	if (originalTerminalId === undefined) {
+		delete process.env.SUPERSET_TERMINAL_ID;
+	} else {
+		process.env.SUPERSET_TERMINAL_ID = originalTerminalId;
+	}
+	if (originalWorkspaceId === undefined) {
+		delete process.env.SUPERSET_WORKSPACE_ID;
+	} else {
+		process.env.SUPERSET_WORKSPACE_ID = originalWorkspaceId;
+	}
 });
+
+async function withHostSessionServer<Result>(
+	handler: (request: Request) => Response,
+	run: (endpoint: string) => Promise<Result>,
+): Promise<Result> {
+	const server: Server = createServer(async (req, res) => {
+		const chunks: Buffer[] = [];
+		for await (const chunk of req) chunks.push(Buffer.from(chunk));
+		const headers = new Headers();
+		for (const [key, value] of Object.entries(req.headers)) {
+			if (Array.isArray(value)) {
+				for (const item of value) headers.append(key, item);
+			} else if (value !== undefined) {
+				headers.set(key, value);
+			}
+		}
+		const request = new Request(
+			`http://127.0.0.1:${(server.address() as AddressInfo).port}${req.url}`,
+			{
+				method: req.method,
+				headers,
+				body: chunks.length ? Buffer.concat(chunks) : undefined,
+			},
+		);
+		const response = handler(request);
+		res.writeHead(response.status, Object.fromEntries(response.headers));
+		res.end(await response.text());
+	});
+
+	await new Promise<void>((resolve) => {
+		server.listen(0, "127.0.0.1", () => resolve());
+	});
+	try {
+		const address = server.address() as AddressInfo;
+		return await run(`http://127.0.0.1:${address.port}`);
+	} finally {
+		await new Promise<void>((resolve, reject) => {
+			server.close((error) => (error ? reject(error) : resolve()));
+		});
+	}
+}
+
+function writeHostManifest(organizationId: string, endpoint: string): void {
+	const manifestDir = path.join(tempHome, "host", organizationId);
+	fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
+	fs.writeFileSync(
+		path.join(manifestDir, "manifest.json"),
+		JSON.stringify({
+			pid: process.pid,
+			endpoint,
+			authToken: "host-secret",
+			startedAt: Date.now(),
+			organizationId,
+		}),
+		{ mode: 0o600 },
+	);
+}
 
 describe("resolveAuth", () => {
 	it("throws when no override and no stored credentials", async () => {
@@ -118,6 +193,36 @@ describe("resolveAuth", () => {
 		const result = await resolveAuth(undefined);
 		expect(result.bearer).toBe("sk_live_env");
 		expect(result.authSource).toBe("override");
+	});
+
+	it("uses the local host session in a Superset terminal before stale stored credentials", async () => {
+		const organizationId = "org_terminal";
+		process.env.SUPERSET_TERMINAL_ID = "term_1";
+		process.env.SUPERSET_ORGANIZATION_ID = organizationId;
+		writeConfig({
+			auth: {
+				accessToken: "stale-oauth-token",
+				expiresAt: Date.now() - 1000,
+			},
+		});
+
+		await withHostSessionServer(
+			(request) => {
+				expect(new URL(request.url).pathname).toBe("/auth/session-jwt");
+				expect(request.headers.get("authorization")).toBe("Bearer host-secret");
+				return Response.json({
+					token: "jwt-from-local-host",
+					apiUrl: "https://api.desktop.test",
+				});
+			},
+			async (endpoint) => {
+				writeHostManifest(organizationId, endpoint);
+				const result = await resolveAuth(undefined);
+				expect(result.bearer).toBe("jwt-from-local-host");
+				expect(result.authSource).toBe("host");
+				expect(result.config.organizationId).toBe(organizationId);
+			},
+		);
 	});
 
 	it("overrides the stored org with SUPERSET_ORGANIZATION_ID", async () => {
