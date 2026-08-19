@@ -2,6 +2,12 @@ import { EventEmitter } from "node:events";
 import { clipboard, Menu, webContents } from "electron";
 import { safeOpenExternal } from "main/lib/safe-url";
 import { chordFromInput } from "shared/hotkey-chord";
+import {
+	forwardSessionFor,
+	handleTargetCommand,
+	shimIds,
+	tagEventSession,
+} from "./cdp-target-shim";
 
 interface ConsoleEntry {
 	level: "log" | "warn" | "error" | "info" | "debug";
@@ -254,38 +260,21 @@ class BrowserManager extends EventEmitter {
 		}
 		wc.debugger.attach("1.3");
 
-		// A browser-level CDP client (browser-use, Playwright) expects to call
-		// `Target.getTargets`, find a `type: "page"` target, and attach to it.
-		// Electron's guest debugger answers `Target.*` with the whole process's
-		// target list — the webview shows up as `type: "webview"` and the host
-		// app shell as a `file://` `type: "page"`, so such a client attaches to
-		// the wrong target and reads an empty page. We instead present this one
-		// pane as a single `page` target and bind the synthetic flatten session
-		// to the debugger's root (session-less) channel, which already routes to
-		// the guest webview.
-		const synthTargetId = `pane-${paneId}`;
-		const synthSessionId = `pane-session-${paneId}`;
-		const synthBrowserContextId = `pane-context-${paneId}`;
+		// A browser-level CDP client (browser-use, Playwright) expects one `page`
+		// target to attach to, but the guest debugger answers `Target.*` with the
+		// whole process's target list (webview + host app shell). The shim in
+		// `cdp-target-shim` presents this pane as a single page target and maps a
+		// synthetic flatten session to the debugger's root channel.
+		const ids = shimIds(paneId);
 		let flatSessionId: string | null = null;
 		let autoAttachEmitted = false;
-		const targetInfo = () => {
-			let url = "";
-			let title = "";
+		const paneUrlTitle = () => {
 			try {
-				url = wc.getURL();
-				title = wc.getTitle();
+				return { url: wc.getURL(), title: wc.getTitle() };
 			} catch {
 				// webContents may be mid-navigation or destroyed
+				return { url: "", title: "" };
 			}
-			return {
-				targetId: synthTargetId,
-				type: "page",
-				title,
-				url,
-				attached: flatSessionId !== null,
-				canAccessOpener: false,
-				browserContextId: synthBrowserContextId,
-			};
 		};
 
 		let closed = false;
@@ -295,10 +284,7 @@ class BrowserManager extends EventEmitter {
 			params: unknown,
 			sessionId?: string,
 		) => {
-			// Root events carry no sessionId; once the client has taken the
-			// synthetic flatten session, tag them with it so its per-session
-			// event routing matches (real flatten mode tags page events this way).
-			const outSessionId = sessionId ?? flatSessionId ?? undefined;
+			const outSessionId = tagEventSession(sessionId, flatSessionId);
 			onMessage(
 				JSON.stringify({
 					method,
@@ -369,59 +355,22 @@ class BrowserManager extends EventEmitter {
 						}),
 					);
 				};
-				// Emulate the Target domain so a browser-level client sees exactly
-				// this pane as one `page` target, rather than the guest debugger's
-				// process-wide list (which leaks the host app shell).
-				if (method.startsWith("Target.")) {
-					switch (method) {
-						case "Target.getTargets":
-							reply({ targetInfos: [targetInfo()] });
-							return;
-						case "Target.getTargetInfo":
-							reply({ targetInfo: targetInfo() });
-							return;
-						case "Target.attachToTarget":
-						case "Target.createTarget":
-							// createTarget: a single pane can't spawn tabs, so hand
-							// back this same target — the client then navigates it,
-							// which reuses the pane instead of erroring.
-							flatSessionId = synthSessionId;
-							reply(
-								method === "Target.createTarget"
-									? { targetId: synthTargetId }
-									: { sessionId: synthSessionId },
-							);
-							return;
-						case "Target.setAutoAttach":
-							if (
-								(params as { autoAttach?: boolean } | undefined)?.autoAttach &&
-								!autoAttachEmitted
-							) {
-								flatSessionId = synthSessionId;
-								autoAttachEmitted = true;
-								onMessage(
-									JSON.stringify({
-										method: "Target.attachedToTarget",
-										params: {
-											sessionId: synthSessionId,
-											targetInfo: targetInfo(),
-											waitingForDebugger: false,
-										},
-									}),
-								);
-							}
-							reply({});
-							return;
-						case "Target.closeTarget":
-							// Don't destroy the user's pane on a client disconnect;
-							// acknowledge without closing.
-							reply({ success: true });
-							return;
-						default:
-							// activateTarget, setDiscoverTargets, detachFromTarget, …
-							reply({});
-							return;
-					}
+				// Present this pane as a single `page` target to a browser-level
+				// client, instead of the guest debugger's process-wide list.
+				const { url, title } = paneUrlTitle();
+				const targetRes = handleTargetCommand(method, params, {
+					ids,
+					url,
+					title,
+					flatSessionId,
+					autoAttachEmitted,
+				});
+				if (targetRes) {
+					flatSessionId = targetRes.flatSessionId;
+					autoAttachEmitted = targetRes.autoAttachEmitted;
+					for (const ev of targetRes.events) onMessage(JSON.stringify(ev));
+					reply(targetRes.result);
+					return;
 				}
 				// `will-navigate` doesn't fire for CDP-initiated navigations, so the
 				// scheme allowlist is re-checked here — otherwise `Page.navigate`
@@ -445,8 +394,7 @@ class BrowserManager extends EventEmitter {
 				// The synthetic flatten session maps to the debugger's root
 				// channel, so strip it before forwarding; the response still
 				// echoes the client's original sessionId above.
-				const forwardSessionId =
-					sessionId && sessionId === flatSessionId ? undefined : sessionId;
+				const forwardSessionId = forwardSessionFor(sessionId, flatSessionId);
 				wc.debugger
 					.sendCommand(method, params, forwardSessionId)
 					.then((result) => {
