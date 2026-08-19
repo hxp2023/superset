@@ -254,6 +254,40 @@ class BrowserManager extends EventEmitter {
 		}
 		wc.debugger.attach("1.3");
 
+		// A browser-level CDP client (browser-use, Playwright) expects to call
+		// `Target.getTargets`, find a `type: "page"` target, and attach to it.
+		// Electron's guest debugger answers `Target.*` with the whole process's
+		// target list — the webview shows up as `type: "webview"` and the host
+		// app shell as a `file://` `type: "page"`, so such a client attaches to
+		// the wrong target and reads an empty page. We instead present this one
+		// pane as a single `page` target and bind the synthetic flatten session
+		// to the debugger's root (session-less) channel, which already routes to
+		// the guest webview.
+		const synthTargetId = `pane-${paneId}`;
+		const synthSessionId = `pane-session-${paneId}`;
+		const synthBrowserContextId = `pane-context-${paneId}`;
+		let flatSessionId: string | null = null;
+		let autoAttachEmitted = false;
+		const targetInfo = () => {
+			let url = "";
+			let title = "";
+			try {
+				url = wc.getURL();
+				title = wc.getTitle();
+			} catch {
+				// webContents may be mid-navigation or destroyed
+			}
+			return {
+				targetId: synthTargetId,
+				type: "page",
+				title,
+				url,
+				attached: flatSessionId !== null,
+				canAccessOpener: false,
+				browserContextId: synthBrowserContextId,
+			};
+		};
+
 		let closed = false;
 		const handleMessage = (
 			_event: Electron.Event,
@@ -261,11 +295,15 @@ class BrowserManager extends EventEmitter {
 			params: unknown,
 			sessionId?: string,
 		) => {
+			// Root events carry no sessionId; once the client has taken the
+			// synthetic flatten session, tag them with it so its per-session
+			// event routing matches (real flatten mode tags page events this way).
+			const outSessionId = sessionId ?? flatSessionId ?? undefined;
 			onMessage(
 				JSON.stringify({
 					method,
 					params,
-					...(sessionId ? { sessionId } : {}),
+					...(outSessionId ? { sessionId: outSessionId } : {}),
 				}),
 			);
 		};
@@ -322,6 +360,69 @@ class BrowserManager extends EventEmitter {
 					);
 					return;
 				}
+				const reply = (result: unknown) => {
+					onMessage(
+						JSON.stringify({
+							id,
+							result,
+							...(sessionId ? { sessionId } : {}),
+						}),
+					);
+				};
+				// Emulate the Target domain so a browser-level client sees exactly
+				// this pane as one `page` target, rather than the guest debugger's
+				// process-wide list (which leaks the host app shell).
+				if (method.startsWith("Target.")) {
+					switch (method) {
+						case "Target.getTargets":
+							reply({ targetInfos: [targetInfo()] });
+							return;
+						case "Target.getTargetInfo":
+							reply({ targetInfo: targetInfo() });
+							return;
+						case "Target.attachToTarget":
+						case "Target.createTarget":
+							// createTarget: a single pane can't spawn tabs, so hand
+							// back this same target — the client then navigates it,
+							// which reuses the pane instead of erroring.
+							flatSessionId = synthSessionId;
+							reply(
+								method === "Target.createTarget"
+									? { targetId: synthTargetId }
+									: { sessionId: synthSessionId },
+							);
+							return;
+						case "Target.setAutoAttach":
+							if (
+								(params as { autoAttach?: boolean } | undefined)?.autoAttach &&
+								!autoAttachEmitted
+							) {
+								flatSessionId = synthSessionId;
+								autoAttachEmitted = true;
+								onMessage(
+									JSON.stringify({
+										method: "Target.attachedToTarget",
+										params: {
+											sessionId: synthSessionId,
+											targetInfo: targetInfo(),
+											waitingForDebugger: false,
+										},
+									}),
+								);
+							}
+							reply({});
+							return;
+						case "Target.closeTarget":
+							// Don't destroy the user's pane on a client disconnect;
+							// acknowledge without closing.
+							reply({ success: true });
+							return;
+						default:
+							// activateTarget, setDiscoverTargets, detachFromTarget, …
+							reply({});
+							return;
+					}
+				}
 				// `will-navigate` doesn't fire for CDP-initiated navigations, so the
 				// scheme allowlist is re-checked here — otherwise `Page.navigate`
 				// could point the guest at file:// / chrome:// and read it back.
@@ -341,8 +442,13 @@ class BrowserManager extends EventEmitter {
 						return;
 					}
 				}
+				// The synthetic flatten session maps to the debugger's root
+				// channel, so strip it before forwarding; the response still
+				// echoes the client's original sessionId above.
+				const forwardSessionId =
+					sessionId && sessionId === flatSessionId ? undefined : sessionId;
 				wc.debugger
-					.sendCommand(method, params, sessionId)
+					.sendCommand(method, params, forwardSessionId)
 					.then((result) => {
 						if (closed) return;
 						onMessage(

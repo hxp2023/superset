@@ -226,6 +226,14 @@ not. Without it, use one of:
   `start_remote_daemon("<name>")` and prefix later calls with
   `BU_NAME=<name>`. Cloud browsers bill until stopped — ask before starting
   one, and stop it when done.
+- An in-app pane, if you specifically want Browser Use's harness against a
+  workspace pane: export the pane's own CDP endpoint (the `url` from
+  `superset browser cdp … --json`) as `BU_CDP_WS`, then run `browser-use`.
+  The pane presents itself as a single page target, so Browser Use attaches
+  to it directly. This needs no profile consent (it's the workspace's own
+  pane, not a signed-in system browser) — but for panes the default
+  `superset browser` verbs above are simpler and need no install, so prefer
+  them unless you have a reason to use Browser Use here.
 
 ### Drive
 

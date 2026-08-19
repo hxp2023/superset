@@ -79,3 +79,5 @@ uvx --python 3.12 --from 'browser-use[cli]' browser-use --help
 ```
 
 By default it attaches to your running Chrome — your real, signed-in profile — so the skill requires your explicit consent before taking that path; otherwise agents use a scratch browser or a Browser Use cloud browser (which bills until stopped, so they ask first and stop it after). `browser-use --doctor` diagnoses connection problems, and `browser-use skill` prints the engine's own usage reference.
+
+Browser Use can also drive an in-app pane: point it at the pane's endpoint from `superset browser cdp` (as `BU_CDP_WS`) and the pane presents itself as a single page target. For panes the `superset browser` verbs are the simpler default, but this lets Browser Use's harness reach the same pane when you want it.
