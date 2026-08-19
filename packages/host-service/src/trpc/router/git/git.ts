@@ -1,8 +1,7 @@
-import { readFile, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { isAbsolute, join, normalize, sep } from "node:path";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
-import type { SimpleGit } from "simple-git";
 import { z } from "zod";
 import { pullRequests, workspaces } from "../../../db/schema";
 import { createGitEnvResolver } from "../../../runtime/git";
@@ -11,6 +10,7 @@ import type { HostServiceContext } from "../../../types";
 import { getHostWorkerPool } from "../../../workers/host-worker-pool";
 import {
 	gitCommitFilesTask,
+	gitDiffBulkTask,
 	gitFetchBaseRefTask,
 	gitStatusSnapshotTask,
 } from "../../../workers/tasks/git";
@@ -33,8 +33,9 @@ import { rethrowEnvironmentalGitError } from "./utils/classify-git-error";
 import { gitConfigWrite } from "./utils/config-write";
 import {
 	getDefaultBranchName,
-	mapWithConcurrency,
+	loadFileDiffContent,
 	resolveBaseComparison,
+	resolveDiffCategoryRefs,
 } from "./utils/git-helpers";
 import { gitStatusRefreshLimiter } from "./utils/git-status-refresh-limiter";
 import {
@@ -195,8 +196,6 @@ function sumSnapshotDiffStats(snapshot: {
 	return { additions, deletions, fileCount: byPath.size };
 }
 
-type DiffCategory = "against-base" | "staged" | "unstaged" | "commit";
-
 const getDiffInputShape = z.object({
 	workspaceId: z.string(),
 	path: z.string(),
@@ -210,107 +209,6 @@ const getDiffInputShape = z.object({
  * changeset we expect the Changes pane to render, while still bounding a
  * runaway/malicious request. */
 const MAX_DIFF_BULK_PATHS = 2000;
-
-/** How many `git show` pairs run at once for a bulk diff request. Each
- * pair is its own SimpleGit instance so slots genuinely run concurrently
- * (simple-git serializes commands within one instance). */
-const DIFF_BULK_CONCURRENCY = 8;
-
-/** Refs shared by every file in a `getDiff`/`getDiffBulk` request for a given
- * category — resolved once per request rather than once per file. */
-interface DiffCategoryRefs {
-	/** against-base: merge-base(baseRef, HEAD) */
-	originRef?: string;
-	/** commit: the "before" ref (fromHash, or commitHash^) */
-	fromRef?: string;
-	/** commit: the commit itself */
-	toRef?: string;
-}
-
-async function resolveDiffCategoryRefs(
-	git: SimpleGit,
-	category: DiffCategory,
-	opts: { baseBranch?: string; commitHash?: string; fromHash?: string },
-): Promise<DiffCategoryRefs> {
-	if (category === "against-base") {
-		const base = await resolveBaseComparison(git, opts.baseBranch);
-		const baseRef = base?.baseRef ?? "HEAD";
-		// Use the merge base so the diff excludes unrelated changes landed on
-		// the base branch after we forked — matches what the file list
-		// (3-dot diff) is already filtered by.
-		const originRef = await git
-			.raw(["merge-base", baseRef, "HEAD"])
-			.then((s) => s.trim())
-			.catch(() => baseRef);
-		return { originRef };
-	}
-	if (category === "commit") {
-		if (!opts.commitHash) {
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: "commitHash is required for commit diffs",
-			});
-		}
-		return {
-			fromRef: opts.fromHash ?? `${opts.commitHash}^`,
-			toRef: opts.commitHash,
-		};
-	}
-	return {};
-}
-
-async function loadFileDiffContent(
-	git: SimpleGit,
-	worktreePath: string,
-	category: DiffCategory,
-	path: string,
-	refs: DiffCategoryRefs,
-): Promise<{
-	oldFile: { name: string; contents: string };
-	newFile: { name: string; contents: string };
-}> {
-	let originalContent = "";
-	let modifiedContent = "";
-
-	if (category === "against-base") {
-		try {
-			originalContent = await git.show([`${refs.originRef}:${path}`]);
-		} catch {}
-		try {
-			modifiedContent = await git.show([`HEAD:${path}`]);
-		} catch {}
-	} else if (category === "staged") {
-		try {
-			originalContent = await git.show([`HEAD:${path}`]);
-		} catch {}
-		try {
-			modifiedContent = await git.show([`:0:${path}`]);
-		} catch {}
-	} else if (category === "commit") {
-		try {
-			originalContent = await git.show([`${refs.fromRef}:${path}`]);
-		} catch {}
-		try {
-			modifiedContent = await git.show([`${refs.toRef}:${path}`]);
-		} catch {}
-	} else {
-		// Unstaged: compare index (staged version) against working tree.
-		// If the file isn't in the index (untracked), originalContent stays
-		// empty = "new file".
-		try {
-			originalContent = await git.show([`:0:${path}`]);
-		} catch {}
-		try {
-			modifiedContent = await readFile(`${worktreePath}/${path}`, "utf-8");
-		} catch {}
-	}
-
-	const fileName = path.split("/").pop() ?? path;
-	return {
-		oldFile: { name: fileName, contents: originalContent },
-		newFile: { name: fileName, contents: modifiedContent },
-	};
-}
 
 export const gitRouter = router({
 	listBranches: queryProcedure
@@ -718,29 +616,22 @@ export const gitRouter = router({
 		.query(async ({ ctx, input }) => {
 			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
 			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
-			const refs = await resolveDiffCategoryRefs(
-				createUserSimpleGit(worktreePath).env(gitEnv),
-				input.category,
-				input,
-			);
-
-			const diffs = await mapWithConcurrency(
-				input.paths,
-				DIFF_BULK_CONCURRENCY,
-				async (path) => {
-					const git = createUserSimpleGit(worktreePath).env(gitEnv);
-					const { oldFile, newFile } = await loadFileDiffContent(
-						git,
-						worktreePath,
-						input.category,
-						path,
-						refs,
-					);
-					return { path, oldFile, newFile };
+			// Ref resolution and every file's `git show` pair run inside the
+			// worker task, off the host-service event loop — see
+			// no-main-loop-blocking.test.ts.
+			return getHostWorkerPool().run(
+				gitDiffBulkTask,
+				{
+					worktreePath,
+					paths: input.paths,
+					category: input.category,
+					baseBranch: input.baseBranch,
+					commitHash: input.commitHash,
+					fromHash: input.fromHash,
+					gitEnv,
 				},
+				{ timeoutMs: 60_000 },
 			);
-
-			return { diffs };
 		}),
 
 	getBranchSyncStatus: queryProcedure

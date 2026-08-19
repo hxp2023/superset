@@ -1,10 +1,19 @@
-import { copyFile, mkdtemp, open, realpath, rm, stat } from "node:fs/promises";
+import {
+	copyFile,
+	mkdtemp,
+	open,
+	readFile,
+	realpath,
+	rm,
+	stat,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
 	BINARY_SNIFF_BYTES,
 	isBinaryMediaFile,
 } from "@superset/shared/media-files";
+import { TRPCError } from "@trpc/server";
 import type { SimpleGit } from "simple-git";
 import { resolveUpstream } from "../../../../runtime/git/refs";
 import { createUserSimpleGit } from "../../../../runtime/git/simple-git";
@@ -469,4 +478,102 @@ export async function getChangedFilesForDiff(
 	} catch {
 		return [];
 	}
+}
+
+export type DiffCategory = "against-base" | "staged" | "unstaged" | "commit";
+
+/** Refs shared by every file in a `getDiff`/`getDiffBulk` request for a given
+ * category — resolved once per request rather than once per file. */
+export interface DiffCategoryRefs {
+	/** against-base: merge-base(baseRef, HEAD) */
+	originRef?: string;
+	/** commit: the "before" ref (fromHash, or commitHash^) */
+	fromRef?: string;
+	/** commit: the commit itself */
+	toRef?: string;
+}
+
+export async function resolveDiffCategoryRefs(
+	git: SimpleGit,
+	category: DiffCategory,
+	opts: { baseBranch?: string; commitHash?: string; fromHash?: string },
+): Promise<DiffCategoryRefs> {
+	if (category === "against-base") {
+		const base = await resolveBaseComparison(git, opts.baseBranch);
+		const baseRef = base?.baseRef ?? "HEAD";
+		// Use the merge base so the diff excludes unrelated changes landed on
+		// the base branch after we forked — matches what the file list
+		// (3-dot diff) is already filtered by.
+		const originRef = await git
+			.raw(["merge-base", baseRef, "HEAD"])
+			.then((s) => s.trim())
+			.catch(() => baseRef);
+		return { originRef };
+	}
+	if (category === "commit") {
+		if (!opts.commitHash) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "commitHash is required for commit diffs",
+			});
+		}
+		return {
+			fromRef: opts.fromHash ?? `${opts.commitHash}^`,
+			toRef: opts.commitHash,
+		};
+	}
+	return {};
+}
+
+export async function loadFileDiffContent(
+	git: SimpleGit,
+	worktreePath: string,
+	category: DiffCategory,
+	path: string,
+	refs: DiffCategoryRefs,
+): Promise<{
+	oldFile: { name: string; contents: string };
+	newFile: { name: string; contents: string };
+}> {
+	let originalContent = "";
+	let modifiedContent = "";
+
+	if (category === "against-base") {
+		try {
+			originalContent = await git.show([`${refs.originRef}:${path}`]);
+		} catch {}
+		try {
+			modifiedContent = await git.show([`HEAD:${path}`]);
+		} catch {}
+	} else if (category === "staged") {
+		try {
+			originalContent = await git.show([`HEAD:${path}`]);
+		} catch {}
+		try {
+			modifiedContent = await git.show([`:0:${path}`]);
+		} catch {}
+	} else if (category === "commit") {
+		try {
+			originalContent = await git.show([`${refs.fromRef}:${path}`]);
+		} catch {}
+		try {
+			modifiedContent = await git.show([`${refs.toRef}:${path}`]);
+		} catch {}
+	} else {
+		// Unstaged: compare index (staged version) against working tree.
+		// If the file isn't in the index (untracked), originalContent stays
+		// empty = "new file".
+		try {
+			originalContent = await git.show([`:0:${path}`]);
+		} catch {}
+		try {
+			modifiedContent = await readFile(`${worktreePath}/${path}`, "utf-8");
+		} catch {}
+	}
+
+	const fileName = path.split("/").pop() ?? path;
+	return {
+		oldFile: { name: fileName, contents: originalContent },
+		newFile: { name: fileName, contents: modifiedContent },
+	};
 }
