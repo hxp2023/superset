@@ -62,6 +62,13 @@ export interface TargetCommandResult {
 	result: Record<string, unknown>;
 	flatSessionId: string | null;
 	autoAttachEmitted: boolean;
+	/**
+	 * A URL the caller should navigate the pane to after replying. Set only for
+	 * `Target.createTarget` with a concrete url — real CDP navigates the new
+	 * target to it, and since we reuse the pane as that target, the caller
+	 * performs the navigation (subject to its own scheme allowlist).
+	 */
+	navigateTo?: string;
 }
 
 /**
@@ -77,6 +84,7 @@ export function handleTargetCommand(
 
 	let flatSessionId = ctx.flatSessionId;
 	let autoAttachEmitted = ctx.autoAttachEmitted;
+	let navigateTo: string | undefined;
 	const events: Array<Record<string, unknown>> = [];
 	const info = () =>
 		syntheticTargetInfo({
@@ -90,7 +98,20 @@ export function handleTargetCommand(
 		result,
 		flatSessionId,
 		autoAttachEmitted,
+		navigateTo,
 	});
+	// Emit detachedFromTarget for the synthetic session and forget it, matching
+	// CDP's teardown contract (detachFromTarget / setAutoAttach:false).
+	const detach = () => {
+		if (flatSessionId) {
+			events.push({
+				method: "Target.detachedFromTarget",
+				params: { sessionId: flatSessionId, targetId: ctx.ids.targetId },
+			});
+			flatSessionId = null;
+			autoAttachEmitted = false;
+		}
+	};
 
 	switch (method) {
 		case "Target.getTargets":
@@ -98,38 +119,47 @@ export function handleTargetCommand(
 		case "Target.getTargetInfo":
 			return done({ targetInfo: info() });
 		case "Target.attachToTarget":
-		case "Target.createTarget":
-			// createTarget: a single pane can't spawn tabs, so hand back this same
-			// target — the client then navigates it, which reuses the pane.
 			flatSessionId = ctx.ids.sessionId;
-			return done(
-				method === "Target.createTarget"
-					? { targetId: ctx.ids.targetId }
-					: { sessionId: ctx.ids.sessionId },
-			);
-		case "Target.setAutoAttach":
-			if (
-				(params as { autoAttach?: boolean } | undefined)?.autoAttach &&
-				!autoAttachEmitted
-			) {
-				flatSessionId = ctx.ids.sessionId;
-				autoAttachEmitted = true;
-				events.push({
-					method: "Target.attachedToTarget",
-					params: {
-						sessionId: ctx.ids.sessionId,
-						targetInfo: info(),
-						waitingForDebugger: false,
-					},
-				});
+			return done({ sessionId: ctx.ids.sessionId });
+		case "Target.createTarget": {
+			// A single pane can't spawn tabs, so hand back this same target — the
+			// client then drives it, which reuses the pane. Real CDP navigates the
+			// new target to the requested url, so mirror that: reuse + navigate.
+			flatSessionId = ctx.ids.sessionId;
+			const url = (params as { url?: unknown } | undefined)?.url;
+			if (typeof url === "string" && url !== "" && url !== "about:blank") {
+				navigateTo = url;
 			}
+			return done({ targetId: ctx.ids.targetId });
+		}
+		case "Target.setAutoAttach":
+			if ((params as { autoAttach?: boolean } | undefined)?.autoAttach) {
+				if (!autoAttachEmitted) {
+					flatSessionId = ctx.ids.sessionId;
+					autoAttachEmitted = true;
+					events.push({
+						method: "Target.attachedToTarget",
+						params: {
+							sessionId: ctx.ids.sessionId,
+							targetInfo: info(),
+							waitingForDebugger: false,
+						},
+					});
+				}
+			} else {
+				// Disabling auto-attach detaches related sessions.
+				detach();
+			}
+			return done({});
+		case "Target.detachFromTarget":
+			detach();
 			return done({});
 		case "Target.closeTarget":
 			// Don't destroy the user's pane on a client disconnect; acknowledge
 			// without closing.
 			return done({ success: true });
 		default:
-			// activateTarget, setDiscoverTargets, detachFromTarget, …
+			// activateTarget, setDiscoverTargets, …
 			return done({});
 	}
 }

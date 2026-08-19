@@ -370,6 +370,15 @@ class BrowserManager extends EventEmitter {
 					autoAttachEmitted = targetRes.autoAttachEmitted;
 					for (const ev of targetRes.events) onMessage(JSON.stringify(ev));
 					reply(targetRes.result);
+					// createTarget reuses the pane as the new target, so honor the
+					// requested navigation here (guarded by the scheme allowlist).
+					if (targetRes.navigateTo && isAllowedGuestUrl(targetRes.navigateTo)) {
+						wc.debugger
+							.sendCommand("Page.navigate", { url: targetRes.navigateTo })
+							.catch(() => {
+								// pane may be mid-teardown; navigation is best-effort
+							});
+					}
 					return;
 				}
 				// `will-navigate` doesn't fire for CDP-initiated navigations, so the

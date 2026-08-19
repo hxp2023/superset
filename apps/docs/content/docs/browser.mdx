@@ -69,18 +69,14 @@ Some targets are out of the panes' reach: a real Chrome window outside Superset,
 	Browser Use is built by [Browser Use](https://browser-use.com), not by Superset, and nothing in Superset requires it — the in-app pane engine works with no extra install. Only add it if you want standalone automation, and note that attaching it to your running Chrome hands agents your signed-in sessions.
 </Callout>
 
-Browser Use 3.0 is a CLI that lets agents execute Python against a browser over the Chrome DevTools Protocol. It isn't bundled with Superset — agents check for it and ask before installing. To install it yourself (requires [uv](https://docs.astral.sh/uv/)):
+Browser Use 3.0 is a CLI that lets agents execute Python against a browser over the Chrome DevTools Protocol. It isn't bundled with Superset — agents check for it and ask before installing. To install it yourself (requires [uv](https://docs.astral.sh/uv/)) so the `browser-use` command lands on your `PATH`:
 
 ```bash
 uv tool install browser-use
 browser-use --help
 ```
 
-Or run it without a permanent install:
-
-```bash
-uvx --python 3.12 --from 'browser-use[cli]' browser-use --help
-```
+You can also run it ephemerally with `uvx --from 'browser-use[cli]' browser-use …`, but that doesn't add `browser-use` to your `PATH` — each call needs the full `uvx --from` prefix.
 
 By default it attaches to your running Chrome — your real, signed-in profile — so the skill requires your explicit consent before taking that path; otherwise agents use a scratch browser or a Browser Use cloud browser (which bills until stopped, so they ask first and stop it after). `browser-use --doctor` diagnoses connection problems, and `browser-use skill` prints the engine's own usage reference.
 

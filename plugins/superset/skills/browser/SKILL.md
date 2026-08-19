@@ -220,18 +220,19 @@ per the routing above.
 
 1. Check for an install: `command -v browser-use && browser-use --version`.
 2. If missing, **ask the user before installing anything** (including `uv`
-   itself). With authorization, install with uv:
+   itself). With authorization, install it so the bare `browser-use` command
+   below is on `PATH`:
 
    ```bash
    uv tool install browser-use
    browser-use --help
    ```
 
-   or run it without a permanent install:
-
-   ```bash
-   uvx --python 3.12 --from 'browser-use[cli]' browser-use --help
-   ```
+   `uvx --from 'browser-use[cli]' browser-use …` also works, but it's an
+   ephemeral run that does **not** put `browser-use` on `PATH` — every call
+   must carry the full `uvx --from 'browser-use[cli]'` prefix. The bare
+   `browser-use …` invocations in the rest of this section assume the
+   `uv tool install` above; prefer it unless you deliberately want one-off runs.
 
 3. Read the engine's own instructions before driving: `browser-use skill`
    prints the upstream skill text with the current helper reference and

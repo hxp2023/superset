@@ -69,6 +69,18 @@ describe("cdp-target-shim", () => {
 		);
 		expect(res?.result).toEqual({ targetId: "pane-paneA" });
 		expect(res?.flatSessionId).toBe("pane-session-paneA");
+		// about:blank / empty carry no navigation.
+		expect(res?.navigateTo).toBeUndefined();
+	});
+
+	it("navigates the reused pane when createTarget names a real url", () => {
+		const res = handleTargetCommand(
+			"Target.createTarget",
+			{ url: "https://example.com/" },
+			ctx(),
+		);
+		expect(res?.result).toEqual({ targetId: "pane-paneA" });
+		expect(res?.navigateTo).toBe("https://example.com/");
 	});
 
 	it("synthesizes attachedToTarget on setAutoAttach, once", () => {
@@ -96,6 +108,35 @@ describe("cdp-target-shim", () => {
 			ctx({ flatSessionId: ids.sessionId, autoAttachEmitted: true }),
 		);
 		expect(again?.events).toHaveLength(0);
+	});
+
+	it("emits detachedFromTarget and clears the session on detachFromTarget", () => {
+		const res = handleTargetCommand(
+			"Target.detachFromTarget",
+			{ sessionId: ids.sessionId },
+			ctx({ flatSessionId: ids.sessionId, autoAttachEmitted: true }),
+		);
+		expect(res?.result).toEqual({});
+		expect(res?.flatSessionId).toBeNull();
+		expect(res?.events).toEqual([
+			{
+				method: "Target.detachedFromTarget",
+				params: { sessionId: "pane-session-paneA", targetId: "pane-paneA" },
+			},
+		]);
+	});
+
+	it("detaches related sessions when auto-attach is disabled", () => {
+		const res = handleTargetCommand(
+			"Target.setAutoAttach",
+			{ autoAttach: false },
+			ctx({ flatSessionId: ids.sessionId, autoAttachEmitted: true }),
+		);
+		expect(res?.flatSessionId).toBeNull();
+		expect(res?.events[0]).toMatchObject({
+			method: "Target.detachedFromTarget",
+			params: { sessionId: "pane-session-paneA" },
+		});
 	});
 
 	it("acknowledges closeTarget without signalling a real close", () => {
