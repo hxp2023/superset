@@ -1,9 +1,6 @@
+import type { Channel, ChatMessage } from "@microsoft/microsoft-graph-types";
 import type { MicrosoftTeamsMatchableEvent } from "@superset/shared/automation-matching";
-import {
-	type GraphChannel,
-	type GraphChatMessage,
-	plainTextOf,
-} from "@superset/trpc/integrations/microsoft-teams";
+import { plainTextOf } from "@superset/trpc/integrations/microsoft-teams";
 
 import type { NormalizedDelivery } from "@/lib/automations/ingestAutomationEvent";
 import type { AuthenticatedConnection } from "./notifications";
@@ -19,7 +16,7 @@ export function normalizeChannelMessage(
 		messageId: string;
 		replyId?: string;
 	},
-	message: GraphChatMessage,
+	message: ChatMessage,
 ): NormalizedDelivery {
 	// Membership changes and the like arrive as messages too; nobody means
 	// those when they say "a message in the channel".
@@ -67,7 +64,7 @@ export function normalizeChannelMessage(
 export function normalizeChannelCreated(
 	connection: AuthenticatedConnection,
 	resource: { teamId: string; channelId: string },
-	channel: GraphChannel,
+	channel: Channel,
 ): NormalizedDelivery {
 	const name = channel.displayName ?? resource.channelId;
 	const event: MicrosoftTeamsMatchableEvent = {

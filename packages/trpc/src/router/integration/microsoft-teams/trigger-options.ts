@@ -1,7 +1,10 @@
+import type { Client } from "@microsoft/microsoft-graph-client";
+import type { Team } from "@microsoft/microsoft-graph-types";
 import type { TriggerOptionSource } from "../trigger-options";
 import {
 	findTeamsConnection,
 	getGraphAccessToken,
+	graphClient,
 	isGraphAuthError,
 } from "./graph";
 import { listChannels, listTeams, listUsers } from "./resources";
@@ -11,10 +14,12 @@ import { listChannels, listTeams, listUsers } from "./resources";
  * of teams is walked in batches rather than all at once. */
 const CHANNEL_FETCH_CONCURRENCY = 5;
 
-async function accessTokenFor(organizationId: string): Promise<string | null> {
+async function graphFor(organizationId: string): Promise<Client | null> {
 	const connection = await findTeamsConnection(organizationId);
 	if (!connection) return null;
-	return getGraphAccessToken(connection.id);
+	const accessToken = await getGraphAccessToken(connection.id);
+	if (!accessToken) return null;
+	return graphClient(accessToken);
 }
 
 function byLabel<T extends { label: string }>(a: T, b: T) {
@@ -22,30 +27,40 @@ function byLabel<T extends { label: string }>(a: T, b: T) {
 }
 
 const teams: TriggerOptionSource = async ({ organizationId }) => {
-	const accessToken = await accessTokenFor(organizationId);
-	if (!accessToken) return [];
-	const list = await listTeams(accessToken);
+	const graph = await graphFor(organizationId);
+	if (!graph) return [];
+	const list = await listTeams(graph);
 	return list
-		.map((team) => ({ id: team.id, label: team.displayName ?? team.id }))
+		.flatMap((team) =>
+			team.id ? [{ id: team.id, label: team.displayName ?? team.id }] : [],
+		)
 		.sort(byLabel);
 };
 
 const channels: TriggerOptionSource = async ({ organizationId }) => {
-	const accessToken = await accessTokenFor(organizationId);
-	if (!accessToken) return [];
-	const list = await listTeams(accessToken);
+	const graph = await graphFor(organizationId);
+	if (!graph) return [];
+	const list = (await listTeams(graph)).filter(
+		(team): team is Team & { id: string } => Boolean(team.id),
+	);
 	const options: Array<{ id: string; label: string }> = [];
 	for (let i = 0; i < list.length; i += CHANNEL_FETCH_CONCURRENCY) {
 		const batch = list.slice(i, i + CHANNEL_FETCH_CONCURRENCY);
 		const results = await Promise.allSettled(
 			batch.map(async (team) => {
-				const teamChannels = await listChannels(accessToken, team.id);
-				return teamChannels.map((channel) => ({
-					id: channel.id,
-					// Channel names repeat across teams ("General" is in every
-					// one), so the picker shows which team a channel belongs to.
-					label: `${team.displayName ?? team.id} › ${channel.displayName ?? channel.id}`,
-				}));
+				const teamChannels = await listChannels(graph, team.id);
+				return teamChannels.flatMap((channel) =>
+					channel.id
+						? [
+								{
+									id: channel.id,
+									// Channel names repeat across teams ("General" is in every
+									// one), so the picker shows which team a channel belongs to.
+									label: `${team.displayName ?? team.id} › ${channel.displayName ?? channel.id}`,
+								},
+							]
+						: [],
+				);
 			}),
 		);
 		for (const result of results) {
@@ -62,16 +77,25 @@ const channels: TriggerOptionSource = async ({ organizationId }) => {
 };
 
 const people: TriggerOptionSource = async ({ organizationId }) => {
-	const accessToken = await accessTokenFor(organizationId);
-	if (!accessToken) return [];
+	const graph = await graphFor(organizationId);
+	if (!graph) return [];
 	try {
-		const users = await listUsers(accessToken);
+		const users = await listUsers(graph);
 		return users
-			.map((user) => ({
-				id: user.id,
-				label:
-					user.displayName ?? user.mail ?? user.userPrincipalName ?? user.id,
-			}))
+			.flatMap((user) =>
+				user.id
+					? [
+							{
+								id: user.id,
+								label:
+									user.displayName ??
+									user.mail ??
+									user.userPrincipalName ??
+									user.id,
+							},
+						]
+					: [],
+			)
 			.sort(byLabel);
 	} catch (error) {
 		// The tenant consented before User.ReadBasic.All was asked for: an

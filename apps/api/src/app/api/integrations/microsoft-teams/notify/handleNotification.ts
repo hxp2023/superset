@@ -3,6 +3,7 @@ import {
 	getChannel,
 	getChannelMessage,
 	getGraphAccessToken,
+	graphClient,
 } from "@superset/trpc/integrations/microsoft-teams";
 
 import {
@@ -44,10 +45,11 @@ export async function handleNotification(
 
 	const accessToken = await getGraphAccessToken(connection.id);
 	if (!accessToken) return { status: "skipped", reason: "no access token" };
+	const graph = graphClient(accessToken);
 
 	if (type.endsWith(".chatmessage") && resource.messageId) {
 		const message = await getChannelMessage(
-			accessToken,
+			graph,
 			resource.teamId,
 			resource.channelId,
 			resource.messageId,
@@ -65,7 +67,7 @@ export async function handleNotification(
 
 	if (type.endsWith(".channel") && !resource.messageId) {
 		const channel = await getChannel(
-			accessToken,
+			graph,
 			resource.teamId,
 			resource.channelId,
 		);
