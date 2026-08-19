@@ -190,7 +190,7 @@ export async function computeUsageHistory(
 	for (const profile of claudeProfiles) claudeHomes.add(profile.configDir);
 
 	// Shared-history profiles symlink their projects/ into ~/.claude (see
-	// profile-share.ts), so two homes can name the same tree under different
+	// session-share.ts), so two homes can name the same tree under different
 	// paths — resolve every scan root and dedupe by real path, or the tree
 	// gets walked and parsed once per profile.
 	const resolveRoots = async (roots: string[]): Promise<string[]> => {

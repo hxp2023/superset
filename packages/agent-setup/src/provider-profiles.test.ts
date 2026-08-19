@@ -223,3 +223,16 @@ describe("provisionCodexProfile", () => {
 		).toContain("notify.sh");
 	});
 });
+
+describe("default homes are never provisioning targets", () => {
+	it("refuses ~/.config/claude and the home dir itself", async () => {
+		const configClaude = path.join(HOME, ".config", "claude");
+		mkdirSync(configClaude, { recursive: true });
+		for (const target of [configClaude, HOME, path.join(HOME, ".config")]) {
+			const report = await provisionClaudeProfile(target, { homeDir: HOME });
+			expect(report.surfaces).toEqual({});
+		}
+		expect(existsSync(path.join(configClaude, "skills"))).toBe(false);
+		expect(existsSync(path.join(HOME, ".superset-profile.json"))).toBe(false);
+	});
+});

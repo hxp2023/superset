@@ -46,6 +46,25 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * True for the share's source and the other default homes — provisioning a
+ * default home would link it into itself (discovery excludes them, but a
+ * CLAUDE_CONFIG_DIR env entry can name one directly).
+ */
+function isProtectedTarget(
+	target: string,
+	homeDir: string,
+	defaultDir: string,
+): boolean {
+	const protectedDirs = [
+		homeDir,
+		defaultDir,
+		path.join(homeDir, ".config"),
+		path.join(homeDir, ".config", "claude"),
+	];
+	return protectedDirs.some((dir) => target === path.resolve(dir));
+}
+
 function logReport(provider: string, report: ProfileProvisionReport): void {
 	const summary = Object.entries(report.surfaces)
 		.map(([surface, outcome]) => `${surface}=${outcome}`)
@@ -149,7 +168,7 @@ export async function provisionClaudeProfile(
 	const defaultDir = path.join(homeDir, ".claude");
 	const target = path.resolve(configDir);
 	const surfaces: Record<string, SurfaceOutcome> = {};
-	if (target === path.resolve(defaultDir)) {
+	if (isProtectedTarget(target, homeDir, defaultDir)) {
 		return { configDir: target, surfaces };
 	}
 
@@ -241,7 +260,7 @@ export async function provisionCodexProfile(
 	const defaultDir = defaultCodexHome(homeDir);
 	const target = path.resolve(home);
 	const surfaces: Record<string, SurfaceOutcome> = {};
-	if (target === path.resolve(defaultDir)) {
+	if (isProtectedTarget(target, homeDir, defaultDir)) {
 		return { configDir: target, surfaces };
 	}
 

@@ -11,10 +11,10 @@ import {
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { shareableProfileDir, shareClaudeProfileState } from "./profile-share";
+import { shareableProfileDir, shareClaudeSessionState } from "./session-share";
 
 function makeDirs(): { profile: string; main: string } {
-	const root = mkdtempSync(join(tmpdir(), "claude-profile-share-"));
+	const root = mkdtempSync(join(tmpdir(), "claude-session-share-"));
 	const profile = join(root, "profile");
 	const main = join(root, "main");
 	mkdirSync(profile);
@@ -56,10 +56,10 @@ describe("shareableProfileDir", () => {
 	});
 });
 
-describe("shareClaudeProfileState", () => {
+describe("shareClaudeSessionState", () => {
 	it("links a fresh profile's session entries into main", () => {
 		const { profile, main } = makeDirs();
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		for (const name of ["projects", "sessions", "file-history", "todos"]) {
 			expect(isLinkTo(join(profile, name), join(main, name))).toBe(true);
 			expect(lstatSync(join(main, name)).isDirectory()).toBe(true);
@@ -75,7 +75,7 @@ describe("shareClaudeProfileState", () => {
 		writeFileSync(join(profile, "projects", "-repo-a", "s1.jsonl"), "a");
 		mkdirSync(join(main, "projects", "-repo-b"), { recursive: true });
 		writeFileSync(join(main, "projects", "-repo-b", "s2.jsonl"), "b");
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		expect(isLinkTo(join(profile, "projects"), join(main, "projects"))).toBe(
 			true,
 		);
@@ -97,7 +97,7 @@ describe("shareClaudeProfileState", () => {
 		writeFileSync(join(profile, "projects", "-repo", "s.jsonl"), "profile");
 		mkdirSync(join(main, "projects", "-repo"), { recursive: true });
 		writeFileSync(join(main, "projects", "-repo", "s.jsonl"), "main");
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		expect(isLinkTo(join(profile, "projects"), join(main, "projects"))).toBe(
 			true,
 		);
@@ -123,7 +123,7 @@ describe("shareClaudeProfileState", () => {
 		);
 		symlinkSync(join(main, "projects"), join(profile, "projects"));
 		mkdirSync(join(main, "projects"));
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		expect(
 			readFileSync(join(main, "projects", "-repo", "s.jsonl"), "utf-8"),
 		).toBe("leftover");
@@ -134,7 +134,7 @@ describe("shareClaudeProfileState", () => {
 		const { profile, main } = makeDirs();
 		writeFileSync(join(main, "history.jsonl"), '{"m":1}\n');
 		writeFileSync(join(profile, "history.jsonl"), '{"p":1}\n');
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		expect(
 			isLinkTo(join(profile, "history.jsonl"), join(main, "history.jsonl")),
 		).toBe(true);
@@ -148,7 +148,7 @@ describe("shareClaudeProfileState", () => {
 		writeFileSync(join(main, "settings.json"), "{}");
 		writeFileSync(join(main, "CLAUDE.md"), "memory");
 		mkdirSync(join(main, "agents"));
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		for (const name of ["settings.json", "CLAUDE.md", "agents", "skills"]) {
 			expect(lstatOrNull(join(profile, name))).toBeNull();
 		}
@@ -159,7 +159,7 @@ describe("shareClaudeProfileState", () => {
 		const elsewhere = join(profile, "elsewhere");
 		mkdirSync(elsewhere);
 		symlinkSync(elsewhere, join(profile, "projects"));
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		expect(readlinkSync(join(profile, "projects"))).toBe(elsewhere);
 	});
 
@@ -168,7 +168,7 @@ describe("shareClaudeProfileState", () => {
 		writeFileSync(join(profile, ".claude.json"), '{"oauthAccount":{}}');
 		writeFileSync(join(profile, ".credentials.json"), "secret");
 		mkdirSync(join(profile, "daemon"));
-		shareClaudeProfileState(profile, main);
+		shareClaudeSessionState(profile, main);
 		expect(lstatSync(join(profile, ".claude.json")).isSymbolicLink()).toBe(
 			false,
 		);

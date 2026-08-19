@@ -12,15 +12,15 @@ import {
 } from "@superset/agent-setup";
 import type { HostDb } from "../../../db/index.ts";
 import { getDefaultAccountSelections } from "./default-account.ts";
-import { shareClaudeProfileState } from "./profile-share.ts";
+import { shareClaudeSessionState } from "./session-share.ts";
 
 /**
  * Everything a Claude account needs on this host: the shared session state
- * (one `--resume` history across accounts — profile-share.ts) plus the
+ * (one `--resume` history across accounts — session-share.ts) plus the
  * config surfaces agent-setup owns (skills, plugins, settings, MCP servers).
  */
 export async function provisionClaudeAccount(configDir: string): Promise<void> {
-	shareClaudeProfileState(configDir);
+	shareClaudeSessionState(configDir);
 	await provisionClaudeProfile(configDir);
 }
 

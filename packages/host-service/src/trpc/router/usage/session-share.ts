@@ -172,7 +172,7 @@ function mergeAndLinkHistory(profile: string, main: string): void {
  * Best-effort per entry: one unmergeable path must not stop the rest, and a
  * partially shared profile is strictly better than an unshared one.
  */
-export function shareClaudeProfileState(
+export function shareClaudeSessionState(
 	configDir: string,
 	mainHome: string = join(homedir(), ".claude"),
 ): void {

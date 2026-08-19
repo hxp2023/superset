@@ -54,8 +54,14 @@ non-default profile from the default account (`~/.claude`, `~/.codex`):
   file symlink.
 - Copies and merged keys are recorded in `<profile>/.superset-profile.json`, so anything the user
   changes inside a profile is never overwritten by a later provision.
-- Per-account and never shared: credentials, `oauthAccount`/`userID`, transcripts and session
-  state, and Superset's own lifecycle hooks (written per profile).
+- Claude session state (`projects/`, `sessions/`, `history.jsonl`, …) is shared too — by symlink,
+  which is safe there because transcripts are append-only — so every account sees one
+  conversation history and `--resume` list
+  (`packages/host-service/src/trpc/router/usage/session-share.ts`; existing trees are merged in,
+  live sessions included).
+- Per-account and never shared: credentials, `oauthAccount`/`userID` identity and per-project
+  state in `.claude.json`, auth-related settings keys, and Superset's own lifecycle hooks
+  (written per profile).
 
 Provisioning is idempotent and runs when an account is added, when one is selected, and at host
 boot for the selected accounts (`usage/account-provisioning.ts`).
