@@ -2,7 +2,7 @@ import { createContext, type ReactNode, useContext, useMemo } from "react";
 import {
 	type DashboardSidebarPortGroup,
 	useDashboardSidebarPortsData,
-} from "../../components/DashboardSidebarPortsList/hooks/useDashboardSidebarPortsData";
+} from "../../hooks/useDashboardSidebarPortsData";
 
 interface DashboardSidebarPortsContextValue {
 	workspacePortGroups: DashboardSidebarPortGroup[];
@@ -72,7 +72,7 @@ function useDashboardSidebarPortsContext(): DashboardSidebarPortsContextValue {
 	return context;
 }
 
-/** All port groups + total count, for the consolidated bottom panel. */
+/** All port groups + total count, for the top-bar ports dropdown. */
 export function useDashboardSidebarAllPorts(): {
 	workspacePortGroups: DashboardSidebarPortGroup[];
 	totalPortCount: number;
