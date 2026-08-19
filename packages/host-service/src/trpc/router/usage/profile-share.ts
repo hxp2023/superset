@@ -1,20 +1,23 @@
 /**
- * Shares account-agnostic Claude state between a secondary profile dir and
- * the default `~/.claude` home via symlinks, so every login sees one
- * conversation history, one prompt history, and one config set — switching
- * accounts stops meaning losing `--resume`, skills, and settings.
+ * Shares session state between a secondary Claude profile dir and the
+ * default `~/.claude` home via symlinks, so every login sees one
+ * conversation history — switching accounts stops meaning losing
+ * `--resume` and the prompt history.
  *
- * Identity stays per-profile by design: `.claude.json` (oauthAccount,
- * per-project trust, MCP auth) and the credential stores are never touched.
- * Runtime dirs (daemon/, cache/, telemetry/, backups/) stay local too — the
- * daemon's locks and sockets must not be shared between CLIs.
+ * Only surfaces a symlink can survive are shared here: directories, and
+ * `history.jsonl`, which the CLI appends to in place. Config files like
+ * settings.json and `.claude.json` are written with write-tmp-then-rename —
+ * a rename would replace the symlink with a real file and silently fork the
+ * config — so those (plus skills, plugins, MCP servers) belong to
+ * agent-setup's ledger-based profile provisioning, not to this module.
+ * Identity (`.claude.json`, credential stores) and runtime dirs (daemon/,
+ * cache/, telemetry/, backups/) always stay per-profile.
  *
  * Existing real state is merged, not clobbered. Session trees are renamed
  * aside, the symlink lands immediately, and files then move into `~/.claude`
  * one by one: renames preserve inodes, so a live session's open transcripts
  * stay valid and its paths resolve through the new link. The prompt history
- * is appended; a divergent settings.json is backed up beside the link.
- * Anything that cannot merge safely is left where it is.
+ * is appended. Anything that cannot merge safely is left where it is.
  */
 
 import {
@@ -27,16 +30,9 @@ import {
 	rmdirSync,
 	symlinkSync,
 	unlinkSync,
-	writeFileSync,
 } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join, resolve } from "node:path";
-
-/** Config the user authors once and expects everywhere. Linked only when
- * the profile has nothing of its own (absent or empty) — a profile that
- * deliberately diverged keeps its version. */
-const CONFIG_DIRS = ["agents", "commands", "skills", "hooks", "plugins"];
-const CONFIG_FILES = ["CLAUDE.md"];
 
 /** Session-scoped state keyed by session UUID or cwd slug: safe to merge
  * file-by-file, since two profiles' sessions collide no more than two
@@ -110,28 +106,6 @@ function moveTreeInto(srcDir: string, dstDir: string): void {
 	}
 }
 
-function linkConfigDir(profile: string, main: string, name: string): void {
-	const src = join(profile, name);
-	const info = lstatOrNull(src);
-	if (info?.isSymbolicLink()) return;
-	if (info && !info.isDirectory()) return;
-	if (info && readdirSync(src).length > 0) return;
-	mkdirSync(join(main, name), { recursive: true });
-	if (info) rmdirSync(src);
-	symlinkSync(join(main, name), src);
-}
-
-function linkConfigFile(profile: string, main: string, name: string): void {
-	const src = join(profile, name);
-	const target = join(main, name);
-	const info = lstatOrNull(src);
-	if (info?.isSymbolicLink()) return;
-	if (info && (!info.isFile() || info.size > 0)) return;
-	if (!lstatOrNull(target)) writeFileSync(target, "", { flag: "wx" });
-	if (info) unlinkSync(src);
-	symlinkSync(target, src);
-}
-
 function mergeAndLinkSessionDir(
 	profile: string,
 	main: string,
@@ -194,24 +168,6 @@ function mergeAndLinkHistory(profile: string, main: string): void {
 	unlinkSync(pending);
 }
 
-function linkSettings(profile: string, main: string): void {
-	const src = join(profile, "settings.json");
-	const dst = join(main, "settings.json");
-	const info = lstatOrNull(src);
-	if (info?.isSymbolicLink()) return;
-	if (info && !info.isFile()) return;
-	const dstInfo = lstatOrNull(dst);
-	if (dstInfo && !dstInfo.isFile()) return;
-	if (!info && !dstInfo) return;
-	if (!dstInfo) {
-		// Main has no settings yet — the profile's become the shared ones.
-		renameSync(src, dst);
-	} else if (info) {
-		renameSync(src, `${src}.pre-share-${Date.now()}`);
-	}
-	symlinkSync(dst, src);
-}
-
 /**
  * Best-effort per entry: one unmergeable path must not stop the rest, and a
  * partially shared profile is strictly better than an unshared one.
@@ -226,13 +182,10 @@ export function shareClaudeProfileState(
 	if (!profile) return;
 	const main = resolve(mainHome);
 	const steps: Array<() => void> = [
-		...CONFIG_DIRS.map((name) => () => linkConfigDir(profile, main, name)),
-		...CONFIG_FILES.map((name) => () => linkConfigFile(profile, main, name)),
 		...SESSION_DIRS.map(
 			(name) => () => mergeAndLinkSessionDir(profile, main, name),
 		),
 		() => mergeAndLinkHistory(profile, main),
-		() => linkSettings(profile, main),
 	];
 	for (const step of steps) {
 		try {

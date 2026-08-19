@@ -234,7 +234,7 @@ export function UsageView({ hostUrl }: { hostUrl: string | null }) {
 						`New ${PROVIDER_LABELS[account.provider]} terminals and agents will use ${account.email ?? account.sourceLabel}.`,
 						{
 							description:
-								"Running sessions keep their current account — restart them to switch.",
+								"Your skills, plugins, MCP servers, and settings come along. Running sessions keep their current account — restart them to switch.",
 						},
 					);
 				},

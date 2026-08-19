@@ -26,6 +26,14 @@ function isLinkTo(path: string, target: string): boolean {
 	return lstatSync(path).isSymbolicLink() && readlinkSync(path) === target;
 }
 
+function lstatOrNull(path: string) {
+	try {
+		return lstatSync(path);
+	} catch {
+		return null;
+	}
+}
+
 describe("shareableProfileDir", () => {
 	it("refuses the default homes and the main home itself", () => {
 		const home = homedir();
@@ -49,19 +57,15 @@ describe("shareableProfileDir", () => {
 });
 
 describe("shareClaudeProfileState", () => {
-	it("links a fresh profile's config and session entries into main", () => {
+	it("links a fresh profile's session entries into main", () => {
 		const { profile, main } = makeDirs();
-		writeFileSync(join(main, "settings.json"), "{}");
 		shareClaudeProfileState(profile, main);
-		for (const name of ["agents", "skills", "projects", "sessions"]) {
+		for (const name of ["projects", "sessions", "file-history", "todos"]) {
 			expect(isLinkTo(join(profile, name), join(main, name))).toBe(true);
 			expect(lstatSync(join(main, name)).isDirectory()).toBe(true);
 		}
 		expect(
 			isLinkTo(join(profile, "history.jsonl"), join(main, "history.jsonl")),
-		).toBe(true);
-		expect(
-			isLinkTo(join(profile, "settings.json"), join(main, "settings.json")),
 		).toBe(true);
 	});
 
@@ -139,55 +143,24 @@ describe("shareClaudeProfileState", () => {
 		);
 	});
 
-	it("backs up divergent settings beside the link", () => {
+	it("leaves config surfaces to agent-setup provisioning", () => {
 		const { profile, main } = makeDirs();
-		writeFileSync(join(main, "settings.json"), '{"main":true}');
-		writeFileSync(join(profile, "settings.json"), '{"profile":true}');
+		writeFileSync(join(main, "settings.json"), "{}");
+		writeFileSync(join(main, "CLAUDE.md"), "memory");
+		mkdirSync(join(main, "agents"));
 		shareClaudeProfileState(profile, main);
-		expect(
-			isLinkTo(join(profile, "settings.json"), join(main, "settings.json")),
-		).toBe(true);
-		const backup = readdirSync(profile).find((name) =>
-			name.startsWith("settings.json.pre-share-"),
-		);
-		expect(backup).toBeDefined();
-		expect(readFileSync(join(profile, backup as string), "utf-8")).toBe(
-			'{"profile":true}',
-		);
-	});
-
-	it("promotes the profile's settings when main has none", () => {
-		const { profile, main } = makeDirs();
-		writeFileSync(join(profile, "settings.json"), '{"profile":true}');
-		shareClaudeProfileState(profile, main);
-		expect(readFileSync(join(main, "settings.json"), "utf-8")).toBe(
-			'{"profile":true}',
-		);
-		expect(
-			isLinkTo(join(profile, "settings.json"), join(main, "settings.json")),
-		).toBe(true);
-	});
-
-	it("respects config a profile deliberately diverged", () => {
-		const { profile, main } = makeDirs();
-		mkdirSync(join(profile, "agents"));
-		writeFileSync(join(profile, "agents", "mine.md"), "custom");
-		writeFileSync(join(profile, "CLAUDE.md"), "profile memory");
-		shareClaudeProfileState(profile, main);
-		expect(lstatSync(join(profile, "agents")).isSymbolicLink()).toBe(false);
-		expect(lstatSync(join(profile, "CLAUDE.md")).isSymbolicLink()).toBe(false);
-		expect(readFileSync(join(profile, "CLAUDE.md"), "utf-8")).toBe(
-			"profile memory",
-		);
+		for (const name of ["settings.json", "CLAUDE.md", "agents", "skills"]) {
+			expect(lstatOrNull(join(profile, name))).toBeNull();
+		}
 	});
 
 	it("leaves existing symlinks alone, wherever they point", () => {
 		const { profile, main } = makeDirs();
 		const elsewhere = join(profile, "elsewhere");
 		mkdirSync(elsewhere);
-		symlinkSync(elsewhere, join(profile, "skills"));
+		symlinkSync(elsewhere, join(profile, "projects"));
 		shareClaudeProfileState(profile, main);
-		expect(readlinkSync(join(profile, "skills"))).toBe(elsewhere);
+		expect(readlinkSync(join(profile, "projects"))).toBe(elsewhere);
 	});
 
 	it("never touches identity or runtime entries", () => {
