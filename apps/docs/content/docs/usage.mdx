@@ -1,0 +1,32 @@
+---
+title: Usage & Accounts
+description: Track quota and token spend across providers, and run multiple Claude Code or Codex accounts
+---
+
+The **Usage** page shows what your agents are consuming — official subscription quota, token spend, machine resources — and manages the provider accounts they run on.
+
+## Quota
+
+Each Claude Code and Codex login on your machine gets a card with its official limits: the 5-hour session window and weekly windows, refreshed every 5 minutes.
+
+- Superset reads the tokens already on your machine, read-only. It never refreshes or rewrites credentials — the provider CLIs own every login end to end.
+- Org-managed and education plans don't expose limits; those cards show **Unavailable**.
+- **Sign-in expired** on a card means the login needs `/login` again — use **Switch sign-in** on the card's menu.
+
+## Token usage
+
+Spend is estimated from the session logs already on disk, priced at full API rates — on a subscription your real cost is $0; the number shows what the work would have cost.
+
+- Breakdowns by model, workspace/project, and day, with drilldowns per workspace and per model.
+- **Machine resources** (toggle at the top) shows what your workspaces are doing to the machine itself.
+
+## Multiple accounts
+
+Run several subscriptions side by side — a second personal Max account, a work account — and pick which one new agents use.
+
+- **Add account** signs a second subscription into its own profile. Your current login is untouched.
+- **Make default** points new terminals and agents at that account. Running sessions keep their current account until restarted.
+- Your setup comes along: skills, plugins, MCP servers, and settings are shared across accounts, and there's one conversation history — `--resume` shows the same sessions whichever account is active.
+- Only the login itself stays per account. Removing an account deletes its profile and credentials, never your shared setup or history.
+
+Under the hood, a profile is just a config dir the CLI is pointed at (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`), injected into new terminals and agent launches — so switching works for agents you launch by hand in a Superset terminal too.

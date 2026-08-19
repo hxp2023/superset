@@ -24,6 +24,7 @@
 		"browser",
 		"agent-integration",
 		"agent-status",
+		"usage",
 		"tasks",
 		"remote-workspaces",
 		"automations",
