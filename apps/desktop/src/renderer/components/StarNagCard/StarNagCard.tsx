@@ -74,8 +74,13 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 		}
 	}, [state]);
 
-	const renderVisible = shouldShow || staysVisibleForAnimation;
-	const isVisible = !isCollapsed && isEnabled && shouldShow;
+	// A "loading" or "unknown" read isn't trustworthy enough to act on, so the
+	// card only shows its button once `state` is confirmed "not_starred" —
+	// same rule as every other star-nag surface.
+	const renderVisible =
+		(shouldShow && state === "not_starred") || staysVisibleForAnimation;
+	const isVisible =
+		!isCollapsed && isEnabled && shouldShow && state === "not_starred";
 
 	// Fire at most once per visible showing — without the reset, every
 	// sidebar collapse/expand cycle re-triggers this effect and inflates
@@ -92,9 +97,7 @@ export function StarNagCard({ isCollapsed }: StarNagCardProps) {
 	}, [isVisible]);
 
 	function handleAction() {
-		track(state === "unknown" ? "star_nag_opened_web" : "star_nag_starred", {
-			surface: "card",
-		});
+		track("star_nag_starred", { surface: "card" });
 		activate();
 	}
 

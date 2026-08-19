@@ -1,4 +1,3 @@
-import { COMPANY } from "@superset/shared/constants";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 
 export type GithubStarActionState =
@@ -82,16 +81,20 @@ interface UseGithubStarActionOptions {
 }
 
 /**
- * Shared check-star-repo/star-repo/open-web-fallback flow, reused by every
- * "Star Superset on GitHub" surface (settings row, empty-state pill,
- * threshold card, onboarding toast). `state` is the live, truthful star
- * status — backed by the shared query cache, so a confirmed star from any
- * one surface is reflected on every other mounted surface immediately.
+ * Shared check-star-repo/star-repo flow, reused by every "Star Superset on
+ * GitHub" surface (settings row, empty-state pill, threshold card, onboarding
+ * toast). `state` is the live, truthful star status — backed by the shared
+ * query cache, so a confirmed star from any one surface is reflected on
+ * every other mounted surface immediately.
  *
  * Suppression (whether a nag surface should show itself at all) is NOT this
  * hook's concern — StarNagCard and StarNagToast derive that straight from
  * useStarNagStore (shouldShowThresholdCard()/isEligible()), and the pill and
  * Settings row are deliberately always-truthful with no suppression at all.
+ * Every surface additionally only renders its button while `state ===
+ * "not_starred"` (see each surface's visibility gate) — a "loading" or
+ * "unknown" read isn't trustworthy enough to act on, so the button simply
+ * doesn't show rather than offering a fallback for an unconfirmed state.
  *
  * checkResult -> store side effects (markCompleted/markUnstarred) are NOT
  * handled here — StarNagObserver owns that, once, so the four independently
@@ -108,15 +111,10 @@ export function useGithubStarAction(options?: UseGithubStarActionOptions) {
 			refetchOnMount: options?.alwaysFreshOnMount ? "always" : true,
 		});
 	const starMutation = electronTrpc.githubStar.star.useMutation();
-	const openUrlMutation = electronTrpc.external.openUrl.useMutation();
 
 	const state: GithubStarActionState = isSuccess ? checkResult : "loading";
 
 	const activate = () => {
-		if (state === "unknown") {
-			openUrlMutation.mutate(COMPANY.GITHUB_URL);
-			return;
-		}
 		if (state !== "not_starred") return;
 		// Deliberately NOT optimistic: writing "starred" into the cache before
 		// the mutation resolves would make StarNagObserver's checkResult effect
@@ -157,17 +155,18 @@ export function useGithubStarAction(options?: UseGithubStarActionOptions) {
 	return {
 		state,
 		activate,
-		isBusy: starMutation.isPending || openUrlMutation.isPending,
+		isBusy: starMutation.isPending,
 	};
 }
 
 /**
- * A failed/declined star attempt still writes "unknown" into the cache for
- * immediate UI feedback (the web-fallback state), but unlike a real
+ * A failed/declined star attempt still writes "unknown" into the cache —
+ * every surface's visibility gate hides the button for that state, so this
+ * is what makes it disappear immediately on failure — but unlike a real
  * "starred"/"not_starred" confirmation it shouldn't count as a fresh,
  * settled-for-10-minutes read — mark it stale (with no eager refetch of its
  * own) so the next mount naturally rechecks instead of every surface being
- * stuck on the failure fallback for up to staleTime.
+ * stuck hidden for up to staleTime.
  */
 function markStaleWithoutRefetch(
 	utils: ReturnType<typeof electronTrpc.useUtils>,

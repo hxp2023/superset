@@ -92,13 +92,7 @@ export function AnimatedStarButton({
 	}, [state, prefersReducedMotion]);
 
 	const isStarred = state === "starred";
-	const label = isStarred
-		? "Starred"
-		: busy
-			? "Starring…"
-			: state === "unknown"
-				? "Open GitHub"
-				: "Star on GitHub";
+	const label = isStarred ? "Starred" : busy ? "Starring…" : "Star on GitHub";
 
 	return (
 		<button

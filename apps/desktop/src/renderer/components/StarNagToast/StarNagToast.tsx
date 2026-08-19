@@ -17,9 +17,7 @@ function StarNagToastContent({ toastId }: { toastId: string | number }) {
 	}, [state, toastId]);
 
 	function handleAction() {
-		track(state === "unknown" ? "star_nag_opened_web" : "star_nag_starred", {
-			surface: "toast",
-		});
+		track("star_nag_starred", { surface: "toast" });
 		activate();
 	}
 
@@ -48,13 +46,18 @@ function StarNagToastContent({ toastId }: { toastId: string | number }) {
 				If you're enjoying Superset so far, a GitHub star helps other developers
 				discover it.
 			</p>
-			<AnimatedStarButton
-				state={state}
-				busy={isBusy}
-				onActivate={handleAction}
-				className="mt-3 w-full justify-center"
-				compact
-			/>
+			{/* A "loading" or "unknown" read isn't trustworthy enough to act on —
+			same rule as every other star-nag surface — so the button just doesn't
+			render for those; the toast itself still auto-dismisses/closes normally. */}
+			{(state === "not_starred" || state === "starred") && (
+				<AnimatedStarButton
+					state={state}
+					busy={isBusy}
+					onActivate={handleAction}
+					className="mt-3 w-full justify-center"
+					compact
+				/>
+			)}
 		</div>
 	);
 }

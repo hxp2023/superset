@@ -30,11 +30,13 @@ interface GitHubStarPillProps {
  * the new-workspace screen. Renders straight from live `state`, with no
  * nag-suppression layer — unlike the sidebar card/toast, this is a low-key
  * status indicator, not an interruptive campaign, so it's allowed to be
- * fully truthful: it hides the instant `state` is "starred" and reappears
- * the instant a later unstar is confirmed, without waiting on any mute
- * grace window. It briefly stays mounted past that point so the
- * confetti/label animation on a fresh star has time to play, then
- * dissolves out (fade + soft blur) instead of vanishing instantly.
+ * fully truthful: it only shows while `state` is confirmed "not_starred"
+ * (a "loading" or "unknown" read isn't trustworthy enough to act on), hides
+ * the instant `state` is "starred", and reappears the instant a later
+ * unstar is confirmed, without waiting on any mute grace window. It briefly
+ * stays mounted past that point so the confetti/label animation on a fresh
+ * star has time to play, then dissolves out (fade + soft blur) instead of
+ * vanishing instantly.
  */
 export function GitHubStarPill({
 	className,
@@ -98,7 +100,7 @@ export function GitHubStarPill({
 			return;
 		}
 		if (trackedShownSurfaceRef.current === surface) return;
-		if (state !== "not_starred" && state !== "unknown") return;
+		if (state !== "not_starred") return;
 		trackedShownSurfaceRef.current = surface;
 		track("star_nag_shown", { surface });
 	}, [state, surface]);
@@ -106,13 +108,11 @@ export function GitHubStarPill({
 	if (state === "loading" && !reserveSpace) return null;
 
 	const isVisible =
-		state !== "loading" &&
-		!(state === "starred" && !justStarred && !staysVisibleForAnimation);
+		state === "not_starred" ||
+		(state === "starred" && (justStarred || staysVisibleForAnimation));
 
 	const handleClick = () => {
-		track(state === "unknown" ? "star_nag_opened_web" : "star_nag_starred", {
-			surface,
-		});
+		track("star_nag_starred", { surface });
 		activate();
 	};
 
