@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../../index";
 import { getContent } from "./procedures/get-content";
+import { mergePR } from "./procedures/merge";
 import { setState } from "./procedures/set-state";
 
 export const pullRequestsRouter = router({
@@ -41,4 +42,5 @@ export const pullRequestsRouter = router({
 		}),
 	getContent,
 	setState,
+	mergePR,
 });

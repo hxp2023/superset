@@ -46,6 +46,8 @@ export const getRepoContributors = protectedProcedure
 
 		const fetchedAt = Date.now();
 		const promise = (async (): Promise<RepoContributor[]> => {
+			// gh-first uses the user's local `gh auth login`; falls back to
+			// Octokit when gh is missing, unauthed, or errors.
 			try {
 				const raw = await execGh([
 					"api",
@@ -55,14 +57,35 @@ export const getRepoContributors = protectedProcedure
 					"-f",
 					`per_page=${CONTRIBUTORS_PAGE_SIZE}`,
 				]);
-				const contributors = z.array(ghContributorSchema).parse(raw);
+				// A repo with zero commits answers 204 No Content; execGh turns
+				// an empty body into {}, not [], since it can't tell the two apart.
+				const contributors = Array.isArray(raw)
+					? z.array(ghContributorSchema).parse(raw)
+					: [];
 				return contributors
 					.filter((c) => c.type !== "Bot")
 					.map((c) => ({ login: c.login }));
-			} catch (err) {
+			} catch (ghErr) {
+				console.warn(
+					"[workspaceCreation.getRepoContributors] gh path failed; falling back to Octokit",
+					ghErr,
+				);
+			}
+
+			try {
+				const octokit = await ctx.github();
+				const { data } = await octokit.repos.listContributors({
+					owner: repo.owner,
+					repo: repo.name,
+					per_page: CONTRIBUTORS_PAGE_SIZE,
+				});
+				return data
+					.filter((c) => c.type !== "Bot" && c.login)
+					.map((c) => ({ login: c.login as string }));
+			} catch (octokitErr) {
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
-					message: `Failed to fetch contributors for ${repo.owner}/${repo.name}: ${err instanceof Error ? err.message : String(err)}`,
+					message: `Failed to fetch contributors for ${repo.owner}/${repo.name}: ${octokitErr instanceof Error ? octokitErr.message : String(octokitErr)}`,
 				});
 			}
 		})();

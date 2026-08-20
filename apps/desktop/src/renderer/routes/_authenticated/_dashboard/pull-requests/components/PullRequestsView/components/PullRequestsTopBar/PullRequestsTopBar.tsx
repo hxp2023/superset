@@ -59,13 +59,19 @@ export function PullRequestsTopBar({
 			data-pull-requests-toolbar
 			className="flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2"
 		>
-			<div className="flex items-center gap-1">
+			<div
+				role="radiogroup"
+				aria-label="Filter by state"
+				className="flex items-center gap-1"
+			>
 				{STATE_TABS.map((tab) => (
+					// biome-ignore lint/a11y/useSemanticElements: styled as a pill button, not a native radio input
 					<button
 						key={tab.value}
 						type="button"
+						role="radio"
 						onClick={() => onStateFilterChange(tab.value)}
-						aria-pressed={stateFilter === tab.value}
+						aria-checked={stateFilter === tab.value}
 						className={cn(
 							"rounded-md px-2 py-1 text-xs font-medium transition-colors",
 							stateFilter === tab.value
@@ -98,12 +104,19 @@ export function PullRequestsTopBar({
 							variant="outline"
 							size="icon-xs"
 							className="relative shrink-0"
-							aria-label="Filters"
+							aria-label={
+								activeFilterCount > 0
+									? `Filters, ${activeFilterCount} active`
+									: "Filters"
+							}
 							title="Filters"
 						>
 							<LuListFilter className="size-3.5" />
 							{activeFilterCount > 0 && (
-								<span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground">
+								<span
+									aria-hidden="true"
+									className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground"
+								>
 									{activeFilterCount}
 								</span>
 							)}

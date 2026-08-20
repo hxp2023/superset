@@ -95,36 +95,27 @@ function PullRequestsLayout() {
 				isAppSidebarCollapsed && "rounded-tl-[8px] bg-sidebar dark:bg-muted/35",
 			)}
 		>
-			{!isListCollapsed &&
-				(isDetailCollapsed ? (
-					<div
-						className={cn(
-							"flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background",
-							isAppSidebarCollapsed && "rounded-tl-[8px]",
-						)}
-					>
-						{listContent}
-					</div>
-				) : (
-					<ResizablePanel
-						width={listWidth}
-						onWidthChange={setListWidth}
-						isResizing={isResizingList}
-						onResizingChange={setIsResizingList}
-						minWidth={MIN_PULL_REQUESTS_LIST_WIDTH}
-						maxWidth={MAX_PULL_REQUESTS_LIST_WIDTH}
-						handleSide="right"
-						onDoubleClickHandle={() =>
-							setListWidth(DEFAULT_PULL_REQUESTS_LIST_WIDTH)
-						}
-						className={cn(
-							"flex min-h-0 flex-col bg-background",
-							isAppSidebarCollapsed && "rounded-tl-[8px]",
-						)}
-					>
-						{listContent}
-					</ResizablePanel>
-				))}
+			{!isListCollapsed && (
+				<ResizablePanel
+					disabled={isDetailCollapsed}
+					width={listWidth}
+					onWidthChange={setListWidth}
+					isResizing={isResizingList}
+					onResizingChange={setIsResizingList}
+					minWidth={MIN_PULL_REQUESTS_LIST_WIDTH}
+					maxWidth={MAX_PULL_REQUESTS_LIST_WIDTH}
+					handleSide="right"
+					onDoubleClickHandle={() =>
+						setListWidth(DEFAULT_PULL_REQUESTS_LIST_WIDTH)
+					}
+					className={cn(
+						"flex min-h-0 flex-col bg-background",
+						isAppSidebarCollapsed && "rounded-tl-[8px]",
+					)}
+				>
+					{listContent}
+				</ResizablePanel>
+			)}
 			{!isDetailCollapsed && (
 				<div
 					className={cn(

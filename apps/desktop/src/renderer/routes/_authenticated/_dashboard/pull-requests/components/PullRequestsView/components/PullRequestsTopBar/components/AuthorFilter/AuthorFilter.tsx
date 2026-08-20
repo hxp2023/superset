@@ -37,7 +37,11 @@ export function AuthorFilter({
 	const singleTarget =
 		projectTargets.length === 1 ? projectTargets[0] : undefined;
 
-	const { data: contributors, isLoading } = useQuery({
+	const {
+		data: contributors,
+		isLoading,
+		error,
+	} = useQuery({
 		queryKey: [
 			"pullRequests",
 			"repoContributors",
@@ -57,13 +61,13 @@ export function AuthorFilter({
 	});
 
 	const filtered = useMemo(() => {
-		const q = search.trim().toLowerCase();
+		const q = search.trim().replace(/^@/, "").toLowerCase();
 		const list = contributors ?? [];
 		if (!q) return list;
 		return list.filter((c) => c.login.toLowerCase().includes(q));
 	}, [contributors, search]);
 
-	const normalizedSearch = normalizeAuthorFilter(search);
+	const normalizedSearch = normalizeAuthorFilter(search)?.toLowerCase() ?? null;
 	const showCustomOption =
 		!!normalizedSearch &&
 		!filtered.some((c) => c.login.toLowerCase() === normalizedSearch);
@@ -106,7 +110,7 @@ export function AuthorFilter({
 								Loading contributors…
 							</div>
 						)}
-						{(!singleTarget || (contributors && contributors.length > 0)) && (
+						{(!search || filtered.length > 0 || showCustomOption) && (
 							<CommandGroup>
 								{!search && (
 									<CommandItem onSelect={() => handleSelect(null)}>
@@ -149,7 +153,13 @@ export function AuthorFilter({
 								)}
 							</CommandGroup>
 						)}
+						{singleTarget && !isLoading && error && (
+							<div className="px-3 py-4 text-center text-sm text-muted-foreground">
+								Couldn't load contributors — type a username instead.
+							</div>
+						)}
 						{!isLoading &&
+							!error &&
 							filtered.length === 0 &&
 							!showCustomOption &&
 							(!singleTarget ||

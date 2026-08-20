@@ -8,6 +8,7 @@ import { LoadMoreSentinel } from "renderer/routes/_authenticated/_dashboard/comp
 import { serializeProjectFilters } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter/project-filter-utils";
 import type { ProjectQueryTarget } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectQueryTargets";
 import { useWorkItemsList } from "renderer/routes/_authenticated/_dashboard/hooks/useWorkItemsList";
+import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
 import { PullRequestRow } from "../PullRequestRow";
 
@@ -44,6 +45,7 @@ export function PullRequestsContent({
 }: PullRequestsContentProps) {
 	const debouncedQuery = useDebouncedValue(searchQuery, 300);
 	const navigate = useNavigate();
+	const expandDetail = usePullRequestsSplitViewStore((s) => s.expandDetail);
 
 	const {
 		rows: pullRequests,
@@ -110,6 +112,7 @@ export function PullRequestsContent({
 	});
 
 	const handleOpenPreview = (pr: (typeof pullRequests)[number]) => {
+		expandDetail();
 		navigate({
 			to: "/pull-requests/$prNumber",
 			params: { prNumber: String(pr.prNumber) },
@@ -155,6 +158,12 @@ export function PullRequestsContent({
 	}
 
 	const isInitialLoad = isFetching && pullRequests.length === 0;
+	// Without a project to disambiguate, only the first row sharing this PR
+	// number gets marked selected — distinct repos can reuse the same number.
+	const firstMatchingPrIndex =
+		selectedPrProjectId == null
+			? pullRequests.findIndex((pr) => pr.prNumber === selectedPrNumber)
+			: -1;
 	const countLabel = isInitialLoad
 		? "Loading…"
 		: totalCount === 0
@@ -230,12 +239,13 @@ export function PullRequestsContent({
 								</Button>
 							</div>
 						)}
-						{pullRequests.map((pr) => {
+						{pullRequests.map((pr, index) => {
 							const rowKey = `${pr.projectId}:${pr.prNumber}`;
 							const isSelected =
 								selectedPrNumber === pr.prNumber &&
-								(selectedPrProjectId == null ||
-									selectedPrProjectId === pr.projectId);
+								(selectedPrProjectId != null
+									? selectedPrProjectId === pr.projectId
+									: firstMatchingPrIndex === index);
 							const repoSlug = repoSlugByProjectId.get(pr.projectId);
 							return (
 								<PullRequestRow

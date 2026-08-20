@@ -122,7 +122,9 @@ function PullRequestDetailPage() {
 
 	const setPullRequestState = useMutation({
 		mutationFn: async (nextState: "open" | "closed") => {
-			if (!hostUrl || !projectId || prNumber === null) return;
+			if (!hostUrl || !projectId || prNumber === null) {
+				throw new Error("This project isn't linked to a GitHub repository.");
+			}
 			const client = getHostServiceClientByUrl(hostUrl);
 			return client.pullRequests.setState.mutate({
 				projectId,
@@ -140,14 +142,13 @@ function PullRequestDetailPage() {
 
 	const mergePullRequest = useMutation({
 		mutationFn: async (mergeMethod: MergeMethod) => {
-			if (!hostUrl || !project?.repoOwner || !project.repoName || !prNumber) {
+			if (!hostUrl || !projectId || prNumber === null) {
 				throw new Error("This project isn't linked to a GitHub repository.");
 			}
 			const client = getHostServiceClientByUrl(hostUrl);
-			return client.github.mergePR.mutate({
-				owner: project.repoOwner,
-				repo: project.repoName,
-				pullNumber: prNumber,
+			return client.pullRequests.mergePR.mutate({
+				projectId,
+				prNumber,
 				mergeMethod,
 			});
 		},
@@ -430,7 +431,9 @@ function PullRequestDetailPage() {
 							Cancel
 						</Button>
 						<AlertDialogAction
-							variant="destructive"
+							variant={
+								pendingAction?.kind === "close" ? "destructive" : "default"
+							}
 							size="sm"
 							className="h-7 px-3 text-xs"
 							onClick={handleConfirmAction}

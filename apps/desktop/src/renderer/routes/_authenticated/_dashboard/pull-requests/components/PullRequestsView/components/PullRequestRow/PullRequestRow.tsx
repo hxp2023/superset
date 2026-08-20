@@ -1,6 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
 import { cn } from "@superset/ui/utils";
 import { formatRelativeTime } from "renderer/lib/formatRelativeTime";
+import { PullRequestChecksSummary } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestChecksSummary";
+import type { PullRequestCheck } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/pull-request-checks";
 import {
 	normalizePRState,
 	PRIcon,
@@ -17,6 +19,7 @@ export interface PullRequestRowData {
 	additions: number | null;
 	deletions: number | null;
 	headRefName: string | null;
+	checks: PullRequestCheck[];
 }
 
 interface PullRequestRowProps {
@@ -34,6 +37,8 @@ export function PullRequestRow({
 }: PullRequestRowProps) {
 	const state = normalizePRState(pr.state, pr.isDraft);
 	const hasDiffStat = pr.additions != null || pr.deletions != null;
+	const parsedUpdatedAt = pr.updatedAt ? new Date(pr.updatedAt).getTime() : NaN;
+	const updatedAtMs = Number.isNaN(parsedUpdatedAt) ? null : parsedUpdatedAt;
 
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: row is a composite list item, not a native control
@@ -71,10 +76,12 @@ export function PullRequestRow({
 									{pr.authorLogin.slice(0, 1).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
-							{repoSlug && (
-								<span className="min-w-0 truncate text-[10px]">{repoSlug}</span>
-							)}
 						</div>
+					)}
+					{repoSlug && (
+						<span className="min-w-0 shrink-0 truncate text-[10px]">
+							{repoSlug}
+						</span>
 					)}
 					<span className="shrink-0 text-[10px] tabular-nums">
 						#{pr.prNumber}
@@ -90,19 +97,20 @@ export function PullRequestRow({
 				</div>
 			</div>
 			<div className="flex shrink-0 flex-col items-end gap-0.5 text-xs text-muted-foreground">
-				{pr.updatedAt && (
-					<span>{formatRelativeTime(new Date(pr.updatedAt).getTime())}</span>
-				)}
-				{hasDiffStat && (
-					<span className="flex items-center gap-1 tabular-nums">
-						<span className="text-emerald-600 dark:text-emerald-400">
-							+{pr.additions ?? 0}
+				{updatedAtMs != null && <span>{formatRelativeTime(updatedAtMs)}</span>}
+				<div className="flex items-center gap-2">
+					<PullRequestChecksSummary checks={pr.checks} />
+					{hasDiffStat && (
+						<span className="flex items-center gap-1 tabular-nums">
+							<span className="text-emerald-600 dark:text-emerald-400">
+								+{pr.additions ?? 0}
+							</span>
+							<span className="text-red-600 dark:text-red-400">
+								-{pr.deletions ?? 0}
+							</span>
 						</span>
-						<span className="text-red-600 dark:text-red-400">
-							-{pr.deletions ?? 0}
-						</span>
-					</span>
-				)}
+					)}
+				</div>
 			</div>
 		</div>
 	);

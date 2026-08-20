@@ -124,15 +124,25 @@ const VIEWER_RELATIONSHIP_QUALIFIERS: Record<ViewerRelationship, string> = {
 	authored: "author:@me",
 };
 
-const searchPullRequestsInputSchema = githubSearchInputSchema.extend({
-	author: githubAuthorSchema.optional(),
-	review: pullRequestReviewFilterSchema.optional(),
-	// Mutually exclusive with includeClosed: false wins to "is:open" first,
-	// so only pass this when includeClosed is true (or omitted).
-	mergedOnly: z.boolean().optional(),
-	// Mutually exclusive with author/review — see VIEWER_RELATIONSHIP_QUALIFIERS.
-	viewerRelationship: viewerRelationshipSchema.optional(),
-});
+const searchPullRequestsInputSchema = githubSearchInputSchema
+	.extend({
+		author: githubAuthorSchema.optional(),
+		review: pullRequestReviewFilterSchema.optional(),
+		// mergedOnly always wins over includeClosed — see the qualifiers
+		// construction below — so only pass this when includeClosed is true
+		// (or omitted); passing mergedOnly with includeClosed: false is
+		// pointless but not actively wrong.
+		mergedOnly: z.boolean().optional(),
+		// Mutually exclusive with author/review — see VIEWER_RELATIONSHIP_QUALIFIERS.
+		viewerRelationship: viewerRelationshipSchema.optional(),
+	})
+	.refine(
+		(input) => !input.viewerRelationship || (!input.author && !input.review),
+		{
+			message: "viewerRelationship cannot be combined with author or review",
+			path: ["viewerRelationship"],
+		},
+	);
 
 function emptyPullRequestsPage(page: number): PullRequestsPage {
 	return {
@@ -323,8 +333,44 @@ async function ghDirectLookupMatchesReviewFilter(
 }
 
 /**
- * Direct-lookup a PR in one repo and apply the author/review filters.
- * Returns null when the PR exists but doesn't match the filters.
+ * Mirrors VIEWER_RELATIONSHIP_QUALIFIERS for a single direct-looked-up PR:
+ * schema validation guarantees this never runs alongside author/review, so
+ * it doesn't need to compose with ghDirectLookupMatchesReviewFilter's result.
+ */
+async function ghDirectLookupMatchesViewerRelationship(
+	execGh: ExecGh,
+	repo: ResolvedGithubRepo,
+	pullRequest: PullRequestResult,
+	review: GhDirectLookupReview,
+	relationship: ViewerRelationship,
+): Promise<boolean> {
+	if (relationship === "authored") {
+		const viewerRaw = await execGh(["api", "user"], {
+			cwd: repo.repoPath ?? undefined,
+		});
+		const viewerLogin = ghViewerSchema.parse(viewerRaw).login.toLowerCase();
+		return pullRequest.authorLogin?.toLowerCase() === viewerLogin;
+	}
+	const viewerRequested = await ghDirectLookupMatchesReviewFilter(
+		execGh,
+		repo,
+		review,
+		"review-requested",
+	);
+	if (relationship === "needs-review") return viewerRequested;
+	const reviewedByViewer = await ghDirectLookupMatchesReviewFilter(
+		execGh,
+		repo,
+		review,
+		"reviewed-by-me",
+	);
+	return reviewedByViewer && !viewerRequested;
+}
+
+/**
+ * Direct-lookup a PR in one repo and apply the active filters. Returns null
+ * when the PR exists but doesn't match — same contract as the search path,
+ * so a bare "#N" lookup can't leak a PR into the wrong tab/grouping.
  */
 async function ghDirectLookupRow(
 	execGh: ExecGh,
@@ -332,12 +378,15 @@ async function ghDirectLookupRow(
 	prNumber: number,
 	author: string | undefined,
 	reviewFilter: PullRequestReviewFilter | undefined,
+	mergedOnly: boolean | undefined,
+	viewerRelationship: ViewerRelationship | undefined,
 ): Promise<PullRequestResult | null> {
 	const { pullRequest, review } = await ghDirectLookup(
 		execGh,
 		target,
 		prNumber,
 	);
+	if (mergedOnly && pullRequest.state !== "merged") return null;
 	if (!matchesAuthor(pullRequest.authorLogin, author)) return null;
 	if (
 		reviewFilter &&
@@ -346,6 +395,18 @@ async function ghDirectLookupRow(
 			target.repo,
 			review,
 			reviewFilter,
+		))
+	) {
+		return null;
+	}
+	if (
+		viewerRelationship &&
+		!(await ghDirectLookupMatchesViewerRelationship(
+			execGh,
+			target.repo,
+			pullRequest,
+			review,
+			viewerRelationship,
 		))
 	) {
 		return null;
@@ -436,8 +497,37 @@ async function octokitDirectLookupMatchesReviewFilter(
 }
 
 /**
+ * Octokit twin of {@link ghDirectLookupMatchesViewerRelationship}.
+ */
+async function octokitDirectLookupMatchesViewerRelationship(
+	octokit: Octokit,
+	repo: ResolvedGithubRepo,
+	pr: OctokitPullRequest,
+	relationship: ViewerRelationship,
+): Promise<boolean> {
+	if (relationship === "authored") {
+		const { data: viewer } = await octokit.users.getAuthenticated();
+		return (pr.user?.login ?? "").toLowerCase() === viewer.login.toLowerCase();
+	}
+	const viewerRequested = await octokitDirectLookupMatchesReviewFilter(
+		octokit,
+		repo,
+		pr,
+		"review-requested",
+	);
+	if (relationship === "needs-review") return viewerRequested;
+	const reviewedByViewer = await octokitDirectLookupMatchesReviewFilter(
+		octokit,
+		repo,
+		pr,
+		"reviewed-by-me",
+	);
+	return reviewedByViewer && !viewerRequested;
+}
+
+/**
  * Octokit twin of {@link ghDirectLookupRow}: direct-lookup one repo, apply
- * author/review filters, enrich checks best-effort. Null = filtered out or
+ * the active filters, enrich checks best-effort. Null = filtered out or
  * PR not found/inaccessible.
  */
 async function octokitDirectLookupRow(
@@ -446,6 +536,8 @@ async function octokitDirectLookupRow(
 	prNumber: number,
 	author: string | undefined,
 	reviewFilter: PullRequestReviewFilter | undefined,
+	mergedOnly: boolean | undefined,
+	viewerRelationship: ViewerRelationship | undefined,
 ): Promise<PullRequestResult | null> {
 	const { repo } = target;
 	const response = await octokit.pulls
@@ -462,6 +554,8 @@ async function octokitDirectLookupRow(
 		});
 	if (!response) return null;
 	const pr = response.data;
+	const state = normalizePullRequestState(pr.state, pr.merged_at);
+	if (mergedOnly && state !== "merged") return null;
 	if (!matchesAuthor(pr.user?.login ?? null, author)) return null;
 	if (
 		reviewFilter &&
@@ -474,7 +568,17 @@ async function octokitDirectLookupRow(
 	) {
 		return null;
 	}
-	const state = normalizePullRequestState(pr.state, pr.merged_at);
+	if (
+		viewerRelationship &&
+		!(await octokitDirectLookupMatchesViewerRelationship(
+			octokit,
+			repo,
+			pr,
+			viewerRelationship,
+		))
+	) {
+		return null;
+	}
 	let checks: PullRequestCheck[] = [];
 	let checksStatus: ChecksStatus = "none";
 	try {
@@ -941,6 +1045,8 @@ export const searchPullRequests = protectedProcedure
 						lookupNumber,
 						input.author,
 						input.review,
+						input.mergedOnly,
+						input.viewerRelationship,
 					);
 					if (!pullRequest) return emptyPullRequestsPage(page);
 					return {
@@ -960,6 +1066,8 @@ export const searchPullRequests = protectedProcedure
 							lookupNumber,
 							input.author,
 							input.review,
+							input.mergedOnly,
+							input.viewerRelationship,
 						),
 					),
 				);
@@ -1032,6 +1140,8 @@ export const searchPullRequests = protectedProcedure
 						lookupNumber,
 						input.author,
 						input.review,
+						input.mergedOnly,
+						input.viewerRelationship,
 					);
 					if (!pullRequest) return emptyPullRequestsPage(page);
 					return {
@@ -1049,6 +1159,8 @@ export const searchPullRequests = protectedProcedure
 							lookupNumber,
 							input.author,
 							input.review,
+							input.mergedOnly,
+							input.viewerRelationship,
 						),
 					),
 				);
