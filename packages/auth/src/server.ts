@@ -255,9 +255,11 @@ export const auth = betterAuth({
 					// diluted intent-to-treat effect would need years to resolve.
 					// Kill switch for the nudges is the Resend automation toggle.
 					try {
+						// The email says "just reply"; a visible noreply@ sender
+						// contradicts that even with replyTo set, so send from the
+						// monitored founders@ address directly.
 						const { error } = await resend.emails.send({
-							from: "Superset <noreply@superset.sh>",
-							replyTo: "founders@superset.sh",
+							from: "Superset <founders@superset.sh>",
 							to: user.email,
 							subject: "Welcome to Superset",
 							react: WelcomeEmail({
