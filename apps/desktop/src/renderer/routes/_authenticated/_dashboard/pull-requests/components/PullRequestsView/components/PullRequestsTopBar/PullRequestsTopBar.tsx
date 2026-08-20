@@ -4,6 +4,7 @@ import { cn } from "@superset/ui/utils";
 import { LuListFilter } from "react-icons/lu";
 import { ProjectFilter } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter";
 import { WorkItemsSearch } from "renderer/routes/_authenticated/_dashboard/components/WorkItemsSearch";
+import type { ProjectQueryTarget } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectQueryTargets";
 import { PullRequestDetailToggle } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestDetailToggle";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
 import { AuthorFilter } from "./components/AuthorFilter";
@@ -16,6 +17,7 @@ interface PullRequestsTopBarProps {
 	onSearchChange: (query: string) => void;
 	projectFilters: string[];
 	onProjectFiltersChange: (projectIds: string[]) => void;
+	projectTargets: ProjectQueryTarget[];
 	authorFilter: string | null;
 	onAuthorFilterChange: (author: string | null) => void;
 	reviewFilter: PullRequestReviewFilter | null;
@@ -38,6 +40,7 @@ export function PullRequestsTopBar({
 	onSearchChange,
 	projectFilters,
 	onProjectFiltersChange,
+	projectTargets,
 	authorFilter,
 	onAuthorFilterChange,
 	reviewFilter,
@@ -120,6 +123,7 @@ export function PullRequestsTopBar({
 							<AuthorFilter
 								value={authorFilter}
 								onChange={onAuthorFilterChange}
+								projectTargets={projectTargets}
 							/>
 						</div>
 						<div className="flex items-center justify-between gap-2">
