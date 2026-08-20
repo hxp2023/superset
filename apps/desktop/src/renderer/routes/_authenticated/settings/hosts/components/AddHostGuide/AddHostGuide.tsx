@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { LuArrowUpRight, LuCircleCheck } from "react-icons/lu";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
-import { CopyableCommand } from "../../../components/CopyableCommand";
+import { CopyableCommand } from "renderer/routes/_authenticated/components/CopyableCommand";
 
 const INSTALL_COMMAND = "brew install superset-sh/tap/superset";
 const START_COMMAND = "superset auth login && superset start --daemon";

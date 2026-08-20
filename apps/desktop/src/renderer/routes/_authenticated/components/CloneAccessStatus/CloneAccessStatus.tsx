@@ -1,11 +1,11 @@
 import { Button } from "@superset/ui/button";
 import { Spinner } from "@superset/ui/spinner";
 import { LuCircleCheck, LuRefreshCw, LuTriangleAlert } from "react-icons/lu";
+import { CopyableCommand } from "renderer/routes/_authenticated/components/CopyableCommand";
 import {
 	GH_AUTH_COMMAND,
 	GH_INSTALL_COMMAND,
 } from "renderer/utils/classifyCloneError";
-import { CopyableCommand } from "../../../../../../../../components/CopyableCommand";
 
 /** Mirrors host-service `project.checkCloneAccess` output structurally so the
  * component doesn't depend on the package's export surface. */

@@ -11,25 +11,22 @@ import { Input } from "@superset/ui/input";
 import { Label } from "@superset/ui/label";
 import { toast } from "@superset/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@superset/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { LuFolderOpen, LuLoaderCircle, LuTriangleAlert } from "react-icons/lu";
 import { RemotePathPicker } from "renderer/components/RemotePathPicker";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { CloneAccessStatus } from "renderer/routes/_authenticated/components/CloneAccessStatus";
 import {
 	GhAuthDialog,
 	type GhAuthDialogMode,
 } from "renderer/routes/_authenticated/components/GhAuthDialog";
+import { useCloneAccessPlan } from "renderer/routes/_authenticated/hooks/useCloneAccessPlan";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import {
 	type CloneError,
 	classifyCloneError,
 } from "renderer/utils/classifyCloneError";
-import {
-	type CloneAccessResult,
-	CloneAccessStatus,
-} from "./components/CloneAccessStatus";
 
 type SetupMode = "clone" | "import";
 
@@ -63,7 +60,6 @@ export function SetupProjectModal({
 	const [mode, setMode] = useState<SetupMode>(
 		repoCloneUrl ? "clone" : "import",
 	);
-	const [parentDir, setParentDir] = useState("");
 	const [importPath, setImportPath] = useState("");
 	const [working, setWorking] = useState(false);
 	const [setupError, setSetupError] = useState<CloneError | null>(null);
@@ -71,68 +67,27 @@ export function SetupProjectModal({
 	const [browseTarget, setBrowseTarget] = useState<
 		"parentDir" | "importPath" | null
 	>(null);
-	const parentDirPrefilledRef = useRef(false);
 
 	useEffect(() => {
 		if (!open) return;
 		setMode(repoCloneUrl ? "clone" : "import");
 	}, [open, repoCloneUrl]);
 
-	// Preflight the same access a real clone would need, so a missing GitHub
-	// sign-in on the host surfaces as a fix-it panel instead of a failed clone.
-	const accessQuery = useQuery({
-		queryKey: ["project-setup", "clone-access", hostUrl, repoCloneUrl],
-		enabled: open && mode === "clone" && !!hostUrl && !!repoCloneUrl,
-		staleTime: 30_000,
-		queryFn: async (): Promise<CloneAccessResult | null> => {
-			if (!hostUrl || !repoCloneUrl) return null;
-			try {
-				const client = getHostServiceClientByUrl(hostUrl);
-				return await client.project.checkCloneAccess.query({ repoCloneUrl });
-			} catch (err) {
-				// Hosts older than the procedure: stay quiet rather than warn.
-				if (
-					err instanceof Error &&
-					err.message.includes("No procedure found")
-				) {
-					return null;
-				}
-				// Anything else means we couldn't ask the host at all — say so
-				// instead of hiding the check and letting Clone discover it.
-				return { ok: false, reason: "unreachable", ghCli: "unknown" };
-			}
-		},
+	const {
+		parentDir,
+		setParentDir,
+		resetParentDir,
+		access,
+		isCheckingAccess,
+		recheckAccess,
+	} = useCloneAccessPlan({
+		hostUrl,
+		repoCloneUrl,
+		enabled: open && mode === "clone",
 	});
-
-	// Suggest the same default clone location onboarding uses, resolved
-	// against the target host's home directory.
-	const hostHomeQuery = useQuery({
-		queryKey: ["project-setup", "host-home", hostUrl],
-		enabled: open && !!hostUrl,
-		staleTime: Number.POSITIVE_INFINITY,
-		queryFn: async () => {
-			if (!hostUrl) return null;
-			const client = getHostServiceClientByUrl(hostUrl);
-			const listing = await client.filesystem.browseHost.query({});
-			return listing.homePath ?? listing.path;
-		},
-	});
-	useEffect(() => {
-		if (!open) {
-			parentDirPrefilledRef.current = false;
-			return;
-		}
-		if (parentDirPrefilledRef.current) return;
-		const home = hostHomeQuery.data;
-		if (!home) return;
-		parentDirPrefilledRef.current = true;
-		setParentDir((current) =>
-			current ? current : `${home}/.superset/projects`,
-		);
-	}, [open, hostHomeQuery.data]);
 
 	const reset = () => {
-		setParentDir("");
+		resetParentDir();
 		setImportPath("");
 		setWorking(false);
 		setSetupError(null);
@@ -196,7 +151,7 @@ export function SetupProjectModal({
 			setSetupError(classifyCloneError(err));
 			// The access panel carries the remediation; refresh it so its state
 			// (gh installed/signed in) matches what the clone just hit.
-			void accessQuery.refetch();
+			recheckAccess();
 		} finally {
 			setWorking(false);
 		}
@@ -251,12 +206,7 @@ export function SetupProjectModal({
 	// only show the raw error when it adds information.
 	const showSetupError =
 		setupError !== null &&
-		!(
-			mode === "clone" &&
-			setupError.needsGhAuth &&
-			accessQuery.data &&
-			!accessQuery.data.ok
-		);
+		!(mode === "clone" && setupError.needsGhAuth && access && !access.ok);
 
 	return (
 		<>
@@ -306,11 +256,11 @@ export function SetupProjectModal({
 										</div>
 									)}
 									<CloneAccessStatus
-										result={accessQuery.data ?? null}
-										isChecking={accessQuery.isFetching}
+										result={access}
+										isChecking={isCheckingAccess}
 										hostName={hostName}
 										isRemoteTarget={isRemoteTarget}
-										onRecheck={() => void accessQuery.refetch()}
+										onRecheck={recheckAccess}
 										onSignIn={
 											isRemoteTarget ? undefined : (m) => setGhAuthMode(m)
 										}
@@ -453,7 +403,7 @@ export function SetupProjectModal({
 					onOpenChange={(next) => {
 						if (!next) setGhAuthMode(null);
 					}}
-					onExit={() => void accessQuery.refetch()}
+					onExit={recheckAccess}
 				/>
 			)}
 

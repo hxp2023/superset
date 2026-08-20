@@ -21,6 +21,7 @@ import type {
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { useStarNagStore } from "renderer/stores/star-nag";
+import { classifyCloneError } from "renderer/utils/classifyCloneError";
 import { useWorkspaceTransactionsStore } from "./workspaceTransactions";
 import { writeWorkspacePaneLayout } from "./writeWorkspacePaneLayout";
 
@@ -30,6 +31,16 @@ export interface SubmitArgs {
 	hostId: string;
 	/** `projectId: null` routes to `workspaces.createSession`. */
 	snapshot: WorkspacesCreateAnyInput;
+	/**
+	 * Creation subsumes setup: when the project isn't set up on the target
+	 * host yet, clone it there first, then create the workspace — one motion
+	 * from the composer instead of a settings detour.
+	 */
+	setupFirst?: {
+		repoCloneUrl: string;
+		projectName?: string;
+		parentDir: string;
+	};
 }
 
 export type SubmitOutcome =
@@ -357,6 +368,26 @@ export function useWorkspaceCreates(): UseWorkspaceCreatesApi {
 							};
 						}
 						throw error;
+					}
+				}
+				if (args.setupFirst) {
+					try {
+						await client.project.setup.mutate({
+							projectId: snapshot.projectId,
+							// Coordinates from the host fan-out: local-first projects
+							// created on another host have no cloud row for the target
+							// host to read.
+							origin: {
+								repoCloneUrl: args.setupFirst.repoCloneUrl,
+								name: args.setupFirst.projectName,
+							},
+							mode: {
+								kind: "clone",
+								parentDir: args.setupFirst.parentDir,
+							},
+						});
+					} catch (error) {
+						throw new Error(classifyCloneError(error).message);
 					}
 				}
 				let waitForSetup = waitForSetupBeforeAgent;
