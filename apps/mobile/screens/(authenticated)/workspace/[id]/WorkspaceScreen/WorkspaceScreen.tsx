@@ -188,9 +188,16 @@ export function WorkspaceScreen() {
 		active: false,
 		hasSelection: false,
 	});
-	const [notice, setNotice] = useState<string | null>(null);
+	// seq gives each notice its own identity: a repeat copy while "Copied" is
+	// still up remounts HeaderNotice, restarting its timer.
+	const [notice, setNotice] = useState<{ text: string; seq: number } | null>(
+		null,
+	);
 	const hideNotice = useCallback(() => setNotice(null), []);
-	const handleCopied = useCallback(() => setNotice("Copied"), []);
+	const handleCopied = useCallback(
+		() => setNotice((prev) => ({ text: "Copied", seq: (prev?.seq ?? 0) + 1 })),
+		[],
+	);
 
 	useEffect(() => {
 		const show = Keyboard.addListener("keyboardWillShow", (event) => {
@@ -275,8 +282,9 @@ export function WorkspaceScreen() {
 					headerTitle: notice
 						? () => (
 								<HeaderNotice
+									key={notice.seq}
 									onHidden={hideNotice}
-									text={notice}
+									text={notice.text}
 									visibleFor={NOTICE_MS}
 								/>
 							)

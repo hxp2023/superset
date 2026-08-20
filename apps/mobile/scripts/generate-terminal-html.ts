@@ -726,7 +726,9 @@ const runtimeJs = /* js */ `
 		scrollbarFrame = 0;
 		var buffer = term.buffer.active;
 		var hidden = buffer.length - term.rows;
-		if (hidden <= 0 || buffer.viewportY >= hidden) {
+		// Never hide mid-drag: reaching the bottom would remove the track (and
+		// its pointer-events) under the finger.
+		if (hidden <= 0 || (buffer.viewportY >= hidden && !thumbDrag)) {
 			scrollbar.classList.remove("visible");
 			return;
 		}

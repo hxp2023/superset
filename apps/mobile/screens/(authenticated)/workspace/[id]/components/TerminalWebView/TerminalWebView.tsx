@@ -183,8 +183,10 @@ export const TerminalWebView = forwardRef<
 			} else if (message.type === "openUrl") {
 				void Linking.openURL(message.url).catch(() => {});
 			} else if (message.type === "copy") {
-				void Clipboard.setStringAsync(message.text).then(() =>
-					onCopiedRef.current?.(),
+				void Clipboard.setStringAsync(message.text).then(
+					() => onCopiedRef.current?.(),
+					// Failed write: stay quiet rather than toast a false "Copied".
+					() => {},
 				);
 			} else if (message.type === "select") {
 				onSelectChangeRef.current?.({
