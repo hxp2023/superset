@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c992a8a3-1787-46d9-b459-ff10602cc8e4",
-  "prevId": "a6b3abf5-a4f2-4bda-be84-01f62fa84ed1",
+  "id": "753a21e5-5c9f-4d5b-9e63-37c8f3c1aec9",
+  "prevId": "792828a4-edf9-4577-b8c5-6ea21e493743",
   "tables": {
     "host_agent_configs": {
       "name": "host_agent_configs",
@@ -144,6 +144,20 @@
         },
         "branch_prefix_custom": {
           "name": "branch_prefix_custom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "default_claude_config_dir": {
+          "name": "default_claude_config_dir",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "default_codex_home": {
+          "name": "default_codex_home",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -674,67 +688,6 @@
             "id"
           ],
           "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "workspace_tags": {
-      "name": "workspace_tags",
-      "columns": {
-        "workspace_id": {
-          "name": "workspace_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "tag": {
-          "name": "tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "workspace_tags_unique": {
-          "name": "workspace_tags_unique",
-          "columns": [
-            "workspace_id",
-            "tag"
-          ],
-          "isUnique": true
-        },
-        "workspace_tags_tag_idx": {
-          "name": "workspace_tags_tag_idx",
-          "columns": [
-            "tag"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "workspace_tags_workspace_id_workspaces_id_fk": {
-          "name": "workspace_tags_workspace_id_workspaces_id_fk",
-          "tableFrom": "workspace_tags",
-          "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

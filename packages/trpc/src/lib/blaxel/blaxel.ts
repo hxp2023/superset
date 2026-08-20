@@ -71,13 +71,26 @@ export interface ProvisionedSandbox {
 export async function provisionSandbox(args: {
 	name: string;
 	image: string;
+	/**
+	 * Everything the sandbox needs to configure itself. It reads these on boot
+	 * and seeds its own project and workspace rows, which is why provisioning
+	 * has nothing to run inside it afterwards.
+	 */
+	workspaceEnv: Record<string, string>;
 	memoryMb?: number;
 	region?: string;
 }): Promise<ProvisionedSandbox> {
 	configureBlaxel();
 	const memoryMb = args.memoryMb ?? 4096;
 	const region = args.region ?? env.BLAXEL_REGION;
-	const { envs, routing } = agentCredentialRoutes();
+	const { envs: credentialEnvs, routing } = agentCredentialRoutes();
+	const envs = [
+		...credentialEnvs,
+		...Object.entries(args.workspaceEnv).map(([name, value]) => ({
+			name,
+			value,
+		})),
+	];
 
 	const sandbox = await SandboxInstance.createIfNotExists({
 		name: args.name,
@@ -120,6 +133,17 @@ export async function provisionSandbox(args: {
 			message: "Sandbox preview has no URL",
 		});
 	}
+
+	// Start host-service and return — the only thing provisioning runs inside a
+	// sandbox, and it is not awaited. The script needs a second or two; the
+	// client discovers the result by polling the health endpoint it already
+	// polls, so there is nothing to wait for here.
+	await sandbox.process.exec({
+		name: "host-service",
+		command: "/app/start.sh",
+		waitForCompletion: false,
+	} as never);
+
 	return { providerSandboxId: args.name, sandboxUrl };
 }
 
@@ -154,7 +178,25 @@ export async function deleteSandbox(providerSandboxId: string): Promise<void> {
 	try {
 		await SandboxInstance.delete(providerSandboxId);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		if (!/not found|404/i.test(message)) throw error;
+		if (!isSandboxNotFound(error)) throw error;
 	}
+}
+
+/**
+ * The SDK's not-found error carries the status on the object, not in the
+ * message — its `message` is empty — so a text match alone lets a workspace
+ * whose sandbox never came up (a failed provision, or one already torn down)
+ * refuse deletion forever.
+ */
+function isSandboxNotFound(error: unknown): boolean {
+	if (typeof error === "object" && error !== null) {
+		const { code, error: reason } = error as {
+			code?: unknown;
+			error?: unknown;
+		};
+		if (code === 404) return true;
+		if (typeof reason === "string" && /not found/i.test(reason)) return true;
+	}
+	const message = error instanceof Error ? error.message : String(error);
+	return /not found|404/i.test(message);
 }
