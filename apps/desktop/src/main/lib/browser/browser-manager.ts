@@ -764,7 +764,11 @@ class BrowserManager extends EventEmitter {
 	): Promise<DesignModeScreenshot | null> {
 		const wc = this.getWebContents(paneId);
 		if (!wc) return null;
-		return captureDesignModeScreenshot(rect, wc);
+		// capturePageImage brings the agent wake + per-attempt timeout + retry —
+		// a bare capturePage() hangs on a pane that goes hidden mid-capture.
+		return captureDesignModeScreenshot(rect, wc, () =>
+			this.capturePageImage(paneId),
+		);
 	}
 
 	openDevTools(paneId: string): void {

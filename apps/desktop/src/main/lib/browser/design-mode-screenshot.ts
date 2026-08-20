@@ -18,10 +18,15 @@ const RESTORE_OVERLAY_SCRIPT = `(function(){
  * Capture a screenshot of the guest page cropped to the given CSS-pixel rect.
  * Returns null on any failure — a missing screenshot is non-fatal for the
  * design-mode flow.
+ *
+ * `capture` is injected so the caller can supply the hardened capture path
+ * (agent wake + per-attempt timeout + retry) — a bare `capturePage()` hangs
+ * indefinitely on a hidden or throttled pane.
  */
 export async function captureDesignModeScreenshot(
 	rect: DesignModeRect,
 	guest: Electron.WebContents,
+	capture: () => Promise<Electron.NativeImage>,
 ): Promise<DesignModeScreenshot | null> {
 	try {
 		// The rect crosses IPC from the renderer; keep NaN out of image.crop().
@@ -39,7 +44,7 @@ export async function captureDesignModeScreenshot(
 		await guest.executeJavaScript(HIDE_OVERLAY_SCRIPT).catch(() => {});
 		let image: Electron.NativeImage;
 		try {
-			image = await guest.capturePage();
+			image = await capture();
 		} finally {
 			await guest.executeJavaScript(RESTORE_OVERLAY_SCRIPT).catch(() => {});
 		}

@@ -57,7 +57,8 @@ export async function writeDesignModeAttachments({
 		recursive: true,
 	});
 
-	const baseName = `design-${Date.now()}`;
+	// Timestamp alone can collide across rapid sends; suffix for uniqueness.
+	const baseName = `design-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 	const contextName = `${baseName}.md`;
 	await client.filesystem.writeFile.mutate({
 		workspaceId,

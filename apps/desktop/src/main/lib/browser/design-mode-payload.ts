@@ -124,7 +124,7 @@ export function clampDesignModePayload(raw: unknown): DesignModePayload | null {
 	return {
 		page: {
 			sanitizedUrl: sanitizeUrl(page.sanitizedUrl),
-			title: clampStr(page.title, 500),
+			title: safeMetadataStr(page.title, 500),
 			viewportWidth: safeNum(page.viewportWidth),
 			viewportHeight: safeNum(page.viewportHeight),
 			scrollX: safeNum(page.scrollX),

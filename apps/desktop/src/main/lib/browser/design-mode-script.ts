@@ -249,7 +249,7 @@ const ARM_SCRIPT = `(function() {
     while (current && current.nodeType === Node.ELEMENT_NODE && current !== document.body && parts.length < 10) {
       var part = buildSelectorPart(current);
       var parent = current.parentElement;
-      if (parent && !isUniqueSelector(parts.concat([part]).reverse().join(' > '))) {
+      if (parent && !isUniqueSelector([part].concat(parts).join(' > '))) {
         part += getNthOfTypeSuffix(current);
       }
       parts.unshift(part);
@@ -472,6 +472,7 @@ const ARM_SCRIPT = `(function() {
           ? '[redacted]'
           : clampStr(el.getAttribute('class') || '', BUDGET.cssClassesMaxLength),
         reactComponents: react.reactComponents,
+        reactProps: react.reactProps,
         sourceFile: react.sourceFile,
         textSnippet: getBoundedText(el, BUDGET.textSnippetMaxLength),
         htmlSnippet: getHtmlSnippet(el),

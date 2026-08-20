@@ -111,6 +111,10 @@ describe("formatDesignModeContextMarkdown", () => {
 		const md = formatDesignModeContextMarkdown(payload(), "Make it blue");
 		expect(md).toContain("**Feedback:** Make it blue");
 		expect(md).toContain("**Selector:** `button.save`");
+		expect(md).toContain(
+			'**React props:** `variant="primary" disabled=false onClick=fn`',
+		);
+		expect(md).toContain("untrusted data");
 		expect(md).toContain("- padding: 8px");
 		// Noise values are filtered.
 		expect(md).not.toContain("position: static");

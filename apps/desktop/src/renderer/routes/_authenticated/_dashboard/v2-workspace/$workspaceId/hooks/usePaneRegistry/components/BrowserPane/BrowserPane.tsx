@@ -3,7 +3,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { useParams } from "@tanstack/react-router";
 import { GlobeIcon, SquareDashedMousePointer, XIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+	useSyncExternalStore,
+} from "react";
 import { TbDeviceDesktop } from "react-icons/tb";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { BrowserPaneData, PaneViewerData } from "../../../../types";
@@ -122,26 +129,47 @@ export function BrowserPane({
 	// Anchor the composer under the clicked element: the capture's viewport
 	// rect is in guest CSS pixels, which map 1:1 onto the placeholder's box
 	// (the webview mirrors the placeholder rect, and the pane root is the
-	// offset parent of both the placeholder and the popover).
+	// offset parent of both the placeholder and the popover). Computed in a
+	// layout effect (refs are unset during the first render of a remount) and
+	// re-clamped when the pane resizes so the card stays inside it.
 	const rootRef = useRef<HTMLDivElement | null>(null);
-	const popoverStyle = (() => {
-		const rect = designMode.payload?.target.rectViewport;
-		const placeholder = placeholderRef.current;
+	const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({
+		top: 12,
+		left: 12,
+	});
+	const confirmingRect =
+		designMode.phase === "confirming"
+			? designMode.payload?.target.rectViewport
+			: undefined;
+	useLayoutEffect(() => {
+		if (!confirmingRect) return;
 		const root = rootRef.current;
-		if (!rect || !placeholder || !root) return { top: 12, left: 12 };
-		const width = Math.min(420, root.clientWidth - 16);
-		const estimatedHeight = 170;
-		const left = Math.min(
-			Math.max(placeholder.offsetLeft + rect.x, 8),
-			Math.max(8, root.clientWidth - width - 8),
-		);
-		const below = placeholder.offsetTop + rect.y + rect.height + 4;
-		const top =
-			below + estimatedHeight > root.clientHeight
-				? Math.max(8, placeholder.offsetTop + rect.y - estimatedHeight - 4)
-				: below;
-		return { top, left, width };
-	})();
+		if (!root) return;
+		const compute = () => {
+			const placeholder = placeholderRef.current;
+			if (!placeholder) return;
+			const width = Math.min(420, root.clientWidth - 16);
+			const estimatedHeight = 170;
+			const left = Math.min(
+				Math.max(placeholder.offsetLeft + confirmingRect.x, 8),
+				Math.max(8, root.clientWidth - width - 8),
+			);
+			const below =
+				placeholder.offsetTop + confirmingRect.y + confirmingRect.height + 4;
+			const top =
+				below + estimatedHeight > root.clientHeight
+					? Math.max(
+							8,
+							placeholder.offsetTop + confirmingRect.y - estimatedHeight - 4,
+						)
+					: below;
+			setPopoverStyle({ top, left, width });
+		};
+		compute();
+		const observer = new ResizeObserver(compute);
+		observer.observe(root);
+		return () => observer.disconnect();
+	}, [confirmingRect, placeholderRef]);
 
 	return (
 		// min-w-0: without it the banner row's intrinsic width becomes the pane
@@ -149,7 +177,9 @@ export function BrowserPane({
 		// follows the placeholder rect, painting over the neighbor pane.
 		<div ref={rootRef} className="relative flex h-full min-w-0 flex-1 flex-col">
 			{designMode.phase !== "idle" && (
-				<div className="flex shrink-0 items-center gap-2 border-b border-border/60 bg-[#0d99ff]/10 px-3 py-1.5 text-xs text-foreground/90">
+				// relative z-20: must stay clickable above the confirming-phase
+				// click-catcher (z-10) so the exit button keeps working.
+				<div className="relative z-20 flex shrink-0 items-center gap-2 border-b border-border/60 bg-[#0d99ff]/10 px-3 py-1.5 text-xs text-foreground/90">
 					<SquareDashedMousePointer className="size-3.5 shrink-0 text-[#0d99ff]" />
 					<span className="min-w-0 flex-1 truncate">
 						{designMode.phase === "selecting"
