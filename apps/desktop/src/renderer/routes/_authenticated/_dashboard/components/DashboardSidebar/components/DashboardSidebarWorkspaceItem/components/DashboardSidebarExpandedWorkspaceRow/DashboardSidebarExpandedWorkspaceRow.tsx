@@ -18,8 +18,6 @@ import type { DiffStats } from "renderer/hooks/host-service/useDiffStats";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { ProjectThumbnail } from "renderer/routes/_authenticated/components/ProjectThumbnail";
-import { createEmptyPaneLayout } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState/sidebarMutations";
-import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
 import type { ActivePaneStatus } from "shared/tabs-types";
 import type {
@@ -61,6 +59,7 @@ interface DashboardSidebarExpandedWorkspaceRowProps
 	onWorkspaceChipsClick?: MouseEventHandler<HTMLDivElement>;
 	onDoubleClick?: () => void;
 	onCloseWorkspaceClick: () => void;
+	onToggleLineageCollapsed: () => void;
 	onRemoveFromSidebarClick: () => void;
 	onRenameValueChange: (value: string) => void;
 	onSubmitRename: () => void;
@@ -89,6 +88,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 			onWorkspaceChipsClick,
 			onDoubleClick,
 			onCloseWorkspaceClick,
+			onToggleLineageCollapsed,
 			onRemoveFromSidebarClick,
 			onRenameValueChange,
 			onSubmitRename,
@@ -109,36 +109,12 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 		const isPending = pendingTransaction?.type === "insert";
 		const localRef = useRef<HTMLDivElement>(null);
 		const openUrl = electronTrpc.external.openUrl.useMutation();
-		const collections = useCollections();
-
 		const isLineageParent = workspace.lineageChildCount > 0;
-		const toggleLineageCollapsed: MouseEventHandler<HTMLButtonElement> = (
+		const handleLineageChevronClick: MouseEventHandler<HTMLButtonElement> = (
 			event,
 		) => {
 			event.stopPropagation();
-			// Auto-included mains have no local-state row yet — create one on
-			// first toggle, the same way pinning one does, so the control is
-			// never inert.
-			if (!collections.v2WorkspaceLocalState.get(workspace.id)) {
-				collections.v2WorkspaceLocalState.insert({
-					workspaceId: workspace.id,
-					createdAt: new Date(),
-					sidebarState: {
-						projectId: workspace.projectId,
-						tabOrder: 0,
-						sectionId: null,
-						isHidden: false,
-						pinnedAt: null,
-						lineageCollapsed: true,
-					},
-					paneLayout: createEmptyPaneLayout(),
-				});
-				return;
-			}
-			collections.v2WorkspaceLocalState.update(workspace.id, (draft) => {
-				draft.sidebarState.lineageCollapsed =
-					!draft.sidebarState.lineageCollapsed;
-			});
+			onToggleLineageCollapsed();
 		};
 
 		useEffect(() => {
@@ -278,7 +254,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 														? `Expand ${workspace.lineageChildCount} child workspaces`
 														: "Collapse child workspaces"
 												}
-												onClick={toggleLineageCollapsed}
+												onClick={handleLineageChevronClick}
 												onKeyDown={(event) => {
 													if (event.key === "Enter" || event.key === " ") {
 														event.stopPropagation();

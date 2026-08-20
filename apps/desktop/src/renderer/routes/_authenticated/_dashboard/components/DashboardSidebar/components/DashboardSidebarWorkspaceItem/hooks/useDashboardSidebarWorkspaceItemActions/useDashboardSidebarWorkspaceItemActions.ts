@@ -58,8 +58,12 @@ export function useDashboardSidebarWorkspaceItemActions({
 		clearManualUnread(workspaceId);
 		markWorkspaceTerminalsSeen();
 	};
-	const { createSection, moveWorkspaceToSection, setWorkspacePinned } =
-		useDashboardSidebarState();
+	const {
+		createSection,
+		moveWorkspaceToSection,
+		setWorkspacePinned,
+		toggleWorkspaceLineageCollapsed,
+	} = useDashboardSidebarState();
 
 	const [isRenaming, setIsRenaming] = useState(false);
 	const [renameValue, setRenameValue] = useState(workspaceName);
@@ -90,6 +94,9 @@ export function useDashboardSidebarWorkspaceItemActions({
 			params: { workspaceId },
 		});
 	};
+
+	const toggleLineageCollapsed = () =>
+		toggleWorkspaceLineageCollapsed(workspaceId, projectId);
 
 	const startRename = () => {
 		setRenameValue(workspaceName);
@@ -290,5 +297,6 @@ export function useDashboardSidebarWorkspaceItemActions({
 		setRenameValue,
 		startRename,
 		submitRename,
+		toggleLineageCollapsed,
 	};
 }

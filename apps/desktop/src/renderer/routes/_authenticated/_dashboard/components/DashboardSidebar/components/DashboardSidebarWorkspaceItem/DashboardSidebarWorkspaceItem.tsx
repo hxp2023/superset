@@ -87,6 +87,7 @@ export function DashboardSidebarWorkspaceItem({
 		setRenameValue,
 		startRename,
 		submitRename,
+		toggleLineageCollapsed,
 	} = useDashboardSidebarWorkspaceItemActions({
 		workspaceId: id,
 		projectId,
@@ -314,6 +315,7 @@ export function DashboardSidebarWorkspaceItem({
 				onDoubleClick={isPending || isMainWorkspace ? undefined : startRename}
 				onRemoveFromSidebarClick={handleRemoveFromSidebar}
 				onCloseWorkspaceClick={requestDelete}
+				onToggleLineageCollapsed={toggleLineageCollapsed}
 				onRenameValueChange={setRenameValue}
 				onSubmitRename={submitRename}
 				onCancelRename={cancelRename}

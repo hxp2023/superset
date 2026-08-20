@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { DashboardSidebarWorkspace } from "../../types";
 import {
 	buildDashboardSidebarPinnedWorkspaces,
 	buildDashboardSidebarProjects,
@@ -80,6 +81,18 @@ function build(params: {
 		machineId: MACHINE_ID,
 		pullRequestsByWorkspaceId: new Map(),
 	});
+}
+
+/** Top-level workspace rows as "id:<label>" strings, sections skipped. */
+function renderedWorkspaces(
+	project: ReturnType<typeof build>[number],
+	label: (workspace: DashboardSidebarWorkspace) => string | number,
+) {
+	return project.children.flatMap((child) =>
+		child.type === "workspace"
+			? [`${child.workspace.id}:${label(child.workspace)}`]
+			: [],
+	);
 }
 
 describe("buildDashboardSidebarProjects", () => {
@@ -212,11 +225,7 @@ describe("lineage nesting", () => {
 			],
 		});
 
-		const rendered = project.children.flatMap((child) =>
-			child.type === "workspace"
-				? [`${child.workspace.id}:${child.workspace.lineageDepth}`]
-				: [],
-		);
+		const rendered = renderedWorkspaces(project, (w) => w.lineageDepth);
 		expect(rendered).toEqual(["parent:0", "child:1", "unrelated:0"]);
 	});
 
@@ -234,11 +243,7 @@ describe("lineage nesting", () => {
 			],
 		});
 
-		const rendered = project.children.flatMap((child) =>
-			child.type === "workspace"
-				? [`${child.workspace.id}:${child.workspace.lineageDepth}`]
-				: [],
-		);
+		const rendered = renderedWorkspaces(project, (w) => w.lineageDepth);
 		expect(rendered).toEqual(["root:0", "kid-a:1", "grandkid:2", "kid-b:1"]);
 	});
 
@@ -262,11 +267,7 @@ describe("lineage nesting", () => {
 			],
 		});
 
-		const topLevel = project.children.flatMap((child) =>
-			child.type === "workspace"
-				? [`${child.workspace.id}:${child.workspace.lineageDepth}`]
-				: [],
-		);
+		const topLevel = renderedWorkspaces(project, (w) => w.lineageDepth);
 		expect(topLevel).toEqual(["child:0", "missing-parent-child:0"]);
 	});
 
@@ -302,11 +303,7 @@ describe("lineage nesting", () => {
 			],
 		});
 
-		const rendered = project.children.flatMap((child) =>
-			child.type === "workspace"
-				? [`${child.workspace.id}:${child.workspace.lineageChildCount}`]
-				: [],
-		);
+		const rendered = renderedWorkspaces(project, (w) => w.lineageChildCount);
 		expect(rendered).toEqual(["parent:2", "a:0", "b:0"]);
 	});
 
@@ -324,11 +321,7 @@ describe("lineage nesting", () => {
 			],
 		});
 
-		const rendered = project.children.flatMap((child) =>
-			child.type === "workspace"
-				? [`${child.workspace.id}:${child.workspace.lineageChildCount}`]
-				: [],
-		);
+		const rendered = renderedWorkspaces(project, (w) => w.lineageChildCount);
 		// Count is direct children only; the whole subtree stays hidden.
 		expect(rendered).toEqual(["parent:1", "unrelated:0"]);
 	});

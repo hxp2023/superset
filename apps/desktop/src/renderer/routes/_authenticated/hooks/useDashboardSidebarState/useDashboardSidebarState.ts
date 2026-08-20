@@ -659,6 +659,35 @@ export function useDashboardSidebarState() {
 		[collections, hostWorkspaces, machineId],
 	);
 
+	const toggleWorkspaceLineageCollapsed = useCallback(
+		(workspaceId: string, projectId: string | null) => {
+			// Auto-included mains have no local-state row yet — create one on
+			// first toggle, the same way pinning does. Unlike pinning this is
+			// not a placement: tabOrder stays 0 so the row doesn't move.
+			if (!collections.v2WorkspaceLocalState.get(workspaceId)) {
+				collections.v2WorkspaceLocalState.insert({
+					workspaceId,
+					createdAt: new Date(),
+					sidebarState: {
+						projectId,
+						tabOrder: 0,
+						sectionId: null,
+						isHidden: false,
+						pinnedAt: null,
+						lineageCollapsed: true,
+					},
+					paneLayout: createEmptyPaneLayout(),
+				});
+				return;
+			}
+			collections.v2WorkspaceLocalState.update(workspaceId, (draft) => {
+				draft.sidebarState.lineageCollapsed =
+					!draft.sidebarState.lineageCollapsed;
+			});
+		},
+		[collections],
+	);
+
 	return {
 		createSection,
 		deleteSection,
@@ -677,6 +706,7 @@ export function useDashboardSidebarState() {
 		setSectionColor,
 		setWorkspacePinned,
 		toggleProjectCollapsed,
+		toggleWorkspaceLineageCollapsed,
 		toggleSectionCollapsed,
 	};
 }
