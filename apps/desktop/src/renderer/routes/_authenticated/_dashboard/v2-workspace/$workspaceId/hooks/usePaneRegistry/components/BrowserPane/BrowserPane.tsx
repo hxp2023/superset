@@ -52,6 +52,8 @@ interface BrowserPaneProps {
 	onCreateNewAgentSession?: (
 		input: CreateNewAgentSessionInput,
 	) => Promise<{ terminalId: string } | null>;
+	/** Bring the pane hosting this agent terminal to the front. */
+	onFocusAgentTerminal?: (terminalId: string) => void;
 }
 
 function useBrowserState(paneId: string) {
@@ -67,6 +69,7 @@ function useBrowserState(paneId: string) {
 export function BrowserPane({
 	ctx,
 	onCreateNewAgentSession,
+	onFocusAgentTerminal,
 }: BrowserPaneProps) {
 	const paneId = ctx.pane.id;
 	const state = useBrowserState(paneId);
@@ -190,6 +193,7 @@ export function BrowserPane({
 							onDismiss={() => designModeStore.rearm(paneId)}
 							onSent={() => designModeStore.exit(paneId)}
 							onCreateNewAgentSession={onCreateNewAgentSession}
+							onFocusAgentTerminal={onFocusAgentTerminal}
 						/>
 					</>
 				)}

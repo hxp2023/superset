@@ -39,6 +39,8 @@ interface DesignModePopoverProps {
 	onCreateNewAgentSession?: (
 		input: CreateNewAgentSessionInput,
 	) => Promise<{ terminalId: string } | null>;
+	/** Bring the pane hosting this agent terminal to the front. */
+	onFocusAgentTerminal?: (terminalId: string) => void;
 }
 
 const TEXTAREA_MAX_HEIGHT = 120;
@@ -58,6 +60,7 @@ export function DesignModePopover({
 	onDismiss,
 	onSent,
 	onCreateNewAgentSession,
+	onFocusAgentTerminal,
 }: DesignModePopoverProps) {
 	const { send: sendToTerminalAgent } = useSendToTerminalAgent();
 	const workspaceClient = workspaceTrpc.useUtils().client;
@@ -132,7 +135,10 @@ export function DesignModePopover({
 					placement: resolved.placement,
 					prompt,
 				});
-				if (result) onSent();
+				if (result) {
+					onFocusAgentTerminal?.(result.terminalId);
+					onSent();
+				}
 				return;
 			}
 
@@ -143,6 +149,7 @@ export function DesignModePopover({
 					text: prompt,
 				});
 				toast.success("Sent to agent");
+				onFocusAgentTerminal?.(resolved.terminalId);
 				onSent();
 			} catch {
 				// Toast surfaced by the hook; keep the popover open for retry.
