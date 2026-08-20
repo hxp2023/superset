@@ -7,7 +7,6 @@ import { useWorkspaceSidebarStore } from "renderer/stores/workspace-sidebar-stat
 import { PullRequestListToggle } from "./components/PullRequestListToggle";
 import { PullRequestsView } from "./components/PullRequestsView";
 import { usePullRequestsSplitViewStore } from "./stores/pullRequestsSplitViewStore";
-import { PULL_REQUESTS_VIEW_TABS } from "./utils/viewerRelationship";
 
 export type PullRequestsSearch = {
 	search?: string;
@@ -16,10 +15,7 @@ export type PullRequestsSearch = {
 	author?: string;
 	review?: string;
 	state?: "open" | "all" | "merged";
-	tab?: "all" | "reviewing" | "authored";
 };
-
-const VIEW_TAB_VALUES = PULL_REQUESTS_VIEW_TABS.map((tab) => tab.value);
 
 export const Route = createFileRoute(
 	"/_authenticated/_dashboard/pull-requests",
@@ -34,9 +30,6 @@ export const Route = createFileRoute(
 		state: ["open", "all", "merged"].includes(search.state as string)
 			? (search.state as PullRequestsSearch["state"])
 			: undefined,
-		tab: VIEW_TAB_VALUES.includes(search.tab as never)
-			? (search.tab as PullRequestsSearch["tab"])
-			: undefined,
 	}),
 });
 
@@ -48,7 +41,7 @@ export const Route = createFileRoute(
  * unmounts, so scroll position and in-flight pagination survive.
  */
 function PullRequestsLayout() {
-	const { search, project, projects, author, review, state, tab } =
+	const { search, project, projects, author, review, state } =
 		Route.useSearch();
 	const params = useParams({ strict: false }) as { prNumber?: string };
 	const selectedPrNumber = params.prNumber
@@ -86,7 +79,6 @@ function PullRequestsLayout() {
 						initialAuthor={author}
 						initialReview={review}
 						initialState={state}
-						initialViewTab={tab}
 						selectedPrNumber={selectedPrNumber}
 						selectedPrProjectId={project ?? null}
 					/>

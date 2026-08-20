@@ -143,7 +143,6 @@ export function DashboardSidebarHeader({
 		reviewFilter: lastPullRequestsReviewFilter,
 		includeClosed: lastPullRequestsIncludeClosed,
 		mergedOnly: lastPullRequestsMergedOnly,
-		viewTab: lastPullRequestsViewTab,
 	} = usePullRequestsFilterStore();
 
 	const handleWorkspacesClick = () => {
@@ -188,7 +187,6 @@ export function DashboardSidebarHeader({
 					reviewFilter: lastPullRequestsReviewFilter,
 					includeClosed: lastPullRequestsIncludeClosed,
 					mergedOnly: lastPullRequestsMergedOnly,
-					viewTab: lastPullRequestsViewTab,
 				}),
 			});
 		});

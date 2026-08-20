@@ -9,7 +9,6 @@ import { serializeProjectFilters } from "renderer/routes/_authenticated/_dashboa
 import type { ProjectQueryTarget } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectQueryTargets";
 import { useWorkItemsList } from "renderer/routes/_authenticated/_dashboard/hooks/useWorkItemsList";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
-import type { ViewerRelationship } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/viewerRelationship";
 import { PullRequestRow } from "../PullRequestRow";
 
 interface PullRequestsContentProps {
@@ -22,9 +21,6 @@ interface PullRequestsContentProps {
 	reviewFilter: PullRequestReviewFilter | null;
 	includeClosed: boolean;
 	mergedOnly: boolean;
-	/** Restricts to PRs where the viewer has this relationship — drives the
-	 *  Reviewing/Authored tabs. Undefined = no restriction (the All tab). */
-	viewerRelationship?: ViewerRelationship;
 	selectedPrNumber: number | null;
 	selectedPrProjectId: string | null;
 	repoSlugByProjectId: Map<string, string>;
@@ -42,7 +38,6 @@ export function PullRequestsContent({
 	reviewFilter,
 	includeClosed,
 	mergedOnly,
-	viewerRelationship,
 	selectedPrNumber,
 	selectedPrProjectId,
 	repoSlugByProjectId,
@@ -63,7 +58,7 @@ export function PullRequestsContent({
 		sentinelRef,
 	} = useWorkItemsList({
 		projectTargets,
-		resetKey: `${debouncedQuery.trim()}\0${authorFilter ?? ""}\0${reviewFilter ?? ""}\0${includeClosed}\0${mergedOnly}\0${viewerRelationship ?? ""}`,
+		resetKey: `${debouncedQuery.trim()}\0${authorFilter ?? ""}\0${reviewFilter ?? ""}\0${includeClosed}\0${mergedOnly}`,
 		getQueryOptions: ({ target, page }) => ({
 			queryKey: [
 				"pullRequests",
@@ -75,7 +70,6 @@ export function PullRequestsContent({
 				reviewFilter,
 				includeClosed,
 				mergedOnly,
-				viewerRelationship,
 				page,
 			],
 			queryFn: async () => {
@@ -91,7 +85,6 @@ export function PullRequestsContent({
 					limit: PAGE_SIZE,
 					includeClosed,
 					mergedOnly,
-					viewerRelationship,
 					page,
 				});
 				// The router types come from this build, the rows come from
@@ -127,7 +120,6 @@ export function PullRequestsContent({
 				author: authorFilter ?? undefined,
 				review: reviewFilter ?? undefined,
 				state: mergedOnly ? "merged" : includeClosed ? "all" : undefined,
-				tab: viewerRelationship === "authored" ? "authored" : undefined,
 			},
 		});
 	};
@@ -227,9 +219,9 @@ export function PullRequestsContent({
 						</span>
 					</div>
 				) : (
-					<div className="flex flex-col">
+					<div className="flex flex-col gap-1.5 p-2">
 						{error instanceof Error && (
-							<div className="flex items-center gap-2 border-b border-border/50 bg-destructive/5 px-4 py-2 text-xs text-destructive">
+							<div className="flex items-center gap-2 rounded-lg bg-destructive/5 px-4 py-2 text-xs text-destructive">
 								<span className="min-w-0 flex-1 truncate select-text cursor-text">
 									Some repositories could not be loaded: {error.message}
 								</span>

@@ -5,18 +5,12 @@ import { LuListFilter } from "react-icons/lu";
 import { ProjectFilter } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter";
 import { WorkItemsSearch } from "renderer/routes/_authenticated/_dashboard/components/WorkItemsSearch";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
-import {
-	PULL_REQUESTS_VIEW_TABS,
-	type PullRequestsViewTab,
-} from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/viewerRelationship";
 import { AuthorFilter } from "./components/AuthorFilter";
 import { ReviewFilter } from "./components/ReviewFilter";
 
 type PullRequestsStateFilter = "open" | "all" | "merged";
 
 interface PullRequestsTopBarProps {
-	viewTab: PullRequestsViewTab;
-	onViewTabChange: (tab: PullRequestsViewTab) => void;
 	searchQuery: string;
 	onSearchChange: (query: string) => void;
 	projectFilters: string[];
@@ -39,8 +33,6 @@ const STATE_TABS: ReadonlyArray<{
 ];
 
 export function PullRequestsTopBar({
-	viewTab,
-	onViewTabChange,
 	searchQuery,
 	onSearchChange,
 	projectFilters,
@@ -56,7 +48,6 @@ export function PullRequestsTopBar({
 		projectFilters.length > 0,
 		!!authorFilter,
 		!!reviewFilter,
-		stateFilter !== "open",
 	].filter(Boolean).length;
 
 	return (
@@ -65,15 +56,15 @@ export function PullRequestsTopBar({
 			className="flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2"
 		>
 			<div className="flex items-center gap-1">
-				{PULL_REQUESTS_VIEW_TABS.map((tab) => (
+				{STATE_TABS.map((tab) => (
 					<button
 						key={tab.value}
 						type="button"
-						onClick={() => onViewTabChange(tab.value)}
-						aria-pressed={viewTab === tab.value}
+						onClick={() => onStateFilterChange(tab.value)}
+						aria-pressed={stateFilter === tab.value}
 						className={cn(
-							"rounded-md px-2.5 py-1 text-sm font-medium transition-colors",
-							viewTab === tab.value
+							"rounded-md px-2 py-1 text-xs font-medium transition-colors",
+							stateFilter === tab.value
 								? "bg-accent text-foreground"
 								: "text-muted-foreground hover:text-foreground",
 						)}
@@ -111,27 +102,6 @@ export function PullRequestsTopBar({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent align="end" className="w-72 space-y-3">
-						<div className="space-y-1.5">
-							<span className="text-xs text-muted-foreground">State</span>
-							<div className="flex items-center gap-1">
-								{STATE_TABS.map((tab) => (
-									<button
-										key={tab.value}
-										type="button"
-										onClick={() => onStateFilterChange(tab.value)}
-										aria-pressed={stateFilter === tab.value}
-										className={cn(
-											"rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-											stateFilter === tab.value
-												? "bg-accent text-foreground"
-												: "text-muted-foreground hover:text-foreground",
-										)}
-									>
-										{tab.label}
-									</button>
-								))}
-							</div>
-						</div>
 						<div className="space-y-1.5">
 							<span className="text-xs text-muted-foreground">Repository</span>
 							<ProjectFilter

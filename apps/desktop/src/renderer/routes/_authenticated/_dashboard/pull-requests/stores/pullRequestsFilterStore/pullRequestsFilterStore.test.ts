@@ -34,7 +34,6 @@ describe("pullRequestsSearchFromFilters", () => {
 				reviewFilter: null,
 				includeClosed: false,
 				mergedOnly: false,
-				viewTab: "all",
 			}),
 		).toEqual({});
 	});
@@ -48,7 +47,6 @@ describe("pullRequestsSearchFromFilters", () => {
 				reviewFilter: "changes-requested",
 				includeClosed: true,
 				mergedOnly: false,
-				viewTab: "all",
 			}),
 		).toEqual({
 			search: "remote host",
@@ -68,23 +66,8 @@ describe("pullRequestsSearchFromFilters", () => {
 				reviewFilter: null,
 				includeClosed: true,
 				mergedOnly: true,
-				viewTab: "all",
 			}),
 		).toEqual({ state: "merged" });
-	});
-
-	test("serializes a non-default view tab", () => {
-		expect(
-			pullRequestsSearchFromFilters({
-				search: "",
-				projectFilters: [],
-				authorFilter: null,
-				reviewFilter: null,
-				includeClosed: false,
-				mergedOnly: false,
-				viewTab: "reviewing",
-			}),
-		).toEqual({ tab: "reviewing" });
 	});
 });
 
@@ -100,7 +83,6 @@ describe("migratePullRequestsFilterState", () => {
 			projectFilters: ["project-1"],
 			authorFilter: "octocat",
 			reviewFilter: "approved",
-			viewTab: "all",
 		});
 	});
 
@@ -112,7 +94,6 @@ describe("migratePullRequestsFilterState", () => {
 				reviewFilter: "review:approved",
 				includeClosed: "true",
 				mergedOnly: "true",
-				viewTab: "bogus",
 			}),
 		).toMatchObject({
 			projectFilters: ["project-1"],
@@ -120,7 +101,6 @@ describe("migratePullRequestsFilterState", () => {
 			reviewFilter: null,
 			includeClosed: false,
 			mergedOnly: false,
-			viewTab: "all",
 		});
 		expect(migratePullRequestsFilterState(null)).toMatchObject({
 			projectFilters: [],
@@ -128,7 +108,6 @@ describe("migratePullRequestsFilterState", () => {
 			reviewFilter: null,
 			includeClosed: false,
 			mergedOnly: false,
-			viewTab: "all",
 		});
 	});
 });

@@ -8,17 +8,10 @@ import {
 	type PullRequestReviewFilter,
 } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
 import {
-	normalizePullRequestsViewTab,
-	type PullRequestsViewTab,
-	viewerRelationshipForTab,
-} from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/viewerRelationship";
-import {
 	pullRequestsSearchFromFilters,
 	usePullRequestsFilterStore,
 } from "../../stores/pullRequestsFilterStore";
 import { PullRequestsContent } from "./components/PullRequestsContent";
-import { PullRequestsGroupedContent } from "./components/PullRequestsGroupedContent";
-import { PullRequestsReviewingContent } from "./components/PullRequestsReviewingContent";
 import { PullRequestsTopBar } from "./components/PullRequestsTopBar";
 
 interface PullRequestsViewProps {
@@ -27,7 +20,6 @@ interface PullRequestsViewProps {
 	initialAuthor?: string;
 	initialReview?: string;
 	initialState?: "open" | "all" | "merged";
-	initialViewTab?: "all" | "reviewing" | "authored";
 	/** The PR currently open in the detail pane, if any — filter/search
 	 *  changes navigate back to it instead of collapsing the detail pane. */
 	selectedPrNumber?: number | null;
@@ -42,7 +34,6 @@ export function PullRequestsView({
 	initialAuthor,
 	initialReview,
 	initialState,
-	initialViewTab,
 	selectedPrNumber = null,
 	selectedPrProjectId = null,
 }: PullRequestsViewProps) {
@@ -54,14 +45,12 @@ export function PullRequestsView({
 		reviewFilter: storedReviewFilter,
 		includeClosed: storedIncludeClosed,
 		mergedOnly: storedMergedOnly,
-		viewTab: storedViewTab,
 		setSearch: storeSetSearch,
 		setProjectFilters: storeSetProjectFilters,
 		setAuthorFilter: storeSetAuthorFilter,
 		setReviewFilter: storeSetReviewFilter,
 		setIncludeClosed: storeSetIncludeClosed,
 		setMergedOnly: storeSetMergedOnly,
-		setViewTab: storeSetViewTab,
 	} = usePullRequestsFilterStore();
 	const [searchQuery, setSearchQuery] = useState(initialSearch ?? storedSearch);
 	const projectFilters = initialProjects ?? storedProjectFilters;
@@ -79,10 +68,6 @@ export function PullRequestsView({
 			: initialState === "all" || initialState === "merged";
 	const mergedOnly =
 		initialState === undefined ? storedMergedOnly : initialState === "merged";
-	const viewTab: PullRequestsViewTab =
-		initialViewTab === undefined
-			? storedViewTab
-			: normalizePullRequestsViewTab(initialViewTab);
 	// Filter/search changes must not collapse an open detail pane.
 	const navigateTo = useCallback(
 		(search: Record<string, string>) =>
@@ -123,7 +108,6 @@ export function PullRequestsView({
 			review?: PullRequestReviewFilter | null;
 			includeClosed?: boolean;
 			mergedOnly?: boolean;
-			viewTab?: PullRequestsViewTab;
 		}) =>
 			pullRequestsSearchFromFilters({
 				search: overrides.search ?? searchQuery,
@@ -137,7 +121,6 @@ export function PullRequestsView({
 					overrides.review !== undefined ? overrides.review : reviewFilter,
 				includeClosed: overrides.includeClosed ?? includeClosed,
 				mergedOnly: overrides.mergedOnly ?? mergedOnly,
-				viewTab: overrides.viewTab ?? viewTab,
 			}),
 		[
 			authorFilter,
@@ -146,7 +129,6 @@ export function PullRequestsView({
 			projectFilters,
 			reviewFilter,
 			searchQuery,
-			viewTab,
 		],
 	);
 	const navigateSearch = useCallback(
@@ -177,10 +159,6 @@ export function PullRequestsView({
 	useEffect(() => {
 		storeSetMergedOnly(mergedOnly);
 	}, [mergedOnly, storeSetMergedOnly]);
-
-	useEffect(() => {
-		storeSetViewTab(viewTab);
-	}, [viewTab, storeSetViewTab]);
 
 	const projects = useMemo(
 		() =>
@@ -265,12 +243,6 @@ export function PullRequestsView({
 		navigateTo(buildSearch({ review: nextReview }));
 	};
 
-	const handleViewTabChange = (nextViewTab: PullRequestsViewTab) => {
-		cancelPendingSearchNavigation();
-		storeSetViewTab(nextViewTab);
-		navigateTo(buildSearch({ viewTab: nextViewTab }));
-	};
-
 	const stateFilter: "open" | "all" | "merged" = mergedOnly
 		? "merged"
 		: includeClosed
@@ -283,8 +255,6 @@ export function PullRequestsView({
 			className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
 		>
 			<PullRequestsTopBar
-				viewTab={viewTab}
-				onViewTabChange={handleViewTabChange}
 				searchQuery={searchQuery}
 				onSearchChange={handleSearchChange}
 				projectFilters={projectFilters}
@@ -297,54 +267,20 @@ export function PullRequestsView({
 				onStateFilterChange={handleStateFilterChange}
 			/>
 			<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-				{viewTab === "all" ? (
-					<PullRequestsGroupedContent
-						projectFilters={projectFilters}
-						projectTargets={projectTargets}
-						areProjectsReady={areProjectsReady}
-						hasProjects={projects.length > 0}
-						searchQuery={searchQuery}
-						authorFilter={authorFilter}
-						reviewFilter={reviewFilter}
-						includeClosed={includeClosed}
-						mergedOnly={mergedOnly}
-						selectedPrNumber={selectedPrNumber}
-						selectedPrProjectId={selectedPrProjectId}
-						repoSlugByProjectId={repoSlugByProjectId}
-						onViewTabChange={handleViewTabChange}
-					/>
-				) : viewTab === "reviewing" ? (
-					<PullRequestsReviewingContent
-						projectFilters={projectFilters}
-						projectTargets={projectTargets}
-						areProjectsReady={areProjectsReady}
-						hasProjects={projects.length > 0}
-						searchQuery={searchQuery}
-						authorFilter={authorFilter}
-						reviewFilter={reviewFilter}
-						includeClosed={includeClosed}
-						mergedOnly={mergedOnly}
-						selectedPrNumber={selectedPrNumber}
-						selectedPrProjectId={selectedPrProjectId}
-						repoSlugByProjectId={repoSlugByProjectId}
-					/>
-				) : (
-					<PullRequestsContent
-						projectFilters={projectFilters}
-						projectTargets={projectTargets}
-						areProjectsReady={areProjectsReady}
-						hasProjects={projects.length > 0}
-						searchQuery={searchQuery}
-						authorFilter={authorFilter}
-						reviewFilter={reviewFilter}
-						includeClosed={includeClosed}
-						mergedOnly={mergedOnly}
-						viewerRelationship={viewerRelationshipForTab(viewTab)}
-						selectedPrNumber={selectedPrNumber}
-						selectedPrProjectId={selectedPrProjectId}
-						repoSlugByProjectId={repoSlugByProjectId}
-					/>
-				)}
+				<PullRequestsContent
+					projectFilters={projectFilters}
+					projectTargets={projectTargets}
+					areProjectsReady={areProjectsReady}
+					hasProjects={projects.length > 0}
+					searchQuery={searchQuery}
+					authorFilter={authorFilter}
+					reviewFilter={reviewFilter}
+					includeClosed={includeClosed}
+					mergedOnly={mergedOnly}
+					selectedPrNumber={selectedPrNumber}
+					selectedPrProjectId={selectedPrProjectId}
+					repoSlugByProjectId={repoSlugByProjectId}
+				/>
 			</div>
 		</div>
 	);
