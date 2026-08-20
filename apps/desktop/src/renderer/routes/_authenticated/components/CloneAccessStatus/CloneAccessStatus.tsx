@@ -84,8 +84,8 @@ function failureSentence(result: CloneAccessResult, hostName: string): string {
 	switch (result.reason) {
 		case "auth":
 			return install
-				? `Install GitHub CLI on ${hostName} to clone this repo:`
-				: `Sign in to GitHub on ${hostName} to clone this repo:`;
+				? `Install GitHub CLI on ${hostName}:`
+				: `Sign in to GitHub on ${hostName}:`;
 		case "not_found":
 			return install
 				? `${hostName} can't see this repo. Private? Install GitHub CLI there:`

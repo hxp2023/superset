@@ -59,6 +59,7 @@ import {
 	type PromptCardsVariant,
 	useNewWorkspacePromptCardsVariant,
 } from "../../hooks/useNewWorkspacePromptCardsVariant";
+import { ClonePlanPill } from "../ClonePlanPill";
 import { DevicePicker } from "../DashboardNewWorkspaceForm/components/DevicePicker";
 import { CLOUD_HOST_ID } from "../DashboardNewWorkspaceForm/components/DevicePicker/DevicePicker";
 import { useWorkspaceHostOptions } from "../DashboardNewWorkspaceForm/components/DevicePicker/hooks/useWorkspaceHostOptions";
@@ -84,7 +85,6 @@ import {
 	type WorkspaceCreateAgent,
 } from "../DashboardNewWorkspaceForm/PromptGroup/types";
 import { useSelectedHostProjectIds } from "../DashboardNewWorkspaceModalContent/hooks/useSelectedHostProjectIds";
-import { ProjectSetupInline } from "../ProjectSetupInline";
 import { AttachmentCard } from "./components/AttachmentCard";
 import { SamplePromptCards } from "./components/SamplePromptCards";
 import { SamplePrompts } from "./components/SamplePrompts";
@@ -920,21 +920,6 @@ export function NewWorkspaceScreen({
 						</div>
 					</PromptInputFooter>
 				</PromptInput>
-				{canInlineSetup && selectedProject && (
-					<div className="mt-2">
-						<ProjectSetupInline
-							hostName={
-								setupHostId === machineId
-									? "this device"
-									: (otherHosts.find((host) => host.id === setupHostId)?.name ??
-										"this host")
-							}
-							isRemoteTarget={setupHostId !== machineId}
-							plan={setupPlan}
-							onOpenSettings={handleGoToSetup}
-						/>
-					</div>
-				)}
 				<div className="mt-2 flex items-center justify-between gap-2">
 					<div className="flex min-w-0 flex-1 items-center gap-2">
 						<DevicePicker
@@ -962,7 +947,19 @@ export function NewWorkspaceScreen({
 								<LuGitPullRequest className="size-3 shrink-0" />
 								based off PR #{draft.linkedPR.prNumber}
 							</span>
-						) : draft.isSession ? null : (
+						) : draft.isSession ? null : canInlineSetup ? (
+							<ClonePlanPill
+								hostName={
+									setupHostId === machineId
+										? "this device"
+										: (otherHosts.find((host) => host.id === setupHostId)
+												?.name ?? "this host")
+								}
+								isRemoteTarget={setupHostId !== machineId}
+								plan={setupPlan}
+								onOpenSettings={handleGoToSetup}
+							/>
+						) : (
 							<CompareBaseBranchPicker {...pickerProps} />
 						)}
 					</div>

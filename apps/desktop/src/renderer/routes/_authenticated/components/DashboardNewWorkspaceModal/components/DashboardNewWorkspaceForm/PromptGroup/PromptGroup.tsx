@@ -48,7 +48,7 @@ import { useNewWorkspaceModalOpen } from "renderer/stores/new-workspace-modal";
 import { useNewWorkspacePromptContext } from "renderer/stores/new-workspace-prompt-context";
 import { useV2WorkspaceCreateDefaultsStore } from "renderer/stores/v2-workspace-create-defaults";
 import { useDashboardNewWorkspaceDraft } from "../../../DashboardNewWorkspaceDraftContext";
-import { ProjectSetupInline } from "../../ProjectSetupInline";
+import { ClonePlanPill } from "../../ClonePlanPill";
 import { DevicePicker } from "../components/DevicePicker";
 import { CLOUD_HOST_ID } from "../components/DevicePicker/DevicePicker";
 import { useWorkspaceHostOptions } from "../components/DevicePicker/hooks/useWorkspaceHostOptions";
@@ -700,19 +700,6 @@ export function PromptGroup({
 				</PromptInputFooter>
 			</PromptInput>
 
-			{canInlineSetup && selectedProject && (
-				<ProjectSetupInline
-					hostName={
-						setupHostId === machineId
-							? "this device"
-							: (otherHosts.find((host) => host.id === setupHostId)?.name ??
-								"this host")
-					}
-					isRemoteTarget={setupHostId !== machineId}
-					plan={setupPlan}
-					onOpenSettings={handleGoToSetup}
-				/>
-			)}
 			{/* Bottom bar */}
 			<div className="flex items-center justify-between gap-2">
 				<div className="flex items-center gap-2 min-w-0 flex-1">
@@ -751,7 +738,19 @@ export function PromptGroup({
 								exit={{ opacity: 0, x: 8, filter: "blur(4px)" }}
 								transition={{ duration: 0.2, ease: "easeOut" }}
 							>
-								{!draft.isSession && (
+								{draft.isSession ? null : canInlineSetup ? (
+									<ClonePlanPill
+										hostName={
+											setupHostId === machineId
+												? "this device"
+												: (otherHosts.find((host) => host.id === setupHostId)
+														?.name ?? "this host")
+										}
+										isRemoteTarget={setupHostId !== machineId}
+										plan={setupPlan}
+										onOpenSettings={handleGoToSetup}
+									/>
+								) : (
 									<CompareBaseBranchPicker {...pickerProps} />
 								)}
 							</motion.div>
