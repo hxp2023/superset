@@ -46,6 +46,7 @@ import {
 } from "./lib/persistence/persistence";
 import { ensureProjectIconsDir, getProjectIconPath } from "./lib/project-icons";
 import { runQuitCleanup } from "./lib/quit-sequence";
+import { startResourceDigest, stopResourceDigest } from "./lib/resource-digest";
 import { initSentry } from "./lib/sentry";
 import {
 	prewarmTerminalRuntime,
@@ -244,6 +245,7 @@ app.on("before-quit", async (event) => {
 	}
 
 	isQuitting = true;
+	stopResourceDigest();
 	await runQuitCleanup({
 		isDev,
 		forceFullCleanup,
@@ -503,6 +505,7 @@ if (!gotTheLock) {
 
 		await makeAppSetup(() => MainWindow());
 		setupAutoUpdater();
+		startResourceDigest();
 		initTray();
 
 		const coldStartUrl = findDeepLinkInArgv(process.argv);
