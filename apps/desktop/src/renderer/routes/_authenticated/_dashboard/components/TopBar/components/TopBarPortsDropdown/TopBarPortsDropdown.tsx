@@ -29,18 +29,14 @@ export function TopBarPortsDropdown({
 }: TopBarPortsDropdownProps) {
 	const isV2CloudEnabled = useIsV2CloudEnabled();
 	const portsDisplayMode = usePortsDisplayMode();
-
-	if (!isV2CloudEnabled || portsDisplayMode !== "topbar") {
-		return null;
-	}
-	return <TopBarPortsDropdownInner align={align} />;
-}
-
-function TopBarPortsDropdownInner({ align }: { align: "start" | "end" }) {
 	const [open, setOpen] = useState(false);
 	const { workspacePortGroups, totalPortCount } = useDashboardSidebarAllPorts();
 
-	if (totalPortCount === 0) {
+	if (
+		!isV2CloudEnabled ||
+		portsDisplayMode !== "topbar" ||
+		totalPortCount === 0
+	) {
 		return null;
 	}
 

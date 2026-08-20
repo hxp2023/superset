@@ -13,11 +13,19 @@ interface DashboardSidebarPortsContextValue {
 const DashboardSidebarPortsContext =
 	createContext<DashboardSidebarPortsContextValue | null>(null);
 
-function DashboardSidebarPortsProviderInner({
-	enabled,
+export function DashboardSidebarPortsProvider({
+	enabled = true,
 	children,
 }: {
-	enabled: boolean;
+	// Port data drives per-host queries, polling, and `port:changed`
+	// subscriptions. Skip all of it when nothing will render ports (e.g. the
+	// collapsed sidebar) — the flag is forwarded into the data hook rather than
+	// branching the rendered element type here. This provider now wraps the
+	// whole dashboard body (not just the sidebar), so switching between a bare
+	// fragment and this component on `enabled` changes would remount
+	// everything below it — including the routed workspace content — on every
+	// sidebar collapse/expand.
+	enabled?: boolean;
 	children: ReactNode;
 }) {
 	const { workspacePortGroups, totalPortCount } =
@@ -38,28 +46,6 @@ function DashboardSidebarPortsProviderInner({
 		<DashboardSidebarPortsContext.Provider value={value}>
 			{children}
 		</DashboardSidebarPortsContext.Provider>
-	);
-}
-
-export function DashboardSidebarPortsProvider({
-	enabled = true,
-	children,
-}: {
-	// Port data drives per-host queries, polling, and `port:changed`
-	// subscriptions. Skip all of it when nothing will render ports (e.g. the
-	// collapsed sidebar) — the flag is forwarded into the data hook rather than
-	// branching the rendered element type here. This provider now wraps the
-	// whole dashboard body (not just the sidebar), so switching between a bare
-	// fragment and this component on `enabled` changes would remount
-	// everything below it — including the routed workspace content — on every
-	// sidebar collapse/expand.
-	enabled?: boolean;
-	children: ReactNode;
-}) {
-	return (
-		<DashboardSidebarPortsProviderInner enabled={enabled}>
-			{children}
-		</DashboardSidebarPortsProviderInner>
 	);
 }
 
