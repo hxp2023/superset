@@ -15,6 +15,7 @@ import { Button } from "@superset/ui/button";
 import { Input } from "@superset/ui/input";
 import { isEnterSubmit } from "@superset/ui/lib/keyboard";
 import { toast } from "@superset/ui/sonner";
+import { Spinner } from "@superset/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
@@ -341,7 +342,7 @@ export function PromptGroup({
 	});
 
 	// ── Submit (fork) ────────────────────────────────────────────────
-	const createWorkspace = useSubmitWorkspace(
+	const { submitWorkspace: createWorkspace, isCreating } = useSubmitWorkspace(
 		projectId,
 		selectedAgent,
 		modelSupport ? selectedModel : null,
@@ -649,13 +650,17 @@ export function PromptGroup({
 						/>
 						<PromptInputSubmit
 							className="size-[22px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
-							disabled={needsSetup}
+							disabled={needsSetup || isCreating}
 							onClick={(e) => {
 								e.preventDefault();
 								handleSubmit();
 							}}
 						>
-							<ArrowUpIcon className="size-3.5 text-muted-foreground" />
+							{isCreating ? (
+								<Spinner className="size-3.5 text-muted-foreground" />
+							) : (
+								<ArrowUpIcon className="size-3.5 text-muted-foreground" />
+							)}
 						</PromptInputSubmit>
 					</div>
 				</PromptInputFooter>

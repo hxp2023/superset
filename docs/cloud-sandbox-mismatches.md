@@ -1,5 +1,7 @@
 # Where cloud sandboxes don't fit the app
 
+**Tickets live in the Linear "Sandboxes" project** (https://linear.app/superset-sh/project/sandboxes-a52055bc936e). This file is the reasoning — what a sandbox is and why it differs from a machine someone owns — and stays the thing to read before changing this code. When you find something new, write it here and file the ticket there; when an item is fixed, say so here rather than deleting it, so the next person can see the shape of the trap.
+
 A cloud workspace runs host-service inside a provider sandbox, which lets it
 reuse the whole v2 stack — panes, terminals, git, agents — for free. The price
 is a set of places where the app's assumptions were written for *a machine a
@@ -21,14 +23,17 @@ something to serve panes against. Renaming through the generic host path writes
 a name nothing reads — `workspaces.rename` routes to `cloudWorkspace.rename`
 for these. Treat the sandbox's copy as scratch.
 
-**The seeded project + workspace rows are a fake.** `bootstrapSandbox` inserts
-one `projects` row and one `workspaces` row straight into `host.db` rather than
-calling host-service's create procedures, because those build a worktree off a
-base repo and a sandbox's checkout *is* the workspace. Consequences: the
-project id is meaningless to the client (which is why cloud rows can't group
-under a project and get their own sidebar section), and any host-service
-migration that changes those tables' shape silently breaks bootstrap — the seed
-is raw SQL against a schema it doesn't share types with.
+**The project + workspace rows are still synthetic, but the sandbox writes
+them itself.** A sandbox's checkout *is* its workspace, so host-service's
+create procedures — which cut a worktree off a base repo — don't apply. It used
+to be raw SQL executed from the API against a schema it shared no types with,
+which meant any host-service migration could break provisioning silently. Now
+host-service reads the identity from its own environment on boot and inserts
+the rows through its own schema (`runSandboxSelfSeed`). Still a fabrication, and
+the project id remains meaningless to the client — which is why cloud rows get
+their own sidebar section rather than grouping under a project — but it can no
+longer drift from the schema, and provisioning has nothing to execute inside
+the sandbox.
 
 **The sandbox's `hostId` addresses nothing.** `workspace.list` reports the
 container's machine id. The fan-out restates it as the cloud workspace's id so
@@ -55,6 +60,18 @@ allowlist, CORS on the provider's edge (set via the preview's
 `responseHeaders`), and the WebSocket, which can't carry a header from a
 browser and so takes the preview token as a `bl_preview_token` query param.
 Testing from Node proves nothing about the renderer here.
+
+**The edge sets a cookie, and the desktop's terminal socket depends on it
+without saying so.** Any request that presents the preview token — header or
+query param — comes back with `Set-Cookie: bl_preview_token=…; HttpOnly;
+SameSite=None; Secure; Max-Age=86400`. Only the `/events` dial puts the token
+on its URL; the `/terminal/<id>` dial (`useWorkspaceWsUrl`) sends `token=<jwt>`
+and nothing for the edge, and works because Electron replays that cookie on
+the upgrade. So terminals on desktop authenticate through a cookie the event
+bus happened to earn first. Mobile can't inherit that — its terminal socket
+lives in a WKWebView with its own cookie store — so it signs every terminal
+dial with `bl_preview_token` explicitly. The desktop should too rather than
+rely on ordering.
 
 **The host-service secret does not apply, and a sandbox says so instead of
 pretending otherwise.** Locally the secret stops anything else on the machine
@@ -104,6 +121,19 @@ theme picker, an API-key approval and a workspace trust dialog — three
 confirmations no one is there to answer. The image bakes `/root/.claude.json`.
 Note that a headless `-p` run writes none of those keys, so a smoke test passes
 while the interactive TUI still blocks.
+
+**Claude refuses its own launch flags under root. Open until the image is
+rebuilt.** The builtin agent runs `claude --dangerously-skip-permissions`, and
+a sandbox runs as root, so picking Claude in a cloud workspace printed
+"--dangerously-skip-permissions cannot be used with root/sudo privileges" and
+exited — found from the mobile app, but the desktop launches the same
+command. Claude allows the flag under root when `IS_SANDBOX=1` is in its
+environment (verified from a sandbox terminal), and then asks once to accept
+Bypass Permissions mode, another dialog a headless smoke test never reaches.
+host-service now sets `IS_SANDBOX=1` in sandbox-mode PTY env and the image
+bakes `bypassPermissionsModeAccepted: true` into `/root/.claude.json`; neither
+reaches an existing sandbox, and neither reaches a new one until the image is
+rebuilt.
 
 **The checkout is the workspace.** No worktrees, no base repo, no branch
 creation — anything assuming a worktree can be created or discarded next to a
@@ -160,6 +190,34 @@ that strand — which is why this reads as fine right up until the first
 long-lived workspace.
 
 ## Provider constraints
+
+**The image's ENTRYPOINT belongs to the provider.** The SDK appends
+`ENTRYPOINT ["/usr/local/bin/sandbox-api"]` only when the image declares none,
+and that binary is what serves `/process`, `/fs` and the preview routes.
+Declaring our own to auto-start host-service produced a sandbox the platform
+could not talk to at all — every exec came back 502, and there is no way to
+debug from inside a sandbox whose exec is the broken thing. Long-running
+processes are registered *through* the API instead (`process.exec` with
+`waitForCompletion: false`).
+
+**The platform injects `PORT`, and it beats the image's `ENV`.** host-service
+reads `PORT`, so a sandbox that doesn't override it tries to bind 80 — reserved,
+along with 443 and 8080 — and exits with `EADDRINUSE` before serving anything.
+`start.sh` exports the port it means to use.
+
+**The first two sandboxes after an image build take ~35s; the rest take ~0.3s.**
+Measured on a freshly built image: 37.3s, 35.2s, then 0.3s, 0.2s, 0.3s. It is an
+image pull, and the image is around a gigabyte — 766 MB of that `node_modules`,
+230 MB the baked repo, 18 MB host-service itself. Two consequences worth knowing
+rather than fixing: a stopwatch started right after a rebuild measures the pull,
+not the product (which is how a 5s path got reported here as 40s), and most of
+the weight is packages host-service imports at module load and never calls, so
+the lever is that import graph rather than anything about sandboxes.
+
+**host-service has no HTTP health route.** Readiness is the `health.check` tRPC
+procedure; `GET /health` 404s. A probe on the wrong path looks exactly like a
+sandbox that never came up, which cost an afternoon here.
+
 
 **Proxy secret injection needs the workspace entitlement.** Routing rules send
 egress through the workspace's egress gateway; without it every request fails

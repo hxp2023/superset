@@ -20,6 +20,10 @@ import { createGitEnvResolver, createGitFactory } from "./runtime/git";
 import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
 import { runProjectBackfill } from "./runtime/project-backfill";
 import { PullRequestRuntimeManager } from "./runtime/pull-requests";
+import {
+	readSandboxIdentity,
+	runSandboxSelfSeed,
+} from "./runtime/sandbox-self-seed";
 import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
 import {
 	SqliteTerminalAgentBindingPersistence,
@@ -79,6 +83,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		options.api ??
 		createApiClient(config.cloudApiUrl, providers.auth, config.organizationId);
 	const db = options.db ?? createDb(config.dbPath, config.migrationsFolder);
+	// A sandbox is provisioned for exactly one workspace, and the env says
+	// which. Seeding it here rather than from the API keeps the schema in one
+	// place and leaves provisioning with nothing to orchestrate.
+	const sandboxIdentity = readSandboxIdentity();
+	if (sandboxIdentity) runSandboxSelfSeed(db, sandboxIdentity);
 	const git = createGitFactory(providers.credentials);
 	const github =
 		options.github ??
@@ -263,6 +272,14 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		"/trpc/*",
 		trpcServer({
 			router: appRouter,
+			// Renderer clients send every request (including queries) as POST —
+			// see WorkspaceClientProvider/host-service-client's methodOverride —
+			// so a query with a large input (e.g. git.getDiffBulk's file-path
+			// list, or a same-tick batch across many workspaces) doesn't produce
+			// a GET URL long enough to blow past the header-size limit. Without
+			// this flag trpc's default HTTP-method map rejects those POSTs with
+			// METHOD_NOT_SUPPORTED before the query ever runs.
+			allowMethodOverride: true,
 			createContext: async (_opts, c) => {
 				const isAuthenticated = await providers.hostAuth.validate(c.req.raw);
 				return {

@@ -162,8 +162,7 @@ export const workspaceRouter = router({
 						if (ancestor === input.id) {
 							throw new TRPCError({
 								code: "BAD_REQUEST",
-								message:
-									"Cannot move a workspace under its own descendant",
+								message: "Cannot move a workspace under its own descendant",
 							});
 						}
 						visited.add(ancestor);
