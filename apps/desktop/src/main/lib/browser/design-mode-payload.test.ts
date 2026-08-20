@@ -120,7 +120,10 @@ describe("clampDesignModePayload", () => {
 		const raw = validRawPayload();
 		(raw.target as Record<string, unknown>).cssClasses =
 			"btn api_key-widget primary";
+		(raw.target as Record<string, unknown>).reactProps =
+			'token="abc" password="hunter2"';
 		const payload = clampDesignModePayload(raw);
 		expect(payload?.target.cssClasses).toBe("[redacted]");
+		expect(payload?.target.reactProps).toBe("[redacted]");
 	});
 });

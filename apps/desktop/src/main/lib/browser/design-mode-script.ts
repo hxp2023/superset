@@ -45,7 +45,8 @@ const ARM_SCRIPT = `(function() {
     pathMaxLength: 900,
     cssClassesMaxLength: 500,
     sourceFileMaxLength: 500,
-    reactComponentsMaxLength: 500
+    reactComponentsMaxLength: 500,
+    reactPropsMaxLength: 500
   };
   var TEXT_NODE_SCAN_LIMIT = 80;
   var SIBLING_SCAN_LIMIT = 80;
@@ -382,16 +383,53 @@ const ARM_SCRIPT = `(function() {
       .replace(/^\\.\\//, '');
   }
 
+  // Shallow one-line summary of a component fiber's props (Cursor passes
+  // fiber props too). Primitives inline; everything else is just typed.
+  function summarizeReactProps(props) {
+    if (!props || typeof props !== 'object') return null;
+    var parts = [];
+    var keys = Object.keys(props);
+    for (var i = 0; i < keys.length && parts.length < 8; i++) {
+      var key = keys[i];
+      if (key === 'children' || key === 'key' || key === 'ref') continue;
+      var value = props[key];
+      var rendered;
+      var type = typeof value;
+      if (value === null || value === undefined || type === 'boolean' || type === 'number') {
+        rendered = String(value);
+      } else if (type === 'string') {
+        rendered = containsSecret(value) ? '"[redacted]"' : JSON.stringify(clampStr(value, 40));
+      } else if (type === 'function') {
+        rendered = 'fn';
+      } else if (Array.isArray(value)) {
+        rendered = '[…' + value.length + ']';
+      } else {
+        rendered = '{…}';
+      }
+      if (containsSecret(key)) continue;
+      parts.push(key + '=' + rendered);
+    }
+    if (parts.length === 0) return null;
+    if (keys.length > 8) parts.push('…');
+    return clampStr(parts.join(' '), BUDGET.reactPropsMaxLength);
+  }
+
   function getReactMetadata(el) {
     try {
       var fiber = getFiberFromElement(el);
       var components = [];
       var sourceFile = null;
+      var reactProps = null;
       var depth = 0;
       while (fiber && depth < 35) {
         var name = getComponentNameFromFiber(fiber);
         if (name && !shouldSkipReactName(name) && components.indexOf(name) === -1 && components.length < 6) {
           components.push(name);
+          // Props of the innermost named component — the instance the user
+          // thinks of as "the thing" they clicked.
+          if (!reactProps) {
+            try { reactProps = summarizeReactProps(fiber.memoizedProps); } catch (e) {}
+          }
         }
         var source = fiber._debugSource || (fiber._debugOwner && fiber._debugOwner._debugSource);
         if (!sourceFile && source && source.fileName && source.lineNumber) {
@@ -405,10 +443,11 @@ const ARM_SCRIPT = `(function() {
         reactComponents: components.length > 0
           ? clampStr(components.slice().reverse().map(function(c) { return '<' + c + '>'; }).join(' '), BUDGET.reactComponentsMaxLength)
           : null,
-        sourceFile: sourceFile ? clampStr(sourceFile, BUDGET.sourceFileMaxLength) : null
+        sourceFile: sourceFile ? clampStr(sourceFile, BUDGET.sourceFileMaxLength) : null,
+        reactProps: reactProps
       };
     } catch (e) {
-      return { reactComponents: null, sourceFile: null };
+      return { reactComponents: null, sourceFile: null, reactProps: null };
     }
   }
 

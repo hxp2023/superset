@@ -60,6 +60,8 @@ export interface DesignModeTarget {
 	cssClasses: string;
 	/** React component chain from the element's fiber, when detectable. */
 	reactComponents: string | null;
+	/** Shallow prop summary of the innermost named component, when detectable. */
+	reactProps: string | null;
 	/** `file:line[:col]` from React dev builds' _debugSource, when present. */
 	sourceFile: string | null;
 	textSnippet: string;
@@ -116,6 +118,7 @@ export const DESIGN_MODE_BUDGET = {
 	cssClassesMaxLength: 500,
 	sourceFileMaxLength: 500,
 	reactComponentsMaxLength: 500,
+	reactPropsMaxLength: 500,
 	/** Hard byte budget for the screenshot PNG before it is omitted. */
 	screenshotMaxBytes: 2 * 1024 * 1024,
 } as const;

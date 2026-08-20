@@ -25,6 +25,7 @@ function payload(
 			elementPath: "#app > button.save",
 			cssClasses: "save",
 			reactComponents: "<SaveButton>",
+			reactProps: 'variant="primary" disabled=false onClick=fn',
 			sourceFile: "src/SaveButton.tsx:12",
 			textSnippet: "Save changes",
 			htmlSnippet: '<button class="save">Save```changes</button>',

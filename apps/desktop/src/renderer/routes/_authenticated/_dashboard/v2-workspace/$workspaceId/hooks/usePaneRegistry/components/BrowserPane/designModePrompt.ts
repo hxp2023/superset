@@ -127,6 +127,9 @@ export function formatDesignModeContextMarkdown(
 	if (target.reactComponents) {
 		lines.push(`**React:** ${inlineText(target.reactComponents)}`);
 	}
+	if (target.reactProps) {
+		lines.push(`**React props:** \`${inlineText(target.reactProps)}\``);
+	}
 	lines.push(
 		`**Bounds:** x=${Math.round(rect.x)}, y=${Math.round(rect.y)}, ${Math.round(rect.width)}x${Math.round(rect.height)}`,
 	);

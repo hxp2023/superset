@@ -147,6 +147,11 @@ export function clampDesignModePayload(raw: unknown): DesignModePayload | null {
 					target.reactComponents,
 					DESIGN_MODE_BUDGET.reactComponentsMaxLength,
 				) || null,
+			reactProps:
+				safeMetadataStr(
+					target.reactProps,
+					DESIGN_MODE_BUDGET.reactPropsMaxLength,
+				) || null,
 			sourceFile:
 				safeMetadataStr(
 					target.sourceFile,
