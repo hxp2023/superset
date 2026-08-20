@@ -77,6 +77,33 @@ Three failure modes found while filming and verifying, fixed in this branch:
 - **Stale verdict during recheck**: the panel showed the previous result while a refetch ran
   (green flashing over a broken host). Any in-flight check now shows the checking spinner.
 
+## North star (from the pairing + auth-handoff research sweeps, 08-20)
+
+The flow above is three user-facing ceremonies; the strongest established patterns have one or
+zero. Everything in this doc should be read as scaffolding toward deleting them, not as the
+destination:
+
+1. **Add host = one paste.** The waiting screen mints a single-use, join-scoped token (10-15 min,
+   dead on first redemption) embedded in one copyable command; `superset auth login` disappears
+   from the host. Trust direction per WhatsApp/Signal/CRD: the trusted surface initiates and
+   consents; the new machine never types an account credential. On redemption the waiting card
+   shows hostname/OS/IP/time (Vercel's checklist) and ideally a Stripe-style pairing phrase
+   printed on both ends. Device-code auth is the CLI-first fallback (Storm-2372 taught the
+   industry its phishing shape; pre-authorized tokens dodge it structurally). LAN discovery is an
+   accelerant on top, never the only path.
+2. **GitHub connected once, brokered everywhere.** Account-level GitHub connection; hosts receive
+   short-lived scoped tokens over the relay via the existing GIT_ASKPASS plumbing (the
+   Codespaces/Coder/Daytona model). Per-host `gh auth login` — and therefore the amber panel —
+   demotes to a fallback. Also dissolves the SSH-URL dead end.
+3. **"Set up project on host" stops being a user-facing concept.** Shipped on this branch
+   (composer `ProjectSetupInline` + `setupFirst` in the create pipeline; verified live against a
+   second host: amber on a signed-out host, green after sign-in, one submit = clone then
+   workspace). Creation subsumes setup: pick
+   repo + host in the composer, one inline "will clone to ~/.superset/projects" note with an edit
+   affordance and the access check running in place, Cmd+Enter does clone → workspace in one
+   motion. Import-vs-clone becomes detection (findByPath). The settings modal stays as the
+   management surface, not the mainline.
+
 ## Follow-ups (not in this change)
 
 - **Remote gh sign-in without leaving the app**: run `gh auth login` in a

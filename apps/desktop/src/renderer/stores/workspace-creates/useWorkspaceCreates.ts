@@ -1,4 +1,5 @@
 import type { WorkspaceCreateSettledPayload } from "@superset/workspace-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback } from "react";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
@@ -12,6 +13,7 @@ import {
 } from "renderer/lib/host-service-client";
 import { getHostServiceUnavailableMessage } from "renderer/lib/host-service-unavailable";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
+import { hostProjectListQueryKey } from "renderer/react-query/projects/useHostProjectIds";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import type {
 	WorkspacesCreateAnyInput,
@@ -252,6 +254,7 @@ export function useWorkspaceCreates(): UseWorkspaceCreatesApi {
 	);
 	const { data: waitForSetupBeforeAgent } =
 		electronTrpc.settings.getWaitForSetupBeforeAgent.useQuery();
+	const queryClient = useQueryClient();
 
 	const submit = useCallback(
 		(args: SubmitArgs): SubmitHandle => {
@@ -389,6 +392,11 @@ export function useWorkspaceCreates(): UseWorkspaceCreatesApi {
 					} catch (error) {
 						throw new Error(classifyCloneError(error).message);
 					}
+					// The host now has the project; composers keyed on this list
+					// should stop offering to clone it.
+					void queryClient.invalidateQueries({
+						queryKey: hostProjectListQueryKey(hostUrl),
+					});
 				}
 				let waitForSetup = waitForSetupBeforeAgent;
 				if (waitForSetup === undefined && snapshot.agents?.length) {
@@ -475,6 +483,7 @@ export function useWorkspaceCreates(): UseWorkspaceCreatesApi {
 			hostService,
 			trackWorkspaceTransaction,
 			waitForSetupBeforeAgent,
+			queryClient,
 		],
 	);
 
