@@ -33,6 +33,7 @@ import {
 	padding,
 	resizable,
 	shapes,
+	textInputAutocapitalization,
 	tint,
 	truncationMode,
 } from "@expo/ui/swift-ui/modifiers";
@@ -73,6 +74,10 @@ const GLASS_BLEED = 10;
 /** Stable identity so `showAttachments={false}` doesn't churn effect deps. */
 const NO_ATTACHMENTS: PromptInputAttachmentItem[] = [];
 
+type TextInputAutocapitalization = Parameters<
+	typeof textInputAutocapitalization
+>[0];
+
 export interface GlassComposerHandle {
 	focus: () => void;
 	blur: () => void;
@@ -94,6 +99,8 @@ export interface GlassComposerProps {
 	toolbarLeading?: ReactNode;
 	/** Keeps the composer expanded while the field isn't focused. */
 	keepExpanded?: boolean;
+	/** Overrides the native keyboard's autocapitalization behavior. */
+	textInputAutocapitalization?: TextInputAutocapitalization;
 	/** A submit is in flight: send stays visible but disabled. */
 	isSending?: boolean;
 	/**
@@ -132,6 +139,7 @@ export const GlassComposer = forwardRef<
 		header,
 		toolbarLeading,
 		keepExpanded = false,
+		textInputAutocapitalization: inputAutocapitalization,
 		isSending = false,
 		showAttachments = true,
 		onActiveChange,
@@ -152,18 +160,6 @@ export const GlassComposer = forwardRef<
 	const writeDraft = (text: string) => {
 		draftRef.current = text;
 		setHasText(text.trim().length > 0);
-	};
-
-	// Appends to the draft and leaves the caret after it. The field never
-	// reports where its cursor actually is — both onSelectionChange and a
-	// `selection` state read back {0,0} once you've typed — so the end is the
-	// only position an insert can be sure of. Setting the caret does work.
-	const appendToDraft = (insert: string) => {
-		const next = draftRef.current + insert;
-		writeDraft(next);
-		void fieldRef.current
-			?.setText(next)
-			.then(() => fieldRef.current?.setSelection(next.length, next.length));
 	};
 
 	const attachments = showAttachments
@@ -300,31 +296,6 @@ export const GlassComposer = forwardRef<
 		</Button>
 	);
 
-	// Explicit line break for multi-line messages: expo-ui's TextField exposes
-	// nothing for the soft keyboard's return key, so this is the only way to
-	// put a newline in a draft. Lives in the terminal's quick-key row, shaped
-	// like the keys beside it; the home composer has no such row and no button.
-	const newlineChip = (
-		<Button
-			onPress={() => {
-				void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-				appendToDraft("\n");
-			}}
-			modifiers={[
-				buttonStyle("bordered"),
-				buttonBorderShape("roundedRectangle", 10),
-				tint(FOREGROUND),
-				accessibilityLabel("New line"),
-			]}
-		>
-			<Image
-				systemName="return"
-				size={13}
-				modifiers={[frame({ width: 24, height: 17 })]}
-			/>
-		</Button>
-	);
-
 	const voiceControl = <VoiceControl dictation={dictation} />;
 
 	// Inserted beside the mic when a draft exists: the animated layout change
@@ -372,7 +343,6 @@ export const GlassComposer = forwardRef<
 				>
 					{above ? (
 						<HStack spacing={8} modifiers={[padding({ horizontal: 2 })]}>
-							{newlineChip}
 							{above}
 						</HStack>
 					) : null}
@@ -510,6 +480,9 @@ export const GlassComposer = forwardRef<
 									frame({ minHeight: expanded ? 56 : 38 }),
 									lineLimit(expanded ? 12 : 1),
 									truncationMode("tail"),
+									...(inputAutocapitalization
+										? [textInputAutocapitalization(inputAutocapitalization)]
+										: []),
 								]}
 							/>
 							<HStack
