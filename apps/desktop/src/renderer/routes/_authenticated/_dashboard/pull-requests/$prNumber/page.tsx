@@ -1,17 +1,11 @@
 import { Badge } from "@superset/ui/badge";
 import { Button } from "@superset/ui/button";
 import { Tabs } from "@superset/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
-import {
-	LuPanelLeft,
-	LuPanelLeftClose,
-	LuPanelLeftOpen,
-	LuPlus,
-} from "react-icons/lu";
+import { LuPlus } from "react-icons/lu";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { formatRelativeTime } from "renderer/lib/formatRelativeTime";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
@@ -29,7 +23,6 @@ import {
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
 import { Route as PullRequestsLayoutRoute } from "../layout";
-import { usePullRequestsSplitViewStore } from "../stores/pullRequestsSplitViewStore";
 import { githubAvatarUrl } from "../utils/githubAvatarUrl";
 import {
 	PULL_REQUEST_DETAIL_TABS,
@@ -96,12 +89,6 @@ function PullRequestDetailPage() {
 	);
 	const resetDraft = useNewWorkspaceDraftStore((state) => state.resetDraft);
 	const openModal = useOpenNewWorkspaceModal();
-	const isListCollapsed = usePullRequestsSplitViewStore(
-		(s) => s.isListCollapsed,
-	);
-	const toggleListCollapsed = usePullRequestsSplitViewStore(
-		(s) => s.toggleListCollapsed,
-	);
 
 	const activeTab = tab ?? DEFAULT_TAB;
 	const handleTabChange = (nextTab: PullRequestDetailTab) => {
@@ -148,47 +135,9 @@ function PullRequestDetailPage() {
 		? normalizePRState(data.state, data.isDraft)
 		: defaultState;
 
-	// The list pane is always visible in the split view, so there's no "back"
-	// affordance here — just a toggle to reclaim its width for the detail pane.
-	const header = (
-		<div className="flex shrink-0 items-center justify-end px-4 pt-2">
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<button
-						type="button"
-						onClick={toggleListCollapsed}
-						aria-label={
-							isListCollapsed
-								? "Show pull request list"
-								: "Hide pull request list"
-						}
-						className="group flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-					>
-						<span className="group-hover:hidden">
-							<LuPanelLeft className="size-4" strokeWidth={1.5} />
-						</span>
-						<span className="hidden group-hover:block">
-							{isListCollapsed ? (
-								<LuPanelLeftOpen className="size-4" strokeWidth={1.5} />
-							) : (
-								<LuPanelLeftClose className="size-4" strokeWidth={1.5} />
-							)}
-						</span>
-					</button>
-				</TooltipTrigger>
-				<TooltipContent side="bottom">
-					{isListCollapsed
-						? "Show pull request list"
-						: "Hide pull request list"}
-				</TooltipContent>
-			</Tooltip>
-		</div>
-	);
-
 	if (prNumber === null) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
-				{header}
 				<WorkItemDetailState
 					message="This pull request link is invalid."
 					isError
@@ -200,7 +149,6 @@ function PullRequestDetailPage() {
 	if (!projectId) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
-				{header}
 				<WorkItemDetailState message="Choose a project from Pull requests before opening a pull request." />
 			</div>
 		);
@@ -209,7 +157,6 @@ function PullRequestDetailPage() {
 	if (!project) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
-				{header}
 				<WorkItemDetailState
 					message={
 						areProjectsReady
@@ -226,7 +173,6 @@ function PullRequestDetailPage() {
 	if (!hostId || !hostUrl) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
-				{header}
 				<WorkItemDetailState
 					message="The device that hosts this project is unavailable."
 					isError
@@ -238,7 +184,6 @@ function PullRequestDetailPage() {
 	if (isLoading) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
-				{header}
 				<WorkItemDetailState message="Loading pull request…" isLoading />
 			</div>
 		);
@@ -247,7 +192,6 @@ function PullRequestDetailPage() {
 	if (error instanceof Error || !data) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
-				{header}
 				<WorkItemDetailState
 					message={
 						error instanceof Error ? error.message : "Pull request not found."
@@ -266,8 +210,6 @@ function PullRequestDetailPage() {
 
 	return (
 		<div className="@container flex min-h-0 flex-1 flex-col">
-			{header}
-
 			<Tabs
 				value={activeTab}
 				onValueChange={(value) =>

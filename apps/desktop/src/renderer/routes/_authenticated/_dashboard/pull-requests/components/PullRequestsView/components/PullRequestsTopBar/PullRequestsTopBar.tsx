@@ -1,3 +1,4 @@
+import type { ProjectQueryTarget } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectQueryTargets";
 import type { PullRequestStateFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsFilterStore";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
 import { PullRequestSearchBar } from "./components/PullRequestSearchBar";
@@ -8,6 +9,7 @@ interface PullRequestsTopBarProps {
 	onSearchChange: (query: string) => void;
 	projectFilters: string[];
 	onProjectFiltersChange: (projectIds: string[]) => void;
+	projectTargets: ProjectQueryTarget[];
 	authorFilter: string | null;
 	onAuthorFilterChange: (author: string | null) => void;
 	reviewFilter: PullRequestReviewFilter | null;
@@ -21,6 +23,7 @@ export function PullRequestsTopBar({
 	onSearchChange,
 	projectFilters,
 	onProjectFiltersChange,
+	projectTargets,
 	authorFilter,
 	onAuthorFilterChange,
 	reviewFilter,
@@ -43,6 +46,7 @@ export function PullRequestsTopBar({
 					onSearchChange={onSearchChange}
 					projectFilters={projectFilters}
 					onProjectFiltersChange={onProjectFiltersChange}
+					projectTargets={projectTargets}
 					authorFilter={authorFilter}
 					onAuthorFilterChange={onAuthorFilterChange}
 					reviewFilter={reviewFilter}

@@ -5,6 +5,7 @@ import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { LuFilter } from "react-icons/lu";
 import { useHotkey } from "renderer/hotkeys";
 import { ProjectFilter } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter";
+import type { ProjectQueryTarget } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectQueryTargets";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
 import { AuthorFilter } from "../AuthorFilter";
 import { ReviewFilter } from "../ReviewFilter";
@@ -14,6 +15,7 @@ interface PullRequestSearchBarProps {
 	onSearchChange: (query: string) => void;
 	projectFilters: string[];
 	onProjectFiltersChange: (projectIds: string[]) => void;
+	projectTargets: ProjectQueryTarget[];
 	authorFilter: string | null;
 	onAuthorFilterChange: (author: string | null) => void;
 	reviewFilter: PullRequestReviewFilter | null;
@@ -25,6 +27,7 @@ export function PullRequestSearchBar({
 	onSearchChange,
 	projectFilters,
 	onProjectFiltersChange,
+	projectTargets,
 	authorFilter,
 	onAuthorFilterChange,
 	reviewFilter,
@@ -97,6 +100,7 @@ export function PullRequestSearchBar({
 							<AuthorFilter
 								value={authorFilter}
 								onChange={onAuthorFilterChange}
+								projectTargets={projectTargets}
 							/>
 						</div>
 						<div className="flex items-center justify-between gap-2">

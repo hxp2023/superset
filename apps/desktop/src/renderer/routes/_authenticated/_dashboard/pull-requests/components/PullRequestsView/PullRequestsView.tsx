@@ -217,6 +217,7 @@ export function PullRequestsView({
 				onSearchChange={handleSearchChange}
 				projectFilters={projectFilters}
 				onProjectFiltersChange={handleProjectFiltersChange}
+				projectTargets={projectTargets}
 				authorFilter={authorFilter}
 				onAuthorFilterChange={handleAuthorFilterChange}
 				reviewFilter={reviewFilter}
