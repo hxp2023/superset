@@ -172,7 +172,13 @@ export function DesignModePopover({
 						e.stopPropagation();
 						onDismiss();
 					}
-					if (e.key === "Enter" && !e.shiftKey && canSubmit) {
+					// isComposing: Enter that commits an IME candidate must not send.
+					if (
+						e.key === "Enter" &&
+						!e.shiftKey &&
+						!e.nativeEvent.isComposing &&
+						canSubmit
+					) {
 						e.preventDefault();
 						handleSubmit();
 					}

@@ -108,11 +108,14 @@ describe("DesignModeController", () => {
 		expect(injected.some((s) => s.includes(TEARDOWN_MARKER))).toBe(true);
 	});
 
-	test("main-frame navigation cancels; subframe navigation does not", async () => {
+	test("main-frame navigation cancels; subframe and in-place do not", async () => {
 		const controller = new DesignModeController();
 		const { guest, emit, resolveClick } = makeGuest();
 		const first = controller.awaitSelection("pane-1", "op-1", guest);
 		emit("did-start-navigation", {}, "url", false, false);
+		expect(controller.hasActiveOp("pane-1")).toBe(true);
+		// Same-document navigation (pushState/hash) must not cancel either.
+		emit("did-start-navigation", {}, "url", true, true);
 		expect(controller.hasActiveOp("pane-1")).toBe(true);
 		emit("did-start-navigation", {}, "url", false, true);
 		const result = await first;

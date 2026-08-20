@@ -60,15 +60,22 @@ export async function captureDesignModeScreenshot(
 		if (!viewportCssWidth || viewportCssWidth <= 0) return null;
 		const scaleFactor = bitmapSize.width / viewportCssWidth;
 
-		const cropX = Math.max(0, Math.round(safeRect.x * scaleFactor));
-		const cropY = Math.max(0, Math.round(safeRect.y * scaleFactor));
+		// Clip to the viewport in CSS space first: an element partially scrolled
+		// offscreen must crop to its visible region — clamping only the origin
+		// would shift the crop onto unrelated content below/right of it.
+		const visX = Math.max(0, safeRect.x);
+		const visY = Math.max(0, safeRect.y);
+		const visW = safeRect.width - (visX - safeRect.x);
+		const visH = safeRect.height - (visY - safeRect.y);
+		const cropX = Math.round(visX * scaleFactor);
+		const cropY = Math.round(visY * scaleFactor);
 		const cropW = Math.min(
 			bitmapSize.width - cropX,
-			Math.round(safeRect.width * scaleFactor),
+			Math.round(visW * scaleFactor),
 		);
 		const cropH = Math.min(
 			bitmapSize.height - cropY,
-			Math.round(safeRect.height * scaleFactor),
+			Math.round(visH * scaleFactor),
 		);
 		if (cropW <= 0 || cropH <= 0) return null;
 

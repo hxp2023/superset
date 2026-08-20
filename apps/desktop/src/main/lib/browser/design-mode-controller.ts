@@ -106,15 +106,16 @@ export class DesignModeController {
 				}
 			};
 
-			// Only main-frame navigations cancel; subframe loads (iframe ads,
-			// embeds) must not spuriously end the selection.
+			// Only real main-frame navigations cancel: subframe loads (iframe ads,
+			// embeds) and same-document navigations (pushState/hash — routine on
+			// SPA dev servers) leave the document and overlay intact.
 			const handleNavigation = (
 				_event: unknown,
 				_url: unknown,
-				_isInPlace: unknown,
+				isInPlace: boolean,
 				isMainFrame: boolean,
 			): void => {
-				if (isMainFrame) {
+				if (isMainFrame && !isInPlace) {
 					settleOnce({ opId, kind: "cancelled", reason: "navigation" });
 				}
 			};

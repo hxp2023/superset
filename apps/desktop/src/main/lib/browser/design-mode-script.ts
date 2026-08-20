@@ -4,6 +4,13 @@
 // world. State lives on window.__supersetDesignMode so the teardown/await
 // scripts can reach it across separate executeJavaScript calls.
 
+import {
+	DESIGN_MODE_BUDGET,
+	DESIGN_MODE_SAFE_ATTRIBUTE_NAMES,
+	DESIGN_MODE_SECRET_PATTERNS,
+	DESIGN_MODE_STYLE_PROPERTIES,
+} from "shared/browser-design-mode";
+
 export type DesignModeScriptAction = "arm" | "awaitClick" | "teardown";
 
 export function buildDesignModeScript(action: DesignModeScriptAction): string {
@@ -27,48 +34,30 @@ const ARM_SCRIPT = `(function() {
   // the only code that runs.
   if (window.__supersetDesignMode) {
     try {
-      if (typeof window.__supersetDesignMode.cleanup === 'function') {
+      // cancelAwait (when a selection is pending) also settles that pending
+      // executeJavaScript promise; bare cleanup would leave it dangling.
+      if (typeof window.__supersetDesignMode.cancelAwait === 'function') {
+        window.__supersetDesignMode.cancelAwait();
+      } else if (typeof window.__supersetDesignMode.cleanup === 'function') {
         window.__supersetDesignMode.cleanup();
       }
     } catch (e) {}
     delete window.__supersetDesignMode;
   }
 
-  // Budgets mirrored from shared/browser-design-mode.ts
-  var BUDGET = {
-    textSnippetMaxLength: 200,
-    nearbyTextEntryMaxLength: 200,
-    nearbyTextMaxEntries: 10,
-    htmlSnippetMaxLength: 4096,
-    ancestorPathMaxEntries: 10,
-    selectorMaxLength: 700,
-    pathMaxLength: 900,
-    cssClassesMaxLength: 500,
-    sourceFileMaxLength: 500,
-    reactComponentsMaxLength: 500,
-    reactPropsMaxLength: 500
-  };
+  // Interpolated from shared/browser-design-mode.ts so guest-side clamping
+  // and redaction can never drift from main's clampDesignModePayload.
+  var BUDGET = ${JSON.stringify(DESIGN_MODE_BUDGET)};
   var TEXT_NODE_SCAN_LIMIT = 80;
   var SIBLING_SCAN_LIMIT = 80;
 
-  var SAFE_ATTRS = new Set([
-    'id', 'class', 'name', 'type', 'role', 'href', 'src', 'alt',
-    'title', 'placeholder', 'for', 'action', 'method'
-  ]);
+  var SAFE_ATTRS = new Set(${JSON.stringify([...DESIGN_MODE_SAFE_ATTRIBUTE_NAMES])});
 
-  var SECRET_PATTERNS = [
-    'access_token', 'auth_token', 'api_key', 'apikey', 'client_secret',
-    'oauth_state', 'x-amz-', 'session_id', 'sessionid', 'csrf',
-    'secret', 'password', 'passwd'
-  ];
+  var SECRET_PATTERNS = ${JSON.stringify(DESIGN_MODE_SECRET_PATTERNS)};
 
   var SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'file:']);
 
-  var STYLE_PROPS = [
-    'display', 'position', 'width', 'height', 'margin', 'padding',
-    'color', 'backgroundColor', 'border', 'borderRadius', 'fontFamily',
-    'fontSize', 'fontWeight', 'lineHeight', 'textAlign', 'zIndex'
-  ];
+  var STYLE_PROPS = ${JSON.stringify(DESIGN_MODE_STYLE_PROPERTIES)};
 
   function clampStr(s, max) {
     if (!s || typeof s !== 'string') return '';
@@ -555,17 +544,29 @@ const ARM_SCRIPT = `(function() {
     hoverLabel.style.display = 'block';
   }
 
-  function onPointerMove(e) {
+  var lastPointer = null;
+
+  function refreshHitTest() {
+    if (!lastPointer) return;
     // Momentarily hide the overlay to hit-test the element underneath.
     host.style.pointerEvents = 'none';
-    var el = document.elementFromPoint(e.clientX, e.clientY);
+    var el = document.elementFromPoint(lastPointer.x, lastPointer.y);
     host.style.pointerEvents = 'all';
     if (el) {
       requestAnimationFrame(function() { updateHighlight(el); });
     }
   }
 
+  function onPointerMove(e) {
+    lastPointer = { x: e.clientX, y: e.clientY };
+    refreshHitTest();
+  }
+
   host.addEventListener('mousemove', onPointerMove);
+  // Wheel-scrolling fires no mousemove, but shifts which element sits under
+  // the stationary cursor — re-hit-test so the highlight (and the element a
+  // click captures) can't go stale.
+  window.addEventListener('scroll', refreshHitTest, true);
 
   window.__supersetDesignMode = {
     host: host,
@@ -576,12 +577,14 @@ const ARM_SCRIPT = `(function() {
     // composer's header, so it hides.
     freezeHighlight: function() {
       host.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('scroll', refreshHitTest, true);
       host.style.pointerEvents = 'none';
       host.style.cursor = 'default';
       hoverLabel.style.display = 'none';
     },
     cleanup: function() {
       host.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('scroll', refreshHitTest, true);
       try { host.remove(); } catch (e) {}
       delete window.__supersetDesignMode;
     }

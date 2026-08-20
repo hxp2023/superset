@@ -60,6 +60,7 @@ export function BrowserPane({
 	const { placeholderRef, reload } = usePersistentWebview({ paneId, ctx });
 	const { workspaceId } = useParams({ strict: false });
 	const designMode = useDesignModeState(paneId);
+	const rootRef = useRef<HTMLDivElement | null>(null);
 
 	// A pane switch or unmount must not leave a stale picker overlay armed in
 	// the guest, nor an await resolving into a pane that no longer shows it.
@@ -74,12 +75,14 @@ export function BrowserPane({
 	// Esc while the host (not the guest) owns focus: with a captured element it
 	// discards the capture and goes back to picking; while picking it exits.
 	// The injected overlay handles Esc itself when the guest has focus, and the
-	// composer's own Esc handler covers its textarea.
+	// composer's own Esc handler covers its textarea. Scoped to keystrokes that
+	// belong to this pane (or to nothing — body): Esc aimed at a portal
+	// (dropdown, dialog, the composer's agent picker) must close that instead.
 	useEffect(() => {
 		if (designMode.phase === "idle") return;
 		const phase = designMode.phase;
 		const handleKeyDown = (e: KeyboardEvent): void => {
-			if (e.key !== "Escape") return;
+			if (e.key !== "Escape" || e.defaultPrevented) return;
 			const target = e.target as HTMLElement | null;
 			if (
 				target &&
@@ -89,6 +92,11 @@ export function BrowserPane({
 			) {
 				return;
 			}
+			const root = rootRef.current;
+			const inScope =
+				target === document.body ||
+				(root != null && target != null && root.contains(target));
+			if (!inScope) return;
 			e.preventDefault();
 			e.stopPropagation();
 			if (phase === "confirming") {
@@ -101,6 +109,15 @@ export function BrowserPane({
 		return () => window.removeEventListener("keydown", handleKeyDown, true);
 	}, [designMode.phase, paneId]);
 
+	// A full navigation replaces the document a capture described — drop the
+	// composer instead of staging a payload (selector, bounds, verify hints)
+	// for a page that no longer exists.
+	useEffect(() => {
+		if (designMode.phase === "confirming" && state.isLoading) {
+			designModeStore.exit(paneId);
+		}
+	}, [designMode.phase, state.isLoading, paneId]);
+
 	const isBlankPage = !state.currentUrl || state.currentUrl === "about:blank";
 
 	// Anchor the composer under the clicked element: the capture's viewport
@@ -109,7 +126,6 @@ export function BrowserPane({
 	// offset parent of both the placeholder and the popover). Computed in a
 	// layout effect (refs are unset during the first render of a remount) and
 	// re-clamped when the pane resizes so the card stays inside it.
-	const rootRef = useRef<HTMLDivElement | null>(null);
 	const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({
 		top: 12,
 		left: 12,
