@@ -12,7 +12,15 @@ const tempHome = fs.mkdtempSync(
 process.env.SUPERSET_HOME_DIR = tempHome;
 
 const { resolveAuth } = await import("./resolve-auth");
-const { readConfig, writeConfig } = await import("./config");
+const { readConfig, writeConfig, SUPERSET_HOME_DIR } = await import("./config");
+
+// Manifest writes must use the config module's own SUPERSET_HOME_DIR rather
+// than tempHome: other test files also set the env var at module top level,
+// and if one of them gets collected during this file's top-level awaits, the
+// const can capture that file's dir instead of tempHome. writeConfig and
+// readManifest both go through the const, so deriving the manifest path from
+// it keeps writer and reader consistent no matter which value won.
+const manifestBaseDir = path.join(SUPERSET_HOME_DIR, "host");
 
 function clearConfig(): void {
 	writeConfig({});
@@ -31,6 +39,10 @@ delete process.env.SUPERSET_WORKSPACE_ID;
 
 afterEach(() => {
 	clearConfig();
+	fs.rmSync(path.join(manifestBaseDir, "org_terminal"), {
+		recursive: true,
+		force: true,
+	});
 	delete process.env.SUPERSET_API_KEY;
 	delete process.env.SUPERSET_ORGANIZATION_ID;
 	delete process.env.SUPERSET_TERMINAL_ID;
@@ -105,7 +117,7 @@ async function withHostSessionServer<Result>(
 }
 
 function writeHostManifest(organizationId: string, endpoint: string): void {
-	const manifestDir = path.join(tempHome, "host", organizationId);
+	const manifestDir = path.join(manifestBaseDir, organizationId);
 	fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
 	fs.writeFileSync(
 		path.join(manifestDir, "manifest.json"),
