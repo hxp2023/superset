@@ -28,6 +28,7 @@ import { useAppReviewPrompt } from "@/screens/(authenticated)/hooks/useAppReview
 import { useTerminalSeenStore } from "@/screens/(authenticated)/stores/terminalSeenStore";
 import { useTerminalTabOrderStore } from "@/screens/(authenticated)/stores/terminalTabOrderStore";
 import { CloudWorkspaceProvisioningState } from "../components/CloudWorkspaceProvisioningState";
+import { HeaderNotice } from "../components/HeaderNotice";
 import { PullRequestsButton } from "../components/PullRequestsButton";
 import {
 	TerminalComposer,
@@ -37,12 +38,15 @@ import { TerminalTabs } from "../components/TerminalTabs";
 import {
 	type TerminalConnectionState,
 	type TerminalControlMessage,
+	type TerminalSelectState,
 	TerminalWebView,
 	type TerminalWebViewHandle,
 } from "../components/TerminalWebView";
 import { useWorkspacePullRequests } from "../hooks/useWorkspacePullRequest";
 import { orderTerminalRows } from "../utils/orderTerminalRows";
 import { WorkspacePlaceholder } from "./components/WorkspacePlaceholder";
+
+const NOTICE_MS = 1500;
 
 const headerOptions = {
 	headerShown: true,
@@ -180,6 +184,13 @@ export function WorkspaceScreen() {
 	const [keyboardHeight, setKeyboardHeight] = useState(0);
 	const [composerActive, setComposerActive] = useState(false);
 	const composerRef = useRef<GlassComposerHandle>(null);
+	const [select, setSelect] = useState<TerminalSelectState>({
+		active: false,
+		hasSelection: false,
+	});
+	const [notice, setNotice] = useState<string | null>(null);
+	const hideNotice = useCallback(() => setNotice(null), []);
+	const handleCopied = useCallback(() => setNotice("Copied"), []);
 
 	useEffect(() => {
 		const show = Keyboard.addListener("keyboardWillShow", (event) => {
@@ -257,24 +268,40 @@ export function WorkspaceScreen() {
 
 	return (
 		<View className="bg-background flex-1">
-			<Stack.Screen options={{ ...headerOptions, title: "Workspace" }}>
-				<Stack.Title asChild>
-					<PressableScale
-						onPress={() =>
-							router.push(`/(authenticated)/workspace/${id}/actions`)
-						}
-						disabled={!workspace}
-					>
-						{/* Width budget: the back capsule and Review button leave ~210pt
-						    of bar on a 390pt screen — wider and the title collides with
-						    the back button under iOS 26's floating bar items. */}
-						<View className="max-w-52">
-							<Text className="font-semibold text-[17px]" numberOfLines={1}>
-								{workspace?.name ?? cloud?.name ?? ""}
-							</Text>
-						</View>
-					</PressableScale>
-				</Stack.Title>
+			<Stack.Screen
+				options={{
+					...headerOptions,
+					title: "Workspace",
+					headerTitle: notice
+						? () => (
+								<HeaderNotice
+									onHidden={hideNotice}
+									text={notice}
+									visibleFor={NOTICE_MS}
+								/>
+							)
+						: undefined,
+				}}
+			>
+				{notice ? null : (
+					<Stack.Title asChild>
+						<PressableScale
+							onPress={() =>
+								router.push(`/(authenticated)/workspace/${id}/actions`)
+							}
+							disabled={!workspace}
+						>
+							{/* Width budget: the back capsule and Review button leave ~210pt
+							    of bar on a 390pt screen — wider and the title collides with
+							    the back button under iOS 26's floating bar items. */}
+							<View className="max-w-52">
+								<Text className="font-semibold text-[17px]" numberOfLines={1}>
+									{workspace?.name ?? cloud?.name ?? ""}
+								</Text>
+							</View>
+						</PressableScale>
+					</Stack.Title>
+				)}
 			</Stack.Screen>
 
 			{/* A cloud workspace exists on screen before anything serves it; the
@@ -323,6 +350,8 @@ export function WorkspaceScreen() {
 							host={host}
 							onStateChange={setConnectionState}
 							onControl={handleControl}
+							onSelectChange={setSelect}
+							onCopied={handleCopied}
 						/>
 						{/* Tap-outside-to-dismiss, the terminal's answer to the home
 						    composer's backdrop. Transparent, not a scrim: the point of
@@ -407,9 +436,12 @@ export function WorkspaceScreen() {
 							allowAttachments={activeRow?.agentId != null}
 							attachmentTarget={attachmentTarget}
 							onActiveChange={setComposerActive}
+							onCopySelection={() => terminalRef.current?.copySelection()}
 							onQuickKey={handleQuickKey}
 							onSubmit={handleSubmit}
 							ref={composerRef}
+							selectActive={select.active}
+							selectHasSelection={select.hasSelection}
 						/>
 					) : null}
 				</View>
