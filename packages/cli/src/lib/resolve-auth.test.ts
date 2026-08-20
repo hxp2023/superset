@@ -1,7 +1,5 @@
 import { afterAll, afterEach, describe, expect, it } from "bun:test";
 import fs from "node:fs";
-import { createServer, type Server } from "node:http";
-import type { AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
 
@@ -76,43 +74,18 @@ afterAll(() => {
 });
 
 async function withHostSessionServer<Result>(
-	handler: (request: Request) => Response,
+	respond: (request: Request) => Response,
 	run: (endpoint: string) => Promise<Result>,
 ): Promise<Result> {
-	const server: Server = createServer(async (req, res) => {
-		const chunks: Buffer[] = [];
-		for await (const chunk of req) chunks.push(Buffer.from(chunk));
-		const headers = new Headers();
-		for (const [key, value] of Object.entries(req.headers)) {
-			if (Array.isArray(value)) {
-				for (const item of value) headers.append(key, item);
-			} else if (value !== undefined) {
-				headers.set(key, value);
-			}
-		}
-		const request = new Request(
-			`http://127.0.0.1:${(server.address() as AddressInfo).port}${req.url}`,
-			{
-				method: req.method,
-				headers,
-				body: chunks.length ? Buffer.concat(chunks) : undefined,
-			},
-		);
-		const response = handler(request);
-		res.writeHead(response.status, Object.fromEntries(response.headers));
-		res.end(await response.text());
-	});
-
-	await new Promise<void>((resolve) => {
-		server.listen(0, "127.0.0.1", () => resolve());
+	const server = Bun.serve({
+		port: 0,
+		hostname: "127.0.0.1",
+		fetch: respond,
 	});
 	try {
-		const address = server.address() as AddressInfo;
-		return await run(`http://127.0.0.1:${address.port}`);
+		return await run(`http://127.0.0.1:${server.port}`);
 	} finally {
-		await new Promise<void>((resolve, reject) => {
-			server.close((error) => (error ? reject(error) : resolve()));
-		});
+		await server.stop(true);
 	}
 }
 
@@ -218,10 +191,16 @@ describe("resolveAuth", () => {
 			},
 		});
 
+		// Assertions on the request happen after the flow completes — an
+		// expect() throw inside the handler would swallow the response and
+		// surface as an unrelated timeout instead of the real mismatch.
+		const seen: { pathname: string; authorization: string | null }[] = [];
 		await withHostSessionServer(
 			(request) => {
-				expect(new URL(request.url).pathname).toBe("/auth/session-jwt");
-				expect(request.headers.get("authorization")).toBe("Bearer host-secret");
+				seen.push({
+					pathname: new URL(request.url).pathname,
+					authorization: request.headers.get("authorization"),
+				});
 				return Response.json({
 					token: "jwt-from-local-host",
 					apiUrl: "https://api.desktop.test",
@@ -235,6 +214,12 @@ describe("resolveAuth", () => {
 				expect(result.config.organizationId).toBe(organizationId);
 			},
 		);
+		expect(seen).toEqual([
+			{
+				pathname: "/auth/session-jwt",
+				authorization: "Bearer host-secret",
+			},
+		]);
 	});
 
 	it("overrides the stored org with SUPERSET_ORGANIZATION_ID", async () => {
