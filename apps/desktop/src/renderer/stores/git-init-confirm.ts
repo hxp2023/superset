@@ -33,6 +33,7 @@ export const useGitInitConfirmStore = create<GitInitConfirmState>()(
 			repoPath: null,
 			request: (repoPath) => {
 				pendingResolve?.(false);
+				pendingResolve = null;
 				if (consumerCount === 0) {
 					console.error(
 						"[git-init-confirm] request() with no GitInitConfirmDialog mounted — resolving false instead of pending forever",
@@ -54,6 +55,14 @@ export const useGitInitConfirmStore = create<GitInitConfirmState>()(
 				consumerCount += 1;
 				return () => {
 					consumerCount -= 1;
+					// Last dialog gone: settle a pending request so the caller's
+					// busy state can't outlive its only resolver.
+					if (consumerCount === 0) {
+						const resolve = pendingResolve;
+						pendingResolve = null;
+						set({ isOpen: false, repoPath: null });
+						resolve?.(false);
+					}
 				};
 			},
 		}),

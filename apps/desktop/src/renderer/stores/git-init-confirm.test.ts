@@ -37,4 +37,14 @@ describe("useGitInitConfirmStore", () => {
 		]);
 		expect(result).toBe(false);
 	});
+
+	it("settles a pending request with false when the last dialog unmounts", async () => {
+		const unregister = useGitInitConfirmStore.getState().registerConsumer();
+		const pending = useGitInitConfirmStore.getState().request("/tmp/repo");
+		expect(useGitInitConfirmStore.getState().isOpen).toBe(true);
+		unregister();
+		expect(await pending).toBe(false);
+		expect(useGitInitConfirmStore.getState().isOpen).toBe(false);
+		expect(useGitInitConfirmStore.getState().repoPath).toBeNull();
+	});
 });
