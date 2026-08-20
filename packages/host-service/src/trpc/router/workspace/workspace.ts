@@ -8,7 +8,6 @@ import {
 	getLocalWorkspace,
 	getTagsByWorkspaceId,
 	normalizeWorkspaceTags,
-	setLocalWorkspaceTags,
 	toCloudShape,
 	updateLocalWorkspace,
 } from "../../../workspaces/local-workspace-store";
@@ -129,6 +128,7 @@ export const workspaceRouter = router({
 				branch?: string;
 				taskId?: string | null;
 				parentWorkspaceId?: string | null;
+				tags?: string[];
 			} = {};
 			if (input.name !== undefined) patch.name = input.name;
 			if (input.branch !== undefined) patch.branch = input.branch;
@@ -182,17 +182,11 @@ export const workspaceRouter = router({
 				}
 				patch.parentWorkspaceId = input.parentWorkspaceId;
 			}
-			// After lineage validation so a rejected parent can't half-apply.
 			if (input.tags !== undefined) {
-				setLocalWorkspaceTags(
-					{ db: ctx.db, eventBus: ctx.eventBus },
-					input.id,
-					normalizeWorkspaceTags(input.tags),
-				);
+				patch.tags = normalizeWorkspaceTags(input.tags);
 			}
 			if (Object.keys(patch).length === 0) {
-				const after = getLocalWorkspace(ctx.db, input.id) ?? current;
-				return toCloudShape(after, ctx.organizationId);
+				return toCloudShape(current, ctx.organizationId);
 			}
 			const updated = updateLocalWorkspace(
 				{ db: ctx.db, eventBus: ctx.eventBus },

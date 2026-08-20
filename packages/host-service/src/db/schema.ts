@@ -206,6 +206,14 @@ export const hostAgentConfigs = sqliteTable(
 	],
 );
 
+export const WORKSPACE_SPAWN_ORIGINS = [
+	"ui",
+	"cli",
+	"mcp",
+	"automation",
+] as const;
+export type WorkspaceSpawnOrigin = (typeof WORKSPACE_SPAWN_ORIGINS)[number];
+
 export const workspaces = sqliteTable(
 	"workspaces",
 	{
@@ -247,9 +255,7 @@ export const workspaces = sqliteTable(
 		),
 		// Who initiated the create; null for rows that predate tracking and
 		// for desktop-UI creates (the UI never sets a parent today).
-		spawnOrigin: text("spawn_origin").$type<
-			"ui" | "cli" | "mcp" | "automation"
-		>(),
+		spawnOrigin: text("spawn_origin").$type<WorkspaceSpawnOrigin>(),
 		createdAt: integer("created_at")
 			.notNull()
 			.$defaultFn(() => Date.now()),

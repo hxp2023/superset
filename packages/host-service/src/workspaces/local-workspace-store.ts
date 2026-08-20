@@ -5,6 +5,7 @@ import hostServicePackageJson from "@superset/host-service/package.json" with {
 import { getHostId } from "@superset/shared/host-info";
 import { eq, inArray } from "drizzle-orm";
 import type { HostDb } from "../db";
+import type { WorkspaceSpawnOrigin } from "../db/schema";
 import { workspaces, workspaceTags } from "../db/schema";
 import type { EventBus } from "../events";
 import type { WorkspaceSnapshot } from "../events/types";
@@ -141,7 +142,7 @@ export interface InsertLocalWorkspaceValues {
 	createdByUserId?: string | null;
 	/** Pre-validated by the caller (resolveParentWorkspaceId). */
 	parentWorkspaceId?: string | null;
-	spawnOrigin?: "ui" | "cli" | "mcp" | "automation" | null;
+	spawnOrigin?: WorkspaceSpawnOrigin | null;
 	/** Already-normalized tags (normalizeWorkspaceTags). */
 	tags?: string[];
 }
@@ -195,9 +196,11 @@ export interface UpdateLocalWorkspacePatch {
 	projectId?: string;
 	/** Pre-validated by the caller (existence, project, cycle guard). */
 	parentWorkspaceId?: string | null;
+	/** Already-normalized (normalizeWorkspaceTags); replaces the full set. */
+	tags?: string[];
 }
 
-/** Patch a local row, bump `updatedAt`, and broadcast. */
+/** Patch a local row (tag set included), bump `updatedAt`, and broadcast. */
 export function updateLocalWorkspace(
 	ctx: WorkspaceStoreContext,
 	id: string,
@@ -205,10 +208,20 @@ export function updateLocalWorkspace(
 ): HostWorkspaceRow | undefined {
 	const existing = getLocalWorkspace(ctx.db, id);
 	if (!existing) return undefined;
+	const { tags, ...columns } = patch;
+	if (tags !== undefined) {
+		ctx.db.delete(workspaceTags).where(eq(workspaceTags.workspaceId, id)).run();
+		if (tags.length > 0) {
+			ctx.db
+				.insert(workspaceTags)
+				.values(tags.map((tag) => ({ workspaceId: id, tag })))
+				.run();
+		}
+	}
 	ctx.db
 		.update(workspaces)
 		.set({
-			...patch,
+			...columns,
 			updatedAt: Date.now(),
 		})
 		.where(eq(workspaces.id, id))
@@ -219,7 +232,7 @@ export function updateLocalWorkspace(
 			ctx.eventBus,
 			"updated",
 			row,
-			getTagsByWorkspaceId(ctx.db, [id]).get(id) ?? [],
+			tags ?? getWorkspaceTags(ctx.db, id),
 		);
 	}
 	return row;
@@ -323,7 +336,7 @@ export function unarchiveLocalWorkspace(
 			ctx.eventBus,
 			"created",
 			row,
-			getTagsByWorkspaceId(ctx.db, [id]).get(id) ?? [],
+			getWorkspaceTags(ctx.db, id),
 		);
 	}
 }
@@ -377,35 +390,9 @@ export function getTagsByWorkspaceId(
 	return byId;
 }
 
-/**
- * Replace a workspace's tag set (already-normalized input) and broadcast
- * `workspace:changed` so grouping UIs re-derive membership live.
- */
-export function setLocalWorkspaceTags(
-	ctx: WorkspaceStoreContext,
-	workspaceId: string,
-	tags: string[],
-): HostWorkspaceRow | undefined {
-	const existing = getLocalWorkspace(ctx.db, workspaceId);
-	if (!existing) return undefined;
-	ctx.db
-		.delete(workspaceTags)
-		.where(eq(workspaceTags.workspaceId, workspaceId))
-		.run();
-	if (tags.length > 0) {
-		ctx.db
-			.insert(workspaceTags)
-			.values(tags.map((tag) => ({ workspaceId, tag })))
-			.run();
-	}
-	ctx.db
-		.update(workspaces)
-		.set({ updatedAt: Date.now() })
-		.where(eq(workspaces.id, workspaceId))
-		.run();
-	const row = getLocalWorkspace(ctx.db, workspaceId);
-	if (row) emitWorkspaceChanged(ctx.eventBus, "updated", row, tags);
-	return row;
+/** A single workspace's sorted tag list. */
+export function getWorkspaceTags(db: HostDb, workspaceId: string): string[] {
+	return getTagsByWorkspaceId(db, [workspaceId]).get(workspaceId) ?? [];
 }
 
 /**

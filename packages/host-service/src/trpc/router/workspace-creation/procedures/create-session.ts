@@ -5,7 +5,7 @@ import { generateFriendlyBranchName } from "@superset/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { isNull } from "drizzle-orm";
 import { z } from "zod";
-import { workspaces } from "../../../../db/schema";
+import { WORKSPACE_SPAWN_ORIGINS, workspaces } from "../../../../db/schema";
 import type { HostServiceContext } from "../../../../types";
 import {
 	getLocalWorkspace,
@@ -45,7 +45,7 @@ const createSessionInputSchema = z.object({
 	// Lineage: the (project-less) workspace this session was spawned from.
 	// Invalid parents are dropped, not errored.
 	parentWorkspaceId: z.string().uuid().optional(),
-	spawnOrigin: z.enum(["ui", "cli", "mcp", "automation"]).optional(),
+	spawnOrigin: z.enum(WORKSPACE_SPAWN_ORIGINS).optional(),
 });
 
 /** Names already claimed: session dirs on disk plus session rows in the DB.
