@@ -15,7 +15,7 @@ Each Claude Code and Codex login on your machine gets a card with its official l
 
 ## Token usage
 
-Spend is estimated from the session logs already on disk, priced at full API rates — on a subscription your real cost is $0; the number shows what the work would have cost.
+Spend is estimated from the session logs already on disk, priced at full API rates — on a subscription it shows what the work would have cost at API prices, not an extra bill.
 
 - Breakdowns by model, workspace/project, and day, with drilldowns per workspace and per model.
 - **Machine resources** (toggle at the top) shows what your workspaces are doing to the machine itself.
@@ -27,8 +27,8 @@ Run several subscriptions side by side — a second personal Max account, a work
 ![Two Claude Code accounts with quota meters, one marked as the default](/images/usage-accounts.png)
 
 - **Add account** signs a second subscription into its own profile. Your current login is untouched.
-- **Make default** points new terminals and agents at that account. Running sessions keep their current account until restarted.
-- Your setup comes along: skills, plugins, MCP servers, and settings are shared across accounts, and there's one conversation history — `--resume` shows the same sessions whichever account is active.
-- Only the login itself stays per account. Removing an account deletes its profile and credentials, never your shared setup or history.
+- **Make default** points new agent launches at that account — including relaunches in terminals you already have open. A running agent keeps its account until you relaunch it.
+- Your setup comes along: skills, plugins, MCP servers, and settings are shared across accounts, and for Claude Code there's one conversation history — `--resume` shows the same sessions whichever account is active.
+- Logins, credentials, and account identity stay per account. Removing an account deletes its profile and credentials, never your shared setup or history.
 
-Under the hood, a profile is just a config dir the CLI is pointed at (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`), injected into new terminals and agent launches — so switching works for agents you launch by hand in a Superset terminal too.
+Under the hood, a profile is just a config dir the CLI is pointed at (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`). Superset's agent wrappers re-resolve the current default every time the agent starts in a Superset terminal — so switching works for agents you launch by hand too, and a value you export yourself always wins.

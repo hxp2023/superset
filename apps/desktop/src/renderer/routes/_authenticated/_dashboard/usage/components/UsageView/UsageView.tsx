@@ -89,7 +89,7 @@ function creditsLine(account: UsageAccount): string | null {
 }
 
 const DEFAULT_TITLE =
-	"New terminals and agents use this account. Existing ones keep theirs.";
+	"New agent launches use this account. Relaunch a running agent to switch it.";
 
 function AccountCard({
 	account,
@@ -278,7 +278,7 @@ export function UsageView({ hostUrl }: { hostUrl: string | null }) {
 					toast.success(
 						`New ${PROVIDER_LABELS[account.provider]} agents will use ${account.email ?? account.sourceLabel}.`,
 						{
-							description: "Restart your sessions to use it.",
+							description: "Relaunch running agents to switch them.",
 						},
 					);
 				},

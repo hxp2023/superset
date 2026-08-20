@@ -22,12 +22,17 @@
 
 import {
 	appendFileSync,
+	closeSync,
 	lstatSync,
 	mkdirSync,
+	openSync,
 	readdirSync,
 	readFileSync,
+	readSync,
+	realpathSync,
 	renameSync,
 	rmdirSync,
+	statSync,
 	symlinkSync,
 	unlinkSync,
 } from "node:fs";
@@ -52,21 +57,35 @@ const SESSION_DIRS = [
 
 const MERGE_SUFFIX = ".superset-merge";
 
+/** Real path when the dir exists (a symlink alias of a protected dir must
+ * compare equal to it), plain resolution otherwise. */
+function canonical(path: string): string {
+	try {
+		return realpathSync(path);
+	} catch {
+		return resolve(path);
+	}
+}
+
 /** Resolved profile dir, or null when it IS a default home (never share a
- * default home into itself, and never operate on `~`). */
+ * default home into itself, and never operate on `~`). Compares real paths:
+ * a profile dir that is itself a symlink to `~/.claude` would otherwise pass
+ * and get linked into itself. */
 export function shareableProfileDir(
 	configDir: string,
 	mainHome: string,
 ): string | null {
-	const resolved = resolve(configDir);
+	const resolved = canonical(configDir);
 	const home = homedir();
-	const excluded = new Set([
-		home,
-		join(home, ".claude"),
-		join(home, ".config"),
-		join(home, ".config", "claude"),
-		resolve(mainHome),
-	]);
+	const excluded = new Set(
+		[
+			home,
+			join(home, ".claude"),
+			join(home, ".config"),
+			join(home, ".config", "claude"),
+			mainHome,
+		].map(canonical),
+	);
 	return excluded.has(resolved) ? null : resolved;
 }
 
@@ -141,12 +160,39 @@ function mergeAndLinkSessionDir(
 	moveTreeInto(pending, dst);
 }
 
+/** Appends line-delimited records, inserting a newline first when the
+ * target's last record lacks one (a crash-truncated write) — plain
+ * concatenation would fuse the boundary records into one unparsable line. */
+function appendHistoryRecords(dst: string, content: Buffer): void {
+	if (content.length === 0) return;
+	let needsSeparator = false;
+	try {
+		const size = statSync(dst).size;
+		if (size > 0) {
+			const tail = Buffer.alloc(1);
+			const fd = openSync(dst, "r");
+			try {
+				readSync(fd, tail, 0, 1, size - 1);
+			} finally {
+				closeSync(fd);
+			}
+			needsSeparator = tail[0] !== 0x0a;
+		}
+	} catch {
+		// Missing target — appendFileSync creates it; no separator needed.
+	}
+	appendFileSync(
+		dst,
+		needsSeparator ? Buffer.concat([Buffer.from("\n"), content]) : content,
+	);
+}
+
 function mergeAndLinkHistory(profile: string, main: string): void {
 	const src = join(profile, "history.jsonl");
 	const dst = join(main, "history.jsonl");
 	const pending = `${src}${MERGE_SUFFIX}`;
 	if (lstatOrNull(pending)?.isFile()) {
-		appendFileSync(dst, readFileSync(pending));
+		appendHistoryRecords(dst, readFileSync(pending));
 		unlinkSync(pending);
 	}
 	const info = lstatOrNull(src);
@@ -164,7 +210,7 @@ function mergeAndLinkHistory(profile: string, main: string): void {
 		renameSync(pending, src);
 		return;
 	}
-	appendFileSync(dst, readFileSync(pending));
+	appendHistoryRecords(dst, readFileSync(pending));
 	unlinkSync(pending);
 }
 

@@ -11,7 +11,10 @@ import {
 	provisionCodexProfile,
 } from "@superset/agent-setup";
 import type { HostDb } from "../../../db/index.ts";
-import { getDefaultAccountSelections } from "./default-account.ts";
+import {
+	getDefaultAccountSelections,
+	syncDefaultAccountPointers,
+} from "./default-account.ts";
 import { shareClaudeSessionState } from "./session-share.ts";
 
 /**
@@ -32,6 +35,9 @@ export async function provisionClaudeAccount(configDir: string): Promise<void> {
  * before the next agent launches on it.
  */
 export async function provisionSelectedAccounts(db: HostDb): Promise<void> {
+	// Heal the wrapper pointer files first — a build predating them (or a
+	// crashed switch) leaves agents launching on a stale spawn-time default.
+	syncDefaultAccountPointers(db);
 	const { claudeConfigDir, codexHome } = getDefaultAccountSelections(db);
 	const targets: Array<readonly [string, () => Promise<unknown>]> = [];
 	// A pointer at a vanished dir is skipped, not recreated: agent launches

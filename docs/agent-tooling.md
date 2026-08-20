@@ -36,11 +36,13 @@ description matches the task.
 
 ## Provider accounts (multi-login)
 
-The Usage tab can hold several Claude Code / Codex logins and pick which one new terminals and
-agents use. A login is just a config dir the CLI is pointed at — `CLAUDE_CONFIG_DIR` /
-`CODEX_HOME`, injected at PTY and agent launch by
-`packages/host-service/src/trpc/router/usage/default-account.ts`. Superset never touches the
-credential stores; the provider CLIs own every login end to end.
+The Usage tab can hold several Claude Code / Codex logins and pick which one agents use. A login
+is just a config dir the CLI is pointed at — `CLAUDE_CONFIG_DIR` / `CODEX_HOME`, injected at PTY
+and agent launch by `packages/host-service/src/trpc/router/usage/default-account.ts`, which also
+publishes the selection to `$SUPERSET_HOME_DIR/state/default-*` pointer files. The agent wrappers
+re-read those at every launch (`buildDefaultAccountResolver` in agent-setup), so a switch reaches
+existing terminals the next time the agent starts; a value the user exported by hand always wins.
+Superset never touches the credential stores; the provider CLIs own every login end to end.
 
 Because those CLIs read *everything* from their active config dir, a second dir would otherwise
 mean a second, empty setup. `packages/agent-setup/src/provider-profiles.ts` provisions each

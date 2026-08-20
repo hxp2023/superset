@@ -46,23 +46,34 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Real path when the dir exists, plain resolution otherwise — a symlink
+ * alias of a protected dir must compare equal to it. */
+function canonical(target: string): string {
+	try {
+		return fs.realpathSync(target);
+	} catch {
+		return path.resolve(target);
+	}
+}
+
 /**
  * True for the share's source and the other default homes — provisioning a
  * default home would link it into itself (discovery excludes them, but a
- * CLAUDE_CONFIG_DIR env entry can name one directly).
+ * CLAUDE_CONFIG_DIR env entry can name one directly, including via symlink).
  */
 function isProtectedTarget(
 	target: string,
 	homeDir: string,
 	defaultDir: string,
 ): boolean {
+	const resolved = canonical(target);
 	const protectedDirs = [
 		homeDir,
 		defaultDir,
 		path.join(homeDir, ".config"),
 		path.join(homeDir, ".config", "claude"),
 	];
-	return protectedDirs.some((dir) => target === path.resolve(dir));
+	return protectedDirs.some((dir) => resolved === canonical(dir));
 }
 
 function logReport(provider: string, report: ProfileProvisionReport): void {
@@ -246,7 +257,10 @@ const CODEX_SHARED_DIRS = ["prompts"] as const;
  */
 const CODEX_SHARED_FILES = ["config.toml", "AGENTS.md"] as const;
 
-function defaultCodexHome(homeDir: string): string {
+function defaultCodexHome(homeDir: string, homeDirOverridden: boolean): string {
+	// An overridden homeDir (tests) must win over the ambient CODEX_HOME, or
+	// the provision would share from the real machine's Codex home.
+	if (homeDirOverridden) return path.join(homeDir, ".codex");
 	const fromEnv = process.env.CODEX_HOME?.trim();
 	return fromEnv ? path.resolve(fromEnv) : path.join(homeDir, ".codex");
 }
@@ -257,7 +271,7 @@ export async function provisionCodexProfile(
 	options: ProvisionProfileOptions = {},
 ): Promise<ProfileProvisionReport> {
 	const homeDir = options.homeDir ?? os.homedir();
-	const defaultDir = defaultCodexHome(homeDir);
+	const defaultDir = defaultCodexHome(homeDir, options.homeDir !== undefined);
 	const target = path.resolve(home);
 	const surfaces: Record<string, SurfaceOutcome> = {};
 	if (isProtectedTarget(target, homeDir, defaultDir)) {

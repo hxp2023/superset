@@ -130,6 +130,23 @@ describe("shareClaudeSessionState", () => {
 		expect(readdirSync(profile)).not.toContain("projects.superset-merge");
 	});
 
+	it("separates records when main's history lacks a trailing newline", () => {
+		const { profile, main } = makeDirs();
+		writeFileSync(join(main, "history.jsonl"), '{"m":1}'); // crash-truncated
+		writeFileSync(join(profile, "history.jsonl"), '{"p":1}\n');
+		shareClaudeSessionState(profile, main);
+		expect(readFileSync(join(main, "history.jsonl"), "utf-8")).toBe(
+			'{"m":1}\n{"p":1}\n',
+		);
+	});
+
+	it("refuses a profile dir that is a symlink alias of the main home", () => {
+		const { profile, main } = makeDirs();
+		const alias = join(profile, "..", "main-alias");
+		symlinkSync(main, alias);
+		expect(shareableProfileDir(alias, main)).toBeNull();
+	});
+
 	it("appends the profile's prompt history to main's", () => {
 		const { profile, main } = makeDirs();
 		writeFileSync(join(main, "history.jsonl"), '{"m":1}\n');

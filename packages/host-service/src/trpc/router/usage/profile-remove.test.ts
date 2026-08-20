@@ -79,14 +79,19 @@ describe("removeClaudeProfile with shared-config links", () => {
 			writeFileSync(join(sharedSkills, "redesign", "SKILL.md"), "# redesign");
 
 			// Under the home dir so the removal guards accept it.
-			const profile = join(homedir(), `.claude-remove-test-${process.pid}`);
-			mkdirSync(profile, { recursive: true });
-			symlinkSync(sharedSkills, join(profile, "skills"), "dir");
+			const profile = mkdtempSync(join(homedir(), ".claude-remove-test-"));
+			try {
+				symlinkSync(sharedSkills, join(profile, "skills"), "dir");
 
-			await removeClaudeProfile(profile);
+				await removeClaudeProfile(profile);
 
-			expect(existsSync(profile)).toBe(false);
-			expect(existsSync(join(sharedSkills, "redesign", "SKILL.md"))).toBe(true);
+				expect(existsSync(profile)).toBe(false);
+				expect(existsSync(join(sharedSkills, "redesign", "SKILL.md"))).toBe(
+					true,
+				);
+			} finally {
+				rmSync(profile, { recursive: true, force: true });
+			}
 		} finally {
 			rmSync(root, { recursive: true, force: true });
 		}
