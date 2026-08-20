@@ -132,9 +132,11 @@ function PullRequestsLayout() {
 						isAppSidebarCollapsed && isListCollapsed && "rounded-tl-[8px]",
 					)}
 				>
-					<div className="flex shrink-0 items-center justify-end px-4 pt-2">
-						<PullRequestListToggle />
-					</div>
+					{params.prNumber === undefined && (
+						<div className="flex shrink-0 items-center justify-end px-4 pt-2">
+							<PullRequestListToggle />
+						</div>
+					)}
 					<Outlet />
 				</div>
 			)}

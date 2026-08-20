@@ -22,7 +22,12 @@ import { cn } from "@superset/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { LuExternalLink, LuPlus, LuRotateCcw, LuX } from "react-icons/lu";
+import {
+	LuExternalLink,
+	LuGitPullRequestClosed,
+	LuPlus,
+	LuRotateCcw,
+} from "react-icons/lu";
 import { VscChevronDown, VscGitMerge } from "react-icons/vsc";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
@@ -30,6 +35,7 @@ import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
 import { useProjectHost } from "renderer/routes/_authenticated/_dashboard/hooks/useProjectHost";
 import { PullRequestChecksSection } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestChecksSection";
+import { PullRequestListToggle } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestListToggle";
 import { parsePositiveIntegerParam } from "renderer/routes/_authenticated/_dashboard/utils/parsePositiveIntegerParam";
 import {
 	normalizePRState,
@@ -192,7 +198,8 @@ function PullRequestDetailPage() {
 	// affordance here — just the PR identity and its actions.
 	const itemNumber = data?.number ?? prNumber;
 	const header = (
-		<div className="@container flex shrink-0 items-center gap-2 border-b border-border px-4 py-3 @md:gap-3 @md:px-6 @md:py-4">
+		<div className="@container flex shrink-0 items-center gap-2 border-b border-border px-4 pb-9 pt-3 @md:gap-3 @md:px-6">
+			<PullRequestListToggle />
 			<PRIcon state={state} className="size-4 shrink-0" />
 			<span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
 				{itemNumber === null ? "#—" : `#${itemNumber}`}
@@ -241,7 +248,7 @@ function PullRequestDetailPage() {
 								) : data.state === "closed" ? (
 									<LuRotateCcw className="size-4" />
 								) : (
-									<LuX className="size-4" />
+									<LuGitPullRequestClosed className="size-4" />
 								)}
 								<span className="hidden @md:inline">
 									{data.state === "closed"
@@ -278,7 +285,7 @@ function PullRequestDetailPage() {
 									variant="destructive"
 									onClick={() => setPendingAction({ kind: "close" })}
 								>
-									<LuX className="size-3.5" />
+									<LuGitPullRequestClosed className="size-3.5" />
 									Close pull request
 								</DropdownMenuItem>
 							)}

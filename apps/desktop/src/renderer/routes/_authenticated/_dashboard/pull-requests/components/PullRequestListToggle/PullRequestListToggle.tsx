@@ -3,9 +3,10 @@ import { LuPanelLeft, LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import { usePullRequestsSplitViewStore } from "../../stores/pullRequestsSplitViewStore";
 
 /**
- * Reclaims the list pane's width for the detail pane. Rendered once from
- * `layout.tsx` above `<Outlet />` so it stays available on every child route
- * (including the empty index state), not just the PR detail page.
+ * Reclaims the list pane's width for the detail pane. The empty index state
+ * has no header of its own, so `layout.tsx` renders this above its `<Outlet
+ * />`; the PR detail page has a header row and renders this inline instead,
+ * so it stays reachable from every child route without stacking two bars.
  */
 export function PullRequestListToggle() {
 	const isListCollapsed = usePullRequestsSplitViewStore(
