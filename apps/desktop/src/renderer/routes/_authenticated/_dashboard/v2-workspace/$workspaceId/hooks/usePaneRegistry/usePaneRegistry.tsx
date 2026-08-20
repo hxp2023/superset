@@ -492,7 +492,10 @@ export function usePaneRegistry({
 					return "Browser";
 				},
 				renderPane: (ctx: RendererContext<PaneViewerData>) => (
-					<BrowserPane ctx={ctx} />
+					<BrowserPane
+						ctx={ctx}
+						onCreateNewAgentSession={createNewAgentSession}
+					/>
 				),
 				renderToolbar: (ctx: RendererContext<PaneViewerData>) => (
 					<BrowserPaneToolbar ctx={ctx} />

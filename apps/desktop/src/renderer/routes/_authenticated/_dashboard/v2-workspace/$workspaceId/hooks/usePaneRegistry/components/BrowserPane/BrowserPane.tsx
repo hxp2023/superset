@@ -1,7 +1,9 @@
 import type { RendererContext, Tab } from "@superset/panes";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { GlobeIcon } from "lucide-react";
-import { useCallback, useSyncExternalStore } from "react";
+import { cn } from "@superset/ui/utils";
+import { useParams } from "@tanstack/react-router";
+import { GlobeIcon, SquareDashedMousePointer, XIcon } from "lucide-react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { TbDeviceDesktop } from "react-icons/tb";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { BrowserPaneData, PaneViewerData } from "../../../../types";
@@ -11,6 +13,8 @@ import { BrowserErrorOverlay } from "./components/BrowserErrorOverlay";
 import { BrowserOverflowMenu } from "./components/BrowserOverflowMenu";
 import { BrowserTabFavicon } from "./components/BrowserTabFavicon";
 import { BrowserToolbar } from "./components/BrowserToolbar";
+import { DesignModePopover } from "./components/DesignModePopover";
+import { designModeStore, useDesignModeState } from "./designModeStore";
 import { usePersistentWebview } from "./hooks/usePersistentWebview";
 
 function getSingleBrowserPane(
@@ -37,8 +41,17 @@ export function renderBrowserTabIcon(tab: Tab<PaneViewerData>) {
 	);
 }
 
+interface CreateNewAgentSessionInput {
+	configId: string;
+	placement: "split-pane" | "new-tab";
+	prompt: string;
+}
+
 interface BrowserPaneProps {
 	ctx: RendererContext<PaneViewerData>;
+	onCreateNewAgentSession?: (
+		input: CreateNewAgentSessionInput,
+	) => Promise<{ terminalId: string } | null>;
 }
 
 function useBrowserState(paneId: string) {
@@ -51,16 +64,135 @@ function useBrowserState(paneId: string) {
 	);
 }
 
-export function BrowserPane({ ctx }: BrowserPaneProps) {
+export function BrowserPane({
+	ctx,
+	onCreateNewAgentSession,
+}: BrowserPaneProps) {
 	const paneId = ctx.pane.id;
 	const state = useBrowserState(paneId);
 	const { placeholderRef, reload } = usePersistentWebview({ paneId, ctx });
+	const { workspaceId } = useParams({ strict: false });
+	const designMode = useDesignModeState(paneId);
+
+	// A pane switch or unmount must not leave a stale picker overlay armed in
+	// the guest, nor an await resolving into a pane that no longer shows it.
+	useEffect(() => {
+		return () => {
+			if (designModeStore.getState(paneId).phase !== "idle") {
+				designModeStore.exit(paneId);
+			}
+		};
+	}, [paneId]);
+
+	// Esc while the host (not the guest) owns focus: with a captured element it
+	// discards the capture and goes back to picking; while picking it exits.
+	// The injected overlay handles Esc itself when the guest has focus, and the
+	// composer's own Esc handler covers its textarea.
+	useEffect(() => {
+		if (designMode.phase === "idle") return;
+		const phase = designMode.phase;
+		const handleKeyDown = (e: KeyboardEvent): void => {
+			if (e.key !== "Escape") return;
+			const target = e.target as HTMLElement | null;
+			if (
+				target &&
+				(target.isContentEditable ||
+					target.tagName === "INPUT" ||
+					target.tagName === "TEXTAREA")
+			) {
+				return;
+			}
+			e.preventDefault();
+			e.stopPropagation();
+			if (phase === "confirming") {
+				designModeStore.rearm(paneId);
+			} else {
+				designModeStore.exit(paneId);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown, true);
+		return () => window.removeEventListener("keydown", handleKeyDown, true);
+	}, [designMode.phase, paneId]);
 
 	const isBlankPage = !state.currentUrl || state.currentUrl === "about:blank";
 
+	// Anchor the composer under the clicked element: the capture's viewport
+	// rect is in guest CSS pixels, which map 1:1 onto the placeholder's box
+	// (the webview mirrors the placeholder rect, and the pane root is the
+	// offset parent of both the placeholder and the popover).
+	const rootRef = useRef<HTMLDivElement | null>(null);
+	const popoverStyle = (() => {
+		const rect = designMode.payload?.target.rectViewport;
+		const placeholder = placeholderRef.current;
+		const root = rootRef.current;
+		if (!rect || !placeholder || !root) return { top: 12, left: 12 };
+		const width = Math.min(420, root.clientWidth - 16);
+		const estimatedHeight = 170;
+		const left = Math.min(
+			Math.max(placeholder.offsetLeft + rect.x, 8),
+			Math.max(8, root.clientWidth - width - 8),
+		);
+		const below = placeholder.offsetTop + rect.y + rect.height + 4;
+		const top =
+			below + estimatedHeight > root.clientHeight
+				? Math.max(8, placeholder.offsetTop + rect.y - estimatedHeight - 4)
+				: below;
+		return { top, left, width };
+	})();
+
 	return (
-		<div className="relative flex flex-1 h-full">
-			<div ref={placeholderRef} className="w-full h-full" style={{ flex: 1 }} />
+		// min-w-0: without it the banner row's intrinsic width becomes the pane
+		// root's flex min-content, overflowing the pane slot — and the webview
+		// follows the placeholder rect, painting over the neighbor pane.
+		<div ref={rootRef} className="relative flex h-full min-w-0 flex-1 flex-col">
+			{designMode.phase !== "idle" && (
+				<div className="flex shrink-0 items-center gap-2 border-b border-border/60 bg-[#0d99ff]/10 px-3 py-1.5 text-xs text-foreground/90">
+					<SquareDashedMousePointer className="size-3.5 shrink-0 text-[#0d99ff]" />
+					<span className="min-w-0 flex-1 truncate">
+						{designMode.phase === "selecting"
+							? "Design mode — click any element in the page to send it to an agent."
+							: "Element captured — describe the change, or press esc to pick again."}
+					</span>
+					{designMode.phase === "selecting" && (
+						<span className="shrink-0 text-muted-foreground/70">
+							esc to exit
+						</span>
+					)}
+					<button
+						type="button"
+						onClick={() => designModeStore.exit(paneId)}
+						aria-label="Exit design mode"
+						className="shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+					>
+						<XIcon className="size-3.5" />
+					</button>
+				</div>
+			)}
+			<div ref={placeholderRef} className="w-full min-h-0 flex-1" />
+			{designMode.phase === "confirming" &&
+				designMode.payload &&
+				workspaceId && (
+					<>
+						{/* Click-catcher: the guest overlay froze pointer events on
+						    selection, so without this a stray page click would
+						    navigate out from under the open composer. */}
+						<button
+							type="button"
+							aria-label="Discard captured element"
+							onClick={() => designModeStore.rearm(paneId)}
+							className="absolute inset-0 z-10 cursor-default"
+						/>
+						<DesignModePopover
+							workspaceId={workspaceId}
+							paneId={paneId}
+							payload={designMode.payload}
+							style={popoverStyle}
+							onDismiss={() => designModeStore.rearm(paneId)}
+							onSent={() => designModeStore.exit(paneId)}
+							onCreateNewAgentSession={onCreateNewAgentSession}
+						/>
+					</>
+				)}
 			{state.error && !state.isLoading && (
 				<BrowserErrorOverlay error={state.error} onRetry={reload} />
 			)}
@@ -90,6 +222,11 @@ interface BrowserPaneToolbarProps {
 export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 	const paneId = ctx.pane.id;
 	const state = useBrowserState(paneId);
+	const designMode = useDesignModeState(paneId);
+
+	const handleToggleDesignMode = useCallback(() => {
+		designModeStore.toggle(paneId);
+	}, [paneId]);
 
 	const handleOpenDevTools = useCallback(() => {
 		electronTrpcClient.browser.openDevTools.mutate({ paneId }).catch(() => {});
@@ -121,7 +258,7 @@ export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 		<div className="flex h-full w-full min-w-0 items-center justify-between">
 			<BrowserToolbar
 				currentUrl={state.currentUrl}
-				pageTitle={state.pageTitle}
+				faviconUrl={state.faviconUrl}
 				isLoading={state.isLoading}
 				canGoBack={state.canGoBack}
 				canGoForward={state.canGoForward}
@@ -130,14 +267,39 @@ export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 				onReload={handleReload}
 				onNavigate={handleNavigate}
 			/>
-			<div className="flex shrink-0 items-center pr-1">
-				<div className="mx-1.5 h-3.5 w-px bg-muted-foreground/60" />
+			<div className="flex shrink-0 items-center gap-0.5 pr-1.5">
+				<Tooltip disableHoverableContent>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							onClick={handleToggleDesignMode}
+							disabled={isBlankPage}
+							aria-pressed={designMode.phase !== "idle"}
+							className={cn(
+								"flex h-[22px] shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium leading-none transition-colors disabled:opacity-40",
+								// Armed color matches the in-page picker outline
+								// (design-mode-script.ts), not the theme primary.
+								designMode.phase !== "idle"
+									? "bg-[#0d99ff] text-white hover:bg-[#0d99ff]/90"
+									: "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+							)}
+						>
+							<SquareDashedMousePointer className="size-3" />
+							Design
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="bottom">
+						{designMode.phase !== "idle"
+							? "Exit design mode (esc)"
+							: "Design mode — click any element in the page to send it to an agent"}
+					</TooltipContent>
+				</Tooltip>
 				<Tooltip disableHoverableContent>
 					<TooltipTrigger asChild>
 						<button
 							type="button"
 							onClick={handleOpenDevTools}
-							className="rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+							className="rounded-md p-1 text-muted-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
 						>
 							<TbDeviceDesktop className="size-3.5" />
 						</button>
@@ -149,7 +311,6 @@ export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 					currentUrl={state.currentUrl}
 					hasPage={!isBlankPage}
 				/>
-				<div className="mx-1 h-3.5 w-px bg-muted-foreground/60" />
 				<PaneHeaderActions />
 			</div>
 		</div>
