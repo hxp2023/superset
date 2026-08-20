@@ -1,12 +1,18 @@
 import { Button } from "@superset/ui/button";
+import { cn } from "@superset/ui/utils";
 import { useEffect, useRef, useState } from "react";
 import { LuCheck, LuCopy } from "react-icons/lu";
 
 interface CopyableCommandProps {
 	command: string;
+	/** `sm` is a chip that sits inside a line of text. */
+	size?: "md" | "sm";
 }
 
-export function CopyableCommand({ command }: CopyableCommandProps) {
+export function CopyableCommand({
+	command,
+	size = "md",
+}: CopyableCommandProps) {
 	const [copied, setCopied] = useState(false);
 	const timerRef = useRef<number | null>(null);
 
@@ -23,23 +29,37 @@ export function CopyableCommand({ command }: CopyableCommandProps) {
 		timerRef.current = window.setTimeout(() => setCopied(false), 2000);
 	};
 
+	const small = size === "sm";
+
 	return (
-		<div className="flex items-center gap-1.5 rounded-md border bg-muted/40 py-1 pl-2.5 pr-1">
-			<code className="min-w-0 flex-1 select-text cursor-text overflow-x-auto whitespace-nowrap font-mono text-xs">
+		<div
+			className={cn(
+				"flex min-w-0 items-center gap-1 rounded-md border bg-muted/40",
+				small ? "py-0 pl-1.5 pr-0.5" : "gap-1.5 py-1 pl-2.5 pr-1",
+			)}
+		>
+			<code
+				className={cn(
+					"min-w-0 flex-1 select-text cursor-text overflow-x-auto whitespace-nowrap font-mono text-foreground",
+					small ? "text-[11px]" : "text-xs",
+				)}
+			>
 				{command}
 			</code>
 			<Button
 				type="button"
 				variant="ghost"
 				size="icon"
-				className="size-6 shrink-0"
+				className={cn("shrink-0", small ? "size-5" : "size-6")}
 				onClick={() => void copy()}
 				aria-label="Copy command"
 			>
 				{copied ? (
-					<LuCheck className="size-3.5 text-emerald-500" />
+					<LuCheck
+						className={cn(small ? "size-3" : "size-3.5", "text-emerald-500")}
+					/>
 				) : (
-					<LuCopy className="size-3.5" />
+					<LuCopy className={small ? "size-3" : "size-3.5"} />
 				)}
 			</Button>
 		</div>

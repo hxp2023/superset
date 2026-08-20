@@ -27,6 +27,12 @@ interface CloneAccessStatusProps {
 	onRecheck: () => void;
 	/** Local target only: open the in-app gh sign-in terminal. */
 	onSignIn?: (mode: "auth" | "install") => void;
+	/**
+	 * `panel` is the settings modal's full treatment (headline + body).
+	 * `inline` is one row for the composer: a single sentence, the command
+	 * when one fixes it, and a recheck link.
+	 */
+	variant?: "panel" | "inline";
 }
 
 function failureHeadline(result: CloneAccessResult, hostName: string): string {
@@ -72,6 +78,27 @@ function failureBody(
 	}
 }
 
+/** One sentence for the inline row: what's wrong and what fixes it. */
+function failureSentence(result: CloneAccessResult, hostName: string): string {
+	const install = result.ghCli === "not_installed";
+	switch (result.reason) {
+		case "auth":
+			return install
+				? `Install GitHub CLI on ${hostName} to clone this repo:`
+				: `Sign in to GitHub on ${hostName} to clone this repo:`;
+		case "not_found":
+			return install
+				? `${hostName} can't see this repo. Private? Install GitHub CLI there:`
+				: `${hostName} can't see this repo. Private? Sign in to GitHub there:`;
+		case "network":
+			return `${hostName} can't reach GitHub. Check its connection.`;
+		case "unreachable":
+			return `Can't reach ${hostName}. Check it's online.`;
+		default:
+			return "Couldn't verify access to this repo.";
+	}
+}
+
 export function CloneAccessStatus({
 	result,
 	isChecking,
@@ -79,15 +106,19 @@ export function CloneAccessStatus({
 	isRemoteTarget,
 	onRecheck,
 	onSignIn,
+	variant = "panel",
 }: CloneAccessStatusProps) {
+	const inline = variant === "inline";
 	// Any in-flight check shows as checking — rendering the previous result
 	// while a recheck runs flashes a stale verdict (green over a now-broken
 	// host, or vice versa) exactly when the user is watching closest.
 	if (isChecking) {
 		return (
-			<div className="flex items-center gap-2 text-xs text-muted-foreground">
-				<Spinner className="size-3.5 shrink-0" />
-				Checking repository access on {hostName}…
+			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+				<Spinner className="size-3 shrink-0" />
+				{inline
+					? "Checking access…"
+					: `Checking repository access on ${hostName}…`}
 			</div>
 		);
 	}
@@ -95,15 +126,56 @@ export function CloneAccessStatus({
 
 	if (result.ok) {
 		return (
-			<div className="flex items-center gap-2 text-xs text-muted-foreground">
-				<LuCircleCheck className="size-3.5 shrink-0 text-emerald-500" />
-				{hostName} can access this repository.
+			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+				<LuCircleCheck className="size-3 shrink-0 text-emerald-500" />
+				{inline ? "Access verified" : `${hostName} can access this repository.`}
 			</div>
 		);
 	}
 
 	const needsGhAuth = result.reason === "auth" || result.reason === "not_found";
 	const ghNotInstalled = result.ghCli === "not_installed";
+	const command = ghNotInstalled ? GH_INSTALL_COMMAND : GH_AUTH_COMMAND;
+
+	if (inline) {
+		return (
+			<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-amber-700 dark:text-amber-400">
+				<span className="flex items-center gap-1.5">
+					<LuTriangleAlert className="size-3 shrink-0" />
+					{failureSentence(result, hostName)}
+				</span>
+				{needsGhAuth && !isRemoteTarget && onSignIn ? (
+					<Button
+						type="button"
+						variant="link"
+						size="sm"
+						className="h-auto p-0 text-xs text-foreground"
+						onClick={() => onSignIn(ghNotInstalled ? "install" : "auth")}
+					>
+						{ghNotInstalled ? "Install GitHub CLI…" : "Sign in to GitHub…"}
+					</Button>
+				) : needsGhAuth ? (
+					<CopyableCommand command={command} size="sm" />
+				) : null}
+				{result.reason === "unknown" && result.detail && (
+					<span className="select-text cursor-text truncate font-mono text-[11px] text-muted-foreground">
+						{result.detail}
+					</span>
+				)}
+				<Button
+					type="button"
+					variant="link"
+					size="sm"
+					className="h-auto gap-1 p-0 text-xs text-muted-foreground"
+					onClick={onRecheck}
+				>
+					<LuRefreshCw className="size-3" />
+					Check again
+				</Button>
+			</div>
+		);
+	}
+
 	const body = failureBody(result, hostName, isRemoteTarget);
 
 	return (
@@ -124,11 +196,7 @@ export function CloneAccessStatus({
 					)}
 				</div>
 			</div>
-			{needsGhAuth && isRemoteTarget && (
-				<CopyableCommand
-					command={ghNotInstalled ? GH_INSTALL_COMMAND : GH_AUTH_COMMAND}
-				/>
-			)}
+			{needsGhAuth && isRemoteTarget && <CopyableCommand command={command} />}
 			<div className="flex items-center gap-2">
 				{needsGhAuth && !isRemoteTarget && onSignIn && (
 					<Button
@@ -147,11 +215,7 @@ export function CloneAccessStatus({
 					onClick={onRecheck}
 					disabled={isChecking}
 				>
-					{isChecking ? (
-						<Spinner className="size-3.5" />
-					) : (
-						<LuRefreshCw className="size-3.5" />
-					)}
+					<LuRefreshCw className="size-3.5" />
 					Check again
 				</Button>
 			</div>

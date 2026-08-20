@@ -702,7 +702,6 @@ export function PromptGroup({
 
 			{canInlineSetup && selectedProject && (
 				<ProjectSetupInline
-					projectName={selectedProject.name}
 					hostName={
 						setupHostId === machineId
 							? "this device"

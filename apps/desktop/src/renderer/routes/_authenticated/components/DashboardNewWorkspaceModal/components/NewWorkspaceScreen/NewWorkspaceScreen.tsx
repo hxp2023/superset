@@ -923,7 +923,6 @@ export function NewWorkspaceScreen({
 				{canInlineSetup && selectedProject && (
 					<div className="mt-2">
 						<ProjectSetupInline
-							projectName={selectedProject.name}
 							hostName={
 								setupHostId === machineId
 									? "this device"
