@@ -3,10 +3,16 @@ import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { resolveProjectFilterParams } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter/project-filter-utils";
 import { parsePositiveIntegerParam } from "renderer/routes/_authenticated/_dashboard/utils/parsePositiveIntegerParam";
+import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
 import { useWorkspaceSidebarStore } from "renderer/stores/workspace-sidebar-state";
 import { PullRequestListToggle } from "./components/PullRequestListToggle";
 import { PullRequestsView } from "./components/PullRequestsView";
-import { usePullRequestsSplitViewStore } from "./stores/pullRequestsSplitViewStore";
+import {
+	DEFAULT_PULL_REQUESTS_LIST_WIDTH,
+	MAX_PULL_REQUESTS_LIST_WIDTH,
+	MIN_PULL_REQUESTS_LIST_WIDTH,
+	usePullRequestsSplitViewStore,
+} from "./stores/pullRequestsSplitViewStore";
 
 export type PullRequestsSearch = {
 	search?: string;
@@ -35,10 +41,12 @@ export const Route = createFileRoute(
 
 /**
  * Split view, per Figma (SuperReviewSplit): the list stays mounted in a
- * fixed-width left pane while the child route (index = empty state,
+ * resizable left pane while the child route (index = empty state,
  * $prNumber = detail) renders in the flexible right pane via `<Outlet />`.
  * Selecting a different PR updates the right pane only — the list never
- * unmounts, so scroll position and in-flight pagination survive.
+ * unmounts, so scroll position and in-flight pagination survive. Either
+ * pane can be collapsed to give the other the full width; collapsing one
+ * always reveals the other, since hiding both would leave nothing on screen.
  */
 function PullRequestsLayout() {
 	const { search, project, projects, author, review, state } =
@@ -50,6 +58,15 @@ function PullRequestsLayout() {
 	const isListCollapsed = usePullRequestsSplitViewStore(
 		(s) => s.isListCollapsed,
 	);
+	const isDetailCollapsed = usePullRequestsSplitViewStore(
+		(s) => s.isDetailCollapsed,
+	);
+	const listWidth = usePullRequestsSplitViewStore((s) => s.width);
+	const setListWidth = usePullRequestsSplitViewStore((s) => s.setWidth);
+	const isResizingList = usePullRequestsSplitViewStore((s) => s.isResizing);
+	const setIsResizingList = usePullRequestsSplitViewStore(
+		(s) => s.setIsResizing,
+	);
 	const isAppSidebarCollapsed = useWorkspaceSidebarStore((s) =>
 		s.isCollapsed(),
 	);
@@ -59,6 +76,18 @@ function PullRequestsLayout() {
 		[projects, project],
 	);
 
+	const listContent = (
+		<PullRequestsView
+			initialSearch={search}
+			initialProjects={initialProjects}
+			initialAuthor={author}
+			initialReview={review}
+			initialState={state}
+			selectedPrNumber={selectedPrNumber}
+			selectedPrProjectId={project ?? null}
+		/>
+	);
+
 	return (
 		<div
 			className={cn(
@@ -66,35 +95,49 @@ function PullRequestsLayout() {
 				isAppSidebarCollapsed && "rounded-tl-[8px] bg-sidebar dark:bg-muted/35",
 			)}
 		>
-			{!isListCollapsed && (
+			{!isListCollapsed &&
+				(isDetailCollapsed ? (
+					<div
+						className={cn(
+							"flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background",
+							isAppSidebarCollapsed && "rounded-tl-[8px]",
+						)}
+					>
+						{listContent}
+					</div>
+				) : (
+					<ResizablePanel
+						width={listWidth}
+						onWidthChange={setListWidth}
+						isResizing={isResizingList}
+						onResizingChange={setIsResizingList}
+						minWidth={MIN_PULL_REQUESTS_LIST_WIDTH}
+						maxWidth={MAX_PULL_REQUESTS_LIST_WIDTH}
+						handleSide="right"
+						onDoubleClickHandle={() =>
+							setListWidth(DEFAULT_PULL_REQUESTS_LIST_WIDTH)
+						}
+						className={cn(
+							"flex min-h-0 flex-col bg-background",
+							isAppSidebarCollapsed && "rounded-tl-[8px]",
+						)}
+					>
+						{listContent}
+					</ResizablePanel>
+				))}
+			{!isDetailCollapsed && (
 				<div
 					className={cn(
-						"flex h-full min-h-0 w-[420px] shrink-0 flex-col overflow-hidden border-r border-border bg-background",
-						isAppSidebarCollapsed && "rounded-tl-[8px]",
+						"flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background",
+						isAppSidebarCollapsed && isListCollapsed && "rounded-tl-[8px]",
 					)}
 				>
-					<PullRequestsView
-						initialSearch={search}
-						initialProjects={initialProjects}
-						initialAuthor={author}
-						initialReview={review}
-						initialState={state}
-						selectedPrNumber={selectedPrNumber}
-						selectedPrProjectId={project ?? null}
-					/>
+					<div className="flex shrink-0 items-center justify-end px-4 pt-2">
+						<PullRequestListToggle />
+					</div>
+					<Outlet />
 				</div>
 			)}
-			<div
-				className={cn(
-					"flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background",
-					isAppSidebarCollapsed && isListCollapsed && "rounded-tl-[8px]",
-				)}
-			>
-				<div className="flex shrink-0 items-center justify-end px-4 pt-2">
-					<PullRequestListToggle />
-				</div>
-				<Outlet />
-			</div>
 		</div>
 	);
 }

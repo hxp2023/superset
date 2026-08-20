@@ -4,6 +4,7 @@ import { cn } from "@superset/ui/utils";
 import { LuListFilter } from "react-icons/lu";
 import { ProjectFilter } from "renderer/routes/_authenticated/_dashboard/components/ProjectFilter";
 import { WorkItemsSearch } from "renderer/routes/_authenticated/_dashboard/components/WorkItemsSearch";
+import { PullRequestDetailToggle } from "renderer/routes/_authenticated/_dashboard/pull-requests/components/PullRequestDetailToggle";
 import type { PullRequestReviewFilter } from "renderer/routes/_authenticated/_dashboard/pull-requests/utils/pullRequestReviewFilter";
 import { AuthorFilter } from "./components/AuthorFilter";
 import { ReviewFilter } from "./components/ReviewFilter";
@@ -74,6 +75,9 @@ export function PullRequestsTopBar({
 				))}
 				{/* Window-drag leaf standing in for the hidden TopBar. */}
 				<div className="drag hidden min-w-0 flex-1 self-stretch @4xl:block" />
+				<div className="ml-auto shrink-0">
+					<PullRequestDetailToggle />
+				</div>
 			</div>
 			<div className="flex items-center gap-1.5">
 				<div className="min-w-0 flex-1">
@@ -82,6 +86,7 @@ export function PullRequestsTopBar({
 						onChange={onSearchChange}
 						placeholder="Search pull requests…"
 						label="Search pull requests"
+						className="bg-muted"
 					/>
 				</div>
 				<Popover>
