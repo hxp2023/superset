@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
+import type { WorkspaceSpawnOrigin } from "../../../../db/schema";
 import { workspaces } from "../../../../db/schema";
 import type { HostServiceContext } from "../../../../types";
 import {
@@ -37,7 +38,7 @@ export interface AdoptExistingWorktreeArgs {
 	 * row never overwrites what it already recorded. Pre-validated by the
 	 * caller (resolveParentWorkspaceId). */
 	parentWorkspaceId?: string | null;
-	spawnOrigin?: "ui" | "cli" | "mcp" | "automation" | null;
+	spawnOrigin?: WorkspaceSpawnOrigin | null;
 }
 
 export interface AdoptExistingWorktreeResult {

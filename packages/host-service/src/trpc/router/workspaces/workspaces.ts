@@ -7,7 +7,12 @@ import {
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
-import { projects, workspaces } from "../../../db/schema";
+import type { WorkspaceSpawnOrigin } from "../../../db/schema";
+import {
+	projects,
+	WORKSPACE_SPAWN_ORIGINS,
+	workspaces,
+} from "../../../db/schema";
 import { createGitEnvResolver } from "../../../runtime/git";
 import { type ResolvedRef, resolveRef } from "../../../runtime/git/refs";
 import type { HostServiceContext } from "../../../types";
@@ -118,7 +123,7 @@ const createInputSchema = z
 		// it from SUPERSET_WORKSPACE_ID). Metadata only — never affects the
 		// git base branch. Invalid parents are dropped, not errored.
 		parentWorkspaceId: z.string().uuid().optional(),
-		spawnOrigin: z.enum(["ui", "cli", "mcp", "automation"]).optional(),
+		spawnOrigin: z.enum(WORKSPACE_SPAWN_ORIGINS).optional(),
 	})
 	.refine((value) => !(value.branch && value.pr), {
 		message: "`branch` and `pr` cannot both be set",
@@ -483,7 +488,7 @@ async function registerLocalWorkspace(args: {
 	worktreePath: string;
 	taskId: string | undefined;
 	parentWorkspaceId?: string | null;
-	spawnOrigin?: "ui" | "cli" | "mcp" | "automation" | null;
+	spawnOrigin?: WorkspaceSpawnOrigin | null;
 	rollbackWorktree: () => Promise<void>;
 }): Promise<CloudWorkspace> {
 	const { ctx } = args;
@@ -547,6 +552,7 @@ export const workspacesRouter = router({
 				input.projectId,
 			);
 			const spawnOrigin = input.spawnOrigin ?? null;
+			const spawnMeta = { parentWorkspaceId: lineageParentId, spawnOrigin };
 
 			// Kick off AI naming when the user supplied a prompt but no
 			// workspace name. The worktree add and registration run with an
@@ -695,8 +701,7 @@ export const workspacesRouter = router({
 								baseBranch: prMetadata.baseRefName,
 								idempotencyId: input.id,
 								taskId: input.taskId,
-								parentWorkspaceId: lineageParentId,
-								spawnOrigin,
+								...spawnMeta,
 							});
 							workspaceRow = result.workspace;
 							alreadyExists = result.alreadyExists;
@@ -805,8 +810,7 @@ export const workspacesRouter = router({
 								branch: resolvedBranch,
 								worktreePath,
 								taskId: input.taskId,
-								parentWorkspaceId: lineageParentId,
-								spawnOrigin,
+								...spawnMeta,
 								rollbackWorktree: rollbackCreatedWorktree,
 							});
 
@@ -849,8 +853,7 @@ export const workspacesRouter = router({
 					baseBranch: input.baseBranch,
 					idempotencyId: input.id,
 					taskId: input.taskId,
-					parentWorkspaceId: lineageParentId,
-					spawnOrigin,
+					...spawnMeta,
 				});
 				workspaceRow = result.workspace;
 				alreadyExists = result.alreadyExists;
@@ -971,8 +974,7 @@ export const workspacesRouter = router({
 							baseBranch: baseShortName,
 							idempotencyId: input.id,
 							taskId: input.taskId,
-							parentWorkspaceId: lineageParentId,
-							spawnOrigin,
+							...spawnMeta,
 						});
 						workspaceRow = result.workspace;
 						alreadyExists = result.alreadyExists;
@@ -1037,8 +1039,7 @@ export const workspacesRouter = router({
 										baseBranch: baseShortName,
 										idempotencyId: input.id,
 										taskId: input.taskId,
-										parentWorkspaceId: lineageParentId,
-										spawnOrigin,
+										...spawnMeta,
 									});
 									adoptedRow = result.workspace;
 									alreadyExists = result.alreadyExists;
@@ -1088,8 +1089,7 @@ export const workspacesRouter = router({
 								branch: resolvedBranch,
 								worktreePath,
 								taskId: input.taskId,
-								parentWorkspaceId: lineageParentId,
-								spawnOrigin,
+								...spawnMeta,
 								rollbackWorktree,
 							});
 							aiCanRenameBranch = !typedBranch;

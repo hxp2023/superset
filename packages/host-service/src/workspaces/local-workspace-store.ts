@@ -5,6 +5,7 @@ import hostServicePackageJson from "@superset/host-service/package.json" with {
 import { getHostId } from "@superset/shared/host-info";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../db";
+import type { WorkspaceSpawnOrigin } from "../db/schema";
 import { workspaces } from "../db/schema";
 import type { EventBus } from "../events";
 import type { WorkspaceSnapshot } from "../events/types";
@@ -137,7 +138,7 @@ export interface InsertLocalWorkspaceValues {
 	createdByUserId?: string | null;
 	/** Pre-validated by the caller (resolveParentWorkspaceId). */
 	parentWorkspaceId?: string | null;
-	spawnOrigin?: "ui" | "cli" | "mcp" | "automation" | null;
+	spawnOrigin?: WorkspaceSpawnOrigin | null;
 }
 
 /**
