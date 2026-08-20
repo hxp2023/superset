@@ -106,22 +106,23 @@ export function PullRequestsTopBar({
 							)}
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent align="end" className="w-72 space-y-3">
-						<div className="space-y-1.5">
+					<PopoverContent align="end" className="w-80 space-y-1">
+						<div className="flex items-center justify-between gap-2">
 							<span className="text-xs text-muted-foreground">Repository</span>
 							<ProjectFilter
 								value={projectFilters}
 								onChange={onProjectFiltersChange}
+								alwaysShowLabel
 							/>
 						</div>
-						<div className="space-y-1.5">
+						<div className="flex items-center justify-between gap-2">
 							<span className="text-xs text-muted-foreground">Author</span>
 							<AuthorFilter
 								value={authorFilter}
 								onChange={onAuthorFilterChange}
 							/>
 						</div>
-						<div className="space-y-1.5">
+						<div className="flex items-center justify-between gap-2">
 							<span className="text-xs text-muted-foreground">Reviews</span>
 							<ReviewFilter
 								value={reviewFilter}

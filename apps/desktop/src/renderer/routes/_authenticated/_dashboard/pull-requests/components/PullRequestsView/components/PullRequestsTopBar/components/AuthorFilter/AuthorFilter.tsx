@@ -53,7 +53,7 @@ export function AuthorFilter({ value, onChange }: AuthorFilterProps) {
 					className="h-8 max-w-44 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
 				>
 					<HiOutlineUserCircle className="size-4 shrink-0" />
-					<span className="hidden truncate text-sm @4xl:inline">{label}</span>
+					<span className="truncate text-sm">{label}</span>
 					<HiChevronDown className="size-3 shrink-0" />
 				</Button>
 			</PopoverTrigger>
