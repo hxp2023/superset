@@ -79,6 +79,13 @@ export function useV2WorkspacePaneLayout() {
 	}, [workspaceRuntime]);
 
 	useEffect(() => {
+		// Wait for the live query to settle for the current workspace before
+		// syncing: right after a switch it can still be resolving, in which
+		// case `persistedPaneLayout` falls back to EMPTY_STATE — applying that
+		// would blank the store that was just seeded synchronously above,
+		// reintroducing the flash this seeding was meant to fix.
+		if (!isLayoutReady) return;
+
 		const nextSnapshot = getSnapshot(persistedPaneLayout);
 		if (nextSnapshot === syncStateRef.current.lastSyncedSnapshot) {
 			return;
@@ -86,7 +93,7 @@ export function useV2WorkspacePaneLayout() {
 
 		syncStateRef.current.lastSyncedSnapshot = nextSnapshot;
 		store.getState().replaceState(persistedPaneLayout);
-	}, [persistedPaneLayout, store]);
+	}, [persistedPaneLayout, store, isLayoutReady]);
 
 	useEffect(() => {
 		const unsubscribe = store.subscribe((nextStore) => {

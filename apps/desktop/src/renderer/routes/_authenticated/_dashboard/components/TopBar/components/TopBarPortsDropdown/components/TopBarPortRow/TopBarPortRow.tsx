@@ -1,6 +1,7 @@
 import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
 import { LuCopy, LuExternalLink, LuLoaderCircle, LuX } from "react-icons/lu";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { useDashboardSidebarPortKill } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/hooks/useDashboardSidebarPortKill";
 import type { DashboardSidebarPort } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/hooks/useDashboardSidebarPortsData";
 import { usePortOpenActions } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/hooks/usePortOpenActions";
@@ -21,6 +22,7 @@ export function TopBarPortRow({ port, onNavigate }: TopBarPortRowProps) {
 	const { isPending, killPort } = useDashboardSidebarPortKill();
 	const { canOpenInBrowser, portUrl, openExternal, openPrimary } =
 		usePortOpenActions(port);
+	const { copyToClipboard } = useCopyToClipboard();
 
 	const description = [port.label, port.processName]
 		.filter(Boolean)
@@ -36,9 +38,15 @@ export function TopBarPortRow({ port, onNavigate }: TopBarPortRowProps) {
 		onNavigate();
 	};
 
-	const handleCopy = () => {
-		void navigator.clipboard.writeText(portUrl);
-		toast.success(`Copied ${portUrl.replace(/^https?:\/\//, "")}`);
+	// Only offered for local-device ports: `portUrl` is always a localhost
+	// address, which isn't reachable for a remote host's port.
+	const handleCopy = async () => {
+		try {
+			await copyToClipboard(portUrl);
+			toast.success(`Copied ${portUrl.replace(/^https?:\/\//, "")}`);
+		} catch {
+			toast.error("Failed to copy to clipboard");
+		}
 	};
 
 	const handleClose = () => {
@@ -77,14 +85,16 @@ export function TopBarPortRow({ port, onNavigate }: TopBarPortRowProps) {
 						<LuExternalLink className="size-3" strokeWidth={STROKE_WIDTH} />
 					</button>
 				)}
-				<button
-					type="button"
-					aria-label={`Copy localhost:${port.port}`}
-					onClick={handleCopy}
-					className="rounded p-1 text-muted-foreground hover:bg-fill-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-				>
-					<LuCopy className="size-3" strokeWidth={STROKE_WIDTH} />
-				</button>
+				{canOpenInBrowser && (
+					<button
+						type="button"
+						aria-label={`Copy localhost:${port.port}`}
+						onClick={() => void handleCopy()}
+						className="rounded p-1 text-muted-foreground hover:bg-fill-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+					>
+						<LuCopy className="size-3" strokeWidth={STROKE_WIDTH} />
+					</button>
+				)}
 				<button
 					type="button"
 					aria-label={`Close port ${port.port}`}
