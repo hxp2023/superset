@@ -8,7 +8,5 @@ const loadMotionFeatures = () =>
 	import("./motion-features").then((mod) => mod.default);
 
 export function Providers({ children }: { children: React.ReactNode }) {
-	return (
-		<LazyMotion features={loadMotionFeatures}>{children}</LazyMotion>
-	);
+	return <LazyMotion features={loadMotionFeatures}>{children}</LazyMotion>;
 }
