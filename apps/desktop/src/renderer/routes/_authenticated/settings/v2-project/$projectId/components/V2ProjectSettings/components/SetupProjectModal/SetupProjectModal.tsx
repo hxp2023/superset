@@ -11,7 +11,7 @@ import { Input } from "@superset/ui/input";
 import { Label } from "@superset/ui/label";
 import { toast } from "@superset/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@superset/ui/tabs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { LuFolderOpen, LuLoaderCircle, LuTriangleAlert } from "react-icons/lu";
 import { RemotePathPicker } from "renderer/components/RemotePathPicker";
 import { electronTrpc } from "renderer/lib/electron-trpc";
