@@ -96,9 +96,9 @@ destination:
    Codespaces/Coder/Daytona model). Per-host `gh auth login` — and therefore the amber panel —
    demotes to a fallback. Also dissolves the SSH-URL dead end.
 3. **"Set up project on host" stops being a user-facing concept.** Shipped on this branch
-   (composer `ProjectSetupInline` + `setupFirst` in the create pipeline; verified live against a
-   second host: amber on a signed-out host, green after sign-in, one submit = clone then
-   workspace). Creation subsumes setup: pick
+   (composer `ClonePlanPill` in the picker row + `setupFirst` in the create pipeline, "will
+   clone" hints in the project list; verified live against a second host: amber on a signed-out
+   host, green after sign-in, one submit = clone then workspace). Creation subsumes setup: pick
    repo + host in the composer, one inline "will clone to ~/.superset/projects" note with an edit
    affordance and the access check running in place, Cmd+Enter does clone → workspace in one
    motion. Import-vs-clone becomes detection (findByPath). The settings modal stays as the
