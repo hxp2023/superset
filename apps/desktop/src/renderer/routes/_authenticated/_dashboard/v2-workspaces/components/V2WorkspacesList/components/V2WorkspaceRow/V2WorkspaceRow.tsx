@@ -91,7 +91,12 @@ export function V2WorkspaceRow({
 
 					<span
 						className={cn(
-							"min-w-0 truncate font-medium",
+							// flex-1 (not just min-w-0) so the name claims any
+							// leftover row width instead of leaving it as blank
+							// ml-auto margin before the metadata block, and so
+							// it — not the fixed-width metadata — absorbs the
+							// squeeze first when the row is too narrow to fit.
+							"min-w-0 flex-1 truncate font-medium",
 							// Done states recede so live work owns the contrast.
 							workspace.archivedAt != null || workspace.pr?.state === "merged"
 								? "text-muted-foreground"
@@ -178,7 +183,10 @@ export function V2WorkspaceRow({
 						</span>
 
 						{workspace.agentIds.length > 0 ? (
-							<span className="flex items-center gap-1">
+							// Least important metadata in the row, so it's the
+							// first to go — hidden below lg to give the
+							// workspace name room before anything else yields.
+							<span className="hidden items-center gap-1 lg:flex">
 								{workspace.agentIds.slice(0, 3).map((agentId) => (
 									<WorkspaceAgentIcon key={agentId} agentId={agentId} />
 								))}
