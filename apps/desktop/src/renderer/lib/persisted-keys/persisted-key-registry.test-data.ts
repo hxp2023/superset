@@ -92,10 +92,6 @@ export const PERSISTED_KEY_REGISTRY: ReadonlyArray<
 		["v2-changes-sections-v1"],
 	],
 	["src/renderer/stores/v2-notifications/store.ts", ["v2-notifications-v1"]],
-	[
-		"src/renderer/stores/v2-available-banner/store.ts",
-		["v2-available-banner-v1"],
-	],
 	["src/renderer/stores/hiring-banner/store.ts", ["hiring-banner-v1"]],
 	["src/renderer/stores/star-nag/store.ts", ["star-nag-v1"]],
 	[
@@ -132,6 +128,10 @@ export const PERSISTED_KEY_REGISTRY: ReadonlyArray<
 	[
 		"src/renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsFilterStore/pullRequestsFilterStore.ts",
 		["pull-requests-filter-state"],
+	],
+	[
+		"src/renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore/pullRequestsSplitViewStore.ts",
+		["pull-requests-split-view-state"],
 	],
 	[
 		"src/renderer/components/PostHogUserIdentifier/PostHogUserIdentifier.tsx",
