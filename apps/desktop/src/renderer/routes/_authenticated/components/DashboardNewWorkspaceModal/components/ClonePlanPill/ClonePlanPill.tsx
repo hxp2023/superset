@@ -3,6 +3,7 @@ import { Input } from "@superset/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
 import { Spinner } from "@superset/ui/spinner";
 import { cn } from "@superset/ui/utils";
+import { useId } from "react";
 import { HiChevronUpDown } from "react-icons/hi2";
 import { LuFolderDown } from "react-icons/lu";
 import { CloneAccessStatus } from "renderer/routes/_authenticated/components/CloneAccessStatus";
@@ -55,6 +56,7 @@ export function ClonePlanPill({
 	plan,
 	onOpenSettings,
 }: ClonePlanPillProps) {
+	const pathInputId = useId();
 	const access = plan.access;
 	const failed = !plan.isCheckingAccess && access !== null && !access.ok;
 	const verified = !plan.isCheckingAccess && access?.ok === true;
@@ -98,9 +100,10 @@ export function ClonePlanPill({
 				// Opening shouldn't land in the path field with its text selected.
 				onOpenAutoFocus={(e) => e.preventDefault()}
 			>
-				<label className="block space-y-1">
+				<label htmlFor={pathInputId} className="block space-y-1">
 					<span className="text-muted-foreground">Clone location</span>
 					<Input
+						id={pathInputId}
 						value={plan.parentDir}
 						onChange={(e) => plan.setParentDir(e.target.value)}
 						placeholder={DEFAULT_PARENT_DIR}
