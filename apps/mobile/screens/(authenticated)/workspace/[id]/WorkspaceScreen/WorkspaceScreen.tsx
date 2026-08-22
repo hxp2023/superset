@@ -295,7 +295,11 @@ export function WorkspaceScreen() {
 	const terminalRef = useRef<TerminalWebViewHandle>(null);
 	const [connectionState, setConnectionState] =
 		useState<TerminalConnectionState>("connecting");
+	// Reported by the composer itself: it draws in an overlay and takes no
+	// layout space here, so `onLayout` on the wrapper below measures only the
+	// pull-requests button.
 	const [composerHeight, setComposerHeight] = useState(0);
+	const [aboveComposerHeight, setAboveComposerHeight] = useState(0);
 	const [keyboardHeight, setKeyboardHeight] = useState(0);
 	const [composerActive, setComposerActive] = useState(false);
 	const composerRef = useRef<ComposerHandle>(null);
@@ -497,7 +501,11 @@ export function WorkspaceScreen() {
 			<View
 				className="flex-1"
 				style={{
-					marginBottom: showComposer ? composerHeight + composerBottom : 0,
+					// The terminal has to clear everything stacked at the bottom or its
+					// own prompt hides behind the composer.
+					marginBottom: showComposer
+						? composerHeight + aboveComposerHeight + composerBottom
+						: aboveComposerHeight + composerBottom,
 				}}
 			>
 				{hostCompatibility.incompatible ? (
@@ -569,9 +577,10 @@ export function WorkspaceScreen() {
 			{showComposer || pullRequests.length > 0 ? (
 				<View
 					className="absolute inset-x-0"
-					style={{ bottom: composerBottom }}
+					// Sits above the composer's overlay, which owns the space below it.
+					style={{ bottom: composerBottom + composerHeight }}
 					onLayout={(event) =>
-						setComposerHeight(event.nativeEvent.layout.height)
+						setAboveComposerHeight(event.nativeEvent.layout.height)
 					}
 				>
 					{pullRequests.length > 0 ? (
@@ -603,6 +612,7 @@ export function WorkspaceScreen() {
 							allowAttachments={activeRow?.agentId != null}
 							attachmentTarget={attachmentTarget}
 							onActiveChange={setComposerActive}
+							onHeightChange={setComposerHeight}
 							onCopySelection={() => terminalRef.current?.copySelection()}
 							onQuickKey={handleQuickKey}
 							onSubmit={handleSubmit}

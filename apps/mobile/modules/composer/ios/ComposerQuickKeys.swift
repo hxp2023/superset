@@ -16,31 +16,26 @@ struct ComposerQuickKeys: View {
 
   var body: some View {
     ScrollView(.horizontal) {
-      // Glass here, unlike the controls inside the card. Apple's layer economy
-      // is one sheet per surface: the card's buttons sit *on* its glass and so
-      // take solid fills, but this strip floats over the terminal as a surface
-      // of its own, which is the case `.glass` is built for. The container lets
-      // the system render the row in one pass and merge neighbours as they
-      // scroll, and it brings press feedback, hit slop, Increase Contrast and
-      // Reduce Transparency with it — all things a hand-rolled fill has to fake.
-      GlassEffectContainer(spacing: ComposerMetrics.quickKeySpacing) {
-        HStack(spacing: ComposerMetrics.quickKeySpacing) {
-          ForEach(keys) { key in
-            Button { onPress(key.id) } label: {
-              label(for: key)
-                .frame(minWidth: ComposerMetrics.quickKeyMinWidth)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.capsule)
-            .accessibilityLabel(key.label ?? key.id)
+      HStack(spacing: ComposerMetrics.quickKeySpacing) {
+        ForEach(keys) { key in
+          Button { onPress(key.id) } label: {
+            label(for: key)
+              .frame(minWidth: ComposerMetrics.quickKeyMinWidth)
           }
+          // `.bordered`, not `.glass`. Glass over the terminal reads as a smear
+          // — it is a material meant to sample rich content behind it, and the
+          // content here is a mostly-black scrollback. The bordered style is
+          // the same restrained chip the row had before, and it still brings
+          // the system's press feedback, hit slop and contrast handling.
+          .buttonStyle(.bordered)
+          .buttonBorderShape(.roundedRectangle(radius: ComposerMetrics.quickKeyRadius))
+          .tint(.secondary)
+          .accessibilityLabel(key.label ?? key.id)
         }
       }
       .padding(.horizontal, ComposerMetrics.horizontalMargin)
     }
     .scrollIndicators(.hidden)
-    // Let the system size the buttons — pinning a height is what made the old
-    // row fight the style's own padding.
     .scrollClipDisabled()
   }
 

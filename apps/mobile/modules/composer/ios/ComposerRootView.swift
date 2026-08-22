@@ -54,6 +54,7 @@ enum ComposerMetrics {
   /// owns the padding and the height.
   static let quickKeyGlyphSize: CGFloat = 13
   static let quickKeyMinWidth: CGFloat = 22
+  static let quickKeyRadius: CGFloat = 10
   /// Measured off frames 6 and 9. The badge sits *inside* the thumbnail, inset
   /// by roughly its own radius — an earlier pass had it bleeding outside the
   /// corner, and the thumbnails were a third too small and proportionally
@@ -179,6 +180,11 @@ struct ComposerRootView: View {
         .offset(y: dragOffset)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) }
           action: { surfaceFrame = $0 }
+        // Its own size, not its position — the keyboard moves this cluster but
+        // does not resize it, so the caller gets a value that only changes when
+        // the composer genuinely grows.
+        .onGeometryChange(for: CGFloat.self) { $0.size.height }
+          action: { model.onHeightChange?($0) }
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)

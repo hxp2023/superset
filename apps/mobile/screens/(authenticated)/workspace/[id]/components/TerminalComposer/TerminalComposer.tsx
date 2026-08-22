@@ -33,6 +33,9 @@ interface TerminalComposerProps {
 	/** Focused, or the keyboard is up — the screen covers the terminal with a
 	 *  tap-to-dismiss target while this is true. */
 	onActiveChange?: (active: boolean) => void;
+	/** How much room the composer takes above the safe area, so the terminal can
+	 *  inset for an overlay it cannot measure. */
+	onHeightChange?: (height: number) => void;
 	/** Terminal select mode: swaps the quick keys for Copy Selection. */
 	selectActive: boolean;
 	selectHasSelection: boolean;
@@ -59,6 +62,7 @@ export const TerminalComposer = forwardRef<
 		attachmentTarget,
 		allowAttachments,
 		onActiveChange,
+		onHeightChange,
 		selectActive,
 		selectHasSelection,
 		onCopySelection,
@@ -123,7 +127,7 @@ export const TerminalComposer = forwardRef<
 	};
 
 	return (
-		<View className="px-3 pb-2">
+		<View>
 			<Composer
 				ref={composerRef}
 				placeholder={placeholder}
@@ -144,6 +148,7 @@ export const TerminalComposer = forwardRef<
 					submit({ text, attachments: attachments.attachments })
 				}
 				onRemoveAttachment={(id) => attachments.remove(id)}
+				onHeightChange={onHeightChange}
 				onExpandedChange={(expanded) => {
 					wasExpanded.current = expanded;
 					onActiveChange?.(expanded);

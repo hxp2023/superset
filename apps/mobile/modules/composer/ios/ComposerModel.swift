@@ -82,6 +82,15 @@ final class ComposerModel {
   @ObservationIgnored var onModelPress: (() -> Void)?
   @ObservationIgnored var onChipPress: ((String) -> Void)?
   @ObservationIgnored var onQuickKeyPress: ((String) -> Void)?
+  /// How much room the composer occupies above the bottom of the safe area —
+  /// its card, the quick keys, and the gaps between them.
+  ///
+  /// The composer draws in an overlay and takes no React Native layout space,
+  /// so a caller with content underneath cannot measure it and has no other way
+  /// to know how far to inset. Deliberately excludes the keyboard: the caller
+  /// already tracks that, and it arrives there with a duration and a curve
+  /// worth animating to.
+  @ObservationIgnored var onHeightChange: ((CGFloat) -> Void)?
   @ObservationIgnored var onRemoveAttachment: ((String) -> Void)?
   @ObservationIgnored var onAttachmentPress: ((String) -> Void)?
   /// Lets the caller restore the composer only when it was actually open —

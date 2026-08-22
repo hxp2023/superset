@@ -26,6 +26,7 @@ interface NativeComposerViewProps {
 	onModelPress?: () => void;
 	onChipPress?: (event: { nativeEvent: { id: string } }) => void;
 	onQuickKeyPress?: (event: { nativeEvent: { id: string } }) => void;
+	onHeightChange?: (event: { nativeEvent: { height: number } }) => void;
 	onRemoveAttachment?: (event: { nativeEvent: { id: string } }) => void;
 	onAttachmentPress?: (event: { nativeEvent: { id: string } }) => void;
 	onExpandedChange?: (event: { nativeEvent: { expanded: boolean } }) => void;
@@ -160,6 +161,15 @@ export interface ComposerProps {
 	onModelPress?: () => void;
 	onChipPress?: (id: string) => void;
 	onQuickKeyPress?: (id: string) => void;
+	/**
+	 * How much room the composer occupies above the bottom safe area — card,
+	 * quick keys and the gaps between them.
+	 *
+	 * The composer draws in an overlay and takes no layout space, so a caller
+	 * with content underneath cannot measure it. Excludes the keyboard, which
+	 * the caller already tracks and gets a duration and curve for.
+	 */
+	onHeightChange?: (height: number) => void;
 	onRemoveAttachment?: (id: string) => void;
 	/**
 	 * Fires only for non-image attachments. Images open in the composer's own
@@ -204,6 +214,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
 			onModelPress,
 			onChipPress,
 			onQuickKeyPress,
+			onHeightChange,
 			onRemoveAttachment,
 			onAttachmentPress,
 			onExpandedChange,
@@ -239,6 +250,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(
 				onModelPress={onModelPress}
 				onChipPress={(event) => onChipPress?.(event.nativeEvent.id)}
 				onQuickKeyPress={(event) => onQuickKeyPress?.(event.nativeEvent.id)}
+				onHeightChange={(event) => onHeightChange?.(event.nativeEvent.height)}
 				onRemoveAttachment={(event) =>
 					onRemoveAttachment?.(event.nativeEvent.id)
 				}
