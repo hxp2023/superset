@@ -48,6 +48,16 @@ final class ComposerModel {
 
   var isDictating: Bool { dictation.isActive }
 
+  /// The terminal's quick keys, above the card. Empty on every other surface.
+  var quickKeys: [ComposerQuickKey] = []
+
+  /// Whether the `+` button is offered. A plain shell would try to *execute* an
+  /// attachment path, so only agent sessions get it.
+  var showsAttachments = true
+
+  /// The terminal wants `never`; prose surfaces want sentences.
+  var autocapitalization: TextInputAutocapitalization = .sentences
+
   /// Frame 4's header row — project+branch and target. Same shape as the model
   /// options; their menus arrive with the data at cutover, so for now a press
   /// is reported and the caller decides what to present.
@@ -71,6 +81,7 @@ final class ComposerModel {
   @ObservationIgnored var onDictationError: ((String) -> Void)?
   @ObservationIgnored var onModelPress: (() -> Void)?
   @ObservationIgnored var onChipPress: ((String) -> Void)?
+  @ObservationIgnored var onQuickKeyPress: ((String) -> Void)?
   @ObservationIgnored var onRemoveAttachment: ((String) -> Void)?
   @ObservationIgnored var onAttachmentPress: ((String) -> Void)?
   /// Lets the caller restore the composer only when it was actually open —

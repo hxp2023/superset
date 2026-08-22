@@ -1,3 +1,4 @@
+import type { ComposerHandle } from "@superset/composer";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -28,7 +29,6 @@ import {
 	getHostTerminalsQueryKey,
 	useHostTerminals,
 } from "@/screens/(authenticated)/(home)/home/hooks/useHostTerminals";
-import type { GlassComposerHandle } from "@/screens/(authenticated)/components/GlassComposer";
 import { PressableScale } from "@/screens/(authenticated)/components/PressableScale";
 import { useAppReviewPrompt } from "@/screens/(authenticated)/hooks/useAppReviewPrompt";
 import { useCreateTerminalWorkspace } from "@/screens/(authenticated)/hooks/useCreateTerminalWorkspace";
@@ -298,7 +298,7 @@ export function WorkspaceScreen() {
 	const [composerHeight, setComposerHeight] = useState(0);
 	const [keyboardHeight, setKeyboardHeight] = useState(0);
 	const [composerActive, setComposerActive] = useState(false);
-	const composerRef = useRef<GlassComposerHandle>(null);
+	const composerRef = useRef<ComposerHandle>(null);
 	const [select, setSelect] = useState<TerminalSelectState>({
 		active: false,
 		hasSelection: false,
