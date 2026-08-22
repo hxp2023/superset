@@ -577,8 +577,12 @@ export function WorkspaceScreen() {
 			{showComposer || pullRequests.length > 0 ? (
 				<View
 					className="absolute inset-x-0"
-					// Sits above the composer's overlay, which owns the space below it.
-					style={{ bottom: composerBottom + composerHeight }}
+					// Sits above the composer's overlay, which owns the space below it —
+					// but the reported height is stale once the composer is gone, and
+					// would leave this floating in the middle of the screen.
+					style={{
+						bottom: composerBottom + (showComposer ? composerHeight : 0),
+					}}
 					onLayout={(event) =>
 						setAboveComposerHeight(event.nativeEvent.layout.height)
 					}

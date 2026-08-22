@@ -98,7 +98,11 @@ export const TerminalComposer = forwardRef<
 
 	const submit = async ({ text, attachments: files }: PromptInputMessage) => {
 		let body = text;
-		if (files.length > 0) {
+		// The tray is shared across tabs, so files attached in an agent session
+		// are still there after switching to a plain shell — which would execute
+		// the paths rather than read them. `allowAttachments` has to gate the
+		// submit, not just the `+` button.
+		if (allowAttachments && files.length > 0) {
 			if (!attachmentTarget) {
 				Alert.alert("Attachments need an online host");
 				return;
