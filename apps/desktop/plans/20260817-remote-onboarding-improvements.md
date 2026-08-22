@@ -103,6 +103,11 @@ destination:
    the installer's POST from the host), and the token's blast radius is one host registration,
    which the waiting card surfaces immediately and the user can evict. A Wormhole-style phrase
    instead of hex is optional polish.
+
+   Interim, shipped 08-22: the Add host guide mints an API key itself and shows
+   `superset auth login --api-key … --organization … && superset start --daemon` as the one
+   paste, so the browser login on the host is gone today. It is still an account-scoped key
+   (revocable under API keys), which is exactly what the join token replaces.
 2. **GitHub connected once, brokered everywhere.** Account-level GitHub connection; hosts receive
    short-lived scoped tokens over the relay via the existing GIT_ASKPASS plumbing (the
    Codespaces/Coder/Daytona model). Per-host `gh auth login` — and therefore the amber panel —
