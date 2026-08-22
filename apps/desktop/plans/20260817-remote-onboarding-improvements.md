@@ -91,6 +91,18 @@ destination:
    printed on both ends. Device-code auth is the CLI-first fallback (Storm-2372 taught the
    industry its phishing shape; pre-authorized tokens dodge it structurally). LAN discovery is an
    accelerant on top, never the only path.
+
+   Command shape (agreed 08-21): the token rides in the URL, not a flag, and the server bakes
+   it into the script it serves, so the paste is exactly
+
+       curl -fsSL superset.sh/j/ab12cd34 | sh
+
+   with `superset join ab12cd34` as the secondary line for machines that already have the CLI.
+   Two rules keep that safe: fetching `/j/<token>` never redeems it (link unfurlers and URL
+   scanners GET anything that looks like a link; serving the script is idempotent, redemption is
+   the installer's POST from the host), and the token's blast radius is one host registration,
+   which the waiting card surfaces immediately and the user can evict. A Wormhole-style phrase
+   instead of hex is optional polish.
 2. **GitHub connected once, brokered everywhere.** Account-level GitHub connection; hosts receive
    short-lived scoped tokens over the relay via the existing GIT_ASKPASS plumbing (the
    Codespaces/Coder/Daytona model). Per-host `gh auth login` — and therefore the amber panel —
