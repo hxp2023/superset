@@ -7,11 +7,13 @@ interface CopyableCommandProps {
 	command: string;
 	/** `sm` is a chip that sits inside a line of text. */
 	size?: "md" | "sm";
+	onCopy?: () => void;
 }
 
 export function CopyableCommand({
 	command,
 	size = "md",
+	onCopy,
 }: CopyableCommandProps) {
 	const [copied, setCopied] = useState(false);
 	const timerRef = useRef<number | null>(null);
@@ -23,6 +25,9 @@ export function CopyableCommand({
 	}, []);
 
 	const copy = async () => {
+		// Intent first: a caller tracking "did they take the command" should
+		// count the click even if the clipboard write is refused.
+		onCopy?.();
 		await navigator.clipboard.writeText(command);
 		setCopied(true);
 		if (timerRef.current !== null) window.clearTimeout(timerRef.current);

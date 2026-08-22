@@ -1,7 +1,7 @@
 import { Button } from "@superset/ui/button";
 import { Spinner } from "@superset/ui/spinner";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LuCircleCheck } from "react-icons/lu";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
@@ -36,29 +36,54 @@ export function AddHostGuide() {
 	const utils = cloudTrpc.useUtils();
 	const { data: session } = authClient.useSession();
 	const organizationId = session?.session?.activeOrganizationId ?? null;
-	// Minted once per visit. A key that was never pasted anywhere is harmless
-	// and shows up under API keys (with no last use) if anyone wants it gone.
-	const [mintedKey, setMintedKey] = useState<string | null>(null);
+	// Minted once per visit. Every open would otherwise leave a key behind, so
+	// one that was never copied and never saw a host connect is revoked on the
+	// way out; a copied key stays, since the paste may still be in flight.
+	const [minted, setMinted] = useState<{ id: string; key: string } | null>(
+		null,
+	);
 	const [mintFailed, setMintFailed] = useState(false);
 	const mintStartedRef = useRef(false);
+	const keyUsedRef = useRef(false);
+	// Set when the guide unmounts; a mint still in flight then revokes its own
+	// result on arrival instead of leaving an orphan.
+	const abandonedRef = useRef(false);
+	const revoke = useCallback(
+		(id: string) => {
+			void authClient.apiKey
+				.delete({ keyId: id })
+				.then(() => utils.apiKey.list.invalidate())
+				.catch(() => undefined);
+		},
+		[utils],
+	);
 	useEffect(() => {
+		// A re-run setup (dev double-invoke) means we're still mounted.
+		abandonedRef.current = false;
 		if (!organizationId || mintStartedRef.current) return;
 		mintStartedRef.current = true;
-		let cancelled = false;
 		apiTrpcClient.apiKey.create
 			.mutate({ name: keyName() })
 			.then((result) => {
-				if (cancelled) return;
-				setMintedKey(result.key);
+				if (abandonedRef.current && !keyUsedRef.current) {
+					revoke(result.id);
+					return;
+				}
+				setMinted(result);
 				void utils.apiKey.list.invalidate();
 			})
-			.catch(() => {
-				if (!cancelled) setMintFailed(true);
-			});
+			.catch(() => setMintFailed(true));
+	}, [organizationId, revoke, utils]);
+	const mintedRef = useRef(minted);
+	mintedRef.current = minted;
+	useEffect(() => {
 		return () => {
-			cancelled = true;
+			abandonedRef.current = true;
+			const current = mintedRef.current;
+			if (current && !keyUsedRef.current) revoke(current.id);
 		};
-	}, [organizationId, utils]);
+	}, [revoke]);
+
 	const { data: hosts } = cloudTrpc.v2Host.list.useQuery(undefined, {
 		refetchInterval: HOST_POLL_INTERVAL_MS,
 		// The user is typically off in a terminal on the other machine while
@@ -79,9 +104,16 @@ export function AddHostGuide() {
 				initialIdsRef.current !== null &&
 				!initialIdsRef.current.has(host.machineId),
 		) ?? null;
+	if (newHost) keyUsedRef.current = true;
 
 	return (
-		<div className="mx-auto w-full max-w-xl p-6 select-text">
+		<div
+			className="mx-auto w-full max-w-xl p-6 select-text"
+			// Selecting the command by hand and copying counts as using the key.
+			onCopy={() => {
+				keyUsedRef.current = true;
+			}}
+		>
 			<h2 className="text-xl font-semibold">Add a host</h2>
 			<p className="mt-2 text-sm text-muted-foreground">
 				A workspace lives on the machine that hosts its files, terminals, and
@@ -98,10 +130,13 @@ export function AddHostGuide() {
 				</li>
 				<li className="space-y-2">
 					<p className="text-sm font-medium">2. Start the host there</p>
-					{mintedKey && organizationId ? (
+					{minted && organizationId ? (
 						<>
 							<CopyableCommand
-								command={startCommand(mintedKey, organizationId)}
+								command={startCommand(minted.key, organizationId)}
+								onCopy={() => {
+									keyUsedRef.current = true;
+								}}
 							/>
 							<p className="text-xs text-muted-foreground">
 								Signs in with a key made just now for this host. Revoke it
