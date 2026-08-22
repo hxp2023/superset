@@ -35,6 +35,15 @@ enum ComposerMetrics {
   /// leaves an empty card the size of the cap.
   static let maxLines = 8
   static let grabberSize = CGSize(width: 36, height: 5)
+  /// The chips and the model picker, measured off frames 4 and 10: the
+  /// reference's chrome is ~14pt, not the 17pt body every `Text` inherits by
+  /// default. The editor stays at the body size — that one already matches.
+  static let chromeFontSize: CGFloat = 14
+  /// Gap under the header row, measured rather than reused from `textInset`.
+  /// The reference puts 19pt between the chips' ink and the first line of the
+  /// draft; 17pt chrome plus an 8pt inset gave 30pt. Dropping to 14pt chrome
+  /// took ~11pt out of the line box on its own, so what is left to add is 7.
+  static let headerBottomGap: CGFloat = 5
   static let modelIconSize: CGFloat = 16
   static let chipSpacing: CGFloat = 12
   /// Measured off frames 6 and 9. The badge sits *inside* the thumbnail, inset
@@ -479,6 +488,7 @@ struct ComposerRootView: View {
                 .padding(.trailing, 2)
             }
             Text(chip.label)
+              .font(.system(size: ComposerMetrics.chromeFontSize))
               // The project is the subject and the branch qualifies it, which
               // is the split the reference draws. Everything reading the same
               // weight makes the row look like one long string.
@@ -494,6 +504,6 @@ struct ComposerRootView: View {
       Spacer(minLength: 0)
     }
     .padding(.horizontal, ComposerMetrics.textInset + ComposerMetrics.rowPadding)
-    .padding(.bottom, ComposerMetrics.textInset)
+    .padding(.bottom, ComposerMetrics.headerBottomGap)
   }
 }

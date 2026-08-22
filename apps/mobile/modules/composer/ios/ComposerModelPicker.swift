@@ -19,6 +19,7 @@ struct ComposerModelPicker: View {
             .padding(.trailing, 2)
         }
         Text(selected?.label ?? "")
+          .font(.system(size: ComposerMetrics.chromeFontSize))
           .foregroundStyle(.primary)
         Image(systemName: "chevron.down")
           .font(.system(size: 11, weight: .semibold))
