@@ -93,12 +93,14 @@ export function V2WorkspaceRow({
 					<WorkspaceNameMarquee
 						name={workspace.name}
 						className={cn(
-							// flex-1 (not just min-w-0) so the name claims any
-							// leftover row width instead of leaving it as blank
-							// ml-auto margin before the metadata block, and so
-							// it — not the fixed-width metadata — absorbs the
-							// squeeze first when the row is too narrow to fit.
-							"min-w-0 flex-1 font-medium",
+							// No flex-grow: the name sits at its own content
+							// width (shrinking under min-w-0 + the browser's
+							// default flex-shrink:1 when the row is too
+							// narrow to fit) instead of ballooning to fill
+							// leftover row width — that inflated box was
+							// exactly the "unused space before the metadata"
+							// a short name left behind.
+							"min-w-0 font-medium",
 							// Done states recede so live work owns the contrast.
 							workspace.archivedAt != null || workspace.pr?.state === "merged"
 								? "text-muted-foreground"
@@ -126,7 +128,12 @@ export function V2WorkspaceRow({
 						<WorkspacePrPill pr={workspace.pr} branch={workspace.branch} />
 					) : null}
 
-					<div className="ml-auto flex shrink-0 items-center gap-3">
+					{/* Not ml-auto: that pinned this block to the row's far
+					    right edge regardless of name length, which is what
+					    produced the gap in the first place. It now just sits
+					    right after the name, so a short name doesn't leave a
+					    few hundred idle pixels before its metadata. */}
+					<div className="flex shrink-0 items-center gap-3">
 						{/* Space is always reserved so metadata never shifts when the
 						    actions fade in on hover. */}
 						<span className="flex w-14 items-center justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
