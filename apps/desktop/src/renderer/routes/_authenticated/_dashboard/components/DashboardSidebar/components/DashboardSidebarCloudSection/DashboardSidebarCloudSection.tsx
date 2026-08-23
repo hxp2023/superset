@@ -116,15 +116,12 @@ export function DashboardSidebarCloudSection({
 
 	if (rows.length === 0) return null;
 
-	// Cloud workspaces are never fully hidden — the sidebar rail collapsing
-	// and the section's own chevron both switch to this compact icon form
-	// instead of hiding rows, so a workspace never looks like it disappeared.
-	if (isCollapsed || isSectionCollapsed) {
+	// Only the sidebar rail collapsing forces cloud workspaces into the
+	// compact icon form; the section's own chevron hides them entirely, same
+	// as every other collapsible section (Pinned, Sessions).
+	if (isCollapsed) {
 		return (
 			<div className="flex flex-col gap-0.5 py-1">
-				{!isCollapsed && (
-					<DashboardSidebarSectionHeader label="Cloud" section="cloud" />
-				)}
 				{rows.map((workspace) => (
 					<DashboardSidebarWorkspaceItem
 						key={workspace.id}
@@ -133,7 +130,7 @@ export function DashboardSidebarCloudSection({
 						onHoverCardOpen={onWorkspaceHover}
 					/>
 				))}
-				{isCollapsed && <div className="mx-3 mt-1 border-b border-border" />}
+				<div className="mx-3 mt-1 border-b border-border" />
 			</div>
 		);
 	}
@@ -141,13 +138,14 @@ export function DashboardSidebarCloudSection({
 	return (
 		<div className="mb-1">
 			<DashboardSidebarSectionHeader label="Cloud" section="cloud" />
-			{rows.map((workspace) => (
-				<DashboardSidebarWorkspaceItem
-					key={workspace.id}
-					workspace={workspace}
-					onHoverCardOpen={onWorkspaceHover}
-				/>
-			))}
+			{!isSectionCollapsed &&
+				rows.map((workspace) => (
+					<DashboardSidebarWorkspaceItem
+						key={workspace.id}
+						workspace={workspace}
+						onHoverCardOpen={onWorkspaceHover}
+					/>
+				))}
 		</div>
 	);
 }
