@@ -338,7 +338,12 @@ export function MarkdownEditor({
 					"first:before:text-muted-foreground first:before:float-left first:before:h-0 first:before:pointer-events-none first:before:content-[attr(data-placeholder)]",
 			}),
 			Markdown.configure({
-				html: true,
+				// Prompts and descriptions are plain-text payloads, not HTML
+				// documents. With html:true, reloading `content` re-parses
+				// serialized text as markup, so a typed `Array<string>` comes
+				// back as `Array` and `<b>x</b>` as `x`. Parsing angle brackets
+				// as text is what keeps a remount lossless.
+				html: false,
 				transformPastedText: true,
 				transformCopiedText: true,
 			}),
