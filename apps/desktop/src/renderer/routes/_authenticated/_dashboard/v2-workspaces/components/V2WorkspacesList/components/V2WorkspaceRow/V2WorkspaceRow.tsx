@@ -1,5 +1,6 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
+import { useState } from "react";
 import { CgLaptop } from "react-icons/cg";
 import { V2WorkspaceContextMenu } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/components/V2WorkspaceContextMenu";
 import type { AccessibleV2Workspace } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/hooks/useAccessibleV2Workspaces";
@@ -25,6 +26,9 @@ export function V2WorkspaceRow({
 	isCurrentRoute,
 }: V2WorkspaceRowProps) {
 	const isMainWorkspace = workspace.type === "main";
+	// Drives the name's hover-reveal for keyboard users: the row, not the
+	// name span, is what's actually tabbable.
+	const [isFocused, setIsFocused] = useState(false);
 
 	const creatorLabel = workspace.isCreatedByCurrentUser
 		? "you"
@@ -79,6 +83,8 @@ export function V2WorkspaceRow({
 							actions.open();
 						}
 					}}
+					onFocus={() => setIsFocused(true)}
+					onBlur={() => setIsFocused(false)}
 					title={rowTitle}
 					className={cn(
 						"flex cursor-pointer items-center gap-3 border-b border-border/40 px-6 py-3 text-sm outline-none transition-colors",
@@ -93,10 +99,19 @@ export function V2WorkspaceRow({
 					{isMainWorkspace ? (
 						<Tooltip delayDuration={300}>
 							<TooltipTrigger asChild>
-								<CgLaptop
-									className="size-3.5 shrink-0 text-muted-foreground"
-									aria-label="Main workspace"
-								/>
+								{/* The wrapping span (not the icon itself — react-icons
+								    treats a `title` prop as an SVG <title> child, not an
+								    HTML attribute, so it can't block inheritance) carries
+								    an empty title to stop it from inheriting the row's
+								    title (PR/branch/project); without it, hovering this
+								    icon fires both the native tooltip and this Radix one
+								    at once. */}
+								<span title="">
+									<CgLaptop
+										className="size-3.5 shrink-0 text-muted-foreground"
+										aria-label="Main workspace"
+									/>
+								</span>
 							</TooltipTrigger>
 							<TooltipContent side="top">Main workspace</TooltipContent>
 						</Tooltip>
@@ -104,6 +119,7 @@ export function V2WorkspaceRow({
 
 					<WorkspaceNameMarquee
 						name={workspace.name}
+						forceActive={isFocused}
 						className={cn(
 							"min-w-0 flex-1 font-medium",
 							// Done states recede so live work owns the contrast.
@@ -114,7 +130,17 @@ export function V2WorkspaceRow({
 					/>
 
 					{workspace.pr ? (
-						<PRIcon state={workspace.pr.state} className="size-3.5 shrink-0" />
+						<a
+							href={workspace.pr.url}
+							target="_blank"
+							rel="noreferrer"
+							onClick={(event) => event.stopPropagation()}
+							title=""
+							aria-label={`Pull request #${workspace.pr.prNumber}, ${workspace.pr.state}`}
+							className="shrink-0"
+						>
+							<PRIcon state={workspace.pr.state} className="size-3.5" />
+						</a>
 					) : null}
 
 					{workspace.diffStats &&
