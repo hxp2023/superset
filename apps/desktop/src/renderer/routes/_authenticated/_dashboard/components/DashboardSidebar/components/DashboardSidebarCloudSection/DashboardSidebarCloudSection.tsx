@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useCloudWorkspaces } from "renderer/hooks/useCloudWorkspaces";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
+import { useSidebarSectionsCollapseStore } from "renderer/stores/sidebar-sections-collapse";
 import type { DashboardSidebarWorkspace } from "../../types";
 import { DashboardSidebarSectionHeader } from "../DashboardSidebarSectionHeader";
 import { DashboardSidebarWorkspaceItem } from "../DashboardSidebarWorkspaceItem";
@@ -29,6 +30,9 @@ export function DashboardSidebarCloudSection({
 }) {
 	const { workspaces: cloudWorkspaces } = useCloudWorkspaces();
 	const { workspaces: hostWorkspaces } = useHostWorkspaces();
+	const isSectionCollapsed = useSidebarSectionsCollapseStore(
+		(s) => s.collapsed.cloud,
+	);
 
 	// Row visibility, pinning and order all live in the same local-state
 	// collection every other sidebar row reads. Rendering straight off the
@@ -112,9 +116,15 @@ export function DashboardSidebarCloudSection({
 
 	if (rows.length === 0) return null;
 
-	if (isCollapsed) {
+	// Cloud workspaces are never fully hidden — the sidebar rail collapsing
+	// and the section's own chevron both switch to this compact icon form
+	// instead of hiding rows, so a workspace never looks like it disappeared.
+	if (isCollapsed || isSectionCollapsed) {
 		return (
 			<div className="flex flex-col gap-0.5 py-1">
+				{!isCollapsed && (
+					<DashboardSidebarSectionHeader label="Cloud" section="cloud" />
+				)}
 				{rows.map((workspace) => (
 					<DashboardSidebarWorkspaceItem
 						key={workspace.id}
@@ -123,7 +133,7 @@ export function DashboardSidebarCloudSection({
 						onHoverCardOpen={onWorkspaceHover}
 					/>
 				))}
-				<div className="mx-3 mt-1 border-b border-border" />
+				{isCollapsed && <div className="mx-3 mt-1 border-b border-border" />}
 			</div>
 		);
 	}
