@@ -1,6 +1,7 @@
 import type { AppRouter } from "@superset/host-service";
 import type { LayoutNode, Tab, WorkspaceState } from "@superset/panes";
 import type { inferRouterInputs } from "@trpc/server";
+import { hostAuthoredIdSchema } from "renderer/lib/hostRowContract";
 import { z } from "zod";
 
 const persistedDateSchema = z
@@ -8,7 +9,7 @@ const persistedDateSchema = z
 	.transform((value) => (typeof value === "string" ? new Date(value) : value));
 
 export const dashboardSidebarProjectSchema = z.object({
-	projectId: z.string().uuid(),
+	projectId: hostAuthoredIdSchema,
 	createdAt: persistedDateSchema,
 	isCollapsed: z.boolean().default(false),
 	tabOrder: z.number().int().default(0),
@@ -107,7 +108,7 @@ const workspaceRunStateSchema = z.enum([
 
 export const workspaceRunTerminalStateSchema = z.object({
 	terminalId: z.string(),
-	workspaceId: z.string().uuid(),
+	workspaceId: hostAuthoredIdSchema,
 	state: workspaceRunStateSchema,
 	command: z.string(),
 	definitionSource: z.enum(["project-config", "terminal-preset"]),
@@ -120,7 +121,7 @@ export const workspaceRunTerminalStateSchema = z.object({
 });
 
 export const workspaceLocalStateSchema = z.object({
-	workspaceId: z.string().uuid(),
+	workspaceId: hostAuthoredIdSchema,
 	createdAt: persistedDateSchema,
 	sidebarState: z.object({
 		// Null = project-less "session" workspace (renders in the Sessions
@@ -128,7 +129,7 @@ export const workspaceLocalStateSchema = z.object({
 		// keeps every pre-existing persisted row parsing unchanged, and heal
 		// must never synthesize null (that would silently reparent a corrupt
 		// project workspace into Sessions).
-		projectId: z.string().uuid().nullable(),
+		projectId: hostAuthoredIdSchema.nullable(),
 		tabOrder: z.number().int().default(0),
 		sectionId: z.string().uuid().nullable().default(null),
 		changesFilter: changesFilterSchema.default({ kind: "all" }),
@@ -207,7 +208,7 @@ const WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS = {
  */
 export const dashboardSidebarSectionSchema = z.object({
 	sectionId: z.string().uuid(),
-	projectId: z.string().uuid(),
+	projectId: hostAuthoredIdSchema,
 	name: z.string().trim().min(1),
 	createdAt: persistedDateSchema,
 	tabOrder: z.number().int().default(0),
