@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import { useCloudWorkspaces } from "renderer/hooks/useCloudWorkspaces";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
-import { useSidebarSectionsCollapseStore } from "renderer/stores/sidebar-sections-collapse";
 import type { DashboardSidebarWorkspace } from "../../types";
 import { DashboardSidebarSectionHeader } from "../DashboardSidebarSectionHeader";
 import { DashboardSidebarWorkspaceItem } from "../DashboardSidebarWorkspaceItem";
@@ -30,9 +29,6 @@ export function DashboardSidebarCloudSection({
 }) {
 	const { workspaces: cloudWorkspaces } = useCloudWorkspaces();
 	const { workspaces: hostWorkspaces } = useHostWorkspaces();
-	const isSectionCollapsed = useSidebarSectionsCollapseStore(
-		(s) => s.collapsed.cloud,
-	);
 
 	// Row visibility, pinning and order all live in the same local-state
 	// collection every other sidebar row reads. Rendering straight off the
@@ -135,14 +131,13 @@ export function DashboardSidebarCloudSection({
 	return (
 		<div className="mb-1">
 			<DashboardSidebarSectionHeader label="Cloud" section="cloud" />
-			{!isSectionCollapsed &&
-				rows.map((workspace) => (
-					<DashboardSidebarWorkspaceItem
-						key={workspace.id}
-						workspace={workspace}
-						onHoverCardOpen={onWorkspaceHover}
-					/>
-				))}
+			{rows.map((workspace) => (
+				<DashboardSidebarWorkspaceItem
+					key={workspace.id}
+					workspace={workspace}
+					onHoverCardOpen={onWorkspaceHover}
+				/>
+			))}
 		</div>
 	);
 }
