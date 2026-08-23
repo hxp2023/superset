@@ -69,7 +69,7 @@ export function V2WorkspaceRow({
 						}
 					}}
 					className={cn(
-						"group/row flex h-9 cursor-pointer items-center gap-2 border-b border-border/40 px-6 text-sm outline-none transition-colors",
+						"group/row flex cursor-pointer items-center gap-3 border-b border-border/40 px-6 py-2 text-sm outline-none transition-colors",
 						"focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
 						isCurrentRoute
 							? "bg-muted hover:bg-muted focus-visible:bg-muted"
@@ -90,189 +90,171 @@ export function V2WorkspaceRow({
 						</Tooltip>
 					) : null}
 
-					<WorkspaceNameMarquee
-						name={workspace.name}
-						className={cn(
-							// flex-1 (not just min-w-0) so the name claims any
-							// leftover row width instead of leaving it as blank
-							// ml-auto margin before the metadata block, and so
-							// it — not the fixed-width metadata — absorbs the
-							// squeeze first when the row is too narrow to fit.
-							"min-w-0 flex-1 font-medium",
-							// Done states recede so live work owns the contrast.
-							workspace.archivedAt != null || workspace.pr?.state === "merged"
-								? "text-muted-foreground"
-								: "text-foreground",
-						)}
-					/>
+					{/* Two lines instead of a column-per-field row: the name
+					    gets its own line to breathe, and everything else
+					    flows together below it at its natural width — no
+					    slot is reserved for a field that has nothing to
+					    show, and there's no longer a rigid column set that
+					    breakpoints have to hide pieces of to protect the
+					    name's space. */}
+					<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+						<div className="flex items-center gap-2">
+							<WorkspaceNameMarquee
+								name={workspace.name}
+								className={cn(
+									"min-w-0 flex-1 font-medium",
+									// Done states recede so live work owns the contrast.
+									workspace.archivedAt != null ||
+										workspace.pr?.state === "merged"
+										? "text-muted-foreground"
+										: "text-foreground",
+								)}
+							/>
 
-					{/* Automation runs share a name; the run stamp is the "AS-11"
-					    that tells ten identical rows apart (Linear's muted ID). */}
-					{workspace.type === "session" ? (
-						<span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
-							{workspace.createdAt.toLocaleDateString(undefined, {
-								month: "short",
-								day: "numeric",
-							})}
-							{" · "}
-							{workspace.createdAt.toLocaleTimeString(undefined, {
-								hour: "2-digit",
-								minute: "2-digit",
-							})}
-						</span>
-					) : null}
-
-					{workspace.pr ? (
-						<WorkspacePrPill pr={workspace.pr} branch={workspace.branch} />
-					) : null}
-
-					<div className="ml-auto flex shrink-0 items-center gap-3">
-						{/* Space is always reserved so metadata never shifts when the
-						    actions fade in on hover. */}
-						<span className="flex w-14 items-center justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
-							{workspace.isInSidebar ? (
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={(event) => {
-										event.stopPropagation();
-										actions.removeFromSidebar();
-									}}
-									disabled={isCurrentRoute}
-									aria-label="Unpin from sidebar"
-									title={
-										isCurrentRoute
-											? "Can't unpin the current workspace"
-											: "Unpin from sidebar"
-									}
-									className="size-6 text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent"
-								>
-									<RiPushpinFill className="size-3.5" />
-								</Button>
-							) : (
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={(event) => {
-										event.stopPropagation();
-										actions.addToSidebar();
-									}}
-									aria-label="Pin to sidebar"
-									title="Pin to sidebar"
-									className="size-6 text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent"
-								>
-									<RiPushpinLine className="size-3.5" />
-								</Button>
-							)}
-							{!isMainWorkspace ? (
-								<Button
-									size="icon"
-									variant="ghost"
-									onClick={(event) => {
-										event.stopPropagation();
-										actions.openDeleteDialog();
-									}}
-									aria-label="Delete workspace"
-									title="Delete workspace"
-									className="size-6 text-muted-foreground hover:bg-transparent hover:text-destructive dark:hover:bg-transparent"
-								>
-									<LuTrash2 className="size-3.5" />
-								</Button>
+							{/* Automation runs share a name; the run stamp is the
+							    "AS-11" that tells ten identical rows apart
+							    (Linear's muted ID). */}
+							{workspace.type === "session" ? (
+								<span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
+									{workspace.createdAt.toLocaleDateString(undefined, {
+										month: "short",
+										day: "numeric",
+									})}
+									{" · "}
+									{workspace.createdAt.toLocaleTimeString(undefined, {
+										hour: "2-digit",
+										minute: "2-digit",
+									})}
+								</span>
 							) : null}
-						</span>
 
-						{workspace.agentIds.length > 0 ? (
-							// Least important metadata in the row, so it's the
-							// first to go — hidden below lg to give the
-							// workspace name room before anything else yields.
-							<span className="hidden items-center gap-1 lg:flex">
-								{workspace.agentIds.slice(0, 3).map((agentId) => (
-									<WorkspaceAgentIcon key={agentId} agentId={agentId} />
-								))}
+							<span
+								className="ml-auto shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground"
+								title={timeTitle}
+							>
+								{timeLabel}
 							</span>
-						) : null}
+						</div>
 
-						{/* Fixed-width slots keep the metadata columns vertically
-						    aligned across rows without table markup. */}
-						<span
-							className="flex w-24 items-center justify-end gap-1.5 font-mono text-[11px] tabular-nums leading-none"
-							title={
-								workspace.diffStats
-									? `${workspace.diffStats.fileCount} changed ${workspace.diffStats.fileCount === 1 ? "file" : "files"}`
-									: undefined
-							}
-						>
+						<div className="flex min-w-0 items-center gap-3 overflow-hidden whitespace-nowrap text-xs text-muted-foreground">
+							{workspace.pr ? (
+								<WorkspacePrPill pr={workspace.pr} branch={workspace.branch} />
+							) : null}
+
+							{workspace.agentIds.length > 0 ? (
+								<span className="flex shrink-0 items-center gap-1">
+									{workspace.agentIds.slice(0, 3).map((agentId) => (
+										<WorkspaceAgentIcon key={agentId} agentId={agentId} />
+									))}
+								</span>
+							) : null}
+
 							{workspace.diffStats &&
 							(workspace.diffStats.additions > 0 ||
 								workspace.diffStats.deletions > 0) ? (
-								<>
+								<span
+									className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] tabular-nums leading-none"
+									title={`${workspace.diffStats.fileCount} changed ${workspace.diffStats.fileCount === 1 ? "file" : "files"}`}
+								>
 									<span className="text-emerald-600/80 dark:text-emerald-400/70">
 										+{formatCount(workspace.diffStats.additions)}
 									</span>
 									<span className="text-red-600/80 dark:text-red-400/70">
 										−{formatCount(workspace.diffStats.deletions)}
 									</span>
-								</>
+								</span>
 							) : null}
-						</span>
 
-						{/* Branch equal to the display name (main workspaces) or a
-						    session's default checkout says nothing — leave the slot
-						    empty but keep alignment. Same lg threshold as the
-						    project label: below that there's only room to show
-						    it cramped/truncated, which isn't worth the space it
-						    takes from the name. */}
-						<span
-							className="hidden w-48 items-center gap-1.5 text-xs text-muted-foreground lg:flex"
-							title={workspace.branch}
-						>
+							{/* Branch equal to the display name (main workspaces) or a
+							    session's default checkout says nothing useful. */}
 							{workspace.type !== "session" &&
 							workspace.branch.toLowerCase() !==
 								workspace.name.toLowerCase() ? (
-								<>
+								<span
+									className="flex min-w-0 shrink items-center gap-1"
+									title={workspace.branch}
+								>
 									<LuGitBranch className="size-3 shrink-0" />
 									<span className="min-w-0 truncate font-mono text-[11px]">
 										{workspace.branch}
 									</span>
-								</>
+								</span>
 							) : null}
-						</span>
 
-						{/* Icon-only below lg so the project is identifiable at every
-						    width; the name joins it when there's room. */}
-						<span
-							className="flex w-4 items-center gap-1.5 lg:w-36"
-							title={workspace.projectName ?? "Session (no project)"}
-						>
-							{workspace.projectName ? (
-								<>
+							<span
+								className="flex shrink-0 items-center gap-1.5"
+								title={workspace.projectName ?? "Session (no project)"}
+							>
+								{workspace.projectName ? (
 									<V2WorkspaceProjectIcon
 										projectName={workspace.projectName}
 										iconUrl={workspace.projectIconUrl}
 										size="sm"
-										className="size-4 text-[8px]"
+										className="size-3.5 text-[8px]"
 									/>
-									<span className="hidden min-w-0 truncate text-xs text-muted-foreground lg:block">
-										{workspace.projectName}
-									</span>
-								</>
-							) : (
-								<>
+								) : (
 									<LuSquareTerminal className="size-3.5 shrink-0 text-muted-foreground/70" />
-									<span className="hidden min-w-0 truncate text-xs text-muted-foreground/70 lg:block">
-										Session
-									</span>
-								</>
-							)}
-						</span>
-
-						<span
-							className="w-14 whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground"
-							title={timeTitle}
-						>
-							{timeLabel}
-						</span>
+								)}
+								<span className="truncate">
+									{workspace.projectName ?? "Session"}
+								</span>
+							</span>
+						</div>
 					</div>
+
+					{/* Space is always reserved so the row doesn't shift when
+					    these fade in on hover. */}
+					<span className="flex w-14 shrink-0 items-center justify-end gap-0.5 self-center opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
+						{workspace.isInSidebar ? (
+							<Button
+								size="icon"
+								variant="ghost"
+								onClick={(event) => {
+									event.stopPropagation();
+									actions.removeFromSidebar();
+								}}
+								disabled={isCurrentRoute}
+								aria-label="Unpin from sidebar"
+								title={
+									isCurrentRoute
+										? "Can't unpin the current workspace"
+										: "Unpin from sidebar"
+								}
+								className="size-6 text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent"
+							>
+								<RiPushpinFill className="size-3.5" />
+							</Button>
+						) : (
+							<Button
+								size="icon"
+								variant="ghost"
+								onClick={(event) => {
+									event.stopPropagation();
+									actions.addToSidebar();
+								}}
+								aria-label="Pin to sidebar"
+								title="Pin to sidebar"
+								className="size-6 text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent"
+							>
+								<RiPushpinLine className="size-3.5" />
+							</Button>
+						)}
+						{!isMainWorkspace ? (
+							<Button
+								size="icon"
+								variant="ghost"
+								onClick={(event) => {
+									event.stopPropagation();
+									actions.openDeleteDialog();
+								}}
+								aria-label="Delete workspace"
+								title="Delete workspace"
+								className="size-6 text-muted-foreground hover:bg-transparent hover:text-destructive dark:hover:bg-transparent"
+							>
+								<LuTrash2 className="size-3.5" />
+							</Button>
+						) : null}
+					</span>
 				</div>
 			)}
 		</V2WorkspaceContextMenu>
