@@ -24,7 +24,6 @@ import { Strike } from "@tiptap/extension-strike";
 import { TableKit } from "@tiptap/extension-table";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
-import { Text } from "@tiptap/extension-text";
 import { Underline } from "@tiptap/extension-underline";
 import {
 	type Editor,
@@ -38,6 +37,7 @@ import { useEffect, useRef } from "react";
 import { BubbleMenuToolbar } from "renderer/components/MarkdownRenderer/components/TipTapMarkdownRenderer/components/BubbleMenuToolbar";
 import { env } from "renderer/env.renderer";
 import { useInlineUrlPolicy } from "renderer/lib/clickPolicy";
+import { TextWithoutHtmlEscape } from "renderer/lib/tiptap/text-without-html-escape";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { Markdown } from "tiptap-markdown";
 import { CodeBlockView } from "./components/CodeBlockView";
@@ -238,7 +238,7 @@ export function MarkdownEditor({
 		autofocus: autoFocus === true ? "end" : autoFocus || false,
 		extensions: [
 			Document,
-			Text,
+			TextWithoutHtmlEscape,
 			Paragraph.configure({
 				HTMLAttributes: { class: "my-0 leading-relaxed" },
 			}),
