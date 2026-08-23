@@ -10,6 +10,7 @@ import type { AccessibleV2Workspace } from "renderer/routes/_authenticated/_dash
 import { workspaceActivityAt } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/utils/sortWorkspaces";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";
 import { WorkspaceAgentIcon } from "./components/WorkspaceAgentIcon";
+import { WorkspaceNameMarquee } from "./components/WorkspaceNameMarquee";
 import { WorkspacePrPill } from "./components/WorkspacePrPill";
 import { WorkspaceStateGlyph } from "./components/WorkspaceStateGlyph";
 
@@ -89,23 +90,21 @@ export function V2WorkspaceRow({
 						</Tooltip>
 					) : null}
 
-					<span
+					<WorkspaceNameMarquee
+						name={workspace.name}
 						className={cn(
 							// flex-1 (not just min-w-0) so the name claims any
 							// leftover row width instead of leaving it as blank
 							// ml-auto margin before the metadata block, and so
 							// it — not the fixed-width metadata — absorbs the
 							// squeeze first when the row is too narrow to fit.
-							"min-w-0 flex-1 truncate font-medium",
+							"min-w-0 flex-1 font-medium",
 							// Done states recede so live work owns the contrast.
 							workspace.archivedAt != null || workspace.pr?.state === "merged"
 								? "text-muted-foreground"
 								: "text-foreground",
 						)}
-						title={workspace.name}
-					>
-						{workspace.name}
-					</span>
+					/>
 
 					{/* Automation runs share a name; the run stamp is the "AS-11"
 					    that tells ten identical rows apart (Linear's muted ID). */}
