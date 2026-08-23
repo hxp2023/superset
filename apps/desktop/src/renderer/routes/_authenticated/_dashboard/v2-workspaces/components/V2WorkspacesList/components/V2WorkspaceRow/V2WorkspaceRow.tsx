@@ -219,9 +219,12 @@ export function V2WorkspaceRow({
 
 						{/* Branch equal to the display name (main workspaces) or a
 						    session's default checkout says nothing — leave the slot
-						    empty but keep alignment. */}
+						    empty but keep alignment. Same lg threshold as the
+						    project label: below that there's only room to show
+						    it cramped/truncated, which isn't worth the space it
+						    takes from the name. */}
 						<span
-							className="hidden w-48 items-center gap-1.5 text-xs text-muted-foreground md:flex"
+							className="hidden w-48 items-center gap-1.5 text-xs text-muted-foreground lg:flex"
 							title={workspace.branch}
 						>
 							{workspace.type !== "session" &&
