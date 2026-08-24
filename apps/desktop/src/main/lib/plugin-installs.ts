@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { syncManagedMcpServers } from "@superset/agent-setup";
+import {
+	createManagedSkills,
+	syncManagedMcpServers,
+	writeSharedDisabledSkillIds,
+} from "@superset/agent-setup";
 import { getBundledPluginDir } from "@superset/agent-setup/config";
 import { settings } from "@superset/local-db";
 import {
@@ -85,26 +89,33 @@ export function uninstallPlugin(name: string): InstalledPlugin[] {
 }
 
 /**
- * SKILL.md body (frontmatter stripped) of a bundled managed skill, for the
- * preview modal. Allowlisted against the shipped skill set — the name never
- * touches the filesystem unless it's one of ours.
+ * Allowlisted against the shipped skill set — the name never touches the
+ * filesystem unless it's one of ours.
  */
-export function getBundledSkillContent(name: string): string | null {
+function resolveBundledSkillPath(name: string): string | null {
 	if (!SUPERSET_MANAGED_SKILLS.some((skill) => skill.name === name)) {
 		return null;
 	}
-	const skillPath = path.join(
-		getBundledPluginDir(),
-		"skills",
-		name,
-		"SKILL.md",
-	);
+	return path.join(getBundledPluginDir(), "skills", name, "SKILL.md");
+}
+
+/** SKILL.md body (frontmatter stripped) of a bundled managed skill, for the preview modal. */
+export function getBundledSkillContent(name: string): string | null {
+	const skillPath = resolveBundledSkillPath(name);
+	if (!skillPath) return null;
 	try {
 		const raw = fs.readFileSync(skillPath, "utf-8");
 		return raw.replace(/^---\n[\s\S]*?\n---\n*/, "");
 	} catch {
 		return null;
 	}
+}
+
+/** Absolute path to a bundled skill's SKILL.md, for Open/Reveal in Finder. */
+export function getBundledSkillPath(name: string): string | null {
+	const skillPath = resolveBundledSkillPath(name);
+	if (!skillPath || !fs.existsSync(skillPath)) return null;
+	return skillPath;
 }
 
 const SKILL_ICON_FILES = [
@@ -170,5 +181,36 @@ export function setPluginEnabled(
 			: installed;
 	saveInstalledPlugins(next);
 	syncInstalledPluginMcpServers();
+	return next;
+}
+
+export function getDisabledSkills(): string[] {
+	return localDb.select().from(settings).get()?.disabledSkills ?? [];
+}
+
+/**
+ * Toggling re-syncs immediately: disable reaps the skill from every agent
+ * (and the Claude plugin mirror), enable rewrites it. Mirrored to the shared
+ * disabled-skills file so CLI-launched host-services on this machine honor
+ * the choice instead of re-provisioning a skill the user just disabled.
+ */
+export function setSkillEnabled(name: string, enabled: boolean): string[] {
+	const current = new Set(getDisabledSkills());
+	if (enabled) {
+		current.delete(name);
+	} else {
+		current.add(name);
+	}
+	const next = [...current];
+	localDb
+		.insert(settings)
+		.values({ id: 1, disabledSkills: next })
+		.onConflictDoUpdate({
+			target: settings.id,
+			set: { disabledSkills: next },
+		})
+		.run();
+	writeSharedDisabledSkillIds(next);
+	void createManagedSkills({ disabledSkills: next });
 	return next;
 }
