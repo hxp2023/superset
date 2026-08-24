@@ -3,9 +3,11 @@ import { TRPCError } from "@trpc/server";
 import {
 	getBundledSkillContent,
 	getBundledSkillIcons,
+	getDisabledSkills,
 	getInstalledPlugins,
 	installPlugin,
 	setPluginEnabled,
+	setSkillEnabled,
 	uninstallPlugin,
 } from "main/lib/plugin-installs";
 import { z } from "zod";
@@ -41,6 +43,17 @@ export const createPluginsRouter = () => {
 			.input(z.object({ name: z.string().min(1) }))
 			.query(({ input }) => {
 				return { content: getBundledSkillContent(input.name) };
+			}),
+
+		/** Names of bundled managed skills the user disabled. */
+		getDisabledSkills: publicProcedure.query(() => {
+			return getDisabledSkills();
+		}),
+
+		setSkillEnabled: publicProcedure
+			.input(z.object({ name: z.string().min(1), enabled: z.boolean() }))
+			.mutation(({ input }) => {
+				return { disabled: setSkillEnabled(input.name, input.enabled) };
 			}),
 
 		install: publicProcedure

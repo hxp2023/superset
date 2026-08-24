@@ -53,10 +53,6 @@ type LabeledAction = readonly [label: string, action: () => void];
 const BOOTSTRAP_SETUP: readonly LabeledAction[] = [
 	["cleanup-global-opencode-plugin", cleanupGlobalOpenCodePlugin],
 	["notify-script", createNotifyScript],
-	// Async fire-and-forget: every fs mutation inside is individually
-	// try/caught and logged, so nothing can reject unhandled, and boot
-	// never blocks on skill provisioning.
-	["managed-skills", () => void createManagedSkills()],
 ];
 
 interface AgentSetupDefinition {
@@ -176,15 +172,30 @@ interface SetupAgentCapabilitiesOptions {
 	 * versions or while the toggle changed offline.
 	 */
 	disabledAgentIds?: readonly string[];
+	/** Skills the user disabled; withheld from provisioning and reaped. */
+	disabledSkillIds?: readonly string[];
 }
 
 export function setupAgentCapabilities({
 	disabledAgentIds = [],
+	disabledSkillIds = [],
 }: SetupAgentCapabilitiesOptions = {}): void {
 	const disabled = new Set(disabledAgentIds);
 	const failed: string[] = [];
 	for (const [label, action] of BOOTSTRAP_SETUP) {
 		if (!runSetupAction(label, action)) failed.push(label);
+	}
+
+	// Async fire-and-forget: every fs mutation inside is individually
+	// try/caught and logged, so nothing can reject unhandled, and boot never
+	// blocks on skill provisioning.
+	if (
+		!runSetupAction(
+			"managed-skills",
+			() => void createManagedSkills({ disabledSkills: disabledSkillIds }),
+		)
+	) {
+		failed.push("managed-skills");
 	}
 
 	for (const target of AGENT_SETUP_TARGETS) {
