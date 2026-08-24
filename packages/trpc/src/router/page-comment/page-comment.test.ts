@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { TRPCError } from "@trpc/server";
 import type { TRPCContext } from "../../trpc";
-import { agentSessionFor, assertActivatedForAgent } from "./page-comment";
+import { agentSessionFor, assertActivatedForAgent } from "./agent-access";
 
 const ctx = (agentCaller: TRPCContext["agentCaller"]) =>
 	({ agentCaller }) as TRPCContext;
