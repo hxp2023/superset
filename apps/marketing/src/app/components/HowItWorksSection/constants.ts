@@ -13,9 +13,9 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
 	},
 	{
 		number: "02",
-		title: "Agents do the work.",
+		title: "Choose the right agent.",
 		description:
-			"Run Claude Code, Codex, or any CLI agent in parallel, each in its own workspace. No conflicts, no waiting on a single session.",
+			"Use Claude Code, Codex, or any CLI agent for each task. Switch freely or run them side by side without changing your workflow.",
 	},
 	{
 		number: "03",
