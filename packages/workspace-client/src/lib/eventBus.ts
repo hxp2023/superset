@@ -160,6 +160,8 @@ interface ConnectionState {
 	fsWatchedWorkspaces: Map<string, number>;
 	/** Refcounted per-file watches, keyed `${workspaceId}\0${absolutePath}`. */
 	fsWatchedFiles: Map<string, number>;
+	/** Refcounted `git:watch` interest — drives GitWatcher's registration (#6729). */
+	gitWatchedWorkspaces: Map<string, number>;
 	/** Replaced, never mutated, so `useSyncExternalStore` snapshots stay stable. */
 	status: HostConnectionStatus;
 	statusListeners: Set<ConnectionStatusListener>;
@@ -335,6 +337,7 @@ function getOrCreateConnection(
 		listeners: new Set(),
 		fsWatchedWorkspaces: new Map(),
 		fsWatchedFiles: new Map(),
+		gitWatchedWorkspaces: new Map(),
 		status: { state: "connecting", since: Date.now(), probe: null },
 		statusListeners: new Set(),
 	};
@@ -363,6 +366,12 @@ function getOrCreateConnection(
 					absolutePath,
 				});
 			}
+		}
+		// Re-send all active git:watch commands — a fresh connection means the
+		// server-side GitWatcher interest count from the old socket is gone
+		// (event-bus.ts's cleanupClient unwatches on close).
+		for (const workspaceId of state.gitWatchedWorkspaces.keys()) {
+			sendCommand(state, { type: "git:watch", workspaceId });
 		}
 	});
 	socket.addEventListener("message", (event) => {
@@ -407,6 +416,14 @@ export interface EventBusHandle {
 	 */
 	watchFsFile(workspaceId: string, absolutePath: string): void;
 	unwatchFsFile(workspaceId: string, absolutePath: string): void;
+	/**
+	 * Register interest in a workspace's `git:changed` events. The host's
+	 * `GitWatcher` only watches a workspace while at least one client holds
+	 * interest via this call (see #6729) — a `git:changed` listener added via
+	 * `on()` without a matching `watchGit()` will never fire.
+	 */
+	watchGit(workspaceId: string): void;
+	unwatchGit(workspaceId: string): void;
 	retain(): () => void;
 	/** Live reachability of this host, as observed on the real data path. */
 	getConnectionStatus(): HostConnectionStatus;
@@ -465,6 +482,24 @@ export function getEventBus(
 				sendCommand(state, { type: "fs:unwatch", workspaceId });
 			} else {
 				state.fsWatchedWorkspaces.set(workspaceId, count - 1);
+			}
+		},
+
+		watchGit(workspaceId: string): void {
+			const count = state.gitWatchedWorkspaces.get(workspaceId) ?? 0;
+			state.gitWatchedWorkspaces.set(workspaceId, count + 1);
+			if (count === 0) {
+				sendCommand(state, { type: "git:watch", workspaceId });
+			}
+		},
+
+		unwatchGit(workspaceId: string): void {
+			const count = state.gitWatchedWorkspaces.get(workspaceId) ?? 0;
+			if (count <= 1) {
+				state.gitWatchedWorkspaces.delete(workspaceId);
+				sendCommand(state, { type: "git:unwatch", workspaceId });
+			} else {
+				state.gitWatchedWorkspaces.set(workspaceId, count - 1);
 			}
 		},
 

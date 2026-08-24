@@ -245,12 +245,24 @@ export function DashboardSidebarWorkspaceStatusProvider({
 			cleanups.push(
 				bus.on("terminal:lifecycle", workspaceId, invalidateBindings),
 			);
+			// GitWatcher only watches a workspace while someone holds interest
+			// (#6729) — this call site talks to the bus directly rather than
+			// through useWorkspaceEvent, so it must drive watchGit/unwatchGit
+			// itself. This registers every workspace row shown in the sidebar,
+			// which for a heavy user is most/all of their non-archived
+			// workspaces — preserves today's "every row's diff count stays live"
+			// behavior exactly, but means this provider alone can keep a large
+			// fraction of the workspace population watched whenever the
+			// dashboard is open. Worth revisiting (e.g. staleTime-based refetch
+			// for non-active rows instead of a live watch) as a follow-up.
+			bus.watchGit(workspaceId);
 			cleanups.push(
 				bus.on("git:changed", workspaceId, () => {
 					void queryClient.invalidateQueries({
 						queryKey: getDiffStatsQueryKey(hostUrl, workspaceId),
 					});
 				}),
+				() => bus.unwatchGit(workspaceId),
 			);
 		}
 		return () => {

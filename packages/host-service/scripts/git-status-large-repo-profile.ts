@@ -564,6 +564,16 @@ async function runEventBusScenario(
 	lastSummary = null;
 	await writeFile(gitLogPath, "");
 	eventBus.handleOpen(socket);
+	// GitWatcher only watches a workspace while someone holds interest
+	// (#6729) — the earlier direct rescan() call no longer attaches anything
+	// on its own, so this profile needs to register interest per workspace
+	// explicitly, same as a real client would.
+	for (const workspaceId of workspaceIds) {
+		eventBus.handleMessage(
+			socket,
+			JSON.stringify({ type: "git:watch", workspaceId }),
+		);
+	}
 	const stopEventLoopMonitor = startEventLoopMonitor();
 	const startedAt = performance.now();
 

@@ -312,6 +312,14 @@ async function main(): Promise<void> {
 		socket,
 		JSON.stringify({ type: "fs:watch", workspaceId: WORKSPACE_ID }),
 	);
+	// GitWatcher only watches a workspace while someone holds interest
+	// (#6729) — the earlier direct rescan() call no longer attaches anything
+	// on its own, so this bench needs to register interest explicitly, same
+	// as a real client would.
+	eventBus.handleMessage(
+		socket,
+		JSON.stringify({ type: "git:watch", workspaceId: WORKSPACE_ID }),
+	);
 	await new Promise((r) => setTimeout(r, 500));
 
 	// Measurement window starts here.

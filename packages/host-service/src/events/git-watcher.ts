@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { existsSync, type FSWatcher, watch } from "node:fs";
 import { promisify } from "node:util";
 import type { FsWatchEvent } from "@superset/workspace-fs/host";
-import { isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { HostDb } from "../db/index.ts";
 import { workspaces } from "../db/schema.ts";
 import type { WorkspaceFilesystemManager } from "../runtime/filesystem/index.ts";
@@ -208,12 +208,19 @@ interface IgnoredDirsState {
 }
 
 /**
- * Watches git state for all workspaces in the host-service DB and emits a
- * coalesced `changed` signal when anything that could affect `git status`
- * output happens. Auto-discovers new workspaces and drops removed ones every
- * 30s.
+ * Watches git state for workspaces someone is actually interested in — not
+ * every workspace in the host-service DB (see #6729). Membership is
+ * refcounted via `watchWorkspace`/`unwatchWorkspace`: a workspace is watched
+ * exactly while its interest count is positive, driven by client `git:watch`
+ * subscriptions (routed through `EventBus`) or an internal host-service
+ * caller. A 30s sweep cleans up watchers for workspaces that got archived or
+ * deleted, and retries attaching for any still-interested workspace that
+ * failed to attach earlier (worktree not ready yet) — both proportional to
+ * the interested set, not the full workspace table.
  *
- * Two sources feed into the same debounced emit per workspace:
+ * Emits a coalesced `changed` signal when anything that could affect `git
+ * status` output happens. Two sources feed into the same debounced emit per
+ * workspace:
  *
  * 1. `.git/` directory (via `node:fs.watch`) — catches commits, staging,
  *    branch switches, fetches, including from an external terminal. Paths that
@@ -241,6 +248,8 @@ export class GitWatcher {
 	private readonly filesystem: WorkspaceFilesystemManager;
 	private readonly listeners = new Set<GitChangedListener>();
 	private readonly watched = new Map<string, WatchedWorkspace>();
+	/** Refcount of active interest per workspace; watched iff count > 0. */
+	private readonly interest = new Map<string, number>();
 	private readonly debounceTimers = new Map<
 		string,
 		ReturnType<typeof setTimeout>
@@ -270,6 +279,71 @@ export class GitWatcher {
 		};
 	}
 
+	/**
+	 * Register interest in a workspace's git state. The first caller for a
+	 * workspace triggers attaching real watchers (a DB lookup + `.git/` +
+	 * worktree-root watch); subsequent callers just bump the refcount.
+	 */
+	watchWorkspace(workspaceId: string): void {
+		if (this.closed) return;
+		const count = this.interest.get(workspaceId) ?? 0;
+		this.interest.set(workspaceId, count + 1);
+		if (count === 0 && !this.watched.has(workspaceId)) {
+			void this.attachFromDb(workspaceId);
+		}
+	}
+
+	/**
+	 * Release interest in a workspace. Tears down its watchers once the
+	 * refcount reaches zero.
+	 */
+	unwatchWorkspace(workspaceId: string): void {
+		const count = this.interest.get(workspaceId) ?? 0;
+		if (count <= 1) {
+			this.interest.delete(workspaceId);
+			this.stopWatching(workspaceId);
+		} else {
+			this.interest.set(workspaceId, count - 1);
+		}
+	}
+
+	private async attachFromDb(workspaceId: string): Promise<void> {
+		if (this.closed) return;
+		let row: { worktreePath: string } | undefined;
+		try {
+			row = this.db
+				.select({ worktreePath: workspaces.worktreePath })
+				.from(workspaces)
+				.where(
+					and(eq(workspaces.id, workspaceId), isNull(workspaces.archivedAt)),
+				)
+				.get();
+		} catch {
+			return;
+		}
+		// Not found / archived: nothing to attach right now. If the row appears
+		// later (e.g. `watchWorkspace` raced workspace creation), the 30s sweep
+		// retries any still-interested workspace that never attached.
+		if (!row) return;
+		await this.attachWatcher(workspaceId, row.worktreePath);
+	}
+
+	private stopWatching(workspaceId: string): void {
+		const entry = this.watched.get(workspaceId);
+		if (entry) {
+			entry.watcher.close();
+			entry.disposeWorktreeWatch();
+			this.watched.delete(workspaceId);
+		}
+		this.ignoredDirs.delete(workspaceId);
+		const timer = this.debounceTimers.get(workspaceId);
+		if (timer) {
+			clearTimeout(timer);
+			this.debounceTimers.delete(workspaceId);
+		}
+		this.pendingBatches.delete(workspaceId);
+	}
+
 	close(): void {
 		this.closed = true;
 		if (this.rescanTimer) {
@@ -287,6 +361,7 @@ export class GitWatcher {
 		}
 		this.watched.clear();
 		this.ignoredDirs.clear();
+		this.interest.clear();
 	}
 
 	private getOrCreateIgnoredDirsState(workspaceId: string): IgnoredDirsState {
@@ -457,6 +532,14 @@ export class GitWatcher {
 		);
 	}
 
+	/**
+	 * Cleanup + retry sweep — NOT a re-registration pass. Drops watchers (and
+	 * interest) for workspaces that got archived or deleted, and retries
+	 * attaching for any workspace someone is still interested in but that
+	 * never attached (worktree wasn't ready, transient git-dir lookup
+	 * failure). Both loops are bounded by the interested set, not the total
+	 * non-archived workspace count — see #6729.
+	 */
 	private async rescan(): Promise<void> {
 		if (this.closed) return;
 
@@ -474,26 +557,34 @@ export class GitWatcher {
 			return;
 		}
 
-		const currentIds = new Set(rows.map((r) => r.id));
+		const existingIds = new Set(rows.map((r) => r.id));
+		const worktreePathById = new Map(rows.map((r) => [r.id, r.worktreePath]));
 
-		// Remove watchers for workspaces that no longer exist
+		// Remove watchers for workspaces that no longer exist (archived or deleted).
 		for (const [id, entry] of this.watched) {
-			if (!currentIds.has(id)) {
+			if (!existingIds.has(id)) {
 				entry.watcher.close();
 				entry.disposeWorktreeWatch();
 				this.watched.delete(id);
 				this.ignoredDirs.delete(id);
 			}
 		}
+		// Interest in a workspace that's gone is stale — drop it too, rather
+		// than leaking a refcount nobody will ever unwatch.
+		for (const id of this.interest.keys()) {
+			if (!existingIds.has(id)) this.interest.delete(id);
+		}
 
-		// Add watchers for new workspaces
-		for (const row of rows) {
-			if (this.watched.has(row.id)) continue;
-			await this.watchWorkspace(row.id, row.worktreePath);
+		// Retry attaching for still-interested workspaces that never attached.
+		for (const id of this.interest.keys()) {
+			if (this.watched.has(id)) continue;
+			const worktreePath = worktreePathById.get(id);
+			if (!worktreePath) continue;
+			await this.attachWatcher(id, worktreePath);
 		}
 	}
 
-	private async watchWorkspace(
+	private async attachWatcher(
 		workspaceId: string,
 		worktreePath: string,
 	): Promise<void> {
