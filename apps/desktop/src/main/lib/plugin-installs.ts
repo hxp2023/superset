@@ -99,13 +99,17 @@ function resolveBundledSkillPath(name: string): string | null {
 	return path.join(getBundledPluginDir(), "skills", name, "SKILL.md");
 }
 
-/** SKILL.md body (frontmatter stripped) of a bundled managed skill, for the preview modal. */
+/**
+ * Raw SKILL.md content (including frontmatter) of a bundled managed skill,
+ * for the preview modal. Frontmatter must stay in — the in-app editor's
+ * markdown view splits/reattaches it around edits, so a stripped read here
+ * would delete it on the next save.
+ */
 export function getBundledSkillContent(name: string): string | null {
 	const skillPath = resolveBundledSkillPath(name);
 	if (!skillPath) return null;
 	try {
-		const raw = fs.readFileSync(skillPath, "utf-8");
-		return raw.replace(/^---\n[\s\S]*?\n---\n*/, "");
+		return fs.readFileSync(skillPath, "utf-8");
 	} catch {
 		return null;
 	}
@@ -116,6 +120,20 @@ export function getBundledSkillPath(name: string): string | null {
 	const skillPath = resolveBundledSkillPath(name);
 	if (!skillPath || !fs.existsSync(skillPath)) return null;
 	return skillPath;
+}
+
+/**
+ * Overwrites a bundled skill's SKILL.md, then re-provisions it out to
+ * ~/.agents/skills, the Claude plugin mirror, and the slash-command file —
+ * same convention as setSkillEnabled below.
+ */
+export function writeBundledSkillContent(name: string, content: string): void {
+	const skillPath = resolveBundledSkillPath(name);
+	if (!skillPath) {
+		throw new Error(`Unknown skill: ${name}`);
+	}
+	fs.writeFileSync(skillPath, content, "utf-8");
+	void createManagedSkills({ disabledSkills: getDisabledSkills() });
 }
 
 const SKILL_ICON_FILES = [

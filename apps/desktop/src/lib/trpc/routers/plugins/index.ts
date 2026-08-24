@@ -10,6 +10,7 @@ import {
 	setPluginEnabled,
 	setSkillEnabled,
 	uninstallPlugin,
+	writeBundledSkillContent,
 } from "main/lib/plugin-installs";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
@@ -58,6 +59,22 @@ export const createPluginsRouter = () => {
 			.input(z.object({ name: z.string().min(1), enabled: z.boolean() }))
 			.mutation(({ input }) => {
 				return { disabled: setSkillEnabled(input.name, input.enabled) };
+			}),
+
+		/** Overwrites a bundled skill's SKILL.md, from the in-app editor. */
+		writeSkillContent: publicProcedure
+			.input(z.object({ name: z.string().min(1), content: z.string() }))
+			.mutation(({ input }) => {
+				try {
+					writeBundledSkillContent(input.name, input.content);
+				} catch (error) {
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message:
+							error instanceof Error ? error.message : "Failed to save skill",
+					});
+				}
+				return { ok: true };
 			}),
 
 		install: publicProcedure
