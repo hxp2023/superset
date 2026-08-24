@@ -71,7 +71,7 @@ export default command({
 		const unlinked =
 			link || options.page
 				? ""
-				: "\nNot linked to a workspace — republish with --page to add a version";
+				: "\nNot linked to a workspace; republish with --page to add a version";
 
 		return {
 			data: page,

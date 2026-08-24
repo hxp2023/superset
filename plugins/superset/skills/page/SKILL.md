@@ -10,7 +10,7 @@ allowed-tools: Bash(superset:*)
 A page is **one self-contained `.html` file** published to a URL people in the
 org can open. Every publish mints a version, so a page has history. Readers can
 pin a comment to any element on it, and those comments come back to an agent to
-fix — which is what makes a page a working surface rather than an export.
+fix. That is what makes a page a working surface rather than an export.
 
 Pages are served inside a locked-down iframe. Most of the work in this skill is
 respecting that sandbox; a page that ignores it looks fine locally and breaks
@@ -22,7 +22,7 @@ Publish a page when the work has a **reader** and wants a **link**: a report
 someone will skim, a dashboard for a standup, a comparison table, a diagram, a
 walkthrough of what you changed.
 
-Don't publish when the artifact belongs in the repo (source, docs, config — put
+Don't publish when the artifact belongs in the repo (source, docs, config: put
 those in files and commit them), or when it genuinely needs a server, a
 database, or a login. A page has none of those.
 
@@ -36,7 +36,7 @@ The frame is `sandbox="allow-scripts allow-forms allow-popups"` with
 so the page runs in an *opaque origin*. Consequences, all of them silent in a
 local browser and fatal once published:
 
-- **Every storage API throws on access** — `localStorage`, `sessionStorage`,
+- **Every storage API throws on access.** `localStorage`, `sessionStorage`,
   `indexedDB`, `caches`, and `document.cookie`. Not "returns null", not "returns
   an empty string": a `SecurityError` that takes the rest of your script with
   it. `document.cookie` is the one that catches people, because everywhere else
@@ -48,7 +48,7 @@ local browser and fatal once published:
   into the document as a literal.
 - **No parent access.** Reading `window.parent.document`, `window.top.location`
   or `window.frameElement` throws a `SecurityError`. `postMessage` to the parent
-  is the exception — it does not throw, it simply has nothing listening, so
+  is the exception; it does not throw, it simply has nothing listening, so
   don't build a handshake on it.
 
 `location.origin` is not your app's origin: the desktop pane serves the page
@@ -56,7 +56,7 @@ under a `superset-page://` scheme and the web viewer frames it as `srcdoc`, and
 either way cross-frame checks see the origin as `null`.
 
 Scripts, forms, and popups *do* work. Inline JS runs normally, so charts,
-filters, sorting, tabs, and interactive controls are all fine — as long as
+filters, sorting, tabs, and interactive controls are all fine, as long as
 everything they need is already in the file.
 
 ## The other hard limits
@@ -64,7 +64,7 @@ everything they need is already in the file.
 1. **`.html` only.** Any other extension is rejected at the CLI.
 2. **One file.** There is no asset upload. Inline all CSS and JS, and embed
    images as `data:` URIs. No CDN links, no external stylesheets, no web fonts
-   from a remote host — the opaque origin can't fetch them anyway.
+   from a remote host; the opaque origin can't fetch them anyway.
 3. **3 MB maximum**, and base64 `data:` URIs count toward it at ~1.37× their
    raw size. A few small SVGs or PNGs are fine; a photo gallery is not.
 4. **Full-bleed frame with a white default background.** Set your own `body`
@@ -82,7 +82,7 @@ every element, Inter (or system-sans) for every line, and emoji as section
 icons. Those read as "generated" at a glance.
 
 Instead: pick a real palette and hold to it, set a typographic scale with actual
-contrast between heading and body, and let the layout follow the content — a
+contrast between heading and body, and let the layout follow the content: a
 data-dense table wants a wide flush-left page, a narrative report wants a
 measure of 65-75 characters. Use whitespace for grouping instead of borders on
 everything.
@@ -104,7 +104,7 @@ superset pages publish report.html \
 
 `--title` defaults to the filename with dashes and underscores turned into
 spaces, so name the file well or pass the flag. `--label` is what shows in
-version history — write what changed, not "update".
+version history; write what changed, not "update".
 
 **Workspace linking is automatic and matters.** When the file lives inside a
 Superset workspace, the CLI records its path relative to the workspace root as
@@ -112,7 +112,7 @@ the page's entry path. Publish the same path again and it becomes **version 2 of
 the same page** rather than a second page. Publish from outside a workspace and
 the output says so:
 
-> Not linked to a workspace — republish with `--page` to add a version
+> Not linked to a workspace; republish with `--page` to add a version
 
 Keep the source file. It is the only copy you can edit; the published version is
 derived from it.
@@ -127,13 +127,13 @@ superset pages publish report.html --page <page-id> --label "…" # anywhere, ex
 ```
 
 Use `--page` whenever you're outside the original workspace, the file moved, or
-you're not certain the path still matches. A wrong guess doesn't error — it
+you're not certain the path still matches. A wrong guess doesn't error; it
 quietly creates a *new* page, and the reader's link keeps showing the old one.
 
 ## Visibility
 
 `just_me` (the default) or `org`, set with `--visibility`. Anything wider is not
-settable from the CLI. A page shared for feedback needs `--visibility org` — if
+settable from the CLI. A page shared for feedback needs `--visibility org`. If
 the user says "send this to the team", set it, or they'll get a 404 and no
 explanation.
 
@@ -146,7 +146,7 @@ superset pages versions <page-id-or-slug>
 superset pages pull <page-id-or-slug> --version 2 > v2.html
 ```
 
-`pull` writes HTML to stdout — use it to recover a source file you no longer
+`pull` writes HTML to stdout; use it to recover a source file you no longer
 have, or to diff what actually shipped against what you have locally.
 
 ## Answer comments
@@ -157,7 +157,7 @@ for each thread gives a `thread:` id, an `at:` CSS selector path from `<body>`,
 and the element's text at the time of writing.
 
 **That selector points into the published HTML, which is the same document as
-your source file** — a page is one self-contained file, so the anchor locates
+your source file.** A page is one self-contained file, so the anchor locates
 the exact element to edit. Quoted text alone doesn't; the same words often
 appear more than once.
 
@@ -167,7 +167,7 @@ The loop, in order:
 superset pages comments list --page <page-id-or-slug>
 # edit the source file, fixing what each thread asked for
 superset pages publish report.html --label "addressed review comments"
-superset pages comments reply --thread <thread-id> "Recomputed from the Q3 close — the total is 1.42M now."
+superset pages comments reply --thread <thread-id> "Recomputed from the Q3 close; the total is 1.42M now."
 superset pages comments resolve --thread <thread-id>
 ```
 
@@ -189,8 +189,8 @@ Reopen with `superset pages comments resolve --thread <id> --reopen`.
 | Symptom | Cause |
 | --- | --- |
 | `Only .html files can be published as a page` | Wrong extension, or you pointed at a directory |
-| Publish rejected on size | Over 3 MB — the `data:` URIs are almost always why |
+| Publish rejected on size | Over 3 MB; the `data:` URIs are almost always why |
 | A new page appeared instead of a version | Published from outside the workspace, or the path changed; use `--page <id>` |
 | Reader gets a 404 | Page is still `just_me`; republish with `--visibility org` |
-| Page is blank once published, fine locally | A script threw — nearly always `localStorage`, or a fetch to a remote host |
+| Page is blank once published, fine locally | A script threw, nearly always `localStorage`, or a fetch to a remote host |
 | Fonts or images missing when published | External URLs; inline them or embed as `data:` URIs |
