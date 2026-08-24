@@ -1,4 +1,5 @@
 import { Badge } from "@superset/ui/badge";
+import { Button } from "@superset/ui/button";
 import {
 	Dialog,
 	DialogClose,
@@ -7,12 +8,28 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@superset/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@superset/ui/dropdown-menu";
+import { toast } from "@superset/ui/sonner";
 import { Spinner } from "@superset/ui/spinner";
 import { Switch } from "@superset/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { XIcon } from "lucide-react";
+import {
+	LuCheck,
+	LuCopy,
+	LuEllipsis,
+	LuExternalLink,
+	LuFolderOpen,
+} from "react-icons/lu";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { SkillIcon } from "renderer/routes/_authenticated/_dashboard/plugins/components/SkillIcon";
 import { useSkillMutations } from "../../hooks/useSkillMutations";
 
@@ -31,6 +48,40 @@ export function SkillPreviewDialog({
 	);
 	const { disabledSkills, setEnabled, isBusy } = useSkillMutations();
 	const isEnabled = skill !== null && !disabledSkills.has(skill.name);
+	const { copyToClipboard, copied } = useCopyToClipboard();
+
+	const handleOpen = async () => {
+		if (!data?.path) return;
+		try {
+			await electronTrpcClient.external.openFileInEditor.mutate({
+				path: data.path,
+			});
+		} catch (error) {
+			toast.error(
+				`Failed to open file: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	};
+
+	const handleRevealInFinder = async () => {
+		if (!data?.path) return;
+		try {
+			await electronTrpcClient.external.openInFinder.mutate(data.path);
+		} catch (error) {
+			toast.error(
+				`Failed to reveal in Finder: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	};
+
+	const handleCopyMarkdown = () => {
+		if (!data?.content) return;
+		toast.promise(copyToClipboard(data.content), {
+			success: "Markdown copied",
+			error: (err: unknown) =>
+				`Failed to copy markdown: ${err instanceof Error ? err.message : "Unknown error"}`,
+		});
+	};
 
 	return (
 		<Dialog open={skill !== null} onOpenChange={(open) => !open && onClose()}>
@@ -86,26 +137,80 @@ export function SkillPreviewDialog({
 								</TooltipContent>
 							</Tooltip>
 						)}
+						{skill !== null && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon-xs"
+										className="text-muted-foreground"
+										aria-label={`${skill.name} actions`}
+									>
+										<LuEllipsis className="size-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										onSelect={handleOpen}
+										disabled={!data?.path}
+									>
+										<LuExternalLink className="size-4" />
+										Open
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={handleRevealInFinder}
+										disabled={!data?.path}
+									>
+										<LuFolderOpen className="size-4" />
+										Reveal in Finder
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={handleCopyMarkdown}
+										disabled={!data?.content}
+									>
+										<LuCopy className="size-4" />
+										Copy Markdown
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
 						<DialogClose className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
 							<XIcon />
 							<span className="sr-only">Close</span>
 						</DialogClose>
 					</div>
 				</div>
-				{/* zoom scales the whole markdown type ramp down without fighting
-				    the renderer's own rem-based stylesheet. */}
-				<div className="min-h-0 flex-1 overflow-y-auto [zoom:0.85]">
-					{isLoading ? (
-						<div className="flex justify-center py-8">
-							<Spinner className="size-5" />
-						</div>
-					) : data?.content ? (
-						<MarkdownRenderer content={data.content} />
-					) : (
-						<p className="text-sm text-muted-foreground">
-							Could not load this skill's content.
-						</p>
+				<div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-border/60 bg-background">
+					{data?.content && (
+						<Button
+							variant="ghost"
+							size="icon-xs"
+							className="absolute top-2 right-2 z-10 text-muted-foreground"
+							aria-label="Copy markdown"
+							onClick={handleCopyMarkdown}
+						>
+							{copied ? (
+								<LuCheck className="size-4" />
+							) : (
+								<LuCopy className="size-4" />
+							)}
+						</Button>
 					)}
+					{/* zoom scales the whole markdown type ramp down without fighting
+					    the renderer's own rem-based stylesheet. */}
+					<div className="h-full overflow-y-auto p-4 [zoom:0.85]">
+						{isLoading ? (
+							<div className="flex justify-center py-8">
+								<Spinner className="size-5" />
+							</div>
+						) : data?.content ? (
+							<MarkdownRenderer content={data.content} />
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Could not load this skill's content.
+							</p>
+						)}
+					</div>
 				</div>
 			</DialogContent>
 		</Dialog>

@@ -89,26 +89,33 @@ export function uninstallPlugin(name: string): InstalledPlugin[] {
 }
 
 /**
- * SKILL.md body (frontmatter stripped) of a bundled managed skill, for the
- * preview modal. Allowlisted against the shipped skill set — the name never
- * touches the filesystem unless it's one of ours.
+ * Allowlisted against the shipped skill set — the name never touches the
+ * filesystem unless it's one of ours.
  */
-export function getBundledSkillContent(name: string): string | null {
+function resolveBundledSkillPath(name: string): string | null {
 	if (!SUPERSET_MANAGED_SKILLS.some((skill) => skill.name === name)) {
 		return null;
 	}
-	const skillPath = path.join(
-		getBundledPluginDir(),
-		"skills",
-		name,
-		"SKILL.md",
-	);
+	return path.join(getBundledPluginDir(), "skills", name, "SKILL.md");
+}
+
+/** SKILL.md body (frontmatter stripped) of a bundled managed skill, for the preview modal. */
+export function getBundledSkillContent(name: string): string | null {
+	const skillPath = resolveBundledSkillPath(name);
+	if (!skillPath) return null;
 	try {
 		const raw = fs.readFileSync(skillPath, "utf-8");
 		return raw.replace(/^---\n[\s\S]*?\n---\n*/, "");
 	} catch {
 		return null;
 	}
+}
+
+/** Absolute path to a bundled skill's SKILL.md, for Open/Reveal in Finder. */
+export function getBundledSkillPath(name: string): string | null {
+	const skillPath = resolveBundledSkillPath(name);
+	if (!skillPath || !fs.existsSync(skillPath)) return null;
+	return skillPath;
 }
 
 const SKILL_ICON_FILES = [

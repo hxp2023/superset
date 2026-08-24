@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import {
 	getBundledSkillContent,
 	getBundledSkillIcons,
+	getBundledSkillPath,
 	getDisabledSkills,
 	getInstalledPlugins,
 	installPlugin,
@@ -38,11 +39,14 @@ export const createPluginsRouter = () => {
 			return getBundledSkillIcons();
 		}),
 
-		/** SKILL.md body of a bundled managed skill, for the preview modal. */
+		/** SKILL.md body and absolute path of a bundled managed skill, for the preview modal. */
 		getSkillContent: publicProcedure
 			.input(z.object({ name: z.string().min(1) }))
 			.query(({ input }) => {
-				return { content: getBundledSkillContent(input.name) };
+				return {
+					content: getBundledSkillContent(input.name),
+					path: getBundledSkillPath(input.name),
+				};
 			}),
 
 		/** Names of bundled managed skills the user disabled. */
