@@ -58,7 +58,14 @@ export const createPluginsRouter = () => {
 		setSkillEnabled: publicProcedure
 			.input(z.object({ name: z.string().min(1), enabled: z.boolean() }))
 			.mutation(({ input }) => {
-				return { disabled: setSkillEnabled(input.name, input.enabled) };
+				const disabled = setSkillEnabled(input.name, input.enabled);
+				if (disabled === null) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: `Unknown skill: ${input.name}`,
+					});
+				}
+				return { disabled };
 			}),
 
 		/** Overwrites a bundled skill's SKILL.md, from the in-app editor. */

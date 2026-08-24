@@ -18,6 +18,7 @@ import { toast } from "@superset/ui/sonner";
 import { Switch } from "@superset/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { XIcon } from "lucide-react";
+import { useRef } from "react";
 import {
 	LuCopy,
 	LuEllipsis,
@@ -44,6 +45,7 @@ export function SkillPreviewDialog({
 	const { disabledSkills, setEnabled, isBusy } = useSkillMutations();
 	const isEnabled = skill !== null && !disabledSkills.has(skill.name);
 	const { copyToClipboard } = useCopyToClipboard();
+	const initialFocusRef = useRef<HTMLDivElement>(null);
 
 	const handleOpen = async () => {
 		if (!path) return;
@@ -94,13 +96,22 @@ export function SkillPreviewDialog({
 			    variant is needed to beat the dialog's built-in sm:max-w-lg. */}
 			<DialogContent
 				showCloseButton={false}
-				// Without this, Radix auto-focuses the Switch on open (it's the
-				// first focusable element in the header row), which also opens
-				// its tooltip via :focus even though the user never hovered it.
-				onOpenAutoFocus={(event) => event.preventDefault()}
+				// Left to Radix's default, autofocus lands on the Switch (the first
+				// focusable element in the header row), which also opens its
+				// tooltip via :focus even though the user never hovered it. Redirect
+				// focus to the header row itself instead of just suppressing it, so
+				// keyboard/screen-reader users still land inside the dialog.
+				onOpenAutoFocus={(event) => {
+					event.preventDefault();
+					initialFocusRef.current?.focus();
+				}}
 				className="flex h-[80vh] max-w-4xl flex-col bg-card sm:max-w-4xl"
 			>
-				<div className="flex items-start justify-between gap-3">
+				<div
+					ref={initialFocusRef}
+					tabIndex={-1}
+					className="flex items-start justify-between gap-3 outline-none"
+				>
 					<DialogHeader className="flex-1">
 						<DialogTitle className="flex items-center gap-2">
 							{skill !== null && (

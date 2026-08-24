@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
 	createManagedSkills,
+	resolveDisabledSkillIds,
 	syncManagedMcpServers,
 	writeSharedDisabledSkillIds,
 } from "@superset/agent-setup";
@@ -122,20 +123,6 @@ export function getBundledSkillPath(name: string): string | null {
 	return skillPath;
 }
 
-/**
- * Overwrites a bundled skill's SKILL.md, then re-provisions it out to
- * ~/.agents/skills, the Claude plugin mirror, and the slash-command file —
- * same convention as setSkillEnabled below.
- */
-export function writeBundledSkillContent(name: string, content: string): void {
-	const skillPath = resolveBundledSkillPath(name);
-	if (!skillPath) {
-		throw new Error(`Unknown skill: ${name}`);
-	}
-	fs.writeFileSync(skillPath, content, "utf-8");
-	void createManagedSkills({ disabledSkills: getDisabledSkills() });
-}
-
 const SKILL_ICON_FILES = [
 	{ file: "icon.svg", mime: "image/svg+xml" },
 	{ file: "icon.png", mime: "image/png" },
@@ -206,13 +193,46 @@ export function getDisabledSkills(): string[] {
 	return localDb.select().from(settings).get()?.disabledSkills ?? [];
 }
 
+// Serializes the createManagedSkills resyncs triggered by setSkillEnabled and
+// writeBundledSkillContent so overlapping calls can't interleave:
+// createManagedSkills does multi-await fs work, and without this a second
+// call's resync could finish before the first's, leaving disk state
+// contradicting whichever write actually happened last.
+let managedSkillsSyncQueue: Promise<void> = Promise.resolve();
+function queueManagedSkillsSync(disabledSkills: readonly string[]): void {
+	managedSkillsSyncQueue = managedSkillsSyncQueue
+		.catch(() => {}) // a prior failure must not stall later syncs
+		.then(() => createManagedSkills({ disabledSkills }));
+}
+
+/**
+ * Overwrites a bundled skill's SKILL.md, then re-provisions it out to
+ * ~/.agents/skills, the Claude plugin mirror, and the slash-command file —
+ * same convention as setSkillEnabled below.
+ */
+export function writeBundledSkillContent(name: string, content: string): void {
+	const skillPath = resolveBundledSkillPath(name);
+	if (!skillPath) {
+		throw new Error(`Unknown skill: ${name}`);
+	}
+	fs.writeFileSync(skillPath, content, "utf-8");
+	queueManagedSkillsSync(resolveDisabledSkillIds(getDisabledSkills()));
+}
+
 /**
  * Toggling re-syncs immediately: disable reaps the skill from every agent
  * (and the Claude plugin mirror), enable rewrites it. Mirrored to the shared
  * disabled-skills file so CLI-launched host-services on this machine honor
  * the choice instead of re-provisioning a skill the user just disabled.
+ * Returns null for a name outside SUPERSET_MANAGED_SKILLS.
  */
-export function setSkillEnabled(name: string, enabled: boolean): string[] {
+export function setSkillEnabled(
+	name: string,
+	enabled: boolean,
+): string[] | null {
+	if (!SUPERSET_MANAGED_SKILLS.some((skill) => skill.name === name)) {
+		return null;
+	}
 	const current = new Set(getDisabledSkills());
 	if (enabled) {
 		current.delete(name);
@@ -229,6 +249,9 @@ export function setSkillEnabled(name: string, enabled: boolean): string[] {
 		})
 		.run();
 	writeSharedDisabledSkillIds(next);
-	void createManagedSkills({ disabledSkills: next });
+	// resolveDisabledSkillIds folds in SUPERSET_DISABLED_SKILLS — passing
+	// `next` straight through would silently re-enable an env-disabled skill
+	// on the next unrelated toggle.
+	queueManagedSkillsSync(resolveDisabledSkillIds(next));
 	return next;
 }
