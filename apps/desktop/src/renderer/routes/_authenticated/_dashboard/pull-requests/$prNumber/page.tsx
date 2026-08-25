@@ -48,6 +48,7 @@ import {
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
 import { Route as PullRequestsLayoutRoute } from "../layout";
+import { PullRequestCodeTab } from "./components/PullRequestCodeTab";
 
 export const Route = createFileRoute(
 	"/_authenticated/_dashboard/pull-requests/$prNumber/",
@@ -582,8 +583,8 @@ function PullRequestDetailPage() {
 					</AlertDialogFooter>
 				</EnterEnabledAlertDialogContent>
 			</AlertDialog>
-			<ScrollArea className="min-h-0 flex-1">
-				{activeTab === "summary" ? (
+			{activeTab === "summary" ? (
+				<ScrollArea className="min-h-0 flex-1">
 					<div className="grid w-full gap-8 px-4 py-6 @md:px-6 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:py-8">
 						<article className="min-w-0">
 							{data.body.trim() ? (
@@ -599,12 +600,17 @@ function PullRequestDetailPage() {
 							<PullRequestChecksSection checks={data.checks} />
 						</aside>
 					</div>
-				) : (
-					<p className="px-4 py-12 text-center text-sm text-muted-foreground @md:px-6">
-						Code view is coming soon.
-					</p>
-				)}
-			</ScrollArea>
+				</ScrollArea>
+			) : (
+				projectId &&
+				hostUrl && (
+					<PullRequestCodeTab
+						projectId={projectId}
+						prNumber={data.number}
+						hostUrl={hostUrl}
+					/>
+				)
+			)}
 		</div>
 	);
 }
