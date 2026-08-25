@@ -235,6 +235,15 @@ describe("resolveAgentLaunchPresetId", () => {
 		expect(resolveAgentLaunchPresetId("pi", "pi")).toBe("pi");
 		expect(resolveAgentLaunchPresetId("custom", "")).toBe("custom");
 	});
+
+	it("recognizes OMP when the configured command carries arguments", () => {
+		expect(resolveAgentLaunchPresetId("pi", "omp --foo")).toBe("omp");
+		expect(resolveAgentLaunchPresetId("pi", "/usr/local/bin/omp --foo")).toBe(
+			"omp",
+		);
+		expect(resolveAgentLaunchPresetId("pi", "OMP.EXE --foo")).toBe("omp");
+		expect(resolveAgentLaunchPresetId("pi", "pi --foo")).toBe("pi");
+	});
 });
 
 describe("getAgentEffortSupport", () => {

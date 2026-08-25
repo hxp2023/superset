@@ -320,7 +320,8 @@ export function resolveAgentLaunchPresetId(
 	presetId: string,
 	command: string,
 ): string {
-	const commandParts = command.trim().split(/[\\/]/);
+	const [commandToken = ""] = command.trim().split(/\s+/);
+	const commandParts = commandToken.split(/[\\/]/);
 	const executable = (
 		commandParts[commandParts.length - 1] ?? ""
 	).toLowerCase();
