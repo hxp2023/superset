@@ -272,8 +272,13 @@ export function DashboardSidebarWorkspaceStatusProvider({
 			if (!target.hostUrl) return;
 			const isActive = target.workspaceId === activeWorkspaceId;
 			const statuses = statusesByIndex[index];
+			// Reuses the same canonical "does this need an attention indicator"
+			// predicate the UI itself uses (see the entries memo below), rather
+			// than a parallel `!== "idle"` check — so a future PaneStatus value
+			// can't silently start (or stop) granting a live watcher without
+			// this decision being revisited too.
 			const hasActiveTerminal = statuses
-				? [...statuses.values()].some((status) => status !== "idle")
+				? getHighestPriorityStatus(statuses.values()) !== null
 				: false;
 			if (isActive || hasActiveTerminal) {
 				result.push({
@@ -282,6 +287,11 @@ export function DashboardSidebarWorkspaceStatusProvider({
 				});
 			}
 		});
+		// Sorted so a pure reorder of `workspaces` (no membership change) can't
+		// change the fingerprint below and trigger a needless watchGit/
+		// unwatchGit diffing pass — the resulting Map is keyed by workspaceId
+		// either way, so order was never semantically meaningful here.
+		result.sort((a, b) => a.workspaceId.localeCompare(b.workspaceId));
 		return result;
 	}, [targets, statusesByIndex, activeWorkspaceId]);
 	// Fingerprint-stabilized for the same reason `targets` is above: this
