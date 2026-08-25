@@ -38,86 +38,104 @@ function bytes(text: string): Uint8Array {
 	return new TextEncoder().encode(text);
 }
 
+// Stands in for xterm: records each batch and holds its completion callback
+// until the test says the parser caught up, the way xterm holds it until the
+// chunk has parsed.
+function fakeTerminal() {
+	const writes: Uint8Array[] = [];
+	const callbacks: Array<() => void> = [];
+	return {
+		writes,
+		write(data: Uint8Array, done: () => void) {
+			writes.push(data);
+			callbacks.push(done);
+		},
+		text: () => writes.map((w) => new TextDecoder().decode(w)),
+		/** Report every outstanding batch parsed, then settle the microtasks. */
+		async drain() {
+			for (const done of callbacks.splice(0, callbacks.length)) done();
+			await Promise.resolve();
+		},
+	};
+}
+
 describe("createWriteCoalescer", () => {
 	test("coalesces chunks arriving in the same frame into one write", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		coalescer.push(bytes("foo"));
 		coalescer.push(bytes("bar"));
 		coalescer.push(bytes("baz"));
-		expect(writes).toHaveLength(0);
+		expect(term.writes).toHaveLength(0);
 
 		fireFrame();
-		expect(writes).toHaveLength(1);
-		expect(new TextDecoder().decode(writes[0])).toBe("foobarbaz");
+		expect(term.text()).toEqual(["foobarbaz"]);
 	});
 
-	test("schedules a new frame for data arriving after a flush", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+	test("schedules a new frame for data arriving after a flush", async () => {
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		coalescer.push(bytes("first"));
 		fireFrame();
+		await term.drain();
 		coalescer.push(bytes("second"));
 		fireFrame();
 
-		expect(writes).toHaveLength(2);
-		expect(new TextDecoder().decode(writes[1])).toBe("second");
+		expect(term.text()).toEqual(["first", "second"]);
 	});
 
 	test("flushSync writes pending bytes immediately and cancels the scheduled frame", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		coalescer.push(bytes("pending"));
 		coalescer.flushSync();
-		expect(writes).toHaveLength(1);
-		expect(new TextDecoder().decode(writes[0])).toBe("pending");
+		expect(term.text()).toEqual(["pending"]);
 
 		// The previously scheduled frame must not produce a second write.
 		fireFrame();
-		expect(writes).toHaveLength(1);
+		expect(term.writes).toHaveLength(1);
 	});
 
 	test("flushSync with nothing pending writes nothing", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		coalescer.flushSync();
-		expect(writes).toHaveLength(0);
+		expect(term.writes).toHaveLength(0);
 	});
 
 	test("flushes immediately when pending bytes exceed the cap", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		coalescer.push(new Uint8Array(MAX_PENDING_BYTES + 1));
-		expect(writes).toHaveLength(1);
-		expect(writes[0]).toHaveLength(MAX_PENDING_BYTES + 1);
+		expect(term.writes).toHaveLength(1);
+		expect(term.writes[0]).toHaveLength(MAX_PENDING_BYTES + 1);
 
 		// Nothing left for the frame to write.
 		fireFrame();
-		expect(writes).toHaveLength(1);
+		expect(term.writes).toHaveLength(1);
 	});
 
 	test("dispose flushes pending bytes and ignores later pushes", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		coalescer.push(bytes("tail"));
 		coalescer.dispose();
-		expect(writes).toHaveLength(1);
-		expect(new TextDecoder().decode(writes[0])).toBe("tail");
+		expect(term.text()).toEqual(["tail"]);
 
 		coalescer.push(bytes("ignored"));
 		fireFrame();
-		expect(writes).toHaveLength(1);
+		expect(term.writes).toHaveLength(1);
 	});
 
 	test("preserves byte order across many small chunks", () => {
-		const writes: Uint8Array[] = [];
-		const coalescer = createWriteCoalescer((data) => writes.push(data));
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
 
 		const parts = Array.from({ length: 100 }, (_, i) => `${i},`);
 		for (const part of parts) {
@@ -125,7 +143,81 @@ describe("createWriteCoalescer", () => {
 		}
 		fireFrame();
 
-		expect(writes).toHaveLength(1);
-		expect(new TextDecoder().decode(writes[0])).toBe(parts.join(""));
+		expect(term.text()).toEqual([parts.join("")]);
+	});
+
+	test("holds the next batch until the terminal reports the last one parsed", async () => {
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
+
+		coalescer.push(bytes("first"));
+		fireFrame();
+		expect(term.text()).toEqual(["first"]);
+
+		// Terminal has not called back yet: frames keep passing, nothing more
+		// is handed over, and nothing is dropped.
+		coalescer.push(bytes("second"));
+		fireFrame();
+		fireFrame();
+		expect(term.text()).toEqual(["first"]);
+
+		await term.drain();
+		fireFrame();
+		expect(term.text()).toEqual(["first", "second"]);
+	});
+
+	test("never exceeds the cap in the terminal while it is behind", async () => {
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
+
+		coalescer.push(bytes("first"));
+		fireFrame();
+
+		// A burst far past the cap arrives while the terminal is still parsing.
+		// Pre-back-pressure this flushed on every cap crossing, piling unparsed
+		// data up inside the terminal until it threw the batch away.
+		for (let i = 0; i < 8; i++) {
+			coalescer.push(new Uint8Array(MAX_PENDING_BYTES));
+		}
+		expect(term.writes).toHaveLength(1);
+
+		// Draining hands the whole backlog over at once, without waiting for a
+		// frame — the terminal is behind, so idling would only widen the gap.
+		await term.drain();
+		expect(term.writes).toHaveLength(2);
+		expect(term.writes[1]).toHaveLength(8 * MAX_PENDING_BYTES);
+	});
+
+	test("flushSync still orders other writers behind pending bytes mid-parse", () => {
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
+
+		coalescer.push(bytes("first"));
+		fireFrame();
+		coalescer.push(bytes("second"));
+
+		// An exit notice needs the PTY bytes in the terminal first, even though
+		// the previous batch has not parsed yet.
+		coalescer.flushSync();
+		expect(term.text()).toEqual(["first", "second"]);
+	});
+
+	test("a throwing write does not wedge the coalescer", () => {
+		const writes: string[] = [];
+		let fail = true;
+		const coalescer = createWriteCoalescer((data) => {
+			if (fail) throw new Error("write data discarded, use flow control");
+			writes.push(new TextDecoder().decode(data));
+		});
+
+		coalescer.push(bytes("discarded"));
+		expect(() => coalescer.flushSync()).toThrow("write data discarded");
+
+		// The failed write must not leave the coalescer believing a batch is
+		// still in flight, or the pane would never render again.
+		fail = false;
+		coalescer.push(bytes("after"));
+		fireFrame();
+		expect(writes).toEqual(["after"]);
 	});
 });
