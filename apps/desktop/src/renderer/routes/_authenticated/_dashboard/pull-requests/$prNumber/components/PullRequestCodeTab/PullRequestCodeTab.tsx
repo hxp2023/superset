@@ -12,6 +12,8 @@ import { cn } from "@superset/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+	LuChevronDown,
+	LuChevronUp,
 	LuColumns2,
 	LuPanelLeft,
 	LuPanelLeftClose,
@@ -50,6 +52,13 @@ interface PrCommentThreadMetadata {
 	isResolved: boolean;
 	isOutdated: boolean;
 	url?: string;
+}
+
+interface OrderedThread {
+	threadId: string;
+	itemId: string;
+	lineNumber: number;
+	side: "additions" | "deletions";
 }
 
 type DiffStyle = "split" | "unified";
@@ -222,6 +231,66 @@ export function PullRequestCodeTab({
 			})),
 		[files, annotationsByPath],
 	);
+	// Flattened in diff order (file order, then line number within a file)
+	// so next/prev walks the pane top-to-bottom instead of thread-creation
+	// order.
+	const orderedThreads = useMemo<OrderedThread[]>(() => {
+		const list: OrderedThread[] = [];
+		for (const f of files) {
+			const annotations = annotationsByPath.get(f.path);
+			if (!annotations) continue;
+			const sorted = [...annotations].sort(
+				(a, b) => a.lineNumber - b.lineNumber,
+			);
+			for (const annotation of sorted) {
+				if (!annotation.metadata) continue;
+				list.push({
+					threadId: annotation.metadata.threadId,
+					itemId: f.item.id,
+					lineNumber: annotation.lineNumber,
+					side: annotation.side,
+				});
+			}
+		}
+		return list;
+	}, [files, annotationsByPath]);
+	const [focusedThreadIndex, setFocusedThreadIndex] = useState<number | null>(
+		null,
+	);
+	const [focusTick, setFocusTick] = useState(0);
+
+	const jumpToThread = (index: number) => {
+		const target = orderedThreads[index];
+		if (!target) return;
+		setFocusedThreadIndex(index);
+		setFocusTick(Date.now());
+		codeViewRef.current?.scrollTo({
+			type: "line",
+			id: target.itemId,
+			lineNumber: target.lineNumber,
+			side: target.side,
+			align: "center",
+			behavior: "smooth-auto",
+		});
+	};
+	const goToNextComment = () => {
+		if (orderedThreads.length === 0) return;
+		jumpToThread(
+			focusedThreadIndex == null
+				? 0
+				: (focusedThreadIndex + 1) % orderedThreads.length,
+		);
+	};
+	const goToPrevComment = () => {
+		if (orderedThreads.length === 0) return;
+		jumpToThread(
+			focusedThreadIndex == null
+				? orderedThreads.length - 1
+				: (focusedThreadIndex - 1 + orderedThreads.length) %
+						orderedThreads.length,
+		);
+	};
+
 	const treePaths = useMemo(() => files.map((f) => f.path), [files]);
 	const fileByPath = useMemo(
 		() => new Map(files.map((f) => [f.path, f])),
@@ -378,6 +447,52 @@ export function PullRequestCodeTab({
 							</TooltipContent>
 						</Tooltip>
 						<div className="flex items-center gap-1">
+							{orderedThreads.length > 0 && (
+								<>
+									<div className="flex items-center gap-0.5 rounded-md border border-border/60 px-1 py-0.5">
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<button
+													type="button"
+													onClick={goToPrevComment}
+													aria-label="Previous comment"
+													className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+												>
+													<LuChevronUp className="size-3.5" strokeWidth={1.5} />
+												</button>
+											</TooltipTrigger>
+											<TooltipContent side="bottom">
+												Previous comment
+											</TooltipContent>
+										</Tooltip>
+										<span className="min-w-[3ch] text-center text-[11px] tabular-nums text-muted-foreground">
+											{focusedThreadIndex != null
+												? focusedThreadIndex + 1
+												: "–"}
+											/{orderedThreads.length}
+										</span>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<button
+													type="button"
+													onClick={goToNextComment}
+													aria-label="Next comment"
+													className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+												>
+													<LuChevronDown
+														className="size-3.5"
+														strokeWidth={1.5}
+													/>
+												</button>
+											</TooltipTrigger>
+											<TooltipContent side="bottom">
+												Next comment
+											</TooltipContent>
+										</Tooltip>
+									</div>
+									<div className="mx-0.5 h-4 w-px bg-border" />
+								</>
+							)}
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<button
@@ -417,6 +532,10 @@ export function PullRequestCodeTab({
 						renderAnnotation={(annotation) => {
 							const metadata = annotation.metadata;
 							if (!metadata) return null;
+							const isFocused =
+								focusedThreadIndex != null &&
+								orderedThreads[focusedThreadIndex]?.threadId ===
+									metadata.threadId;
 							return (
 								<PullRequestCommentThread
 									isResolved={metadata.isResolved}
@@ -434,6 +553,7 @@ export function PullRequestCodeTab({
 										setThreadResolution.variables?.threadId ===
 											metadata.threadId
 									}
+									focusTick={isFocused ? focusTick : undefined}
 								/>
 							);
 						}}

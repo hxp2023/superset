@@ -33,6 +33,9 @@ interface PullRequestCommentThreadProps {
 	comments: Comment[];
 	onResolveChange: (resolved: boolean) => void;
 	isResolvePending?: boolean;
+	/** Force-expand the bubble whenever this changes — lets "jump to
+	 *  comment" reveal a collapsed (resolved/outdated) thread. */
+	focusTick?: number;
 }
 
 // A decoupled twin of the v2-workspace DiffPane's CommentThread: same
@@ -47,6 +50,7 @@ export function PullRequestCommentThread({
 	comments,
 	onResolveChange,
 	isResolvePending,
+	focusTick,
 }: PullRequestCommentThreadProps) {
 	const [open, setOpen] = useState(!isResolved && !isOutdated);
 	const [isCopied, setIsCopied] = useState(false);
@@ -73,6 +77,11 @@ export function PullRequestCommentThread({
 	useEffect(() => {
 		if (isResolved || isOutdated) setOpen(false);
 	}, [isResolved, isOutdated]);
+	// Force-expand when the reviewer jumps to this thread, even if it was
+	// collapsed for being resolved or outdated.
+	useEffect(() => {
+		if (focusTick != null) setOpen(true);
+	}, [focusTick]);
 
 	const firstComment = comments[0];
 
@@ -84,7 +93,11 @@ export function PullRequestCommentThread({
 				// Full-bleed band flush with the diff pane's edges (no side
 				// margin/rounding/border-box) so it reads as part of the diff
 				// like GitHub's inline review threads, not a floating card.
-				"diff-comment w-full border-y border-border/50 bg-muted/20 text-card-foreground",
+				// font-sans: the annotation slot is mounted inside the same
+				// <pre> the code lines live in, which sets a monospace
+				// --diffs-font-family that would otherwise leak into this
+				// prose (author names, timestamps, comment bodies).
+				"diff-comment w-full border-y border-border/50 bg-muted/20 font-sans text-card-foreground",
 				isResolved && "opacity-75",
 			)}
 		>
