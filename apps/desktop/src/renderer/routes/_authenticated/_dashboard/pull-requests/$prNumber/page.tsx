@@ -442,7 +442,7 @@ function PullRequestDetailPage() {
 						#{data.number}
 					</span>
 					<span aria-hidden>·</span>
-					<Tooltip delayDuration={500}>
+					<Tooltip delayDuration={1000}>
 						<TooltipTrigger asChild>
 							<button
 								type="button"
@@ -450,7 +450,6 @@ function PullRequestDetailPage() {
 									copyBranch(data.branch);
 									toast.success("Branch copied", {
 										description: data.branch,
-										closeButton: true,
 										icon: (
 											<span className="flex size-4 items-center justify-center rounded-full bg-emerald-500">
 												<LuCheck
