@@ -446,7 +446,10 @@ function PullRequestDetailPage() {
 						<TooltipTrigger asChild>
 							<button
 								type="button"
-								onClick={() => copyBranch(data.branch)}
+								onClick={() => {
+									copyBranch(data.branch);
+									toast.success("Branch name copied");
+								}}
 								className="flex min-w-0 shrink items-center gap-1 font-mono text-muted-foreground hover:text-foreground"
 							>
 								<LuGitBranch className="size-3 shrink-0" />
