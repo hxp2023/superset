@@ -36,9 +36,11 @@ import { useSlashCommands } from "@/screens/(authenticated)/hooks/useSlashComman
 import { usePendingWorkspaceCreatesStore } from "@/screens/(authenticated)/stores/pendingWorkspaceCreatesStore";
 import { useTerminalSeenStore } from "@/screens/(authenticated)/stores/terminalSeenStore";
 import { useTerminalTabOrderStore } from "@/screens/(authenticated)/stores/terminalTabOrderStore";
+import { useUnreadWorkspacesStore } from "@/screens/(authenticated)/stores/unreadWorkspacesStore";
 import { CloudWorkspaceProvisioningState } from "../components/CloudWorkspaceProvisioningState";
 import { HeaderNotice } from "../components/HeaderNotice";
 import { PullRequestsButton } from "../components/PullRequestsButton";
+import { ScrollToBottomButton } from "../components/ScrollToBottomButton";
 import {
 	TerminalComposer,
 	type TerminalQuickKey,
@@ -60,11 +62,13 @@ import { WorkspacePlaceholder } from "./components/WorkspacePlaceholder";
 
 const NOTICE_MS = 1500;
 
+// No fullScreenGestureEnabled: false here. On iOS 26 the system's back swipe
+// IS the full-screen one, and react-native-screens reads that flag as "no back
+// gesture at all" rather than "edge only" — the old edge recognizer is gone.
 const headerOptions = {
 	headerShown: true,
 	headerBackButtonDisplayMode: "minimal",
 	headerShadowVisible: false,
-	fullScreenGestureEnabled: false,
 } as const;
 
 const PENDING_CREATE_POLL_MS = 2_000;
@@ -272,6 +276,15 @@ export function WorkspaceScreen() {
 		if (activeTerminalId) setPickedTerminalId(activeTerminalId);
 	}, [params.tab, rows, activeTerminalId]);
 
+	// Opening the workspace reads it, the way clicking a desktop sidebar row
+	// does — the mark is only there to bring you back here.
+	const clearManualUnread = useUnreadWorkspacesStore(
+		(state) => state.clearManualUnread,
+	);
+	useEffect(() => {
+		if (id) clearManualUnread(id);
+	}, [id, clearManualUnread]);
+
 	// Port of desktop's useClearActivePaneAttention: viewing the tab clears
 	// its `review` state by advancing the seen mark to the binding's last
 	// event (host clock — never the device clock).
@@ -347,6 +360,7 @@ export function WorkspaceScreen() {
 		active: false,
 		hasSelection: false,
 	});
+	const [atBottom, setAtBottom] = useState(true);
 	// seq gives each notice its own identity: a repeat copy while "Copied" is
 	// still up remounts HeaderNotice, restarting its timer.
 	const [notice, setNotice] = useState<{ text: string; seq: number } | null>(
@@ -571,21 +585,54 @@ export function WorkspaceScreen() {
 						title="This host needs an update"
 					/>
 				) : activeTerminalId && host && id ? (
-					<TerminalWebView
-						ref={terminalRef}
-						workspaceId={id}
-						terminalId={activeTerminalId}
-						host={host}
-						onStateChange={setConnectionState}
-						onControl={handleControl}
-						onSelectChange={setSelect}
-						onCopied={handleCopied}
-						// Tap-to-dismiss without an overlay: a Pressable stacked over
-						// the WebView also ate scroll drags, so the scrollback froze
-						// whenever the keyboard was up. The page reports plain taps
-						// instead, and drags stay with the terminal.
-						onTap={handleTerminalTap}
-					/>
+					<>
+						<TerminalWebView
+							ref={terminalRef}
+							workspaceId={id}
+							terminalId={activeTerminalId}
+							host={host}
+							onStateChange={setConnectionState}
+							onControl={handleControl}
+							onSelectChange={setSelect}
+							onCopied={handleCopied}
+							onScrollChange={setAtBottom}
+							// Tap-to-dismiss without an overlay: a Pressable stacked over
+							// the WebView also ate scroll drags, so the scrollback froze
+							// whenever the keyboard was up. The page reports plain taps
+							// instead, and drags stay with the terminal.
+							onTap={handleTerminalTap}
+						/>
+						{/* The WebView swallows every touch that lands on it, so the back
+						    swipe never starts over the terminal. This strip keeps a
+						    finger's width of the left edge native, which is all UIKit
+						    needs. Dragging further right stays the terminal's — WebKit
+						    still owns those touches, so no drag over output can pop.
+						    A Pressable rather than a plain View because an undrawn View
+						    can be flattened away — leaving the edge to WebKit again. */}
+						<Pressable
+							// Silent to VoiceOver: it is always mounted, and a terminal
+							// tap already dismisses the keyboard.
+							accessible={false}
+							className="absolute bottom-0 left-0 top-0 w-5"
+							onPress={() => composerRef.current?.blur()}
+						/>
+						{/* After the dismiss target so it stays tappable with the
+						    keyboard up, and hidden in select mode: the frozen snapshot
+						    covers the viewport this would move. Always mounted — it
+						    fades itself, which it cannot do if the parent unmounts it. */}
+						<ScrollToBottomButton
+							visible={!atBottom && !select.active}
+							onPress={() => {
+								// The tap lands in SwiftUI, where RN autocapture cannot see
+								// it — this surface only exists if it is captured by hand.
+								posthog.capture("terminal_scrolled_to_bottom", {
+									workspace_id: id ?? null,
+									source: "button",
+								});
+								terminalRef.current?.scrollToBottom();
+							}}
+						/>
+					</>
 				) : cloud && !workspace ? (
 					<CloudWorkspaceProvisioningState cloud={cloud} />
 				) : isResolving || (!isReady && host) ? (
