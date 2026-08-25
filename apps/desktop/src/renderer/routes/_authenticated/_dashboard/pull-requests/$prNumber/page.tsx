@@ -21,15 +21,17 @@ import { ScrollArea } from "@superset/ui/scroll-area";
 import { Skeleton } from "@superset/ui/skeleton";
 import { toast } from "@superset/ui/sonner";
 import { Textarea } from "@superset/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
-import { LuChevronRight } from "react-icons/lu";
+import { LuChevronRight, LuGitBranch } from "react-icons/lu";
 import { VscChevronDown, VscGitMerge } from "react-icons/vsc";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { formatRelativeTime } from "renderer/lib/formatRelativeTime";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
@@ -123,6 +125,8 @@ function PullRequestDetailPage() {
 	);
 	const [activeTab, setActiveTab] = useState<DetailTab>("summary");
 	const [mergeComment, setMergeComment] = useState("");
+	const { copyToClipboard: copyBranch, copied: branchCopied } =
+		useCopyToClipboard();
 
 	const { data, isLoading, error, refetch } = useQuery({
 		queryKey: ["pull-request-detail", projectId, hostUrl, prNumber],
@@ -276,7 +280,7 @@ function PullRequestDetailPage() {
 				{isLoading ? (
 					<Skeleton className="h-6 w-72 max-w-full" />
 				) : (
-					<h1 className="min-w-0 truncate text-xl font-semibold leading-tight">
+					<h1 className="min-w-0 select-text truncate text-xl font-semibold leading-tight">
 						{data?.title ??
 							(itemNumber === null ? "Pull request" : `#${itemNumber}`)}
 					</h1>
@@ -437,6 +441,22 @@ function PullRequestDetailPage() {
 					<span className="shrink-0 font-mono tabular-nums">
 						#{data.number}
 					</span>
+					<span aria-hidden>·</span>
+					<Tooltip delayDuration={500}>
+						<TooltipTrigger asChild>
+							<button
+								type="button"
+								onClick={() => copyBranch(data.branch)}
+								className="flex min-w-0 shrink items-center gap-1 font-mono text-muted-foreground hover:text-foreground"
+							>
+								<LuGitBranch className="size-3 shrink-0" />
+								<span className="truncate hover:underline">{data.branch}</span>
+							</button>
+						</TooltipTrigger>
+						<TooltipContent side="bottom">
+							{branchCopied ? "Copied" : "Click to copy"}
+						</TooltipContent>
+					</Tooltip>
 					{createdAtLabel !== null && (
 						<>
 							<span aria-hidden>·</span>
