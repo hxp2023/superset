@@ -37,6 +37,7 @@ import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/c
 import type { AgentTarget } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/hooks/useDiffCommentTarget";
 import { useDiffCodeViewTheme } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/hooks/useDiffCodeViewTheme";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
+import { useSettings } from "renderer/stores/settings";
 import { useWorkspaceCreates } from "renderer/stores/workspace-creates/useWorkspaceCreates";
 import { PullRequestCommentComposer } from "../PullRequestCommentComposer";
 import { PullRequestCommentThread } from "../PullRequestCommentThread";
@@ -73,8 +74,10 @@ interface PrCommentThreadMetadata {
 interface PrDraftCommentMetadata {
 	kind: "composer";
 	path: string;
-	line: number;
-	side: "additions" | "deletions";
+	startLine: number;
+	endLine: number;
+	startSide: "additions" | "deletions";
+	endSide: "additions" | "deletions";
 }
 
 type PrAnnotationMetadata = PrCommentThreadMetadata | PrDraftCommentMetadata;
@@ -92,8 +95,6 @@ interface ComposerState {
 	range: SelectedLineRange;
 }
 
-type DiffStyle = "split" | "unified";
-
 // Wider than the tree's other call sites: PR diffs commonly nest several
 // levels deeper than a plain file explorer (app/components/FooSection/...),
 // and Pierre's row-level overflow detection truncates names hardest at
@@ -107,6 +108,16 @@ const TREE_STYLE = createPierreTreeStyle({
 	rowHeight: ITEM_HEIGHT,
 	levelIndent: 8,
 });
+
+// Below this window width, the tree+diff split gets cramped enough that a
+// fully-expanded tree (Pierre's "open" default) eats more room than it's
+// worth — default to collapsed so the diff gets the space and the reviewer
+// expands only the folders they need. `useFileTree`'s initialExpansion is
+// a one-time value baked into the tree's store at creation, so this reads
+// window.innerWidth once at mount rather than reactively tracking the
+// pane's own width — a fully reactive re-collapse on resize would need a
+// bulk collapse-all the tree model doesn't expose.
+const NARROW_WINDOW_WIDTH_THRESHOLD = 1400;
 
 // GitHub's diff-file-type vocabulary (from parsePatchFiles) mapped onto
 // Pierre's tree git-status vocabulary — a distinct mapping from
@@ -127,29 +138,28 @@ interface ParsedFileDiff {
 	deletions: number;
 }
 
+// Left to throw on a malformed patch instead of swallowing the error —
+// callers need to tell "the PR genuinely has no changes" apart from "the
+// patch failed to parse", which look identical if this just returns [].
 function parseFileDiffs(patch: string): ParsedFileDiff[] {
 	if (!patch.trim()) return [];
-	try {
-		return parsePatchFiles(patch, undefined, false).flatMap((parsedPatch) =>
-			parsedPatch.files.map((fileDiff, index) => {
-				let additions = 0;
-				let deletions = 0;
-				for (const hunk of fileDiff.hunks) {
-					additions += hunk.additionLines;
-					deletions += hunk.deletionLines;
-				}
-				return {
-					item: { id: `${fileDiff.name}-${index}`, type: "diff", fileDiff },
-					path: fileDiff.name,
-					status: CHANGE_TYPE_TO_PIERRE_STATUS[fileDiff.type] ?? "modified",
-					additions,
-					deletions,
-				};
-			}),
-		);
-	} catch {
-		return [];
-	}
+	return parsePatchFiles(patch, undefined, false).flatMap((parsedPatch) =>
+		parsedPatch.files.map((fileDiff, index) => {
+			let additions = 0;
+			let deletions = 0;
+			for (const hunk of fileDiff.hunks) {
+				additions += hunk.additionLines;
+				deletions += hunk.deletionLines;
+			}
+			return {
+				item: { id: `${fileDiff.name}-${index}`, type: "diff", fileDiff },
+				path: fileDiff.name,
+				status: CHANGE_TYPE_TO_PIERRE_STATUS[fileDiff.type] ?? "modified",
+				additions,
+				deletions,
+			};
+		}),
+	);
 }
 
 function formatDiffStats(additions: number, deletions: number): string {
@@ -157,6 +167,16 @@ function formatDiffStats(additions: number, deletions: number): string {
 	if (additions === 0) return `−${deletions}`;
 	if (deletions === 0) return `+${additions}`;
 	return `+${additions} −${deletions}`;
+}
+
+// Matches DiffPane's useDiffCommentComposer: a range spanning both an
+// addition and a deletion side has no single "side" the agent prompt can
+// name, so it's reported as "mixed" rather than picking one arbitrarily.
+function rangeSide(
+	startSide: "additions" | "deletions",
+	endSide: "additions" | "deletions",
+): AgentPromptFileSide {
+	return startSide === endSide ? startSide : "mixed";
 }
 
 export function PullRequestCodeTab({
@@ -168,7 +188,15 @@ export function PullRequestCodeTab({
 }: PullRequestCodeTabProps) {
 	const { options, style } = useDiffCodeViewTheme();
 	const codeViewRef = useRef<CodeViewHandle<PrAnnotationMetadata>>(null);
-	const [diffStyle, setDiffStyle] = useState<DiffStyle>("unified");
+	// Sourced from the same persisted setting DiffPane's toggle reads/writes
+	// (options.diffStyle already carries it via useDiffCodeViewTheme) — a
+	// local default here would silently override the user's saved
+	// preference on first open and throw away any toggle made from this tab.
+	const diffStyle = useSettings((s) => s.diffStyle);
+	const updateSetting = useSettings((s) => s.update);
+	const [initialTreeExpansion] = useState<"open" | "closed">(() =>
+		window.innerWidth < NARROW_WINDOW_WIDTH_THRESHOLD ? "closed" : "open",
+	);
 	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
 	const [treeWidth, setTreeWidth] = useState(DEFAULT_TREE_WIDTH);
 	const [isResizingTree, setIsResizingTree] = useState(false);
@@ -196,6 +224,15 @@ export function PullRequestCodeTab({
 			return next;
 		});
 	}, []);
+	// Cancel/Escape/successful-submit close, as opposed to updateComposer(null)
+	// from onLineSelectionEnd's !range branch — there Pierre has *already*
+	// cleared its own selection (that's what produced the null range), so
+	// calling clearSelectedLines again would just be redundant. Mirrors
+	// DiffPane's useDiffCommentComposer.clear().
+	const closeComposer = useCallback(() => {
+		updateComposer(null);
+		codeViewRef.current?.clearSelectedLines();
+	}, [updateComposer]);
 	const queryClient = useQueryClient();
 
 	const { data, isLoading, error, refetch } = useQuery({
@@ -222,11 +259,56 @@ export function PullRequestCodeTab({
 		},
 		staleTime: 30_000,
 		gcTime: 10 * 60_000,
+		// This tab and a workspace DiffPane for the same PR read threads
+		// through two different tRPC clients with two separate caches, so
+		// resolving/replying in one doesn't invalidate the other. DiffPane's
+		// own threads query already self-heals via a 30s refetchInterval
+		// (see useDiffAnnotations) rather than relying on cross-cache
+		// invalidation — matching that here keeps the two surfaces from
+		// drifting for longer than DiffPane already tolerates.
+		refetchInterval: 30_000,
 	});
+	// getThreads degrades a GraphQL failure to an empty list rather than
+	// throwing (so a comments-fetch failure doesn't block the diff view
+	// itself) — fetchFailed is how it tells that apart from a PR that
+	// genuinely has no threads. Surfaced as a toast, not a blocking error
+	// state, since the diff is still fully usable; re-polls every 30s
+	// above, so this only fires once per actual failure.
+	const lastWarnedThreadsFetchedAt = useRef<number | null>(null);
+	useEffect(() => {
+		if (!threadsData?.fetchFailed) return;
+		if (lastWarnedThreadsFetchedAt.current === threadsUpdatedAt) return;
+		lastWarnedThreadsFetchedAt.current = threadsUpdatedAt;
+		toast.error("Couldn't load review comments", {
+			description:
+				"The diff is still up to date — only comments failed to load.",
+		});
+	}, [threadsData?.fetchFailed, threadsUpdatedAt]);
+	// A single useMutation instance is shared across every thread rendered
+	// in the diff (one component, called once), so `.isPending`/`.variables`
+	// only ever reflect the most recently *started* call — if two threads
+	// are resolved/replied to before either settles, the first's row would
+	// stop showing pending as soon as the second starts, even though the
+	// first's request may still be in flight. Tracking pending targets in
+	// their own Set (via onMutate/onSettled) keeps each thread's row correct
+	// regardless of how many mutations of the same kind overlap.
+	const [pendingResolveThreadIds, setPendingResolveThreadIds] = useState<
+		ReadonlySet<string>
+	>(new Set());
 	const setThreadResolution = useMutation({
 		mutationFn: async (input: { threadId: string; resolved: boolean }) => {
 			const client = getHostServiceClientByUrl(hostUrl);
 			return client.pullRequests.setThreadResolution.mutate(input);
+		},
+		onMutate: (input) => {
+			setPendingResolveThreadIds((prev) => new Set(prev).add(input.threadId));
+		},
+		onSettled: (_data, _error, input) => {
+			setPendingResolveThreadIds((prev) => {
+				const next = new Set(prev);
+				next.delete(input.threadId);
+				return next;
+			});
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
@@ -237,6 +319,9 @@ export function PullRequestCodeTab({
 			});
 		},
 	});
+	const [pendingReplyCommentIds, setPendingReplyCommentIds] = useState<
+		ReadonlySet<number>
+	>(new Set());
 	const replyToThread = useMutation({
 		mutationFn: async (input: { commentId: number; body: string }) => {
 			const client = getHostServiceClientByUrl(hostUrl);
@@ -244,6 +329,16 @@ export function PullRequestCodeTab({
 				projectId,
 				prNumber,
 				...input,
+			});
+		},
+		onMutate: (input) => {
+			setPendingReplyCommentIds((prev) => new Set(prev).add(input.commentId));
+		},
+		onSettled: (_data, _error, input) => {
+			setPendingReplyCommentIds((prev) => {
+				const next = new Set(prev);
+				next.delete(input.commentId);
+				return next;
 			});
 		},
 		onSuccess: () => {
@@ -288,15 +383,16 @@ export function PullRequestCodeTab({
 			comment: string;
 			target: AgentTarget;
 			path: string;
-			line: number;
+			startLine: number;
+			endLine: number;
 			side: AgentPromptFileSide;
 		}) => {
 			const text = formatAgentPromptWithFileContext({
 				comment: input.comment,
 				file: {
 					path: input.path,
-					startLine: input.line,
-					endLine: input.line,
+					startLine: input.startLine,
+					endLine: input.endLine,
 					side: input.side,
 				},
 			});
@@ -342,7 +438,7 @@ export function PullRequestCodeTab({
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: linkedWorkspaceQueryKey });
 			toast.success("Sent to agent");
-			updateComposer(null);
+			closeComposer();
 		},
 		onError: (mutationError) => {
 			toast.error("Couldn't send comment", {
@@ -388,7 +484,18 @@ export function PullRequestCodeTab({
 		return map;
 	}, [threadsData, prUrl]);
 
-	const files = useMemo(() => parseFileDiffs(data?.patch ?? ""), [data?.patch]);
+	const parsedPatch = useMemo(() => {
+		try {
+			return { files: parseFileDiffs(data?.patch ?? ""), error: null };
+		} catch (err) {
+			return {
+				files: [] as ParsedFileDiff[],
+				error: err instanceof Error ? err.message : "Failed to parse diff",
+			};
+		}
+	}, [data?.patch]);
+	const files = parsedPatch.files;
+	const patchParseError = parsedPatch.error;
 	const pathByItemId = useMemo(
 		() => new Map(files.map((f) => [f.item.id, f.path])),
 		[files],
@@ -396,15 +503,19 @@ export function PullRequestCodeTab({
 	const composerAnnotation =
 		useMemo<DiffLineAnnotation<PrDraftCommentMetadata> | null>(() => {
 			if (!composer) return null;
-			const side = composer.range.endSide ?? composer.range.side ?? "additions";
+			const endSide =
+				composer.range.endSide ?? composer.range.side ?? "additions";
+			const startSide = composer.range.side ?? endSide;
 			return {
-				side,
+				side: endSide,
 				lineNumber: composer.range.end,
 				metadata: {
 					kind: "composer",
 					path: composer.path,
-					line: composer.range.end,
-					side,
+					startLine: composer.range.start,
+					endLine: composer.range.end,
+					startSide,
+					endSide,
 				},
 			};
 		}, [composer]);
@@ -465,15 +576,25 @@ export function PullRequestCodeTab({
 		}
 		return list;
 	}, [files, annotationsByPath]);
-	const [focusedThreadIndex, setFocusedThreadIndex] = useState<number | null>(
-		null,
-	);
+	// Tracked by thread id, not a raw array index — orderedThreads is
+	// rebuilt from threadsData on every refetch (a background poll, an
+	// unrelated resolve/reply), which can reorder or drop entries. A stored
+	// index would then point at the wrong thread, or past the end of the
+	// list, until the user navigated again.
+	const [focusedThreadId, setFocusedThreadId] = useState<string | null>(null);
 	const [focusTick, setFocusTick] = useState(0);
+	const focusedThreadIndex = useMemo(() => {
+		if (focusedThreadId == null) return null;
+		const index = orderedThreads.findIndex(
+			(t) => t.threadId === focusedThreadId,
+		);
+		return index === -1 ? null : index;
+	}, [orderedThreads, focusedThreadId]);
 
 	const jumpToThread = (index: number) => {
 		const target = orderedThreads[index];
 		if (!target) return;
-		setFocusedThreadIndex(index);
+		setFocusedThreadId(target.threadId);
 		setFocusTick(Date.now());
 		codeViewRef.current?.scrollTo({
 			type: "line",
@@ -506,7 +627,6 @@ export function PullRequestCodeTab({
 		() =>
 			({
 				...options,
-				diffStyle,
 				enableLineSelection: true,
 				enableGutterUtility: true,
 				// Pierre gates the gutter "+" button's pointer flow behind a
@@ -529,7 +649,7 @@ export function PullRequestCodeTab({
 					updateComposer({ itemId: context.item.id, path, range });
 				},
 			}) as CodeViewOptions<PrAnnotationMetadata>,
-		[options, diffStyle, pathByItemId, updateComposer],
+		[options, pathByItemId, updateComposer],
 	);
 
 	const treePaths = useMemo(() => files.map((f) => f.path), [files]);
@@ -574,7 +694,7 @@ export function PullRequestCodeTab({
 
 	const { model } = useFileTree({
 		paths: treePaths,
-		initialExpansion: "open",
+		initialExpansion: initialTreeExpansion,
 		search: false,
 		unsafeCSS: PIERRE_TREE_UNSAFE_CSS,
 		gitStatus,
@@ -612,6 +732,18 @@ export function PullRequestCodeTab({
 			<div className="flex flex-1 items-center justify-center">
 				<WorkItemDetailState
 					message={error.message}
+					isError
+					onRetry={() => void refetch()}
+				/>
+			</div>
+		);
+	}
+
+	if (patchParseError) {
+		return (
+			<div className="flex flex-1 items-center justify-center">
+				<WorkItemDetailState
+					message={`Couldn't parse this diff: ${patchParseError}`}
 					isError
 					onRetry={() => void refetch()}
 				/>
@@ -738,7 +870,7 @@ export function PullRequestCodeTab({
 								<TooltipTrigger asChild>
 									<button
 										type="button"
-										onClick={() => setDiffStyle("unified")}
+										onClick={() => updateSetting("diffStyle", "unified")}
 										aria-label="Unified view"
 										aria-pressed={diffStyle === "unified"}
 										className={toggleClass(diffStyle === "unified")}
@@ -752,7 +884,7 @@ export function PullRequestCodeTab({
 								<TooltipTrigger asChild>
 									<button
 										type="button"
-										onClick={() => setDiffStyle("split")}
+										onClick={() => updateSetting("diffStyle", "split")}
 										aria-label="Split view"
 										aria-pressed={diffStyle === "split"}
 										className={toggleClass(diffStyle === "split")}
@@ -776,17 +908,28 @@ export function PullRequestCodeTab({
 							if (metadata.kind === "composer") {
 								return (
 									<PullRequestCommentComposer
-										contextLabel={`Line ${metadata.line}`}
+										// Keyed on the target so re-selecting a different
+										// line/file while the composer is already open
+										// remounts it instead of possibly carrying over a
+										// draft or in-flight submitting state from the
+										// previous target.
+										key={`${metadata.path}:${metadata.startLine}-${metadata.endLine}`}
+										contextLabel={
+											metadata.startLine === metadata.endLine
+												? `Line ${metadata.startLine}`
+												: `Lines ${metadata.startLine}–${metadata.endLine}`
+										}
 										hostUrl={hostUrl}
 										linkedWorkspaceId={linkedWorkspaceId}
-										onCancel={() => updateComposer(null)}
+										onCancel={closeComposer}
 										onSubmit={async ({ comment, target }) => {
 											await sendCommentToAgent.mutateAsync({
 												comment,
 												target,
 												path: metadata.path,
-												line: metadata.line,
-												side: metadata.side,
+												startLine: metadata.startLine,
+												endLine: metadata.endLine,
+												side: rangeSide(metadata.startSide, metadata.endSide),
 											});
 										}}
 									/>
@@ -808,20 +951,18 @@ export function PullRequestCodeTab({
 											resolved,
 										})
 									}
-									isResolvePending={
-										setThreadResolution.isPending &&
-										setThreadResolution.variables?.threadId ===
-											metadata.threadId
-									}
+									isResolvePending={pendingResolveThreadIds.has(
+										metadata.threadId,
+									)}
 									onReply={(body) => {
 										const commentId = metadata.replyToCommentId;
-										if (!commentId) return;
+										if (!commentId) return false;
 										replyToThread.mutate({ commentId, body });
+										return true;
 									}}
 									isReplyPending={
-										replyToThread.isPending &&
-										replyToThread.variables?.commentId ===
-											metadata.replyToCommentId
+										metadata.replyToCommentId != null &&
+										pendingReplyCommentIds.has(metadata.replyToCommentId)
 									}
 									focusTick={isFocused ? focusTick : undefined}
 								/>

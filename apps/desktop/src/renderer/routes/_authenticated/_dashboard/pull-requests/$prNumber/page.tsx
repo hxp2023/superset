@@ -447,18 +447,23 @@ function PullRequestDetailPage() {
 							<button
 								type="button"
 								onClick={() => {
-									copyBranch(data.branch);
-									toast.success("Branch copied", {
-										description: data.branch,
-										icon: (
-											<span className="flex size-4 items-center justify-center rounded-full bg-emerald-500">
-												<LuCheck
-													className="size-2.5 text-white"
-													strokeWidth={3}
-												/>
-											</span>
-										),
-									});
+									copyBranch(data.branch)
+										.then(() => {
+											toast.success("Branch copied", {
+												description: data.branch,
+												icon: (
+													<span className="flex size-4 items-center justify-center rounded-full bg-emerald-500">
+														<LuCheck
+															className="size-2.5 text-white"
+															strokeWidth={3}
+														/>
+													</span>
+												),
+											});
+										})
+										.catch(() => {
+											toast.error("Couldn't copy branch name");
+										});
 								}}
 								className="flex min-w-0 shrink items-center gap-1 font-mono text-muted-foreground hover:text-foreground"
 							>
@@ -616,8 +621,18 @@ function PullRequestDetailPage() {
 					</AlertDialogFooter>
 				</EnterEnabledAlertDialogContent>
 			</AlertDialog>
-			{activeTab === "summary" ? (
-				<ScrollArea className="min-h-0 flex-1">
+			{/* Kept mounted (hidden via CSS, not unmounted) so Radix's
+			 *  ScrollArea instance survives a tab switch and away — swapping
+			 *  it out of a ternary would reset scrollTop every time the
+			 *  reviewer comes back from the Code tab. The Code tab itself
+			 *  still mounts/unmounts with the ternary below: it isn't a
+			 *  simple scroll container (its own virtualized diff viewer
+			 *  manages scrolling internally), and keeping its polling/agent
+			 *  subscriptions alive while hidden isn't worth the tradeoff. */}
+			<div
+				className={cn("min-h-0 flex-1", activeTab !== "summary" && "hidden")}
+			>
+				<ScrollArea className="h-full">
 					<div className="grid w-full gap-8 px-4 py-6 @md:px-6 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:py-8">
 						<article className="min-w-0">
 							{data.body.trim() ? (
@@ -634,17 +649,15 @@ function PullRequestDetailPage() {
 						</aside>
 					</div>
 				</ScrollArea>
-			) : (
-				projectId &&
-				hostUrl && (
-					<PullRequestCodeTab
-						projectId={projectId}
-						prNumber={data.number}
-						prUrl={data.url}
-						hostUrl={hostUrl}
-						hostId={hostId}
-					/>
-				)
+			</div>
+			{activeTab === "code" && projectId && hostUrl && (
+				<PullRequestCodeTab
+					projectId={projectId}
+					prNumber={data.number}
+					prUrl={data.url}
+					hostUrl={hostUrl}
+					hostId={hostId}
+				/>
 			)}
 		</div>
 	);

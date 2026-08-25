@@ -34,7 +34,10 @@ interface PullRequestCommentThreadProps {
 	comments: Comment[];
 	onResolveChange: (resolved: boolean) => void;
 	isResolvePending?: boolean;
-	onReply: (body: string) => void;
+	/** Returns false when the reply couldn't be dispatched (e.g. the thread
+	 *  has no comment to reply onto yet) so the caller knows not to clear
+	 *  the draft. */
+	onReply: (body: string) => boolean;
 	isReplyPending?: boolean;
 	/** Force-expand the bubble whenever this changes — lets "jump to
 	 *  comment" reveal a collapsed (resolved/outdated) thread. */
@@ -93,11 +96,19 @@ export function PullRequestCommentThread({
 	const handleReplySubmit = () => {
 		const trimmed = replyText.trim();
 		if (!trimmed) return;
-		onReply(trimmed);
-		// Optimistic clear: the mutation is fire-and-forget from here, and a
-		// failure already surfaces as a toast (see PullRequestCodeTab's
-		// replyToThread onError) — restoring the draft on failure would need
-		// a promise-returning prop for marginal benefit.
+		const dispatched = onReply(trimmed);
+		if (!dispatched) {
+			toast.error("Couldn't send reply", {
+				description: "This thread has no comment to reply to.",
+			});
+			return;
+		}
+		// Optimistic clear: the mutation itself is fire-and-forget from here,
+		// and a failure past this point already surfaces as a toast (see
+		// PullRequestCodeTab's replyToThread onError) — restoring the draft
+		// on failure would need a promise-returning prop for marginal
+		// benefit. `dispatched` only guards against onReply no-op'ing before
+		// ever calling the mutation.
 		setReplyText("");
 	};
 
@@ -113,7 +124,7 @@ export function PullRequestCommentThread({
 				// <pre> the code lines live in, which sets a monospace
 				// --diffs-font-family that would otherwise leak into this
 				// prose (author names, timestamps, comment bodies).
-				"diff-comment w-full border-y border-border/50 bg-muted/20 font-sans text-card-foreground",
+				"pr-diff-comment w-full border-y border-border/50 bg-muted/20 font-sans text-card-foreground",
 				isResolved && "opacity-75",
 			)}
 		>
@@ -266,7 +277,7 @@ function CommentRow({ comment }: { comment: Comment }) {
 						</time>
 					)}
 				</div>
-				<div className="diff-comment-body mt-1">
+				<div className="pr-diff-comment-body mt-1">
 					<CommentMarkdown body={comment.body} />
 				</div>
 			</div>

@@ -90,7 +90,7 @@ export function PullRequestCommentComposer({
 
 	return (
 		<form
-			className="diff-comment mx-3 my-1.5 overflow-hidden rounded-lg border border-border/80 bg-popover font-sans text-popover-foreground shadow-[0_4px_16px_-4px_rgba(0,0,0,0.12),0_2px_4px_-2px_rgba(0,0,0,0.06)]"
+			className="pr-diff-comment mx-3 my-1.5 overflow-hidden rounded-lg border border-border/80 bg-popover font-sans text-popover-foreground shadow-[0_4px_16px_-4px_rgba(0,0,0,0.12),0_2px_4px_-2px_rgba(0,0,0,0.06)]"
 			onSubmit={(e) => {
 				e.preventDefault();
 				void handleSubmit();

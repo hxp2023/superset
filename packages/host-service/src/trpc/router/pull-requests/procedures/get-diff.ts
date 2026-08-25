@@ -21,8 +21,12 @@ const pullRequestDiffCache = new Map<
 export const getDiff = protectedProcedure
 	.input(getDiffInputSchema)
 	.query(async ({ ctx, input }) => {
-		const repo = await resolveGithubRepo(ctx, input.projectId);
-		const cacheKey = `${repo.owner.toLowerCase()}/${repo.name.toLowerCase()}#${input.prNumber}`;
+		// Keyed on the input alone (no await beforehand) so the cache
+		// check-then-set below is atomic — two concurrent callers for the
+		// same PR can't both miss the cache and both shell out to `gh pr
+		// diff`. resolveGithubRepo happens inside the cached promise instead
+		// of before this check.
+		const cacheKey = `${input.projectId}#${input.prNumber}`;
 		const cached = pullRequestDiffCache.get(cacheKey);
 		if (
 			cached &&
@@ -34,6 +38,7 @@ export const getDiff = protectedProcedure
 		const fetchedAt = Date.now();
 		const promise = (async (): Promise<string> => {
 			try {
+				const repo = await resolveGithubRepo(ctx, input.projectId);
 				const raw = await execGh(
 					[
 						"pr",

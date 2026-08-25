@@ -1,4 +1,4 @@
-.diff-comment {
+.pr-diff-comment {
 	display: block;
 	/* Full-bleed within the visible code column, flush with the diff pane's
 	 * edges. The bubble is slotted into a shrink-to-fit flex item
@@ -19,18 +19,18 @@
 	cursor: text;
 }
 
-.diff-comment a,
-.diff-comment button {
+.pr-diff-comment a,
+.pr-diff-comment button {
 	cursor: pointer;
 }
 
-.diff-comment * {
+.pr-diff-comment * {
 	min-width: 0;
 	max-width: 100%;
 	box-sizing: border-box;
 }
 
-.diff-comment-body {
+.pr-diff-comment-body {
 	font-size: 13px;
 	line-height: 1.4;
 	color: var(--foreground);
@@ -41,50 +41,50 @@
 /* Reset every descendant's margin so we control vertical rhythm
    ourselves — fixes huge gaps between paragraphs/list items where
    loose-list <li><p>…</p></li> kept default 1em browser margins. */
-.diff-comment-body p,
-.diff-comment-body ul,
-.diff-comment-body ol,
-.diff-comment-body pre,
-.diff-comment-body blockquote,
-.diff-comment-body h1,
-.diff-comment-body h2,
-.diff-comment-body h3,
-.diff-comment-body h4,
-.diff-comment-body h5,
-.diff-comment-body h6,
-.diff-comment-body details,
-.diff-comment-body table,
-.diff-comment-body hr {
+.pr-diff-comment-body p,
+.pr-diff-comment-body ul,
+.pr-diff-comment-body ol,
+.pr-diff-comment-body pre,
+.pr-diff-comment-body blockquote,
+.pr-diff-comment-body h1,
+.pr-diff-comment-body h2,
+.pr-diff-comment-body h3,
+.pr-diff-comment-body h4,
+.pr-diff-comment-body h5,
+.pr-diff-comment-body h6,
+.pr-diff-comment-body details,
+.pr-diff-comment-body table,
+.pr-diff-comment-body hr {
 	margin: 0;
 }
 
-.diff-comment-body > * + * {
+.pr-diff-comment-body > * + * {
 	margin-top: 0.15rem;
 }
 
-.diff-comment-body li > p + p {
+.pr-diff-comment-body li > p + p {
 	margin-top: 0.1rem;
 }
 
-.diff-comment-body a {
+.pr-diff-comment-body a {
 	color: var(--primary);
 	text-decoration: underline;
 	text-underline-offset: 2px;
 }
 
-.diff-comment-body a:hover {
+.pr-diff-comment-body a:hover {
 	text-decoration: none;
 }
 
-.diff-comment-body strong {
+.pr-diff-comment-body strong {
 	font-weight: 600;
 }
 
-.diff-comment-body em {
+.pr-diff-comment-body em {
 	font-style: italic;
 }
 
-.diff-comment-body code {
+.pr-diff-comment-body code {
 	font-family:
 		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
 		"Courier New", monospace;
@@ -95,7 +95,7 @@
 	color: var(--foreground);
 }
 
-.diff-comment-body pre {
+.pr-diff-comment-body pre {
 	font-family:
 		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
 		"Courier New", monospace;
@@ -109,57 +109,57 @@
 	word-break: break-word;
 }
 
-.diff-comment-body pre code {
+.pr-diff-comment-body pre code {
 	padding: 0;
 	background: transparent;
 	font-size: inherit;
 }
 
-.diff-comment-body ul,
-.diff-comment-body ol {
+.pr-diff-comment-body ul,
+.pr-diff-comment-body ol {
 	padding-left: 1.25rem;
 }
 
-.diff-comment-body ul {
+.pr-diff-comment-body ul {
 	list-style: disc;
 }
 
-.diff-comment-body ol {
+.pr-diff-comment-body ol {
 	list-style: decimal;
 }
 
-.diff-comment-body li + li {
+.pr-diff-comment-body li + li {
 	margin-top: 0.15rem;
 }
 
-.diff-comment-body blockquote {
+.pr-diff-comment-body blockquote {
 	margin: 0;
 	padding-left: 0.75rem;
 	border-left: 2px solid var(--border);
 	color: var(--muted-foreground);
 }
 
-.diff-comment-body h1,
-.diff-comment-body h2,
-.diff-comment-body h3,
-.diff-comment-body h4,
-.diff-comment-body h5,
-.diff-comment-body h6 {
+.pr-diff-comment-body h1,
+.pr-diff-comment-body h2,
+.pr-diff-comment-body h3,
+.pr-diff-comment-body h4,
+.pr-diff-comment-body h5,
+.pr-diff-comment-body h6 {
 	font-weight: 600;
 	line-height: 1.3;
 	font-size: 13px;
 }
 
-.diff-comment-body h1 {
+.pr-diff-comment-body h1 {
 	font-size: 15px;
 }
 
-.diff-comment-body h2 {
+.pr-diff-comment-body h2 {
 	font-size: 14px;
 }
 
-.diff-comment-body img,
-.diff-comment-body .comment-md-img {
+.pr-diff-comment-body img,
+.pr-diff-comment-body .comment-md-img {
 	max-width: 100%;
 	height: auto;
 	border-radius: 4px;
@@ -167,29 +167,29 @@
 	vertical-align: middle;
 }
 
-.diff-comment-body details {
+.pr-diff-comment-body details {
 	border: 1px solid var(--border);
 	border-radius: 6px;
 	padding: 0.4rem 0.6rem;
 	background: var(--muted);
 }
 
-.diff-comment-body details[open] {
+.pr-diff-comment-body details[open] {
 	padding-bottom: 0.6rem;
 }
 
-.diff-comment-body summary {
+.pr-diff-comment-body summary {
 	cursor: pointer;
 	font-weight: 500;
 	color: var(--muted-foreground);
 	list-style: none;
 }
 
-.diff-comment-body summary::-webkit-details-marker {
+.pr-diff-comment-body summary::-webkit-details-marker {
 	display: none;
 }
 
-.diff-comment-body summary::before {
+.pr-diff-comment-body summary::before {
 	content: "▸";
 	display: inline-block;
 	margin-right: 0.4rem;
@@ -197,34 +197,34 @@
 	transition: transform 0.15s;
 }
 
-.diff-comment-body details[open] > summary::before {
+.pr-diff-comment-body details[open] > summary::before {
 	transform: rotate(90deg);
 }
 
-.diff-comment-body details > *:not(summary) {
+.pr-diff-comment-body details > *:not(summary) {
 	margin-top: 0.3rem;
 }
 
-.diff-comment-body table {
+.pr-diff-comment-body table {
 	border-collapse: collapse;
 	display: block;
 	overflow-x: auto;
 	font-size: 12px;
 }
 
-.diff-comment-body th,
-.diff-comment-body td {
+.pr-diff-comment-body th,
+.pr-diff-comment-body td {
 	border: 1px solid var(--border);
 	padding: 0.25rem 0.5rem;
 	text-align: left;
 }
 
-.diff-comment-body th {
+.pr-diff-comment-body th {
 	background: var(--muted);
 	font-weight: 600;
 }
 
-.diff-comment-body hr {
+.pr-diff-comment-body hr {
 	border: 0;
 	border-top: 1px solid var(--border);
 	margin: 0.5rem 0;

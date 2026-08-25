@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { pullRequests, workspaces } from "../../../../db/schema";
 import { protectedProcedure } from "../../../index";
@@ -30,12 +30,18 @@ export const getLinkedWorkspace = protectedProcedure
 			.get();
 		if (!pr) return { workspaceId: null };
 
+		// workspaces.pullRequestId has no unique constraint — more than one
+		// non-archived workspace can link to the same PR (two worktrees
+		// checking out the same branch, a stale duplicate). Break the tie
+		// deterministically by picking the most recently active one instead
+		// of an arbitrary DB row order.
 		const workspace = ctx.db
 			.select({ id: workspaces.id })
 			.from(workspaces)
 			.where(
 				and(eq(workspaces.pullRequestId, pr.id), isNull(workspaces.archivedAt)),
 			)
+			.orderBy(desc(workspaces.updatedAt), desc(workspaces.createdAt))
 			.get();
 		return { workspaceId: workspace?.id ?? null };
 	});
