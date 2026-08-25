@@ -20,6 +20,9 @@ export const env = createEnv({
 		// Gmail triggers are configured but never watched.
 		GOOGLE_PUBSUB_TOPIC: z.string().min(1).optional(),
 		GOOGLE_PUBSUB_PUSH_TOKEN: z.string().min(1).optional(),
+		// Static bearer token for the read-only support account lookup; the
+		// endpoint answers 404 while unset.
+		SUPPORT_LOOKUP_TOKEN: z.string().regex(/^\S+$/).optional(),
 		BETTER_AUTH_SECRET: z.string(),
 		LINEAR_CLIENT_ID: z.string().min(1),
 		LINEAR_CLIENT_SECRET: z.string().min(1),
@@ -35,6 +38,10 @@ export const env = createEnv({
 		GH_APP_ID: z.string().min(1),
 		GH_APP_PRIVATE_KEY: z.string().min(1),
 		GH_WEBHOOK_SECRET: z.string().min(1),
+		// Set once a provider's traffic is routed through Hookdeck. While it
+		// is absent every webhook route verifies the provider's own
+		// signature, exactly as it always has.
+		HOOKDECK_SIGNING_SECRET: z.string().min(1).optional(),
 		SLACK_CLIENT_ID: z.string().min(1),
 		SLACK_CLIENT_SECRET: z.string().min(1),
 		SLACK_SIGNING_SECRET: z.string(),
@@ -55,6 +62,12 @@ export const env = createEnv({
 		STRIPE_WEBHOOK_SECRET: z.string(),
 		STRIPE_PRO_MONTHLY_PRICE_ID: z.string(),
 		STRIPE_PRO_YEARLY_PRICE_ID: z.string(),
+		// YC Bookface deal redemption webhook (deal 13843). The route answers
+		// 503 while the secret is unset. The secret lives on the Bookface deal
+		// edit page, under the webhook documentation.
+		YC_DEALS_WEBHOOK_SECRET: z.string().min(1).optional(),
+		YC_BOOKFACE_DEAL_ID: z.coerce.number().default(13843),
+		YC_BOOKFACE_COUPON_ID: z.string().min(1).default("yc-bookface-6mo"),
 		SLACK_BILLING_WEBHOOK_URL: z.string().url(),
 		SENTRY_AUTH_TOKEN: z.string().optional(),
 		// Public Sentry integration (OAuth app). Optional: unset where the app

@@ -17,6 +17,7 @@ import { createKeyboardLayoutRouter } from "./keyboardLayout";
 import { createMenuRouter } from "./menu";
 import { createMigrationRouter } from "./migration";
 import { createNotificationsRouter } from "./notifications";
+import { createPageContentRouter } from "./page-content";
 import { createPermissionsRouter } from "./permissions";
 import { createPluginsRouter } from "./plugins";
 import { createPortsRouter } from "./ports";
@@ -38,13 +39,14 @@ export const createAppRouter = (getWindow: () => BrowserWindow | null) => {
 		browserHistory: createBrowserHistoryRouter(),
 		auth: createAuthRouter(),
 		autoUpdate: createAutoUpdateRouter(),
-		window: createWindowRouter(getWindow),
+		window: createWindowRouter(),
 		projects: createProjectsRouter(getWindow),
 		workspaces: createWorkspacesRouter(),
 		terminal: createTerminalRouter(),
 		changes: createChangesRouter(),
 		filesystem: createFilesystemRouter(),
 		notifications: createNotificationsRouter(getWindow),
+		pageContent: createPageContentRouter(),
 		permissions: createPermissionsRouter(),
 		plugins: createPluginsRouter(),
 		ports: createPortsRouter(),

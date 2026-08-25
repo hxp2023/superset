@@ -1,6 +1,7 @@
 import {
 	getAgentEffortSupport,
 	getAgentModelSupport,
+	getAgentModeSupport,
 } from "@superset/shared/agent-models";
 import {
 	PromptInput,
@@ -38,13 +39,14 @@ import {
 	resolveHostUrl,
 	useHostUrl,
 } from "renderer/hooks/host-service/useHostTargetUrl";
+import { useActiveOrganizationId } from "renderer/hooks/useActiveOrganizationId";
 import { useAgentEffortPreference } from "renderer/hooks/useAgentEffortPreference";
 import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferences";
 import { useAgentModelPreference } from "renderer/hooks/useAgentModelPreference";
+import { useAgentModePreference } from "renderer/hooks/useAgentModePreference";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";
 import { useV2AgentChoices } from "renderer/hooks/useV2AgentChoices";
 import { track } from "renderer/lib/analytics";
-import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
 import { useCloneAccessPlan } from "renderer/routes/_authenticated/hooks/useCloneAccessPlan";
@@ -86,6 +88,7 @@ import {
 import {
 	AGENT_STORAGE_KEY,
 	EFFORT_STORAGE_KEY,
+	MODE_STORAGE_KEY,
 	MODEL_STORAGE_KEY,
 	PILL_BUTTON_CLASS,
 	type WorkspaceCreateAgent,
@@ -144,8 +147,7 @@ export function NewWorkspaceScreen({
 	const hostService = useLocalHostService();
 	const { activeHostUrl, machineId } = hostService;
 	const relayUrl = useRelayUrl();
-	const { data: session } = authClient.useSession();
-	const activeOrganizationId = session?.session?.activeOrganizationId;
+	const activeOrganizationId = useActiveOrganizationId();
 	const setLastProjectId = useV2WorkspaceCreateDefaultsStore(
 		(state) => state.setLastProjectId,
 	);
@@ -491,10 +493,10 @@ export function NewWorkspaceScreen({
 		if (first) setSelectedAgent(first);
 	}, [v2AgentsFetched, selectableAgentIds, selectedAgent, setSelectedAgent]);
 
-	const selectedPresetId = useMemo(
-		() => v2Agents.find((agent) => agent.id === selectedAgent)?.iconId ?? null,
-		[v2Agents, selectedAgent],
-	);
+	const selectedPresetId = useMemo(() => {
+		const agent = v2Agents.find((candidate) => candidate.id === selectedAgent);
+		return agent?.launchPresetId ?? agent?.presetId ?? agent?.iconId ?? null;
+	}, [v2Agents, selectedAgent]);
 	const modelSupport = selectedPresetId
 		? getAgentModelSupport(selectedPresetId)
 		: undefined;
@@ -508,6 +510,13 @@ export function NewWorkspaceScreen({
 	const { selectedEffort, setSelectedEffort } = useAgentEffortPreference(
 		EFFORT_STORAGE_KEY,
 		effortSupport ? selectedPresetId : null,
+	);
+	const modeSupport = selectedPresetId
+		? getAgentModeSupport(selectedPresetId)
+		: undefined;
+	const { selectedMode, setSelectedMode } = useAgentModePreference(
+		MODE_STORAGE_KEY,
+		modeSupport ? selectedPresetId : null,
 	);
 
 	// ── Base branch ──────────────────────────────────────────────────
@@ -550,6 +559,7 @@ export function NewWorkspaceScreen({
 		selectedAgent,
 		modelSupport ? selectedModel : null,
 		effortSupport ? selectedEffort : null,
+		modeSupport ? selectedMode : null,
 		uploadAttachments,
 		promptContext,
 		setupFirst,
@@ -871,6 +881,15 @@ export function NewWorkspaceScreen({
 										value={selectedEffort}
 										onValueChange={setSelectedEffort}
 										defaultLabel="Default effort"
+										triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}
+									/>
+								)}
+								{modeSupport && (
+									<AgentModelSelect
+										models={modeSupport.modes}
+										value={selectedMode}
+										onValueChange={setSelectedMode}
+										defaultLabel="Direct mode"
 										triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}
 									/>
 								)}
