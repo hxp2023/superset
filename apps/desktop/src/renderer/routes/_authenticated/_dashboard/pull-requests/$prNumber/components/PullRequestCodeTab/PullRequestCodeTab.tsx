@@ -1,10 +1,15 @@
-import type { CodeViewItem, CodeViewOptions } from "@pierre/diffs";
+import type {
+	CodeViewItem,
+	CodeViewOptions,
+	DiffLineAnnotation,
+} from "@pierre/diffs";
 import { parsePatchFiles } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
 import { FileTree as PierreFileTree, useFileTree } from "@pierre/trees/react";
+import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	LuColumns2,
@@ -22,11 +27,29 @@ import {
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
 import { useDiffCodeViewTheme } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/hooks/useDiffCodeViewTheme";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
+import { PullRequestCommentThread } from "../PullRequestCommentThread";
 
 interface PullRequestCodeTabProps {
 	projectId: string;
 	prNumber: number;
+	prUrl: string;
 	hostUrl: string;
+}
+
+interface PrCommentThreadComment {
+	id: string;
+	authorLogin: string;
+	avatarUrl?: string;
+	body: string;
+	createdAt?: number;
+}
+
+interface PrCommentThreadMetadata {
+	threadId: string;
+	comments: PrCommentThreadComment[];
+	isResolved: boolean;
+	isOutdated: boolean;
+	url?: string;
 }
 
 type DiffStyle = "split" | "unified";
@@ -57,7 +80,7 @@ const CHANGE_TYPE_TO_PIERRE_STATUS: Record<string, PierreGitStatus> = {
 };
 
 interface ParsedFileDiff {
-	item: CodeViewItem;
+	item: CodeViewItem<PrCommentThreadMetadata>;
 	path: string;
 	status: PierreGitStatus;
 	additions: number;
@@ -99,18 +122,21 @@ function formatDiffStats(additions: number, deletions: number): string {
 export function PullRequestCodeTab({
 	projectId,
 	prNumber,
+	prUrl,
 	hostUrl,
 }: PullRequestCodeTabProps) {
 	const { options, style } = useDiffCodeViewTheme();
-	const codeViewRef = useRef<CodeViewHandle<undefined>>(null);
+	const codeViewRef = useRef<CodeViewHandle<PrCommentThreadMetadata>>(null);
 	const [diffStyle, setDiffStyle] = useState<DiffStyle>("unified");
 	const codeViewOptions = useMemo(
-		() => ({ ...options, diffStyle }) as CodeViewOptions<undefined>,
+		() =>
+			({ ...options, diffStyle }) as CodeViewOptions<PrCommentThreadMetadata>,
 		[options, diffStyle],
 	);
 	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
 	const [treeWidth, setTreeWidth] = useState(DEFAULT_TREE_WIDTH);
 	const [isResizingTree, setIsResizingTree] = useState(false);
+	const queryClient = useQueryClient();
 
 	const { data, isLoading, error, refetch } = useQuery({
 		queryKey: ["pull-request-diff", projectId, hostUrl, prNumber],
@@ -122,10 +148,79 @@ export function PullRequestCodeTab({
 		gcTime: 10 * 60_000,
 	});
 
+	const threadsQueryKey = [
+		"pull-request-threads",
+		projectId,
+		hostUrl,
+		prNumber,
+	];
+	const { data: threadsData } = useQuery({
+		queryKey: threadsQueryKey,
+		queryFn: async () => {
+			const client = getHostServiceClientByUrl(hostUrl);
+			return client.pullRequests.getThreads.query({ projectId, prNumber });
+		},
+		staleTime: 30_000,
+		gcTime: 10 * 60_000,
+	});
+	const setThreadResolution = useMutation({
+		mutationFn: async (input: { threadId: string; resolved: boolean }) => {
+			const client = getHostServiceClientByUrl(hostUrl);
+			return client.pullRequests.setThreadResolution.mutate(input);
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
+		},
+		onError: (mutationError) => {
+			toast.error("Couldn't update thread", {
+				description: mutationError.message,
+			});
+		},
+	});
+
+	const annotationsByPath = useMemo(() => {
+		const map = new Map<
+			string,
+			DiffLineAnnotation<PrCommentThreadMetadata>[]
+		>();
+		for (const thread of threadsData?.reviewThreads ?? []) {
+			if (thread.line == null || !thread.path) continue;
+			const firstCommentDbId = thread.comments[0]?.databaseId;
+			const list = map.get(thread.path) ?? [];
+			list.push({
+				side: thread.diffSide === "LEFT" ? "deletions" : "additions",
+				lineNumber: thread.line,
+				metadata: {
+					threadId: thread.id,
+					isResolved: thread.isResolved,
+					isOutdated: thread.isOutdated,
+					url: firstCommentDbId
+						? `${prUrl}#discussion_r${firstCommentDbId}`
+						: undefined,
+					comments: thread.comments.map((comment) => ({
+						id: comment.id,
+						authorLogin: comment.author.login,
+						avatarUrl: comment.author.avatarUrl,
+						body: comment.body,
+						createdAt: comment.createdAt
+							? new Date(comment.createdAt).getTime()
+							: undefined,
+					})),
+				},
+			});
+			map.set(thread.path, list);
+		}
+		return map;
+	}, [threadsData, prUrl]);
+
 	const files = useMemo(() => parseFileDiffs(data?.patch ?? ""), [data?.patch]);
-	const items = useMemo<CodeViewItem[]>(
-		() => files.map((f) => f.item),
-		[files],
+	const items = useMemo<CodeViewItem<PrCommentThreadMetadata>[]>(
+		() =>
+			files.map((f) => ({
+				...f.item,
+				annotations: annotationsByPath.get(f.path),
+			})),
+		[files, annotationsByPath],
 	);
 	const treePaths = useMemo(() => files.map((f) => f.path), [files]);
 	const fileByPath = useMemo(
@@ -319,6 +414,29 @@ export function PullRequestCodeTab({
 						style={style}
 						items={items}
 						options={codeViewOptions}
+						renderAnnotation={(annotation) => {
+							const metadata = annotation.metadata;
+							if (!metadata) return null;
+							return (
+								<PullRequestCommentThread
+									isResolved={metadata.isResolved}
+									isOutdated={metadata.isOutdated}
+									url={metadata.url}
+									comments={metadata.comments}
+									onResolveChange={(resolved) =>
+										setThreadResolution.mutate({
+											threadId: metadata.threadId,
+											resolved,
+										})
+									}
+									isResolvePending={
+										setThreadResolution.isPending &&
+										setThreadResolution.variables?.threadId ===
+											metadata.threadId
+									}
+								/>
+							);
+						}}
 					/>
 				</div>
 			</div>

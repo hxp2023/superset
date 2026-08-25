@@ -2,8 +2,10 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../../index";
 import { getContent } from "./procedures/get-content";
 import { getDiff } from "./procedures/get-diff";
+import { getThreads } from "./procedures/get-threads";
 import { mergePR } from "./procedures/merge";
 import { setState } from "./procedures/set-state";
+import { setThreadResolution } from "./procedures/set-thread-resolution";
 
 export const pullRequestsRouter = router({
 	getByWorkspaces: protectedProcedure
@@ -61,6 +63,8 @@ export const pullRequestsRouter = router({
 		}),
 	getContent,
 	getDiff,
+	getThreads,
 	setState,
+	setThreadResolution,
 	mergePR,
 });

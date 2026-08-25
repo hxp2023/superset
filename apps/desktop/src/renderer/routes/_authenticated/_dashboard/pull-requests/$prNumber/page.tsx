@@ -607,6 +607,7 @@ function PullRequestDetailPage() {
 					<PullRequestCodeTab
 						projectId={projectId}
 						prNumber={data.number}
+						prUrl={data.url}
 						hostUrl={hostUrl}
 					/>
 				)
