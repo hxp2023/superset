@@ -2,6 +2,7 @@ import type {
 	CodeViewItem,
 	CodeViewOptions,
 	DiffLineAnnotation,
+	SelectedLineRange,
 } from "@pierre/diffs";
 import { parsePatchFiles } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
@@ -29,6 +30,7 @@ import {
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
 import { useDiffCodeViewTheme } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/hooks/useDiffCodeViewTheme";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
+import { PullRequestCommentComposer } from "../PullRequestCommentComposer";
 import { PullRequestCommentThread } from "../PullRequestCommentThread";
 
 interface PullRequestCodeTabProps {
@@ -47,18 +49,38 @@ interface PrCommentThreadComment {
 }
 
 interface PrCommentThreadMetadata {
+	kind: "thread";
 	threadId: string;
+	/** REST databaseId of a comment already in the thread — replies thread
+	 *  onto it regardless of which comment they target. Undefined only if
+	 *  GitHub ever returns a thread with zero comments (shouldn't happen). */
+	replyToCommentId?: number;
 	comments: PrCommentThreadComment[];
 	isResolved: boolean;
 	isOutdated: boolean;
 	url?: string;
 }
 
+interface PrDraftCommentMetadata {
+	kind: "composer";
+	path: string;
+	line: number;
+	side: "additions" | "deletions";
+}
+
+type PrAnnotationMetadata = PrCommentThreadMetadata | PrDraftCommentMetadata;
+
 interface OrderedThread {
 	threadId: string;
 	itemId: string;
 	lineNumber: number;
 	side: "additions" | "deletions";
+}
+
+interface ComposerState {
+	itemId: string;
+	path: string;
+	range: SelectedLineRange;
 }
 
 type DiffStyle = "split" | "unified";
@@ -89,7 +111,7 @@ const CHANGE_TYPE_TO_PIERRE_STATUS: Record<string, PierreGitStatus> = {
 };
 
 interface ParsedFileDiff {
-	item: CodeViewItem<PrCommentThreadMetadata>;
+	item: CodeViewItem<PrAnnotationMetadata>;
 	path: string;
 	status: PierreGitStatus;
 	additions: number;
@@ -135,16 +157,12 @@ export function PullRequestCodeTab({
 	hostUrl,
 }: PullRequestCodeTabProps) {
 	const { options, style } = useDiffCodeViewTheme();
-	const codeViewRef = useRef<CodeViewHandle<PrCommentThreadMetadata>>(null);
+	const codeViewRef = useRef<CodeViewHandle<PrAnnotationMetadata>>(null);
 	const [diffStyle, setDiffStyle] = useState<DiffStyle>("unified");
-	const codeViewOptions = useMemo(
-		() =>
-			({ ...options, diffStyle }) as CodeViewOptions<PrCommentThreadMetadata>,
-		[options, diffStyle],
-	);
 	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
 	const [treeWidth, setTreeWidth] = useState(DEFAULT_TREE_WIDTH);
 	const [isResizingTree, setIsResizingTree] = useState(false);
+	const [composer, setComposer] = useState<ComposerState | null>(null);
 	const queryClient = useQueryClient();
 
 	const { data, isLoading, error, refetch } = useQuery({
@@ -163,7 +181,7 @@ export function PullRequestCodeTab({
 		hostUrl,
 		prNumber,
 	];
-	const { data: threadsData } = useQuery({
+	const { data: threadsData, dataUpdatedAt: threadsUpdatedAt } = useQuery({
 		queryKey: threadsQueryKey,
 		queryFn: async () => {
 			const client = getHostServiceClientByUrl(hostUrl);
@@ -186,6 +204,48 @@ export function PullRequestCodeTab({
 			});
 		},
 	});
+	const replyToThread = useMutation({
+		mutationFn: async (input: { commentId: number; body: string }) => {
+			const client = getHostServiceClientByUrl(hostUrl);
+			return client.pullRequests.replyToThread.mutate({
+				projectId,
+				prNumber,
+				...input,
+			});
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
+		},
+		onError: (mutationError) => {
+			toast.error("Couldn't post reply", {
+				description: mutationError.message,
+			});
+		},
+	});
+	const createReviewComment = useMutation({
+		mutationFn: async (input: {
+			path: string;
+			line: number;
+			side: "LEFT" | "RIGHT";
+			body: string;
+		}) => {
+			const client = getHostServiceClientByUrl(hostUrl);
+			return client.pullRequests.createReviewComment.mutate({
+				projectId,
+				prNumber,
+				...input,
+			});
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
+			setComposer(null);
+		},
+		onError: (mutationError) => {
+			toast.error("Couldn't post comment", {
+				description: mutationError.message,
+			});
+		},
+	});
 
 	const annotationsByPath = useMemo(() => {
 		const map = new Map<
@@ -200,7 +260,9 @@ export function PullRequestCodeTab({
 				side: thread.diffSide === "LEFT" ? "deletions" : "additions",
 				lineNumber: thread.line,
 				metadata: {
+					kind: "thread",
 					threadId: thread.id,
+					replyToCommentId: firstCommentDbId,
 					isResolved: thread.isResolved,
 					isOutdated: thread.isOutdated,
 					url: firstCommentDbId
@@ -223,13 +285,47 @@ export function PullRequestCodeTab({
 	}, [threadsData, prUrl]);
 
 	const files = useMemo(() => parseFileDiffs(data?.patch ?? ""), [data?.patch]);
-	const items = useMemo<CodeViewItem<PrCommentThreadMetadata>[]>(
+	const pathByItemId = useMemo(
+		() => new Map(files.map((f) => [f.item.id, f.path])),
+		[files],
+	);
+	const composerAnnotation =
+		useMemo<DiffLineAnnotation<PrDraftCommentMetadata> | null>(() => {
+			if (!composer) return null;
+			const side = composer.range.endSide ?? composer.range.side ?? "additions";
+			return {
+				side,
+				lineNumber: composer.range.end,
+				metadata: {
+					kind: "composer",
+					path: composer.path,
+					line: composer.range.end,
+					side,
+				},
+			};
+		}, [composer]);
+	const items = useMemo<CodeViewItem<PrAnnotationMetadata>[]>(
 		() =>
-			files.map((f) => ({
-				...f.item,
-				annotations: annotationsByPath.get(f.path),
-			})),
-		[files, annotationsByPath],
+			files.map((f) => {
+				const threadAnnotations = annotationsByPath.get(f.path) ?? [];
+				const annotations =
+					composerAnnotation && composer?.path === f.path
+						? [...threadAnnotations, composerAnnotation]
+						: threadAnnotations;
+				return {
+					...f.item,
+					annotations: annotations.length > 0 ? annotations : undefined,
+					// Pierre's controlled `items` prop diffs items by id and, per
+					// its own docs ("bump the version when also changing the
+					// value"), needs an explicit version bump to know an
+					// already-rendered item's content changed — otherwise a
+					// same-id item with new annotations (a reply landing, a
+					// resolve toggling) can go stale in the live view until the
+					// next full remount, even though the query cache is correct.
+					version: threadsUpdatedAt,
+				};
+			}),
+		[files, annotationsByPath, composer, composerAnnotation, threadsUpdatedAt],
 	);
 	// Flattened in diff order (file order, then line number within a file)
 	// so next/prev walks the pane top-to-bottom instead of thread-creation
@@ -290,6 +386,36 @@ export function PullRequestCodeTab({
 						orderedThreads.length,
 		);
 	};
+
+	const codeViewOptions = useMemo(
+		() =>
+			({
+				...options,
+				diffStyle,
+				enableLineSelection: true,
+				enableGutterUtility: true,
+				// Pierre gates the gutter "+" button's pointer flow behind a
+				// non-null onGutterUtilityClick (InteractionManager's
+				// startGutterSelectionFromPointerDown early-returns otherwise)
+				// — the real open logic lives in onLineSelectionEnd, which also
+				// fires on gutter clicks. Mirrors the v2-workspace DiffPane's
+				// identical stub for the same reason.
+				onGutterUtilityClick: () => {},
+				onLineSelectionEnd: (
+					range: SelectedLineRange | null,
+					context: { type: "diff" | "file"; item: { id: string } },
+				) => {
+					if (context.type !== "diff" || !range) {
+						setComposer(null);
+						return;
+					}
+					const path = pathByItemId.get(context.item.id);
+					if (!path) return;
+					setComposer({ itemId: context.item.id, path, range });
+				},
+			}) as CodeViewOptions<PrAnnotationMetadata>,
+		[options, diffStyle, pathByItemId],
+	);
 
 	const treePaths = useMemo(() => files.map((f) => f.path), [files]);
 	const fileByPath = useMemo(
@@ -532,6 +658,22 @@ export function PullRequestCodeTab({
 						renderAnnotation={(annotation) => {
 							const metadata = annotation.metadata;
 							if (!metadata) return null;
+							if (metadata.kind === "composer") {
+								return (
+									<PullRequestCommentComposer
+										contextLabel={`Line ${metadata.line}`}
+										onCancel={() => setComposer(null)}
+										onSubmit={async (body) => {
+											await createReviewComment.mutateAsync({
+												path: metadata.path,
+												line: metadata.line,
+												side: metadata.side === "deletions" ? "LEFT" : "RIGHT",
+												body,
+											});
+										}}
+									/>
+								);
+							}
 							const isFocused =
 								focusedThreadIndex != null &&
 								orderedThreads[focusedThreadIndex]?.threadId ===
@@ -552,6 +694,16 @@ export function PullRequestCodeTab({
 										setThreadResolution.isPending &&
 										setThreadResolution.variables?.threadId ===
 											metadata.threadId
+									}
+									onReply={(body) => {
+										const commentId = metadata.replyToCommentId;
+										if (!commentId) return;
+										replyToThread.mutate({ commentId, body });
+									}}
+									isReplyPending={
+										replyToThread.isPending &&
+										replyToThread.variables?.commentId ===
+											metadata.replyToCommentId
 									}
 									focusTick={isFocused ? focusTick : undefined}
 								/>

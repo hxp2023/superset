@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../../index";
+import { createReviewComment } from "./procedures/create-review-comment";
 import { getContent } from "./procedures/get-content";
 import { getDiff } from "./procedures/get-diff";
 import { getThreads } from "./procedures/get-threads";
 import { mergePR } from "./procedures/merge";
+import { replyToThread } from "./procedures/reply-to-thread";
 import { setState } from "./procedures/set-state";
 import { setThreadResolution } from "./procedures/set-thread-resolution";
 
@@ -66,5 +68,7 @@ export const pullRequestsRouter = router({
 	getThreads,
 	setState,
 	setThreadResolution,
+	replyToThread,
+	createReviewComment,
 	mergePR,
 });

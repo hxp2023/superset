@@ -6,6 +6,7 @@ import {
 	CollapsibleTrigger,
 } from "@superset/ui/collapsible";
 import { toast } from "@superset/ui/sonner";
+import { Textarea } from "@superset/ui/textarea";
 import { cn } from "@superset/ui/utils";
 import { useEffect, useState } from "react";
 import {
@@ -33,6 +34,8 @@ interface PullRequestCommentThreadProps {
 	comments: Comment[];
 	onResolveChange: (resolved: boolean) => void;
 	isResolvePending?: boolean;
+	onReply: (body: string) => void;
+	isReplyPending?: boolean;
 	/** Force-expand the bubble whenever this changes — lets "jump to
 	 *  comment" reveal a collapsed (resolved/outdated) thread. */
 	focusTick?: number;
@@ -50,10 +53,13 @@ export function PullRequestCommentThread({
 	comments,
 	onResolveChange,
 	isResolvePending,
+	onReply,
+	isReplyPending,
 	focusTick,
 }: PullRequestCommentThreadProps) {
 	const [open, setOpen] = useState(!isResolved && !isOutdated);
 	const [isCopied, setIsCopied] = useState(false);
+	const [replyText, setReplyText] = useState("");
 	useEffect(() => {
 		if (!isCopied) return;
 		const timer = setTimeout(() => setIsCopied(false), 2000);
@@ -84,6 +90,16 @@ export function PullRequestCommentThread({
 	}, [focusTick]);
 
 	const firstComment = comments[0];
+	const handleReplySubmit = () => {
+		const trimmed = replyText.trim();
+		if (!trimmed) return;
+		onReply(trimmed);
+		// Optimistic clear: the mutation is fire-and-forget from here, and a
+		// failure already surfaces as a toast (see PullRequestCodeTab's
+		// replyToThread onError) — restoring the draft on failure would need
+		// a promise-returning prop for marginal benefit.
+		setReplyText("");
+	};
 
 	return (
 		<Collapsible
@@ -180,19 +196,45 @@ export function PullRequestCommentThread({
 						<CommentRow key={comment.id} comment={comment} />
 					))}
 				</ul>
-				<div className="flex items-center justify-end border-t border-border/50 bg-muted/20 px-3 py-2">
-					<Button
-						type="button"
-						size="xs"
-						variant="outline"
-						disabled={isResolvePending}
-						onClick={() => onResolveChange(!isResolved)}
-					>
-						{isResolvePending && (
-							<LuLoaderCircle className="size-3 animate-spin" />
-						)}
-						{isResolved ? "Unresolve" : "Resolve conversation"}
-					</Button>
+				<div className="flex flex-col gap-2 border-t border-border/50 bg-muted/20 px-3 py-2">
+					<Textarea
+						value={replyText}
+						onChange={(e) => setReplyText(e.target.value)}
+						onKeyDown={(e) => {
+							if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+								e.preventDefault();
+								handleReplySubmit();
+							}
+						}}
+						placeholder="Write a reply…"
+						rows={2}
+						className="resize-none bg-background text-xs"
+					/>
+					<div className="flex items-center justify-end gap-2">
+						<Button
+							type="button"
+							size="xs"
+							variant="outline"
+							disabled={isResolvePending}
+							onClick={() => onResolveChange(!isResolved)}
+						>
+							{isResolvePending && (
+								<LuLoaderCircle className="size-3 animate-spin" />
+							)}
+							{isResolved ? "Unresolve" : "Resolve conversation"}
+						</Button>
+						<Button
+							type="button"
+							size="xs"
+							disabled={!replyText.trim() || isReplyPending}
+							onClick={handleReplySubmit}
+						>
+							{isReplyPending && (
+								<LuLoaderCircle className="size-3 animate-spin" />
+							)}
+							Reply
+						</Button>
+					</div>
 				</div>
 			</CollapsibleContent>
 		</Collapsible>
