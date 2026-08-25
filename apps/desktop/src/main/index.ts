@@ -4,6 +4,7 @@ import {
 	setAgentSetupTemplatesDir,
 	setupAgentIntegrations,
 	writeSharedDisabledAgentIds,
+	writeSharedDisabledSkillIds,
 } from "@superset/agent-setup";
 import { settings } from "@superset/local-db";
 import { app, dialog, Notification, net, protocol, session } from "electron";
@@ -32,6 +33,7 @@ import { loadWebviewBrowserExtension } from "./lib/extensions";
 import { getHostServiceCoordinator } from "./lib/host-service-coordinator";
 import { localDb } from "./lib/local-db";
 import { requestLocalNetworkAccess } from "./lib/local-network-permission";
+import { PAGE_SCHEME, pageProtocolHandler } from "./lib/pageContent";
 import {
 	initTanstackDbPersistence,
 	shutdownTanstackDbPersistence,
@@ -339,6 +341,13 @@ protocol.registerSchemesAsPrivileged([
 			supportFetchAPI: true,
 		},
 	},
+	{
+		scheme: PAGE_SCHEME,
+		privileges: {
+			standard: true,
+			secure: true,
+		},
+	},
 ]);
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -375,6 +384,11 @@ if (!gotTheLock) {
 		session
 			.fromPartition("persist:superset")
 			.protocol.handle("superset-icon", iconProtocolHandler);
+
+		protocol.handle(PAGE_SCHEME, pageProtocolHandler);
+		session
+			.fromPartition("persist:superset")
+			.protocol.handle(PAGE_SCHEME, pageProtocolHandler);
 
 		// Serve system fonts (e.g. SF Mono on macOS) via custom protocol
 		// so the renderer can use @font-face with font-src 'self' CSP
@@ -480,12 +494,17 @@ if (!gotTheLock) {
 			// The vite build copies @superset/agent-setup's templates (plus the
 			// bundled Claude plugin) next to this bundle; see vite/helpers.ts.
 			setAgentSetupTemplatesDir(path.join(__dirname, "templates"));
-			const disabledAgentHooks =
-				localDb.select().from(settings).get()?.disabledAgentHooks ?? [];
-			// Mirror the disable list so CLI-launched host-services on this
-			// machine honor it instead of re-provisioning disabled agents.
+			const settingsRow = localDb.select().from(settings).get();
+			const disabledAgentHooks = settingsRow?.disabledAgentHooks ?? [];
+			const disabledSkills = settingsRow?.disabledSkills ?? [];
+			// Mirror the disable lists so CLI-launched host-services on this
+			// machine honor them instead of re-provisioning disabled agents/skills.
 			writeSharedDisabledAgentIds(disabledAgentHooks);
-			setupAgentIntegrations({ disabledAgentIds: disabledAgentHooks });
+			writeSharedDisabledSkillIds(disabledSkills);
+			setupAgentIntegrations({
+				disabledAgentIds: disabledAgentHooks,
+				disabledSkillIds: disabledSkills,
+			});
 		} catch (error) {
 			console.error("[main] Failed to set up agent integrations:", error);
 		}
