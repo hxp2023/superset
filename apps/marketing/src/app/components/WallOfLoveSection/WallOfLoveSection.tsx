@@ -83,10 +83,6 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 }
 
 export function WallOfLoveSection() {
-	const leftColumn = TESTIMONIALS.filter((_, i) => i % 3 === 0);
-	const middleColumn = TESTIMONIALS.filter((_, i) => i % 3 === 1);
-	const rightColumn = TESTIMONIALS.filter((_, i) => i % 3 === 2);
-
 	return (
 		<section className="relative py-24 sm:py-32">
 			<div className="max-w-7xl mx-auto px-6 sm:px-8">
@@ -96,30 +92,12 @@ export function WallOfLoveSection() {
 					</h2>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					<div className="flex flex-col gap-4">
-						{leftColumn.map((testimonial) => (
-							<div key={testimonial.id}>
-								<TestimonialCard testimonial={testimonial} />
-							</div>
-						))}
-					</div>
-
-					<div className="flex flex-col gap-4">
-						{middleColumn.map((testimonial) => (
-							<div key={testimonial.id}>
-								<TestimonialCard testimonial={testimonial} />
-							</div>
-						))}
-					</div>
-
-					<div className="flex flex-col gap-4 md:col-span-2 lg:col-span-1">
-						{rightColumn.map((testimonial) => (
-							<div key={testimonial.id}>
-								<TestimonialCard testimonial={testimonial} />
-							</div>
-						))}
-					</div>
+				<div className="columns-1 gap-4 md:columns-2 lg:columns-3">
+					{TESTIMONIALS.map((testimonial) => (
+						<div key={testimonial.id} className="mb-4 break-inside-avoid">
+							<TestimonialCard testimonial={testimonial} />
+						</div>
+					))}
 				</div>
 			</div>
 		</section>
