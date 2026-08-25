@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createWriteCoalescer, MAX_PENDING_BYTES } from "./write-coalescer";
+import {
+	createWriteCoalescer,
+	MAX_BACKLOG_BYTES,
+	MAX_PENDING_BYTES,
+} from "./write-coalescer";
 
 // Capture rAF callbacks so tests control frame timing deterministically.
 let frameCallbacks: Map<number, FrameRequestCallback>;
@@ -200,6 +204,76 @@ describe("createWriteCoalescer", () => {
 		// the previous batch has not parsed yet.
 		coalescer.flushSync();
 		expect(term.text()).toEqual(["first", "second"]);
+	});
+
+	test("bounds its own queue when the parser never reports a parse", async () => {
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
+
+		coalescer.push(bytes("head"));
+		fireFrame();
+		expect(term.writes).toHaveLength(1);
+
+		// The parser has not called back and never will (a throttled background
+		// renderer parses in ~12ms slices per second; a hung async parser
+		// handler never resumes at all). Everything below piles into the
+		// coalescer's own queue, which is where the emulator's bounded pile
+		// moved to when back-pressure was added.
+		coalescer.push(bytes("OLDEST"));
+		for (let i = 0; i < 24; i++) {
+			coalescer.push(new Uint8Array(1024 * 1024));
+		}
+		coalescer.push(bytes("NEWEST"));
+
+		await term.drain();
+		const batch = term.writes[1] as Uint8Array;
+
+		// 25 MB went in; the queue held its ceiling, plus the notice it prepends.
+		expect(batch.length).toBeLessThanOrEqual(MAX_BACKLOG_BYTES + 256);
+
+		// Dropped from the head, so the newest bytes — the ones that decide what
+		// the pane ends up showing — survived.
+		const tail = new TextDecoder().decode(batch.subarray(batch.length - 6));
+		expect(tail).toBe("NEWEST");
+
+		// ...and the pane is told it happened, at the point it happened.
+		const head = new TextDecoder().decode(batch.subarray(0, 96));
+		expect(head).toContain("[terminal] dropped output");
+	});
+
+	test("reports an overflow episode once, not once per flush", async () => {
+		const term = fakeTerminal();
+		const coalescer = createWriteCoalescer(term.write);
+
+		coalescer.push(bytes("head"));
+		fireFrame();
+
+		const notices = () =>
+			term.writes.filter((w) =>
+				new TextDecoder()
+					.decode(w.subarray(0, 96))
+					.includes("[terminal] dropped output"),
+			).length;
+
+		// Three separate drains, all while the backlog stays over the ceiling.
+		for (let round = 0; round < 3; round++) {
+			for (let i = 0; i < 12; i++) {
+				coalescer.push(new Uint8Array(1024 * 1024));
+			}
+			await term.drain();
+		}
+		expect(notices()).toBe(1);
+
+		// The burst ends and the queue drains; a later one is a new episode.
+		await term.drain();
+		coalescer.push(bytes("quiet"));
+		fireFrame();
+		await term.drain();
+		for (let i = 0; i < 12; i++) {
+			coalescer.push(new Uint8Array(1024 * 1024));
+		}
+		await term.drain();
+		expect(notices()).toBe(2);
 	});
 
 	test("a throwing write does not wedge the coalescer", () => {

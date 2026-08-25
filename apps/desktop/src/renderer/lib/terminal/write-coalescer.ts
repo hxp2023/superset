@@ -11,6 +11,10 @@
  * keeps its own queue of unparsed data and throws the batch away once that
  * queue passes its ceiling. So a batch is only handed over while the emulator
  * reports itself drained — its write-completion callback is the signal.
+ *
+ * That moves a burst's backlog out of the emulator and into `pending`, so the
+ * ceiling has to move here with it: MAX_BACKLOG_BYTES bounds the queue, and
+ * the pane is told when it is hit.
  */
 
 /**
@@ -22,6 +26,35 @@
  * the next batch straight away rather than idling until the next frame.
  */
 export const MAX_PENDING_BYTES = 1024 * 1024;
+
+/**
+ * Hard ceiling on the coalescer's own queue.
+ *
+ * Waiting for the emulator's drain signal is what keeps it from discarding
+ * data, but it also means a slow parser's backlog accumulates here instead of
+ * there — and unlike the emulator's queue, `pending` has no ceiling of its
+ * own. A backgrounded renderer is the case that matters: Electron throttles
+ * it, so the parser advances in ~12ms slices per second while PTY bytes keep
+ * arriving at full rate. Left unbounded that ends in a renderer OOM, which
+ * kills every pane in the window rather than corrupting one of them.
+ *
+ * 8 MB because host-service already treats exactly that much un-consumed
+ * output on this stream as hopelessly behind (WS_SEND_BUFFER_CAP_BYTES, which
+ * drops the socket), and because at 8x the flush cap an ordinary heavy burst
+ * never comes near it.
+ */
+export const MAX_BACKLOG_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Written into the stream at the point bytes went missing. Silent loss is what
+ * this whole path exists to remove, so an overflow has to be visible in the
+ * pane it happened to.
+ */
+const DROP_NOTICE = new TextEncoder().encode(
+	`\r\n[terminal] dropped output — renderer fell more than ${
+		MAX_BACKLOG_BYTES / (1024 * 1024)
+	} MB behind\r\n`,
+);
 
 export interface WriteCoalescer {
 	/** Queue PTY bytes for the next frame's write. */
@@ -44,6 +77,34 @@ export function createWriteCoalescer(
 	let frameId: number | null = null;
 	let inFlight = 0;
 	let disposed = false;
+	// One notice per overflow episode, not per flush: a firehose that drops for
+	// a minute would otherwise bury the pane under its own notices. `dropping`
+	// holds the episode open while `droppedSinceFlush` keeps confirming it.
+	let dropping = false;
+	let dropNoticeOwed = false;
+	let droppedSinceFlush = false;
+
+	/**
+	 * Drop from the head, never the tail. A terminal's worth is the screen it
+	 * ends up showing, and the bytes that decide that are the newest ones —
+	 * agent CLIs repaint constantly, so a pane that keeps the tail resyncs on
+	 * the next repaint. Dropping the tail instead would leave it permanently
+	 * behind and permanently wrong.
+	 */
+	function dropOldest() {
+		let cut = 0;
+		let dropped = 0;
+		while (cut < pending.length && pendingBytes - dropped > MAX_BACKLOG_BYTES) {
+			dropped += (pending[cut] as Uint8Array).length;
+			cut++;
+		}
+		pending.splice(0, cut);
+		pendingBytes -= dropped;
+		droppedSinceFlush = true;
+		if (dropping) return;
+		dropping = true;
+		dropNoticeOwed = true;
+	}
 
 	function scheduleFrame() {
 		if (frameId !== null) return;
@@ -70,6 +131,15 @@ export function createWriteCoalescer(
 			frameId = null;
 		}
 		if (pendingBytes === 0) return;
+		if (dropNoticeOwed) {
+			dropNoticeOwed = false;
+			// Prepended at flush rather than queued at the drop, because a
+			// later drop takes from the head and would eat the notice itself.
+			pending.unshift(DROP_NOTICE);
+			pendingBytes += DROP_NOTICE.length;
+		}
+		if (!droppedSinceFlush) dropping = false;
+		droppedSinceFlush = false;
 		let batch: Uint8Array;
 		if (pending.length === 1) {
 			batch = pending[0] as Uint8Array;
@@ -114,7 +184,12 @@ export function createWriteCoalescer(
 		// Back-pressure. While the emulator is still parsing the last batch,
 		// hold everything: another write only grows the queue it discards when
 		// it overflows. onDrained picks these bytes up the moment it catches up.
-		if (inFlight > 0) return;
+		if (inFlight > 0) {
+			// The only path that can grow `pending` without bound: below, a
+			// queue past MAX_PENDING_BYTES is always written out instead.
+			if (pendingBytes > MAX_BACKLOG_BYTES) dropOldest();
+			return;
+		}
 		if (pendingBytes > MAX_PENDING_BYTES) {
 			flushSync();
 			return;
