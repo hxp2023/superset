@@ -27,7 +27,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
-import { LuChevronRight, LuGitBranch } from "react-icons/lu";
+import { LuCheck, LuChevronRight, LuGitBranch } from "react-icons/lu";
 import { VscChevronDown, VscGitMerge } from "react-icons/vsc";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
@@ -448,7 +448,18 @@ function PullRequestDetailPage() {
 								type="button"
 								onClick={() => {
 									copyBranch(data.branch);
-									toast.success("Branch name copied");
+									toast.success("Branch copied", {
+										description: data.branch,
+										closeButton: true,
+										icon: (
+											<span className="flex size-4 items-center justify-center rounded-full bg-emerald-500">
+												<LuCheck
+													className="size-2.5 text-white"
+													strokeWidth={3}
+												/>
+											</span>
+										),
+									});
 								}}
 								className="flex min-w-0 shrink items-center gap-1 font-mono text-muted-foreground hover:text-foreground"
 							>
