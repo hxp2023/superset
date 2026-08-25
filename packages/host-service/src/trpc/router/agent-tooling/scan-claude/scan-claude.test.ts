@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SlashCommand } from "@superset/shared/slash-commands";
-import { CLAUDE_BUILTIN_SLASH_COMMANDS } from "./builtins";
+import { CLAUDE_BUILTIN_SLASH_COMMANDS } from "../builtins";
 import { scanClaudeSlashCommands } from "./scan-claude";
 
 /** Every scan ends with the static builtins; these tests assert the scanned part. */

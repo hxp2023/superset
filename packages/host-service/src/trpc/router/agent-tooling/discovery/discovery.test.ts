@@ -3,11 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SlashCommand } from "@superset/shared/slash-commands";
+import type { SlashCommandDiscoveryEntry } from "../registry";
 import {
 	clearSlashCommandDiscoveryCache,
 	listAgentSlashCommands,
 } from "./discovery";
-import type { SlashCommandDiscoveryEntry } from "./registry";
 
 let root: string;
 

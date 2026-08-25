@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import type { SlashCommand } from "@superset/shared/slash-commands";
-import { CODEX_BUILTIN_SLASH_COMMANDS } from "./builtins";
-import { scanClaudeSlashCommands } from "./scan-claude";
+import { CODEX_BUILTIN_SLASH_COMMANDS } from "../builtins";
+import { scanClaudeSlashCommands } from "../scan-claude";
 
 export interface SlashCommandScanContext {
 	/** Workspace worktree root (workspaces.worktreePath). */

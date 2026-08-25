@@ -4,7 +4,7 @@ import {
 	getSlashCommandDiscovery,
 	SLASH_COMMAND_DISCOVERY,
 	type SlashCommandDiscoveryEntry,
-} from "./registry";
+} from "../registry";
 
 /**
  * 30s TTL: absorbs the refetch burst while a composer menu is open, yet a

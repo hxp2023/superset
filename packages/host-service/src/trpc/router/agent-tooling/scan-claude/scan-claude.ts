@@ -1,14 +1,14 @@
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { SlashCommand } from "@superset/shared/slash-commands";
-import { CLAUDE_BUILTIN_SLASH_COMMANDS } from "./builtins";
-import type { SlashCommandScanContext } from "./registry";
+import { CLAUDE_BUILTIN_SLASH_COMMANDS } from "../builtins";
+import type { SlashCommandScanContext } from "../registry";
 import {
 	dedupeFirstWins,
 	listSkillsDirPlugins,
 	scanCommandDir,
 	scanSkillsDir,
-} from "./scan-fs";
+} from "../scan-fs";
 
 export interface InstalledClaudePlugin {
 	name: string;
