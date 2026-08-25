@@ -74,16 +74,21 @@ export function PullRequestCommentThread({
 		if (isResolved || isOutdated) setOpen(false);
 	}, [isResolved, isOutdated]);
 
+	const firstComment = comments[0];
+
 	return (
 		<Collapsible
 			open={open}
 			onOpenChange={setOpen}
 			className={cn(
-				"diff-comment mx-3 my-1 overflow-hidden rounded-md border border-border bg-card text-card-foreground",
-				isResolved && "opacity-70",
+				// Full-bleed band flush with the diff pane's edges (no side
+				// margin/rounding/border-box) so it reads as part of the diff
+				// like GitHub's inline review threads, not a floating card.
+				"diff-comment w-full border-y border-border/50 bg-muted/20 text-card-foreground",
+				isResolved && "opacity-75",
 			)}
 		>
-			<div className="flex items-center gap-2 px-2.5 py-1.5">
+			<div className="flex items-center gap-2 px-3 py-1.5">
 				<CollapsibleTrigger
 					className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none"
 					aria-label={open ? "Collapse thread" : "Expand thread"}
@@ -94,60 +99,75 @@ export function PullRequestCommentThread({
 							open && "rotate-90",
 						)}
 					/>
-					<span className="shrink-0">
+					{firstComment && (
+						<Avatar className="size-4 shrink-0">
+							{firstComment.avatarUrl ? (
+								<AvatarImage
+									src={firstComment.avatarUrl}
+									alt={firstComment.authorLogin}
+								/>
+							) : null}
+							<AvatarFallback className="text-[8px]">
+								{firstComment.authorLogin.slice(0, 1).toUpperCase()}
+							</AvatarFallback>
+						</Avatar>
+					)}
+					<span className="shrink-0 font-medium text-foreground/90">
 						{comments.length === 1
 							? "1 comment"
 							: `${comments.length} comments`}
 					</span>
+				</CollapsibleTrigger>
+				<div className="flex shrink-0 items-center gap-1.5">
 					{isOutdated && (
-						<span className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide">
+						<span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
 							Outdated
 						</span>
 					)}
 					{isResolved && (
-						<span className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide">
+						<span className="rounded-full bg-[#dcfae8] px-1.5 py-0.5 text-[10px] font-medium text-[#00a558] [.dark_&]:bg-[#064e3b] [.dark_&]:text-[#34d399]">
 							Resolved
 						</span>
 					)}
-				</CollapsibleTrigger>
-				<button
-					type="button"
-					onClick={handleCopy}
-					className="shrink-0 text-muted-foreground hover:text-foreground"
-					aria-label={
-						isCopied
-							? "Copied"
-							: comments.length === 1
-								? "Copy comment"
-								: "Copy comments"
-					}
-				>
-					{isCopied ? (
-						<LuCheck className="size-3 text-green-500" />
-					) : (
-						<LuCopy className="size-3" />
-					)}
-				</button>
-				{url && (
-					<a
-						href={url}
-						target="_blank"
-						rel="noreferrer"
-						onClick={(e) => e.stopPropagation()}
+					<button
+						type="button"
+						onClick={handleCopy}
 						className="shrink-0 text-muted-foreground hover:text-foreground"
-						aria-label="Open on GitHub"
+						aria-label={
+							isCopied
+								? "Copied"
+								: comments.length === 1
+									? "Copy comment"
+									: "Copy comments"
+						}
 					>
-						<LuExternalLink className="size-3" />
-					</a>
-				)}
+						{isCopied ? (
+							<LuCheck className="size-3 text-green-500" />
+						) : (
+							<LuCopy className="size-3" />
+						)}
+					</button>
+					{url && (
+						<a
+							href={url}
+							target="_blank"
+							rel="noreferrer"
+							onClick={(e) => e.stopPropagation()}
+							className="shrink-0 text-muted-foreground hover:text-foreground"
+							aria-label="Open on GitHub"
+						>
+							<LuExternalLink className="size-3" />
+						</a>
+					)}
+				</div>
 			</div>
-			<CollapsibleContent className="overflow-hidden border-t border-border data-[state=closed]:animate-none">
-				<ul className="divide-y divide-border">
+			<CollapsibleContent className="overflow-hidden border-t border-border/50 data-[state=closed]:animate-none">
+				<ul className="divide-y divide-border/50">
 					{comments.map((comment) => (
 						<CommentRow key={comment.id} comment={comment} />
 					))}
 				</ul>
-				<div className="flex items-center justify-end border-t border-border bg-muted/30 px-2.5 py-1.5">
+				<div className="flex items-center justify-end border-t border-border/50 bg-muted/20 px-3 py-2">
 					<Button
 						type="button"
 						size="xs"
@@ -168,7 +188,7 @@ export function PullRequestCommentThread({
 
 function CommentRow({ comment }: { comment: Comment }) {
 	return (
-		<li className="flex gap-2 px-2.5 py-2">
+		<li className="flex gap-2 px-3 py-2.5">
 			<Avatar className="mt-0.5 size-5 shrink-0">
 				{comment.avatarUrl ? (
 					<AvatarImage src={comment.avatarUrl} alt={comment.authorLogin} />

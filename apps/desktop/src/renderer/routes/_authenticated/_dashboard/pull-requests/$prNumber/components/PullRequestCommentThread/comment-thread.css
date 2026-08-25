@@ -1,11 +1,13 @@
 .diff-comment {
 	display: block;
-	/* Size to the visible code column. The bubble is slotted into a
-	 * shrink-to-fit flex item ([data-annotation-content]), so a plain 100%
-	 * resolved against an indefinite width and let wide content overflow the
-	 * pane. cqi queries the [data-line-annotation] cell (made a container in
-	 * useDiffCodeViewTheme's unsafeCSS); 1.5rem is this rule's mx-3 margins. */
-	max-width: min(calc(100cqi - 1.5rem), 720px);
+	/* Full-bleed within the visible code column, flush with the diff pane's
+	 * edges. The bubble is slotted into a shrink-to-fit flex item
+	 * ([data-annotation-content]), so a plain 100% resolves against an
+	 * indefinite width and lets wide content overflow the pane — cqi queries
+	 * the [data-line-annotation] cell instead (made a container in
+	 * useDiffCodeViewTheme's unsafeCSS). */
+	width: 100%;
+	max-width: 100cqi;
 	min-width: 0;
 	box-sizing: border-box;
 	overflow-wrap: anywhere;
