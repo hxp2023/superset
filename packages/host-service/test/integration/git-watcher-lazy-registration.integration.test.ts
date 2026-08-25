@@ -178,6 +178,65 @@ describe("GitWatcher lazy registration (regression coverage for #6729)", () => {
 		expect(internals(scenario.gitWatcher).watched.has(id)).toBe(false);
 	});
 
+	test("unwatchWorkspace before an in-flight attach resolves does not leak a watcher", async () => {
+		const scenario = await createScenario(1);
+		scenarios.push(scenario);
+		scenario.gitWatcher.start();
+
+		const id = scenario.workspaceIds[0] as string;
+		// watchWorkspace kicks off an async DB lookup + `git rev-parse`
+		// subprocess before it ever touches `watched`. Releasing interest in
+		// the same tick — before either has a chance to resolve — must not
+		// leave a watcher committed once they do.
+		scenario.gitWatcher.watchWorkspace(id);
+		scenario.gitWatcher.unwatchWorkspace(id);
+
+		// Give the in-flight attach every chance to (wrongly) complete.
+		await new Promise((r) => setTimeout(r, 1_500));
+
+		expect(internals(scenario.gitWatcher).watched.has(id)).toBe(false);
+		expect(internals(scenario.gitWatcher).interest.has(id)).toBe(false);
+	});
+
+	test("archiving a workspace with a pending debounce timer does not later emit a stale git:changed", async () => {
+		const scenario = await createScenario(1);
+		scenarios.push(scenario);
+		scenario.gitWatcher.start();
+
+		const id = scenario.workspaceIds[0] as string;
+		const repo = scenario.repos[0];
+		if (!repo) throw new Error("missing repo");
+
+		scenario.gitWatcher.watchWorkspace(id);
+		await waitFor(() => internals(scenario.gitWatcher).watched.has(id), {
+			timeoutMs: 10_000,
+		});
+
+		const events: string[] = [];
+		scenario.gitWatcher.onChanged((event) => events.push(event.workspaceId));
+
+		// A real commit touches `.git/` — GIT_DIR_DEBOUNCE_MS (1s) window —
+		// leaving a pending debounce timer + batch in flight.
+		await repo.commit("pending-at-archive-time", { "f.txt": "x" });
+
+		// Archive it (and force the same cleanup a real 30s rescan would run)
+		// well before that 1s debounce window elapses.
+		scenario.host.db
+			.update(workspaces)
+			.set({ archivedAt: Date.now() })
+			.where(eq(workspaces.id, id))
+			.run();
+		await internals(scenario.gitWatcher).rescan();
+
+		expect(internals(scenario.gitWatcher).watched.has(id)).toBe(false);
+
+		// Wait past the debounce window the pending batch was scheduled
+		// under. A leaked timer would fire here and emit for `id`.
+		await new Promise((r) => setTimeout(r, 1_500));
+
+		expect(events).not.toContain(id);
+	});
+
 	test("registration cost is paid only for workspaces someone actually watches, regardless of how many exist", async () => {
 		const N = 30;
 		const scenario = await createScenario(N);

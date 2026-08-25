@@ -35,6 +35,14 @@ interface ClientState {
 /** Open documents per client are bounded by open panes; this is a leak stop. */
 const MAX_FILE_WATCHES_PER_CLIENT = 256;
 
+/**
+ * Generous enough that a heavy user's sidebar (every non-archived workspace,
+ * observed in the hundreds — see #6729) never hits it; still a real ceiling
+ * against a buggy or adversarial client spamming `git:watch` with distinct
+ * workspaceIds, each of which costs GitWatcher a synchronous DB lookup.
+ */
+const MAX_GIT_WATCHES_PER_CLIENT = 2000;
+
 type WorkspaceChangedListener = (
 	message: Omit<Extract<ServerMessage, { type: "workspace:changed" }>, "type">,
 ) => void;
@@ -170,7 +178,7 @@ export class EventBus {
 		} else if (message.type === "fs:unwatch-file") {
 			this.stopFsFileWatch(state, message.workspaceId, message.absolutePath);
 		} else if (message.type === "git:watch") {
-			this.startGitWatch(state, message.workspaceId);
+			this.startGitWatch(socket, state, message.workspaceId);
 		} else if (message.type === "git:unwatch") {
 			this.stopGitWatch(state, message.workspaceId);
 		}
@@ -427,8 +435,19 @@ export class EventBus {
 	 * before ever sending the command, so in practice this only guards
 	 * against a duplicate/replayed message).
 	 */
-	private startGitWatch(state: ClientState, workspaceId: string): void {
+	private startGitWatch(
+		socket: WsSocket,
+		state: ClientState,
+		workspaceId: string,
+	): void {
 		if (state.gitSubscriptions.has(workspaceId)) return;
+		if (state.gitSubscriptions.size >= MAX_GIT_WATCHES_PER_CLIENT) {
+			sendMessage(socket, {
+				type: "error",
+				message: "Too many git watches for this client",
+			});
+			return;
+		}
 		state.gitSubscriptions.add(workspaceId);
 		this.gitWatcher.watchWorkspace(workspaceId);
 	}

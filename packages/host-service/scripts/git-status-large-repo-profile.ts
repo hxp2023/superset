@@ -574,6 +574,11 @@ async function runEventBusScenario(
 			JSON.stringify({ type: "git:watch", workspaceId }),
 		);
 	}
+	// Let every watcher's async attach chain (DB lookup + `git rev-parse`
+	// subprocess) settle before measuring — otherwise that overhead bleeds
+	// into the steady-state window this profile exists to isolate. Mirrors
+	// gitignored-churn-bench.ts's settle after its own git:watch send.
+	await sleep(GIT_DIR_WARMUP_SETTLE_MS);
 	const stopEventLoopMonitor = startEventLoopMonitor();
 	const startedAt = performance.now();
 

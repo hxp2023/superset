@@ -318,7 +318,11 @@ export class GitWatcher {
 					and(eq(workspaces.id, workspaceId), isNull(workspaces.archivedAt)),
 				)
 				.get();
-		} catch {
+		} catch (error) {
+			console.error("[git-watcher] attach lookup failed", {
+				workspaceId,
+				error,
+			});
 			return;
 		}
 		// Not found / archived: nothing to attach right now. If the row appears
@@ -538,7 +542,10 @@ export class GitWatcher {
 	 * attaching for any workspace someone is still interested in but that
 	 * never attached (worktree wasn't ready, transient git-dir lookup
 	 * failure). Both loops are bounded by the interested set, not the total
-	 * non-archived workspace count — see #6729.
+	 * non-archived workspace count — see #6729. (The `select` below still
+	 * scans every non-archived row every 30s to detect archival/deletion —
+	 * one indexed, synchronous SQLite query, not the expensive part: no
+	 * subprocess spawns or live fs.watch handles come from it directly.)
 	 */
 	private async rescan(): Promise<void> {
 		if (this.closed) return;
@@ -560,14 +567,13 @@ export class GitWatcher {
 		const existingIds = new Set(rows.map((r) => r.id));
 		const worktreePathById = new Map(rows.map((r) => [r.id, r.worktreePath]));
 
-		// Remove watchers for workspaces that no longer exist (archived or deleted).
-		for (const [id, entry] of this.watched) {
-			if (!existingIds.has(id)) {
-				entry.watcher.close();
-				entry.disposeWorktreeWatch();
-				this.watched.delete(id);
-				this.ignoredDirs.delete(id);
-			}
+		// Remove watchers for workspaces that no longer exist (archived or
+		// deleted). Routed through stopWatching() (not inlined) so a pending
+		// debounce timer/batch for the removed workspace can't fire a stale
+		// git:changed later — it also clears those, this loop used to leave
+		// them dangling.
+		for (const id of [...this.watched.keys()]) {
+			if (!existingIds.has(id)) this.stopWatching(id);
 		}
 		// Interest in a workspace that's gone is stale — drop it too, rather
 		// than leaking a refcount nobody will ever unwatch.
@@ -638,6 +644,22 @@ export class GitWatcher {
 			this.watched.delete(workspaceId);
 			watcher.close();
 		});
+
+		// Recheck interest: watchWorkspace()/unwatchWorkspace() can flip the
+		// refcount to zero while the DB lookup + `git rev-parse` subprocess
+		// above were in flight (fast tab close, effect re-run). Committing to
+		// `watched` anyway would leak a live watcher forever — nothing but
+		// archival/deletion would ever tear it down, reintroducing #6729 one
+		// race at a time. Don't commit what's no longer wanted.
+		if (
+			this.closed ||
+			this.watched.has(workspaceId) ||
+			!this.interest.has(workspaceId)
+		) {
+			disposeWorktreeWatch();
+			watcher.close();
+			return;
+		}
 
 		this.watched.set(workspaceId, {
 			workspaceId,
