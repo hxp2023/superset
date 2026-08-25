@@ -3,6 +3,7 @@ import { Spinner } from "@superset/ui/spinner";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LuCircleCheck } from "react-icons/lu";
+import { useActiveOrganizationId } from "renderer/hooks/useActiveOrganizationId";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
@@ -34,8 +35,9 @@ const HOST_POLL_INTERVAL_MS = 5_000;
 export function AddHostGuide() {
 	const navigate = useNavigate();
 	const utils = cloudTrpc.useUtils();
-	const { data: session } = authClient.useSession();
-	const organizationId = session?.session?.activeOrganizationId ?? null;
+	// The org THIS window is showing: the key is minted for the org whose
+	// hosts the guide is adding to, not whatever another window last chose.
+	const organizationId = useActiveOrganizationId();
 	// Minted once per visit. Every open would otherwise leave a key behind, so
 	// one that was never copied and never saw a host connect is revoked on the
 	// way out; a copied key stays, since the paste may still be in flight.
