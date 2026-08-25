@@ -9,6 +9,7 @@ import {
 	orderForToggle,
 	resolveActivePaneView,
 } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/FilePane/registry";
+import { splitFrontMatter } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/FilePane/registry/views/MarkdownPreviewView/splitFrontMatter";
 import type { SharedFileDocument } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/state/fileDocumentStore";
 import type { FilePaneData } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/types";
 
@@ -72,6 +73,11 @@ export function FileEditPane({ document, filePath }: FileEditPaneProps) {
 
 	const ViewRenderer = activeView.Renderer;
 	const showToggle = views.length > 1 && !forceViewId;
+	const hasFrontMatter =
+		document.content.kind === "text" &&
+		splitFrontMatter(document.content.value).frontMatter !== "";
+	const showFrontMatterHint =
+		activeView.id === "markdown-preview" && hasFrontMatter;
 
 	return (
 		<div className="flex h-full w-full flex-col">
@@ -82,26 +88,35 @@ export function FileEditPane({ document, filePath }: FileEditPaneProps) {
 					onDismiss={() => document.clearSaveError()}
 				/>
 			)}
-			<div className="flex items-center justify-end gap-2 border-b border-border/60 px-2 py-1">
-				{showToggle && (
-					<FileViewToggle
-						views={orderForToggle(views)}
-						activeViewId={activeView.id}
-						filePath={filePath}
-						onChange={handleChangeView}
-					/>
+			<div className="flex items-center justify-between gap-2 border-b border-border/60 px-2 py-1">
+				{showFrontMatterHint ? (
+					<span className="min-w-0 truncate text-xs text-muted-foreground">
+						Front matter hidden — switch to Markdown to edit it
+					</span>
+				) : (
+					<span />
 				)}
-				{document.dirty && (
-					<Button
-						variant="outline"
-						size="xs"
-						disabled={document.pendingSave}
-						onClick={() => void document.save()}
-					>
-						{document.pendingSave && <Spinner className="size-3" />}
-						Save
-					</Button>
-				)}
+				<div className="flex shrink-0 items-center gap-2">
+					{showToggle && (
+						<FileViewToggle
+							views={orderForToggle(views)}
+							activeViewId={activeView.id}
+							filePath={filePath}
+							onChange={handleChangeView}
+						/>
+					)}
+					{document.dirty && (
+						<Button
+							variant="outline"
+							size="xs"
+							disabled={document.pendingSave}
+							onClick={() => void document.save()}
+						>
+							{document.pendingSave && <Spinner className="size-3" />}
+							Save
+						</Button>
+					)}
+				</div>
 			</div>
 			<div className="min-h-0 min-w-0 flex-1">
 				<ViewRenderer
@@ -112,6 +127,7 @@ export function FileEditPane({ document, filePath }: FileEditPaneProps) {
 					isActive
 					onChangeView={handleChangeView}
 					onForceView={handleForceView}
+					showFrontMatterNote={false}
 				/>
 			</div>
 		</div>
