@@ -70,7 +70,11 @@ export function useSkillDocument({ name }: UseSkillDocumentParams) {
 		const savingDraft = draft;
 		try {
 			await writeMutation.mutateAsync({ name, content: savingDraft });
-			void utils.plugins.getSkillContent.invalidate({ name });
+			// Awaited, not fire-and-forget: clearing the draft below makes
+			// `content` fall back to `savedContent`, so the refetch must land
+			// first or the view would flash back to the pre-save text until it
+			// does.
+			await utils.plugins.getSkillContent.invalidate({ name });
 			// Only clear the draft if it still matches what was just sent —
 			// typing more during the in-flight save must not discard those
 			// newer, still-unsaved edits.
