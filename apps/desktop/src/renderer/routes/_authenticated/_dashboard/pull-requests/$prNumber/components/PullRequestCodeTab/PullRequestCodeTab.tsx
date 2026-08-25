@@ -12,7 +12,7 @@ import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	LuChevronDown,
 	LuChevronUp,
@@ -173,6 +173,29 @@ export function PullRequestCodeTab({
 	const [treeWidth, setTreeWidth] = useState(DEFAULT_TREE_WIDTH);
 	const [isResizingTree, setIsResizingTree] = useState(false);
 	const [composer, setComposer] = useState<ComposerState | null>(null);
+	// Pierre's controlled `items` prop skips reprocessing an item whose
+	// `version` is unchanged from what it last saw (see the version comment
+	// on `items` below) — composer open/close/move doesn't touch
+	// threadsUpdatedAt, so without this the annotation update goes stale:
+	// the composer can silently fail to open, or fail to disappear on
+	// cancel/Escape, whenever a thread hasn't also refetched in between.
+	// Scoped to just the file(s) losing or gaining the composer annotation
+	// (not every file in the diff) so a transition doesn't force Pierre to
+	// reprocess the whole PR. Both refs are written synchronously inside
+	// the event handler, before setComposer, so `items` sees the update on
+	// the very next render — no lag.
+	const composerVersionRef = useRef(0);
+	const composerAffectedPathsRef = useRef<ReadonlySet<string>>(new Set());
+	const updateComposer = useCallback((next: ComposerState | null) => {
+		composerVersionRef.current += 1;
+		setComposer((prev) => {
+			const affected = new Set<string>();
+			if (prev) affected.add(prev.path);
+			if (next) affected.add(next.path);
+			composerAffectedPathsRef.current = affected;
+			return next;
+		});
+	}, []);
 	const queryClient = useQueryClient();
 
 	const { data, isLoading, error, refetch } = useQuery({
@@ -319,7 +342,7 @@ export function PullRequestCodeTab({
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: linkedWorkspaceQueryKey });
 			toast.success("Sent to agent");
-			setComposer(null);
+			updateComposer(null);
 		},
 		onError: (mutationError) => {
 			toast.error("Couldn't send comment", {
@@ -401,11 +424,22 @@ export function PullRequestCodeTab({
 					// value"), needs an explicit version bump to know an
 					// already-rendered item's content changed — otherwise a
 					// same-id item with new annotations (a reply landing, a
-					// resolve toggling) can go stale in the live view until the
-					// next full remount, even though the query cache is correct.
-					version: threadsUpdatedAt,
+					// resolve toggling, a composer opening/closing) can go stale
+					// in the live view even though the query cache/state is
+					// correct. Only the file(s) actually losing or gaining the
+					// composer annotation get the extra bump, so a composer
+					// transition elsewhere doesn't force Pierre to reprocess
+					// every file in the diff.
+					version: composerAffectedPathsRef.current.has(f.path)
+						? threadsUpdatedAt + composerVersionRef.current
+						: threadsUpdatedAt,
 				};
 			}),
+		// composerVersionRef.current and composerAffectedPathsRef.current
+		// are read directly, not listed as dependencies — both are written
+		// synchronously in updateComposer before setComposer, so they're
+		// already current by the time this recomputes off the `composer`
+		// change below.
 		[files, annotationsByPath, composer, composerAnnotation, threadsUpdatedAt],
 	);
 	// Flattened in diff order (file order, then line number within a file)
@@ -487,15 +521,15 @@ export function PullRequestCodeTab({
 					context: { type: "diff" | "file"; item: { id: string } },
 				) => {
 					if (context.type !== "diff" || !range) {
-						setComposer(null);
+						updateComposer(null);
 						return;
 					}
 					const path = pathByItemId.get(context.item.id);
 					if (!path) return;
-					setComposer({ itemId: context.item.id, path, range });
+					updateComposer({ itemId: context.item.id, path, range });
 				},
 			}) as CodeViewOptions<PrAnnotationMetadata>,
-		[options, diffStyle, pathByItemId],
+		[options, diffStyle, pathByItemId, updateComposer],
 	);
 
 	const treePaths = useMemo(() => files.map((f) => f.path), [files]);
@@ -745,7 +779,7 @@ export function PullRequestCodeTab({
 										contextLabel={`Line ${metadata.line}`}
 										hostUrl={hostUrl}
 										linkedWorkspaceId={linkedWorkspaceId}
-										onCancel={() => setComposer(null)}
+										onCancel={() => updateComposer(null)}
 										onSubmit={async ({ comment, target }) => {
 											await sendCommentToAgent.mutateAsync({
 												comment,
