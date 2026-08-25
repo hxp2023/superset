@@ -642,6 +642,7 @@ function PullRequestDetailPage() {
 						prNumber={data.number}
 						prUrl={data.url}
 						hostUrl={hostUrl}
+						hostId={hostId}
 					/>
 				)
 			)}
