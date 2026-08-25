@@ -17,12 +17,14 @@ struct ComposerSlashCommand: Record, Identifiable, Equatable {
   @Field var argumentHint: String? = nil
   /// Harness-shipped commands sort after user-defined ones, like desktop.
   @Field var isBuiltin: Bool = false
+  /// Alternate names; matched after the canonical name, like desktop.
+  @Field var aliases: [String] = []
 
   static func == (lhs: ComposerSlashCommand, rhs: ComposerSlashCommand) -> Bool {
     lhs.id == rhs.id && lhs.name == rhs.name
       && lhs.descriptionText == rhs.descriptionText
       && lhs.trigger == rhs.trigger && lhs.argumentHint == rhs.argumentHint
-      && lhs.isBuiltin == rhs.isBuiltin
+      && lhs.isBuiltin == rhs.isBuiltin && lhs.aliases == rhs.aliases
   }
 }
 
@@ -53,6 +55,15 @@ enum ComposerSlashMatching {
     return nil
   }
 
+  /// Name rank wins; an alias match ranks three tiers back, like the shared
+  /// helper, so aliases surface without outranking canonical names.
+  static func rank(command: ComposerSlashCommand, query: String) -> Int? {
+    if let nameRank = rank(name: command.name, query: query) { return nameRank }
+    let aliasRanks = command.aliases.compactMap { rank(name: $0, query: query) }
+    guard let best = aliasRanks.min() else { return nil }
+    return best + 3
+  }
+
   static func suggestions(
     draft: String,
     commands: [ComposerSlashCommand]
@@ -62,7 +73,9 @@ enum ComposerSlashMatching {
     // A fully typed command that takes arguments keeps the panel closed —
     // mirrors shared `shouldSuppressSlashMenuForCommittedCommand`.
     if commands.contains(where: { command in
-      command.trigger == token.trigger && command.name.lowercased() == query
+      command.trigger == token.trigger
+        && (command.name.lowercased() == query
+          || command.aliases.contains { $0.lowercased() == query })
         && !(command.argumentHint ?? "").trimmingCharacters(in: .whitespaces).isEmpty
     }) {
       return nil
@@ -70,7 +83,7 @@ enum ComposerSlashMatching {
     let matches = commands
       .compactMap { command -> (ComposerSlashCommand, Int)? in
         guard command.trigger == token.trigger else { return nil }
-        guard let rank = rank(name: command.name, query: query) else { return nil }
+        guard let rank = rank(command: command, query: query) else { return nil }
         return (command, rank)
       }
       .sorted { lhs, rhs in

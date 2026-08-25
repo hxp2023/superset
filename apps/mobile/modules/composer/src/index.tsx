@@ -120,6 +120,8 @@ export interface ComposerSlashCommand {
 	argumentHint?: string;
 	/** Harness-shipped commands sort after user-defined ones, like desktop. */
 	isBuiltin?: boolean;
+	/** Alternate names; matched after the canonical name, like desktop. */
+	aliases?: string[];
 }
 
 /**

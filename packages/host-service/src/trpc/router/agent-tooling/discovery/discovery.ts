@@ -13,9 +13,8 @@ import {
  * coalesce onto one scan; a rejected promise is evicted immediately so one
  * flaky read doesn't pin an error for 30s. Insertion-order LRU bounded the
  * way workspace-fs's search index is (delete + re-set on hit, evict oldest
- * at capacity). Known staleness: an account switch that changes the config
- * dir can serve results for the old account for up to the TTL — the key
- * deliberately omits env to keep coalescing simple.
+ * at capacity). The key includes the resolved config dir, so an account
+ * switch reads fresh immediately instead of waiting out the TTL.
  */
 const DISCOVERY_CACHE_TTL_MS = 30_000;
 const DISCOVERY_CACHE_MAX_ENTRIES = 64;
@@ -48,8 +47,12 @@ export async function listAgentSlashCommands(
 		: getSlashCommandDiscovery(options.presetId);
 	if (!entry) return [];
 
+	const configDir = entry.resolveConfigDir(
+		options.env,
+		options.homeDir ?? os.homedir(),
+	);
 	const now = options.now ?? Date.now;
-	const key = `${options.worktreePath}::${options.agentId}`;
+	const key = `${options.worktreePath}::${options.agentId}::${configDir}`;
 	const cached = discoveryCache.get(key);
 	if (cached && now() - cached.fetchedAt < DISCOVERY_CACHE_TTL_MS) {
 		discoveryCache.delete(key);
@@ -57,10 +60,6 @@ export async function listAgentSlashCommands(
 		return cached.promise;
 	}
 
-	const configDir = entry.resolveConfigDir(
-		options.env,
-		options.homeDir ?? os.homedir(),
-	);
 	const promise = entry.scan({
 		worktreePath: options.worktreePath,
 		configDir,
@@ -72,11 +71,20 @@ export async function listAgentSlashCommands(
 		discoveryCache.delete(oldestKey);
 	}
 	discoveryCache.set(key, { promise, fetchedAt: now() });
-	promise.catch(() => {
-		if (discoveryCache.get(key)?.promise === promise) {
-			discoveryCache.delete(key);
-		}
-	});
+	// The TTL clock starts when the scan finishes, so a slow scan stays
+	// shareable for its full window instead of expiring mid-flight; a
+	// rejected scan is evicted so one flaky read doesn't pin an error.
+	promise.then(
+		() => {
+			const current = discoveryCache.get(key);
+			if (current?.promise === promise) current.fetchedAt = now();
+		},
+		() => {
+			if (discoveryCache.get(key)?.promise === promise) {
+				discoveryCache.delete(key);
+			}
+		},
+	);
 	return promise;
 }
 

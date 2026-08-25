@@ -190,6 +190,7 @@ export const TerminalComposer = forwardRef<
 						trigger: command.trigger,
 						argumentHint: command.argumentHint || undefined,
 						isBuiltin: command.kind === "builtin" || undefined,
+						aliases: command.aliases.length > 0 ? command.aliases : undefined,
 					}),
 				)}
 				isSending={writeAttachments.isPending || isSubmitting}
