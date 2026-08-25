@@ -242,6 +242,47 @@ describe("GitWatcher lazy registration (regression coverage for #6729)", () => {
 		expect(events).not.toContain(id);
 	});
 
+	test("interest survives a workspace transiently disappearing from a rescan — self-heals without a new watchGit", async () => {
+		const scenario = await createScenario(1);
+		scenarios.push(scenario);
+		scenario.gitWatcher.start();
+
+		const id = scenario.workspaceIds[0] as string;
+
+		// A single watchWorkspace() call, same as one client sending one
+		// git:watch — nothing calls it again for the rest of this test.
+		scenario.gitWatcher.watchWorkspace(id);
+		await waitFor(() => internals(scenario.gitWatcher).watched.has(id), {
+			timeoutMs: 10_000,
+		});
+
+		// Simulate a transient disappearance (e.g. archive-then-restore via
+		// the tombstone delete flow) spanning one rescan tick.
+		scenario.host.db
+			.update(workspaces)
+			.set({ archivedAt: Date.now() })
+			.where(eq(workspaces.id, id))
+			.run();
+		await internals(scenario.gitWatcher).rescan();
+
+		// The live watcher is torn down (real resource, correctly reclaimed)...
+		expect(internals(scenario.gitWatcher).watched.has(id)).toBe(false);
+		// ...but interest — which nothing but watchWorkspace/unwatchWorkspace
+		// should ever touch — must survive the gap.
+		expect(internals(scenario.gitWatcher).interest.has(id)).toBe(true);
+
+		// The workspace reappears (restored) before the next rescan tick.
+		scenario.host.db
+			.update(workspaces)
+			.set({ archivedAt: null })
+			.where(eq(workspaces.id, id))
+			.run();
+		await internals(scenario.gitWatcher).rescan();
+
+		// Self-healed via the retry loop, with no second watchWorkspace() call.
+		expect(internals(scenario.gitWatcher).watched.has(id)).toBe(true);
+	});
+
 	test("registration cost is paid only for workspaces someone actually watches, regardless of how many exist", async () => {
 		const N = 30;
 		const scenario = await createScenario(N);

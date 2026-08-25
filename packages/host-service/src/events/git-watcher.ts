@@ -572,13 +572,25 @@ export class GitWatcher {
 		// debounce timer/batch for the removed workspace can't fire a stale
 		// git:changed later — it also clears those, this loop used to leave
 		// them dangling.
+		//
+		// Deliberately does NOT touch `interest` here. A workspace can be
+		// transiently absent from this scan without any client ever losing
+		// interest in it (e.g. archived-then-restored via the tombstone
+		// delete flow) — a client that already sent one `git:watch` has no
+		// reason to send it again, and won't unless it remounts or the
+		// socket reconnects. Deleting `interest` for a merely-transient gap
+		// would desync GitWatcher's bookkeeping from what the client (and
+		// its socket's `gitSubscriptions`) still believes is watched, with
+		// nothing left to ever resync it — the retry loop below only walks
+		// `interest.keys()`, so a wrongly-cleared entry can never come back
+		// on its own. `interest` is owned exclusively by
+		// watchWorkspace()/unwatchWorkspace(); a stale entry for a
+		// workspace gone for good costs one Map entry (bounded by the
+		// per-client `git:watch` cap in event-bus.ts) until the holding
+		// client unwatches or its socket closes — self-healing, unlike a
+		// leaked live watcher.
 		for (const id of [...this.watched.keys()]) {
 			if (!existingIds.has(id)) this.stopWatching(id);
-		}
-		// Interest in a workspace that's gone is stale — drop it too, rather
-		// than leaking a refcount nobody will ever unwatch.
-		for (const id of this.interest.keys()) {
-			if (!existingIds.has(id)) this.interest.delete(id);
 		}
 
 		// Retry attaching for still-interested workspaces that never attached.
