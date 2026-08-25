@@ -77,6 +77,10 @@ Three failure modes found while filming and verifying, fixed in this branch:
 - **Stale verdict during recheck**: the panel showed the previous result while a refetch ran
   (green flashing over a broken host). Any in-flight check now shows the checking spinner.
 
+## Demo
+
+Recordings and stills of the shipped flow: `apps/desktop/docs/artifacts/remote-onboarding/`.
+
 ## North star (from the pairing + auth-handoff research sweeps, 08-20)
 
 The flow above is three user-facing ceremonies; the strongest established patterns have one or
