@@ -65,8 +65,12 @@ async function createScenario(workspaceCount: number): Promise<Scenario> {
 	const repos: GitFixture[] = [];
 	const workspaceIds: string[] = [];
 
+	// Kept separate from `repos` (not pushed there) so `repos[i]` stays
+	// aligned with `workspaceIds[i]` for tests that index into it — this one
+	// only backs the project row, no workspace ever points at it.
+	const projectRepo = await createGitFixture();
 	const { id: projectId } = seedProject(host, {
-		repoPath: (await createGitFixture()).repoPath,
+		repoPath: projectRepo.repoPath,
 	});
 
 	for (let i = 0; i < workspaceCount; i++) {
@@ -89,6 +93,7 @@ async function createScenario(workspaceCount: number): Promise<Scenario> {
 		gitWatcher.close();
 		await filesystem.close();
 		for (const repo of repos) repo.dispose();
+		projectRepo.dispose();
 		await host.dispose();
 	};
 

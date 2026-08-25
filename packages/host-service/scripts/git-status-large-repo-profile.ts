@@ -800,6 +800,42 @@ async function prepareProfileWorktrees(options: Options): Promise<string[]> {
 	return paths;
 }
 
+/**
+ * Best-effort extraction of a bound workspace id from a drizzle predicate
+ * (e.g. `and(eq(workspaces.id, x), isNull(workspaces.archivedAt))`, as
+ * `GitWatcher.attachFromDb` builds), without depending on drizzle's exact SQL
+ * tree shape beyond `value`/`queryChunks` — the same two properties the
+ * `findFirst` mock below already relies on. Only follows those two keys, so
+ * it never walks into a column's `table` (which circularly references its
+ * own `columns`, including itself).
+ */
+function findBoundWorkspaceId(
+	node: unknown,
+	knownIds: ReadonlySet<string>,
+	seen = new Set<unknown>(),
+): string | undefined {
+	if (typeof node === "string") return knownIds.has(node) ? node : undefined;
+	if (node === null || typeof node !== "object") return undefined;
+	if (seen.has(node)) return undefined;
+	seen.add(node);
+	if (Array.isArray(node)) {
+		for (const item of node) {
+			const found = findBoundWorkspaceId(item, knownIds, seen);
+			if (found) return found;
+		}
+		return undefined;
+	}
+	const obj = node as { value?: unknown; queryChunks?: unknown };
+	if ("value" in obj) {
+		const found = findBoundWorkspaceId(obj.value, knownIds, seen);
+		if (found) return found;
+	}
+	if (Array.isArray(obj.queryChunks)) {
+		return findBoundWorkspaceId(obj.queryChunks, knownIds, seen);
+	}
+	return undefined;
+}
+
 function createWorkspaceDb(
 	worktreePathByWorkspaceId: Map<string, string>,
 ): HostDb {
@@ -807,10 +843,27 @@ function createWorkspaceDb(
 		worktreePathByWorkspaceId,
 		([id, worktreePath]) => ({ id, worktreePath }),
 	);
+	const knownIds = new Set(worktreePathByWorkspaceId.keys());
 	return {
 		select: () => ({
 			from: () => ({
 				all: () => workspaceRows,
+				// GitWatcher.attachFromDb's select().from().where(...).get() path
+				// (added alongside the lazy-registration fix, #6729) — the mock
+				// above only ever supported the bulk .all() the old eager rescan
+				// used, so this lookup used to throw, get silently caught, and
+				// leave every workspace unattached (the profile then measured
+				// zero watcher activity, per code review on that PR).
+				where: (predicate: unknown) => {
+					const matchedId = findBoundWorkspaceId(predicate, knownIds);
+					const matched = matchedId
+						? workspaceRows.filter((row) => row.id === matchedId)
+						: [];
+					return {
+						all: () => matched,
+						get: () => matched[0],
+					};
+				},
 			}),
 		}),
 		query: {

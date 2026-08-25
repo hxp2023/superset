@@ -207,7 +207,10 @@ function createDb(): HostDb {
 	const rows = [{ id: WORKSPACE_ID, worktreePath: "" }];
 	return {
 		select: () => ({
-			from: () => ({ where: () => ({ all: () => rows }), all: () => rows }),
+			from: () => ({
+				where: () => ({ all: () => rows, get: () => rows[0] }),
+				all: () => rows,
+			}),
 		}),
 		query: {
 			workspaces: {
