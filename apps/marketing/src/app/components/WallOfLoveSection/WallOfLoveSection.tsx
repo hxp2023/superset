@@ -83,6 +83,8 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 }
 
 export function WallOfLoveSection() {
+	const [showAll, setShowAll] = useState(false);
+
 	return (
 		<section className="relative py-24 sm:py-32">
 			<div className="max-w-7xl mx-auto px-6 sm:px-8">
@@ -93,12 +95,25 @@ export function WallOfLoveSection() {
 				</div>
 
 				<div className="columns-1 gap-4 md:columns-2 lg:columns-3">
-					{TESTIMONIALS.map((testimonial) => (
-						<div key={testimonial.id} className="mb-4 break-inside-avoid">
+					{TESTIMONIALS.map((testimonial, index) => (
+						<div
+							key={testimonial.id}
+							className={`mb-4 break-inside-avoid ${!showAll && index >= 5 ? "hidden md:block" : ""}`}
+						>
 							<TestimonialCard testimonial={testimonial} />
 						</div>
 					))}
 				</div>
+
+				{!showAll && (
+					<button
+						type="button"
+						onClick={() => setShowAll(true)}
+						className="mt-2 w-full border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground/50 md:hidden"
+					>
+						Show all {TESTIMONIALS.length}
+					</button>
+				)}
 			</div>
 		</section>
 	);
