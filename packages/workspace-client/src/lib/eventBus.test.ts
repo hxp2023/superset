@@ -148,4 +148,39 @@ describe("eventBus", () => {
 		await Bun.sleep(1_500);
 		expect(host.clientCount()).toBe(0);
 	});
+
+	it("releasing interest via a fresh handle, after the connection's last listener already closed it, does not strand a new connection", async () => {
+		const host = makeHostServer();
+		const bus = getEventBus(host.hostUrl, () => "tok");
+		const off = bus.on("git:changed", "*", () => {});
+		bus.watchGit("ws-1");
+		cleanups.push(() => host.server.stop(true));
+		await waitFor(() => host.clientCount() === 1);
+		expect(host.upgrades.length).toBe(1);
+
+		// Simulates a sibling effect's cleanup running first and releasing
+		// this connection's only listener/retainer — a real, order-dependent
+		// scenario in a multi-effect component (see DashboardSidebar-
+		// WorkspaceStatusProvider's final-unmount and mid-session-removal
+		// cleanup ordering).
+		off();
+		await waitFor(() => host.clientCount() === 0);
+
+		// A *fresh* getEventBus() call, exactly matching the real call site
+		// (getHostEventBus(hostUrl).unwatchGit(...) — never the same cached
+		// handle). getEventBus() unconditionally (re)creates a ConnectionState
+		// if none exists; before this fix, nothing ever closed the socket it
+		// opens back down (unwatchGit/unwatchFs never called
+		// maybeCleanupConnection), so it would dial in and reconnect forever
+		// (a second real upgrade hits the server, `host.upgrades.length`
+		// reaches 2, and `clientCount()` gets stuck at 1).
+		getEventBus(host.hostUrl, () => "tok").unwatchGit("ws-1");
+
+		// With the fix, maybeCleanupConnection closes the fresh connection
+		// synchronously — fast enough that it never even dials out. No
+		// second upgrade ever reaches the server, and no client lingers.
+		await Bun.sleep(1_500);
+		expect(host.upgrades.length).toBe(1);
+		expect(host.clientCount()).toBe(0);
+	});
 });

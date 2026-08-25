@@ -480,6 +480,14 @@ export function getEventBus(
 			if (count <= 1) {
 				state.fsWatchedWorkspaces.delete(workspaceId);
 				sendCommand(state, { type: "fs:unwatch", workspaceId });
+				// getEventBus() above always creates the connection if it didn't
+				// already exist — a caller that only ever intends to release
+				// interest (a cleanup effect running after this connection's
+				// last retainer already tore it down) would otherwise mint a
+				// fresh, unretained, unlistened-to connection here and leave it
+				// dangling forever, since nothing else will ever call this again
+				// for it. Mirrors on()'s and retain()'s cleanup.
+				maybeCleanupConnection(hostUrl);
 			} else {
 				state.fsWatchedWorkspaces.set(workspaceId, count - 1);
 			}
@@ -498,6 +506,9 @@ export function getEventBus(
 			if (count <= 1) {
 				state.gitWatchedWorkspaces.delete(workspaceId);
 				sendCommand(state, { type: "git:unwatch", workspaceId });
+				// See unwatchFs's comment: a release-only call can otherwise mint
+				// and permanently strand a fresh, never-retained connection.
+				maybeCleanupConnection(hostUrl);
 			} else {
 				state.gitWatchedWorkspaces.set(workspaceId, count - 1);
 			}
@@ -526,6 +537,9 @@ export function getEventBus(
 					workspaceId,
 					absolutePath,
 				});
+				// See unwatchFs's comment: a release-only call can otherwise mint
+				// and permanently strand a fresh, never-retained connection.
+				maybeCleanupConnection(hostUrl);
 			} else {
 				state.fsWatchedFiles.set(key, count - 1);
 			}
