@@ -13,7 +13,6 @@ import {
 	Keyboard,
 	LayoutAnimation,
 	Pressable,
-	StyleSheet,
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,6 +32,7 @@ import {
 import { PressableScale } from "@/screens/(authenticated)/components/PressableScale";
 import { useAppReviewPrompt } from "@/screens/(authenticated)/hooks/useAppReviewPrompt";
 import { useCreateTerminalWorkspace } from "@/screens/(authenticated)/hooks/useCreateTerminalWorkspace";
+import { useSlashCommands } from "@/screens/(authenticated)/hooks/useSlashCommands";
 import { usePendingWorkspaceCreatesStore } from "@/screens/(authenticated)/stores/pendingWorkspaceCreatesStore";
 import { useTerminalSeenStore } from "@/screens/(authenticated)/stores/terminalSeenStore";
 import { useTerminalTabOrderStore } from "@/screens/(authenticated)/stores/terminalTabOrderStore";
@@ -280,6 +280,12 @@ export function WorkspaceScreen() {
 	);
 	const requestAppReview = useAppReviewPrompt();
 	const activeRow = rows.find((row) => row.terminalId === activeTerminalId);
+	const slashCommands = useSlashCommands({
+		machineId: host?.machineId ?? null,
+		hostUrl,
+		workspaceId: id ?? null,
+		agent: activeRow?.definitionId ?? activeRow?.agentId ?? null,
+	});
 	useEffect(() => {
 		if (activeRow?.attention !== "review") return;
 		if (activeRow.lastEventAt === null) return;
@@ -347,6 +353,11 @@ export function WorkspaceScreen() {
 		null,
 	);
 	const hideNotice = useCallback(() => setNotice(null), []);
+	const composerActiveRef = useRef(false);
+	composerActiveRef.current = composerActive;
+	const handleTerminalTap = useCallback(() => {
+		if (composerActiveRef.current) composerRef.current?.blur();
+	}, []);
 	const handleCopied = useCallback(
 		() => setNotice((prev) => ({ text: "Copied", seq: (prev?.seq ?? 0) + 1 })),
 		[],
@@ -560,28 +571,21 @@ export function WorkspaceScreen() {
 						title="This host needs an update"
 					/>
 				) : activeTerminalId && host && id ? (
-					<>
-						<TerminalWebView
-							ref={terminalRef}
-							workspaceId={id}
-							terminalId={activeTerminalId}
-							host={host}
-							onStateChange={setConnectionState}
-							onControl={handleControl}
-							onSelectChange={setSelect}
-							onCopied={handleCopied}
-						/>
-						{/* Tap-outside-to-dismiss, the terminal's answer to the home
-						    composer's backdrop. Transparent, not a scrim: the point of
-						    typing here is watching the output above. */}
-						{composerActive ? (
-							<Pressable
-								accessibilityLabel="Dismiss keyboard"
-								onPress={() => composerRef.current?.blur()}
-								style={StyleSheet.absoluteFill}
-							/>
-						) : null}
-					</>
+					<TerminalWebView
+						ref={terminalRef}
+						workspaceId={id}
+						terminalId={activeTerminalId}
+						host={host}
+						onStateChange={setConnectionState}
+						onControl={handleControl}
+						onSelectChange={setSelect}
+						onCopied={handleCopied}
+						// Tap-to-dismiss without an overlay: a Pressable stacked over
+						// the WebView also ate scroll drags, so the scrollback froze
+						// whenever the keyboard was up. The page reports plain taps
+						// instead, and drags stay with the terminal.
+						onTap={handleTerminalTap}
+					/>
 				) : cloud && !workspace ? (
 					<CloudWorkspaceProvisioningState cloud={cloud} />
 				) : isResolving || (!isReady && host) ? (
@@ -658,6 +662,7 @@ export function WorkspaceScreen() {
 						<TerminalComposer
 							workspaceId={id}
 							allowAttachments={activeRow?.agentId != null}
+							slashCommands={slashCommands}
 							attachmentTarget={attachmentTarget}
 							onActiveChange={setComposerActive}
 							onHeightChange={setComposerHeight}
