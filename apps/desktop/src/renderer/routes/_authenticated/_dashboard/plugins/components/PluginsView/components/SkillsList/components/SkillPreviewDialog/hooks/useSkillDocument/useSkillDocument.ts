@@ -67,15 +67,25 @@ export function useSkillDocument({ name }: UseSkillDocumentParams) {
 		if (draft === null || draft === savedContent) {
 			return { status: "saved", revision: "" };
 		}
+		const savingDraft = draft;
 		try {
-			await writeMutation.mutateAsync({ name, content: draft });
+			await writeMutation.mutateAsync({ name, content: savingDraft });
 			void utils.plugins.getSkillContent.invalidate({ name });
-			setLocal({ name, draft: null, saveError: null });
+			// Only clear the draft if it still matches what was just sent —
+			// typing more during the in-flight save must not discard those
+			// newer, still-unsaved edits.
+			setLocal((prev) =>
+				prev.name === name && prev.draft === savingDraft
+					? { ...prev, draft: null, saveError: null }
+					: prev,
+			);
 			return { status: "saved", revision: "" };
 		} catch (err) {
 			const error =
 				err instanceof Error ? err : new Error("Failed to save skill");
-			setLocal({ name, draft, saveError: error });
+			setLocal((prev) =>
+				prev.name === name ? { ...prev, saveError: error } : prev,
+			);
 			return { status: "error", error };
 		}
 	}, [draft, savedContent, writeMutation, name, utils]);
