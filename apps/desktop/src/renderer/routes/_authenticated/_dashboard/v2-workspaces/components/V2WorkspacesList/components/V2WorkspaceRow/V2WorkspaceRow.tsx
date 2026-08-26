@@ -1,6 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { CgLaptop } from "react-icons/cg";
+import { LuLaptop, LuMonitor } from "react-icons/lu";
 import { WorkspaceNameMarquee } from "renderer/components/WorkspaceNameMarquee";
 import { useFocusVisible } from "renderer/hooks/useFocusVisible";
 import { V2WorkspaceContextMenu } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/components/V2WorkspaceContextMenu";
@@ -26,6 +27,12 @@ export function V2WorkspaceRow({
 	isCurrentRoute,
 }: V2WorkspaceRowProps) {
 	const isMainWorkspace = workspace.type === "main";
+	const DeviceIcon =
+		workspace.hostType === "local-device" ? LuLaptop : LuMonitor;
+	// The local device is the one running this app — it can't be offline from
+	// its own point of view, whatever presence says.
+	const isDeviceOffline =
+		!workspace.hostIsOnline && workspace.hostType !== "local-device";
 	// Drives the name's hover-reveal for keyboard users: the row, not the
 	// name span, is what's actually tabbable.
 	const {
@@ -162,6 +169,23 @@ export function V2WorkspaceRow({
 							</span>
 						</span>
 					) : null}
+
+					<span
+						className={cn(
+							"flex max-w-36 shrink-0 items-center gap-1.5 text-xs text-muted-foreground",
+							isDeviceOffline && "text-muted-foreground/60",
+						)}
+						title={workspace.hostName}
+					>
+						<DeviceIcon className="size-3 shrink-0" />
+						<span className="min-w-0 truncate">{workspace.hostName}</span>
+						{isDeviceOffline ? (
+							<span
+								aria-hidden
+								className="inline-block size-1.5 shrink-0 rounded-full bg-muted-foreground/40"
+							/>
+						) : null}
+					</span>
 
 					<span
 						className="shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground"
