@@ -97,6 +97,24 @@ export class TerminalLinkManager {
 		this._oscLinkHandler = null;
 	}
 
+	/**
+	 * xterm activates a link whenever mousedown and mouseup hit the same link,
+	 * which includes the tail of a double-click word-select or a drag within
+	 * the link's own text. When an unmodified click ends with text selected,
+	 * the gesture was selection — not navigation — so activation is skipped
+	 * (also prevents double-click from activating twice). Modifier clicks
+	 * always activate: shift-click extends a selection as a side effect, and
+	 * suppressing it would make the binding unreachable.
+	 */
+	private _isSelectionGesture(event: MouseEvent): boolean {
+		return (
+			!event.metaKey &&
+			!event.ctrlKey &&
+			!event.shiftKey &&
+			this._terminal.hasSelection()
+		);
+	}
+
 	private _register(): void {
 		const handlers = this._handlers;
 		if (!handlers?.stat) return;
@@ -114,12 +132,20 @@ export class TerminalLinkManager {
 		const onLinkHover = handlers.onLinkHover;
 		const onLinkLeave = handlers.onLinkLeave;
 
+		const rawFileClick = handlers.onFileLinkClick;
+		const onFileClick = rawFileClick
+			? (event: MouseEvent, link: DetectedLink) => {
+					if (this._isSelectionGesture(event)) return;
+					rawFileClick(event, link);
+				}
+			: undefined;
+
 		// 1. File path detector (highest priority)
 		const detector = new LocalLinkDetector(this._resolver);
 		const adapter = new LinkDetectorAdapter(
 			this._terminal,
 			detector,
-			handlers.onFileLinkClick,
+			onFileClick,
 			onLinkHover
 				? (event, link) =>
 						onLinkHover(event, {
@@ -138,6 +164,7 @@ export class TerminalLinkManager {
 			const urlProvider = new UrlLinkProvider(
 				this._terminal,
 				(event, uri) => {
+					if (this._isSelectionGesture(event)) return;
 					onUrlClick(event, uri);
 				},
 				onLinkHover
@@ -153,6 +180,7 @@ export class TerminalLinkManager {
 			this._oscLinkHandler = {
 				allowNonHttpProtocols: false,
 				activate: (event, uri) => {
+					if (this._isSelectionGesture(event)) return;
 					onUrlClick(event, uri);
 				},
 				hover: onLinkHover
@@ -169,8 +197,7 @@ export class TerminalLinkManager {
 		// exists (validated via stat). Catches bare filenames like
 		// "AGENTS.md" that have no path separator or line suffix.
 		// To disable: remove or comment out this block.
-		if (handlers.onFileLinkClick) {
-			const onFileClick = handlers.onFileLinkClick;
+		if (onFileClick) {
 			const wordDetector = new WordLinkDetector(
 				this._terminal,
 				this._resolver,

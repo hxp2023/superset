@@ -91,7 +91,7 @@ describe("healV2UserPreferences", () => {
 		);
 	});
 
-	it("migrates the legacy url link default to the current default", () => {
+	it("migrates the original url link default to the current default", () => {
 		const healed = healV2UserPreferences({
 			urlLinks: {
 				plain: null,
@@ -102,7 +102,23 @@ describe("healV2UserPreferences", () => {
 		});
 
 		expect(healed.urlLinks).toEqual(DEFAULT_V2_USER_PREFERENCES.urlLinks);
-		expect(healed.urlLinks.shift).toBe("newTab");
+		expect(healed.urlLinks.plain).toBe("pane");
+		expect(healed.urlLinks.shift).toBe("external");
+	});
+
+	it("migrates the second-generation url link default to the current default", () => {
+		const healed = healV2UserPreferences({
+			urlLinks: {
+				plain: null,
+				shift: "newTab",
+				meta: "pane",
+				metaShift: "external",
+			},
+		});
+
+		expect(healed.urlLinks).toEqual(DEFAULT_V2_USER_PREFERENCES.urlLinks);
+		expect(healed.urlLinks.plain).toBe("pane");
+		expect(healed.urlLinks.shift).toBe("external");
 	});
 
 	it("keeps a customized url link map untouched", () => {
