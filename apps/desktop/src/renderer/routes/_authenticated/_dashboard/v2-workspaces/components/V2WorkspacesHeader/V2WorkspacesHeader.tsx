@@ -18,6 +18,7 @@ import {
 	LuArchive,
 	LuArrowDownUp,
 	LuBot,
+	LuChevronDown,
 	LuFolder,
 	LuGitPullRequest,
 	LuLaptop,
@@ -56,6 +57,7 @@ import {
 } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/stores/v2WorkspacesFilterStore";
 import { BOARD_COLUMN_LABELS } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/utils/deriveBoardColumn";
 import { PRIcon } from "renderer/screens/main/components/PRIcon/PRIcon";
+import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
 import { V2WorkspaceProjectIcon } from "../V2WorkspaceProjectIcon";
 import { DeviceOptionLabel } from "./components/DeviceOptionLabel";
 
@@ -72,6 +74,13 @@ const ARCHIVED_WINDOW_LABELS: Record<V2WorkspacesArchivedWindow, string> = {
 	week: "Past week",
 	month: "Past month",
 	all: "All",
+};
+
+const ARCHIVED_TRIGGER_LABELS: Record<V2WorkspacesArchivedWindow, string> = {
+	none: "Hiding archived",
+	week: "Archived: past week",
+	month: "Archived: past month",
+	all: "Showing archived",
 };
 
 interface V2WorkspacesHeaderProps {
@@ -97,6 +106,7 @@ export function V2WorkspacesHeader({
 	hostOptions,
 	projectOptions,
 	hostsById,
+	projectsById,
 }: V2WorkspacesHeaderProps) {
 	const searchQuery = useV2WorkspacesFilterStore((state) => state.searchQuery);
 	const setSearchQuery = useV2WorkspacesFilterStore(
@@ -142,16 +152,26 @@ export function V2WorkspacesHeader({
 	);
 	const hiddenLanes = useV2WorkspacesFilterStore((state) => state.hiddenLanes);
 	const toggleLane = useV2WorkspacesFilterStore((state) => state.toggleLane);
+	const openNewWorkspaceModal = useOpenNewWorkspaceModal();
 
 	const remoteHosts = hostOptions.filter((host) => !host.isLocal);
+	const localHostName = hostOptions.find((host) => host.isLocal)?.hostName;
+	// The title names the actual machine ("Avi's Mac"), not the abstract
+	// "This device" — that phrasing stays in the menu where it's a choice.
 	const deviceLabel =
 		deviceFilter === DEVICE_FILTER_THIS_DEVICE
-			? "This device"
+			? (localHostName ?? "This device")
 			: deviceFilter === DEVICE_FILTER_ALL_DEVICES
 				? "All devices"
 				: (remoteHosts.find((host) => host.hostId === deviceFilter)?.hostName ??
 					hostsById.get(deviceFilter)?.hostName ??
 					"Unknown device");
+	const DeviceIcon =
+		deviceFilter === DEVICE_FILTER_ALL_DEVICES
+			? LuMonitorSmartphone
+			: deviceFilter === DEVICE_FILTER_THIS_DEVICE
+				? LuLaptop
+				: LuMonitor;
 
 	const projectFilterOptions = [
 		...projectOptions.map((project) => ({
@@ -172,40 +192,221 @@ export function V2WorkspacesHeader({
 		},
 	];
 
+	// A selected project can be absent from projectOptions (options derive from
+	// currently visible rows); fall back to the full project map for its name.
+	const projectNameFor = (value: string) =>
+		value === PROJECT_FILTER_SESSIONS
+			? "Sessions"
+			: (projectOptions.find((project) => project.projectId === value)
+					?.projectName ??
+				projectsById.get(value)?.projectName ??
+				"Unknown project");
+	const projectFilterLabel =
+		projectFilters.length === 0
+			? "In all projects"
+			: projectFilters.length === 1
+				? projectNameFor(projectFilters[0])
+				: `${projectFilters.length} projects`;
+
 	const toggleIn = (values: string[], value: string) =>
 		values.includes(value)
 			? values.filter((entry) => entry !== value)
 			: [...values, value];
 
+	// Device, project, and archived are first-class controls that show their
+	// own state; the Filter badge only counts what lives inside its menu.
 	const activeFilterCount =
-		(projectFilters.length > 0 ? 1 : 0) +
 		(prStateFilters.length > 0 ? 1 : 0) +
 		(agentStatusFilters.length > 0 ? 1 : 0) +
-		(pinFilter !== "all" ? 1 : 0) +
-		(deviceFilter !== DEVICE_FILTER_THIS_DEVICE ? 1 : 0);
+		(pinFilter !== "all" ? 1 : 0);
 
 	const clearFilters = () => {
-		setProjectFilters([]);
 		setPrStateFilters([]);
 		setAgentStatusFilters([]);
 		setPinFilter("all");
-		setDeviceFilter(DEVICE_FILTER_THIS_DEVICE);
 	};
 
 	return (
 		<div
 			data-workspaces-toolbar
-			className="@container shrink-0 border-b border-border px-4 py-2"
+			className="@container shrink-0 border-b border-border px-6 pb-2 pt-3"
 		>
-			<div className="flex flex-col items-stretch gap-2 @4xl:flex-row @4xl:items-center @4xl:justify-between">
-				<div className="flex min-w-0 items-center gap-3 overflow-x-auto hide-scrollbar">
+			{/* Title row — also the window-drag surface now that it spans the top. */}
+			<div className="drag flex items-center justify-between gap-3 pb-3">
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant="ghost"
+							aria-label="Filter by device"
+							className="no-drag h-9 gap-2 px-2 text-lg font-semibold"
+						>
+							<DeviceIcon className="size-4 text-muted-foreground" />
+							<span className="min-w-0 truncate">{deviceLabel}</span>
+							<LuChevronDown className="size-4 text-muted-foreground" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start" className="min-w-[14rem]">
+						<DropdownMenuRadioGroup
+							value={deviceFilter}
+							onValueChange={setDeviceFilter}
+						>
+							<DropdownMenuRadioItem value={DEVICE_FILTER_ALL_DEVICES}>
+								<DeviceOptionLabel
+									icon={<LuMonitorSmartphone className="size-3.5" />}
+									label="All devices"
+								/>
+							</DropdownMenuRadioItem>
+							<DropdownMenuRadioItem value={DEVICE_FILTER_THIS_DEVICE}>
+								<DeviceOptionLabel
+									icon={<LuLaptop className="size-3.5" />}
+									label={
+										localHostName
+											? `${localHostName} (this device)`
+											: "This device"
+									}
+								/>
+							</DropdownMenuRadioItem>
+							{remoteHosts.length > 0 ? (
+								<>
+									<DropdownMenuSeparator />
+									<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+										Other devices
+									</DropdownMenuLabel>
+									{remoteHosts.map((host) => (
+										<DropdownMenuRadioItem
+											key={host.hostId}
+											value={host.hostId}
+										>
+											<DeviceOptionLabel
+												icon={<LuMonitor className="size-3.5" />}
+												label={host.hostName}
+												isOnline={host.isOnline}
+											/>
+										</DropdownMenuRadioItem>
+									))}
+								</>
+							) : null}
+						</DropdownMenuRadioGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
+
+				<Button
+					size="sm"
+					className="no-drag h-8 shrink-0"
+					onClick={() => openNewWorkspaceModal()}
+				>
+					Create workspace
+				</Button>
+			</div>
+
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<WorkItemsSearch
+					value={searchQuery}
+					onChange={setSearchQuery}
+					placeholder="Search workspaces…"
+					label="Search workspaces"
+				/>
+
+				<div className="flex min-w-0 items-center gap-1 overflow-x-auto hide-scrollbar">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
-								variant="outline"
+								variant="ghost"
 								size="sm"
 								className={cn(
-									"h-8 gap-1.5 font-normal",
+									"h-8 gap-1.5 px-2 font-normal",
+									projectFilters.length === 0 && "text-muted-foreground",
+								)}
+							>
+								<LuFolder className="size-3.5" />
+								<span className="max-w-[12rem] truncate">
+									{projectFilterLabel}
+								</span>
+								<LuChevronDown className="size-3 opacity-60" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="end"
+							className="max-h-[60vh] min-w-[12rem] overflow-y-auto"
+						>
+							{projectFilterOptions.map((option) => (
+								<DropdownMenuCheckboxItem
+									key={option.value}
+									checked={projectFilters.includes(option.value)}
+									onSelect={(event) => event.preventDefault()}
+									onCheckedChange={() =>
+										setProjectFilters(toggleIn(projectFilters, option.value))
+									}
+								>
+									<span className="flex min-w-0 items-center gap-2">
+										{option.icon}
+										<span className="min-w-0 flex-1 truncate">
+											{option.label}
+										</span>
+									</span>
+								</DropdownMenuCheckboxItem>
+							))}
+							{projectFilters.length > 0 ? (
+								<>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="justify-center text-xs text-muted-foreground"
+										onSelect={() => setProjectFilters([])}
+									>
+										All projects
+									</DropdownMenuItem>
+								</>
+							) : null}
+						</DropdownMenuContent>
+					</DropdownMenu>
+
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="ghost"
+								size="sm"
+								className={cn(
+									"h-8 gap-1.5 px-2 font-normal",
+									archivedWindow === "none" && "text-muted-foreground",
+								)}
+							>
+								<LuArchive className="size-3.5" />
+								{ARCHIVED_TRIGGER_LABELS[archivedWindow]}
+								<LuChevronDown className="size-3 opacity-60" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="min-w-[10rem]">
+							<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+								Archived
+							</DropdownMenuLabel>
+							<DropdownMenuRadioGroup
+								value={archivedWindow}
+								onValueChange={(next) =>
+									setArchivedWindow(next as V2WorkspacesArchivedWindow)
+								}
+							>
+								{(
+									Object.keys(
+										ARCHIVED_WINDOW_LABELS,
+									) as V2WorkspacesArchivedWindow[]
+								).map((window) => (
+									<DropdownMenuRadioItem key={window} value={window}>
+										{ARCHIVED_WINDOW_LABELS[window]}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuRadioGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
+
+					<div className="h-4 w-px shrink-0 bg-border" />
+
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="ghost"
+								size="sm"
+								className={cn(
+									"h-8 gap-1.5 px-2 font-normal",
 									activeFilterCount === 0 && "text-muted-foreground",
 								)}
 							>
@@ -218,40 +419,7 @@ export function V2WorkspacesHeader({
 								) : null}
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="start" className="min-w-[14rem]">
-							<DropdownMenuSub>
-								<DropdownMenuSubTrigger>
-									<span className="flex items-center gap-2">
-										<LuFolder className="size-3.5" />
-										Project
-									</span>
-									{projectFilters.length > 0 ? (
-										<SubmenuValue>{projectFilters.length}</SubmenuValue>
-									) : null}
-								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent className="max-h-[60vh] min-w-[12rem] overflow-y-auto">
-									{projectFilterOptions.map((option) => (
-										<DropdownMenuCheckboxItem
-											key={option.value}
-											checked={projectFilters.includes(option.value)}
-											onSelect={(event) => event.preventDefault()}
-											onCheckedChange={() =>
-												setProjectFilters(
-													toggleIn(projectFilters, option.value),
-												)
-											}
-										>
-											<span className="flex min-w-0 items-center gap-2">
-												{option.icon}
-												<span className="min-w-0 flex-1 truncate">
-													{option.label}
-												</span>
-											</span>
-										</DropdownMenuCheckboxItem>
-									))}
-								</DropdownMenuSubContent>
-							</DropdownMenuSub>
-
+						<DropdownMenuContent align="end" className="min-w-[14rem]">
 							<DropdownMenuSub>
 								<DropdownMenuSubTrigger>
 									<span className="flex items-center gap-2">
@@ -355,57 +523,6 @@ export function V2WorkspacesHeader({
 								</DropdownMenuSubContent>
 							</DropdownMenuSub>
 
-							<DropdownMenuSub>
-								<DropdownMenuSubTrigger>
-									<span className="flex items-center gap-2">
-										<LuMonitorSmartphone className="size-3.5" />
-										Device
-									</span>
-									{deviceFilter !== DEVICE_FILTER_THIS_DEVICE ? (
-										<SubmenuValue>{deviceLabel}</SubmenuValue>
-									) : null}
-								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent className="min-w-[14rem]">
-									<DropdownMenuRadioGroup
-										value={deviceFilter}
-										onValueChange={setDeviceFilter}
-									>
-										<DropdownMenuRadioItem value={DEVICE_FILTER_ALL_DEVICES}>
-											<DeviceOptionLabel
-												icon={<LuMonitorSmartphone className="size-3.5" />}
-												label="All devices"
-											/>
-										</DropdownMenuRadioItem>
-										<DropdownMenuRadioItem value={DEVICE_FILTER_THIS_DEVICE}>
-											<DeviceOptionLabel
-												icon={<LuLaptop className="size-3.5" />}
-												label="This device"
-											/>
-										</DropdownMenuRadioItem>
-										{remoteHosts.length > 0 ? (
-											<>
-												<DropdownMenuSeparator />
-												<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-													Other devices
-												</DropdownMenuLabel>
-												{remoteHosts.map((host) => (
-													<DropdownMenuRadioItem
-														key={host.hostId}
-														value={host.hostId}
-													>
-														<DeviceOptionLabel
-															icon={<LuMonitor className="size-3.5" />}
-															label={host.hostName}
-															isOnline={host.isOnline}
-														/>
-													</DropdownMenuRadioItem>
-												))}
-											</>
-										) : null}
-									</DropdownMenuRadioGroup>
-								</DropdownMenuSubContent>
-							</DropdownMenuSub>
-
 							{activeFilterCount > 0 ? (
 								<>
 									<DropdownMenuSeparator />
@@ -420,20 +537,18 @@ export function V2WorkspacesHeader({
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					<div className="h-4 w-px shrink-0 bg-border" />
-
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
-								variant="outline"
+								variant="ghost"
 								size="sm"
-								className="h-8 gap-1.5 font-normal text-muted-foreground"
+								className="h-8 gap-1.5 px-2 font-normal text-muted-foreground"
 							>
 								<LuArrowDownUp className="size-3.5" />
 								Display
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="start" className="min-w-[12rem]">
+						<DropdownMenuContent align="end" className="min-w-[12rem]">
 							<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
 								Sort by
 							</DropdownMenuLabel>
@@ -446,29 +561,6 @@ export function V2WorkspacesHeader({
 								{V2_WORKSPACES_SORT_MODES.map((mode) => (
 									<DropdownMenuRadioItem key={mode} value={mode}>
 										{V2_WORKSPACES_SORT_LABELS[mode]}
-									</DropdownMenuRadioItem>
-								))}
-							</DropdownMenuRadioGroup>
-							<DropdownMenuSeparator />
-							<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-								<span className="flex items-center gap-1.5">
-									<LuArchive className="size-3" />
-									Archived
-								</span>
-							</DropdownMenuLabel>
-							<DropdownMenuRadioGroup
-								value={archivedWindow}
-								onValueChange={(next) =>
-									setArchivedWindow(next as V2WorkspacesArchivedWindow)
-								}
-							>
-								{(
-									Object.keys(
-										ARCHIVED_WINDOW_LABELS,
-									) as V2WorkspacesArchivedWindow[]
-								).map((window) => (
-									<DropdownMenuRadioItem key={window} value={window}>
-										{ARCHIVED_WINDOW_LABELS[window]}
 									</DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>
@@ -495,14 +587,9 @@ export function V2WorkspacesHeader({
 							)}
 						</DropdownMenuContent>
 					</DropdownMenu>
-				</div>
 
-				{/* Window-drag leaf standing in for the hidden TopBar. */}
-				<div className="drag hidden min-w-0 flex-1 self-stretch @4xl:block" />
-
-				<div className="flex shrink-0 items-center gap-2">
 					<fieldset
-						className="flex items-center rounded-md border bg-muted/30 p-0.5"
+						className="flex shrink-0 items-center rounded-md border bg-muted/30 p-0.5"
 						aria-label="Workspace layout"
 					>
 						<button
@@ -534,13 +621,6 @@ export function V2WorkspacesHeader({
 							Board
 						</button>
 					</fieldset>
-
-					<WorkItemsSearch
-						value={searchQuery}
-						onChange={setSearchQuery}
-						placeholder="Search workspaces…"
-						label="Search workspaces"
-					/>
 				</div>
 			</div>
 		</div>
