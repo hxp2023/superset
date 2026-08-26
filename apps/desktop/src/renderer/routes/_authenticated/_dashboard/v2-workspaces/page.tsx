@@ -27,6 +27,8 @@ export type V2WorkspacesSearch = {
 	pr?: string;
 	/** Comma-joined agent statuses. */
 	agent?: string;
+	/** Comma-joined creator user ids. */
+	creators?: string;
 	/** Sidebar pin visibility; omitted = "all". */
 	pin?: V2WorkspacesPinFilter;
 	view?: V2WorkspacesViewMode;
@@ -63,6 +65,10 @@ export const Route = createFileRoute(
 			typeof search.agent === "string" && search.agent
 				? search.agent
 				: undefined,
+		creators:
+			typeof search.creators === "string" && search.creators
+				? search.creators
+				: undefined,
 		pin: V2_WORKSPACES_PIN_FILTERS.includes(search.pin as V2WorkspacesPinFilter)
 			? (search.pin as V2WorkspacesPinFilter)
 			: undefined,
@@ -94,6 +100,9 @@ function V2WorkspacesPage() {
 	);
 	const agentStatusFilters = useV2WorkspacesFilterStore(
 		(state) => state.agentStatusFilters,
+	);
+	const creatorFilters = useV2WorkspacesFilterStore(
+		(state) => state.creatorFilters,
 	);
 	const pinFilter = useV2WorkspacesFilterStore((state) => state.pinFilter);
 	const viewMode = useV2WorkspacesFilterStore((state) => state.viewMode);
@@ -129,6 +138,9 @@ function V2WorkspacesPage() {
 					V2_WORKSPACES_AGENT_STATUS_FILTERS,
 				),
 			}),
+			...(search.creators !== undefined && {
+				creatorFilters: parseList(search.creators),
+			}),
 			...(search.pin !== undefined && { pinFilter: search.pin }),
 			...(search.view !== undefined && { viewMode: search.view }),
 			...(search.archived !== undefined && {
@@ -148,6 +160,7 @@ function V2WorkspacesPage() {
 				agent: agentStatusFilters.length
 					? agentStatusFilters.join(",")
 					: undefined,
+				creators: creatorFilters.length ? creatorFilters.join(",") : undefined,
 				pin: pinFilter !== "all" ? pinFilter : undefined,
 				view: viewMode !== "board" ? viewMode : undefined,
 				archived: archivedWindow !== "none" ? archivedWindow : undefined,
@@ -164,29 +177,39 @@ function V2WorkspacesPage() {
 		projectFilters,
 		prStateFilters,
 		agentStatusFilters,
+		creatorFilters,
 		pinFilter,
 		viewMode,
 		archivedWindow,
 	]);
 
-	const { all, isReady, hostOptions, projectOptions, hostsById, projectsById } =
-		useAccessibleV2Workspaces({
-			searchQuery,
-			deviceFilter,
-			projectFilters,
-			prStateFilters,
-			agentStatusFilters,
-			pinFilter,
-			// Tombstones ride along so both views' Merged/Deleted groups work;
-			// each view scopes them by the shared archived window.
-			includeArchived: true,
-		});
+	const {
+		all,
+		isReady,
+		hostOptions,
+		projectOptions,
+		creatorOptions,
+		hostsById,
+		projectsById,
+	} = useAccessibleV2Workspaces({
+		searchQuery,
+		deviceFilter,
+		projectFilters,
+		prStateFilters,
+		agentStatusFilters,
+		creatorFilters,
+		pinFilter,
+		// Tombstones ride along so both views' Merged/Deleted groups work;
+		// each view scopes them by the shared archived window.
+		includeArchived: true,
+	});
 
 	return (
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
 			<V2WorkspacesHeader
 				hostOptions={hostOptions}
 				projectOptions={projectOptions}
+				creatorOptions={creatorOptions}
 				hostsById={hostsById}
 				projectsById={projectsById}
 			/>

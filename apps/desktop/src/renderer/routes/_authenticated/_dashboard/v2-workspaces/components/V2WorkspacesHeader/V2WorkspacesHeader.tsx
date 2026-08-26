@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
 import { Button } from "@superset/ui/button";
 import {
 	DropdownMenu,
@@ -29,10 +30,12 @@ import {
 	LuPin,
 	LuSquareKanban,
 	LuTerminal,
+	LuUsers,
 } from "react-icons/lu";
 import { WorkItemsSearch } from "renderer/routes/_authenticated/_dashboard/components/WorkItemsSearch";
 import { BoardColumnIcon } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/components/BoardColumnIcon";
 import type {
+	V2WorkspaceCreatorOption,
 	V2WorkspaceHostOption,
 	V2WorkspaceProjectOption,
 } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/hooks/useAccessibleV2Workspaces";
@@ -86,6 +89,7 @@ const ARCHIVED_TRIGGER_LABELS: Record<V2WorkspacesArchivedWindow, string> = {
 interface V2WorkspacesHeaderProps {
 	hostOptions: V2WorkspaceHostOption[];
 	projectOptions: V2WorkspaceProjectOption[];
+	creatorOptions: V2WorkspaceCreatorOption[];
 	hostsById: Map<
 		string,
 		{ hostName: string; isOnline: boolean; isLocal: boolean }
@@ -105,6 +109,7 @@ function SubmenuValue({ children }: { children: React.ReactNode }) {
 export function V2WorkspacesHeader({
 	hostOptions,
 	projectOptions,
+	creatorOptions,
 	hostsById,
 	projectsById,
 }: V2WorkspacesHeaderProps) {
@@ -135,6 +140,12 @@ export function V2WorkspacesHeader({
 	);
 	const setAgentStatusFilters = useV2WorkspacesFilterStore(
 		(state) => state.setAgentStatusFilters,
+	);
+	const creatorFilters = useV2WorkspacesFilterStore(
+		(state) => state.creatorFilters,
+	);
+	const setCreatorFilters = useV2WorkspacesFilterStore(
+		(state) => state.setCreatorFilters,
 	);
 	const pinFilter = useV2WorkspacesFilterStore((state) => state.pinFilter);
 	const setPinFilter = useV2WorkspacesFilterStore(
@@ -218,11 +229,13 @@ export function V2WorkspacesHeader({
 	const activeFilterCount =
 		(prStateFilters.length > 0 ? 1 : 0) +
 		(agentStatusFilters.length > 0 ? 1 : 0) +
+		(creatorFilters.length > 0 ? 1 : 0) +
 		(pinFilter !== "all" ? 1 : 0);
 
 	const clearFilters = () => {
 		setPrStateFilters([]);
 		setAgentStatusFilters([]);
+		setCreatorFilters([]);
 		setPinFilter("all");
 	};
 
@@ -238,7 +251,7 @@ export function V2WorkspacesHeader({
 						<Button
 							variant="ghost"
 							aria-label="Filter by device"
-							className="no-drag h-9 gap-2 px-2 text-lg font-semibold"
+							className="no-drag -ml-2 h-9 gap-2 px-2 text-lg font-semibold"
 						>
 							<DeviceIcon className="size-4 text-muted-foreground" />
 							<span className="min-w-0 truncate">{deviceLabel}</span>
@@ -300,14 +313,18 @@ export function V2WorkspacesHeader({
 			</div>
 
 			<div className="flex flex-wrap items-center justify-between gap-2">
+				{/* Bare icon+placeholder on the page background; -ml-3 puts the
+				    magnifier on the same 24px rail as the title icon and rows. */}
 				<WorkItemsSearch
 					value={searchQuery}
 					onChange={setSearchQuery}
 					placeholder="Search workspaces…"
 					label="Search workspaces"
+					className="bg-transparent shadow-none dark:bg-transparent"
+					containerClassName="-ml-3"
 				/>
 
-				<div className="flex min-w-0 items-center gap-1 overflow-x-auto hide-scrollbar">
+				<div className="flex min-w-0 items-center gap-2 overflow-x-auto hide-scrollbar">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -498,6 +515,53 @@ export function V2WorkspacesHeader({
 							<DropdownMenuSub>
 								<DropdownMenuSubTrigger>
 									<span className="flex items-center gap-2">
+										<LuUsers className="size-3.5" />
+										Created by
+									</span>
+									{creatorFilters.length > 0 ? (
+										<SubmenuValue>{creatorFilters.length}</SubmenuValue>
+									) : null}
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent className="max-h-[60vh] min-w-[12rem] overflow-y-auto">
+									{creatorOptions.map((creator) => (
+										<DropdownMenuCheckboxItem
+											key={creator.userId}
+											checked={creatorFilters.includes(creator.userId)}
+											onSelect={(event) => event.preventDefault()}
+											onCheckedChange={() =>
+												setCreatorFilters(
+													toggleIn(creatorFilters, creator.userId),
+												)
+											}
+										>
+											<span className="flex min-w-0 items-center gap-2">
+												<Avatar className="size-4">
+													{creator.image ? (
+														<AvatarImage src={creator.image} />
+													) : null}
+													<AvatarFallback className="text-[9px]">
+														{creator.name.slice(0, 1).toUpperCase()}
+													</AvatarFallback>
+												</Avatar>
+												<span className="min-w-0 flex-1 truncate">
+													{creator.isCurrentUser
+														? `${creator.name} (you)`
+														: creator.name}
+												</span>
+											</span>
+										</DropdownMenuCheckboxItem>
+									))}
+									{creatorOptions.length === 0 ? (
+										<DropdownMenuItem disabled>
+											No known creators
+										</DropdownMenuItem>
+									) : null}
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
+
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger>
+									<span className="flex items-center gap-2">
 										<LuPin className="size-3.5" />
 										Pinned
 									</span>
@@ -588,15 +652,16 @@ export function V2WorkspacesHeader({
 						</DropdownMenuContent>
 					</DropdownMenu>
 
+					{/* Matches TasksTopBar's TabsList treatment (borderless muted pill). */}
 					<fieldset
-						className="flex shrink-0 items-center rounded-md border bg-muted/30 p-0.5"
+						className="flex h-8 shrink-0 items-center rounded-md bg-muted/50 p-0.5"
 						aria-label="Workspace layout"
 					>
 						<button
 							type="button"
 							aria-pressed={viewMode === "list"}
 							className={cn(
-								"flex h-6 items-center gap-1.5 rounded-sm px-2 text-xs transition-colors",
+								"flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs transition-colors",
 								viewMode === "list"
 									? "bg-background text-foreground shadow-sm"
 									: "text-muted-foreground hover:text-foreground",
@@ -610,7 +675,7 @@ export function V2WorkspacesHeader({
 							type="button"
 							aria-pressed={viewMode === "board"}
 							className={cn(
-								"flex h-6 items-center gap-1.5 rounded-sm px-2 text-xs transition-colors",
+								"flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs transition-colors",
 								viewMode === "board"
 									? "bg-background text-foreground shadow-sm"
 									: "text-muted-foreground hover:text-foreground",

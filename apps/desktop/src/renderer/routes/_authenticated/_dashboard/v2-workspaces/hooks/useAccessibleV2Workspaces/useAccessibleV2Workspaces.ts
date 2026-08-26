@@ -116,12 +116,21 @@ export interface V2WorkspaceProjectOption {
 	count: number;
 }
 
+export interface V2WorkspaceCreatorOption {
+	userId: string;
+	name: string;
+	image: string | null;
+	isCurrentUser: boolean;
+	count: number;
+}
+
 export interface UseAccessibleV2WorkspacesResult {
 	all: AccessibleV2Workspace[];
 	/** Row-source settlement — gates empty states only, never rendered rows. */
 	isReady: boolean;
 	hostOptions: V2WorkspaceHostOption[];
 	projectOptions: V2WorkspaceProjectOption[];
+	creatorOptions: V2WorkspaceCreatorOption[];
 	hostsById: Map<
 		string,
 		{ hostName: string; isOnline: boolean; isLocal: boolean }
@@ -139,6 +148,8 @@ interface UseAccessibleV2WorkspacesOptions {
 	prStateFilters?: V2WorkspacesPrStateFilter[];
 	/** Empty/omitted = any agent status. */
 	agentStatusFilters?: V2WorkspacesAgentStatusFilter[];
+	/** Creator user ids; empty/omitted = any creator. */
+	creatorFilters?: string[];
 	/** Omitted = "all" — sidebar-pinned and unpinned alike. */
 	pinFilter?: V2WorkspacesPinFilter;
 	/**
@@ -197,6 +208,17 @@ function matchesPinFilter(
 		: !workspace.isInSidebar;
 }
 
+function matchesCreatorFilters(
+	workspace: AccessibleV2Workspace,
+	creatorFilters: string[],
+): boolean {
+	if (creatorFilters.length === 0) return true;
+	return (
+		workspace.createdByUserId != null &&
+		creatorFilters.includes(workspace.createdByUserId)
+	);
+}
+
 function matchesAgentStatusFilters(
 	workspace: AccessibleV2Workspace,
 	agentStatusFilters: V2WorkspacesAgentStatusFilter[],
@@ -226,6 +248,7 @@ export function useAccessibleV2Workspaces(
 	const projectFilters = options.projectFilters ?? [];
 	const prStateFilters = options.prStateFilters ?? [];
 	const agentStatusFilters = options.agentStatusFilters ?? [];
+	const creatorFilters = options.creatorFilters ?? [];
 	const pinFilter = options.pinFilter ?? "all";
 	const { data: session } = authClient.useSession();
 	const collections = useCollections();
@@ -728,6 +751,7 @@ export function useAccessibleV2Workspaces(
 					matchesProjectFilters(workspace, projectFilters) &&
 					matchesPrStateFilters(workspace, prStateFilters) &&
 					matchesAgentStatusFilters(workspace, agentStatusFilters) &&
+					matchesCreatorFilters(workspace, creatorFilters) &&
 					matchesPinFilter(workspace, pinFilter),
 			),
 		[
@@ -735,6 +759,7 @@ export function useAccessibleV2Workspaces(
 			projectFilters,
 			prStateFilters,
 			agentStatusFilters,
+			creatorFilters,
 			pinFilter,
 		],
 	);
@@ -786,6 +811,31 @@ export function useAccessibleV2Workspaces(
 		);
 	}, [searchFiltered]);
 
+	// Like projectOptions: derived from the search-filtered rows so counts
+	// track what's visible, keyed by the creator's user id.
+	const creatorOptions = useMemo<V2WorkspaceCreatorOption[]>(() => {
+		const byCreator = new Map<string, V2WorkspaceCreatorOption>();
+		for (const workspace of searchFiltered) {
+			if (workspace.createdByUserId === null) continue;
+			const existing = byCreator.get(workspace.createdByUserId);
+			if (existing) {
+				existing.count += 1;
+				continue;
+			}
+			byCreator.set(workspace.createdByUserId, {
+				userId: workspace.createdByUserId,
+				name: workspace.createdByName ?? "Unknown",
+				image: workspace.createdByImage,
+				isCurrentUser: workspace.isCreatedByCurrentUser,
+				count: 1,
+			});
+		}
+		return Array.from(byCreator.values()).sort((a, b) => {
+			if (a.isCurrentUser !== b.isCurrentUser) return a.isCurrentUser ? -1 : 1;
+			return a.name.localeCompare(b.name);
+		});
+	}, [searchFiltered]);
+
 	const hostsById = useMemo(() => {
 		const map = new Map<
 			string,
@@ -827,6 +877,7 @@ export function useAccessibleV2Workspaces(
 		isReady,
 		hostOptions,
 		projectOptions,
+		creatorOptions,
 		hostsById,
 		projectsById,
 	};

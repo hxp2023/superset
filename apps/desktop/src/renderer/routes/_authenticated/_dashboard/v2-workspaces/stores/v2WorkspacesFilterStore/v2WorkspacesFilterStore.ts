@@ -101,6 +101,8 @@ interface V2WorkspacesFilterState {
 	prStateFilters: V2WorkspacesPrStateFilter[];
 	/** Empty = any agent status. */
 	agentStatusFilters: V2WorkspacesAgentStatusFilter[];
+	/** Creator user ids; empty = any creator. */
+	creatorFilters: string[];
 	/** Sidebar visibility: pinned, unpinned, or both ("all"). */
 	pinFilter: V2WorkspacesPinFilter;
 	viewMode: V2WorkspacesViewMode;
@@ -117,6 +119,7 @@ interface V2WorkspacesFilterState {
 	setAgentStatusFilters: (
 		agentStatusFilters: V2WorkspacesAgentStatusFilter[],
 	) => void;
+	setCreatorFilters: (creatorFilters: string[]) => void;
 	setPinFilter: (pinFilter: V2WorkspacesPinFilter) => void;
 	setViewMode: (viewMode: V2WorkspacesViewMode) => void;
 	setSortMode: (sortMode: V2WorkspacesSortMode) => void;
@@ -133,6 +136,7 @@ export const useV2WorkspacesFilterStore = create<V2WorkspacesFilterState>()(
 		projectFilters: [],
 		prStateFilters: [],
 		agentStatusFilters: [],
+		creatorFilters: [],
 		pinFilter: "all",
 		viewMode: "board",
 		sortMode: "activity",
@@ -143,6 +147,7 @@ export const useV2WorkspacesFilterStore = create<V2WorkspacesFilterState>()(
 		setProjectFilters: (projectFilters) => set({ projectFilters }),
 		setPrStateFilters: (prStateFilters) => set({ prStateFilters }),
 		setAgentStatusFilters: (agentStatusFilters) => set({ agentStatusFilters }),
+		setCreatorFilters: (creatorFilters) => set({ creatorFilters }),
 		setPinFilter: (pinFilter) => set({ pinFilter }),
 		setViewMode: (viewMode) => set({ viewMode }),
 		setSortMode: (sortMode) => set({ sortMode }),
@@ -160,6 +165,7 @@ export const useV2WorkspacesFilterStore = create<V2WorkspacesFilterState>()(
 				projectFilters: [],
 				prStateFilters: [],
 				agentStatusFilters: [],
+				creatorFilters: [],
 				pinFilter: "all",
 				archivedWindow: "none",
 				hiddenLanes: [],
