@@ -23,6 +23,21 @@ export function entryGroupLabel(entry: AgentMemoryFileEntry): string {
 	return entry.projectName ?? "Global";
 }
 
+export type MemoryEntryScope = "global" | "main" | "worktree" | "session";
+
+/**
+ * The main checkout is the canonical copy of a project's memory; worktree and
+ * session scopes are branch-local or ephemeral. Derivable from the entry
+ * shape: workspace-scoped rows carry a workspaceId, and only worktrees of a
+ * project also carry a projectId.
+ */
+export function entryScope(entry: AgentMemoryFileEntry): MemoryEntryScope {
+	if (entry.workspaceId !== null) {
+		return entry.projectId !== null ? "worktree" : "session";
+	}
+	return entry.projectId !== null ? "main" : "global";
+}
+
 function formatSize(sizeBytes: number | null): string {
 	if (sizeBytes === null) return "";
 	if (sizeBytes < 1024) return `${sizeBytes} B`;
@@ -60,9 +75,30 @@ export function MemoryFileList({
 									index === 0 && "pt-0",
 								)}
 							>
-								<span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+								<span
+									className={cn(
+										"truncate text-[11px] font-medium uppercase tracking-wide",
+										// The main checkout is the canonical copy; branch-local
+										// and session scopes read one notch quieter.
+										entryScope(entry) === "worktree" ||
+											entryScope(entry) === "session"
+											? "text-muted-foreground/70"
+											: "text-muted-foreground",
+									)}
+								>
 									{entryGroupLabel(entry)}
 								</span>
+								{entryScope(entry) === "main" && (
+									<span className="shrink-0 rounded border border-border/70 bg-fill-hover px-1 text-[9px] font-medium uppercase tracking-wide text-foreground/70">
+										main
+									</span>
+								)}
+								{(entryScope(entry) === "worktree" ||
+									entryScope(entry) === "session") && (
+									<span className="shrink-0 rounded border border-border/40 px-1 text-[9px] font-medium uppercase tracking-wide text-muted-foreground/60">
+										{entryScope(entry)}
+									</span>
+								)}
 								{(entry.projectId !== null || entry.workspaceId !== null) &&
 									groupCount > 1 && (
 										<span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/70">

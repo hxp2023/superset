@@ -12,7 +12,11 @@ import {
 	type MemoryAgentRow,
 } from "./components/MemoryAgentList";
 import { MemoryEditor } from "./components/MemoryEditor";
-import { entryGroupLabel, MemoryFileList } from "./components/MemoryFileList";
+import {
+	entryGroupLabel,
+	entryScope,
+	MemoryFileList,
+} from "./components/MemoryFileList";
 import {
 	AGENT_MEMORY_FILES_QUERY_KEY,
 	AGENT_MEMORY_LIST_QUERY_KEY,
@@ -153,7 +157,11 @@ export function MemoryView() {
 								hostUrl={activeHostUrl}
 								presetId={selected.presetId}
 								target={selectedEntry.target}
-								label={`${selected.label} — ${entryGroupLabel(selectedEntry)}`}
+								label={`${selected.label} — ${entryGroupLabel(selectedEntry)}${
+									entryScope(selectedEntry) === "global"
+										? ""
+										: ` (${entryScope(selectedEntry)})`
+								}`}
 							/>
 						) : (
 							<div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
