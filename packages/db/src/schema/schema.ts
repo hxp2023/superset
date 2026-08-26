@@ -38,7 +38,7 @@ import {
 	v2WorkspaceTypeValues,
 	workspaceTypeValues,
 } from "./enums";
-import { githubRepositories } from "./github";
+import { githubPullRequests, githubRepositories } from "./github";
 import type {
 	AutomationEventDispatchInput,
 	IntegrationConfig,
@@ -1304,6 +1304,41 @@ export const workspacePages = pgTable(
 
 export type InsertWorkspacePage = typeof workspacePages.$inferInsert;
 export type SelectWorkspacePage = typeof workspacePages.$inferSelect;
+
+/**
+ * Anchors a page to the PR it reviews, for reviews published with no backing
+ * workspace (e.g. a standalone cloud review of `owner/repo#123`). Workspace-
+ * anchored reviews don't need this — they key off `workspacePages` like any
+ * other page — this is the fallback lookup for the ones that can't.
+ */
+export const reviewPages = pgTable(
+	"review_pages",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		githubPullRequestId: uuid("github_pull_request_id")
+			.notNull()
+			.references(() => githubPullRequests.id, { onDelete: "cascade" }),
+		pageId: uuid("page_id")
+			.notNull()
+			.references(() => pages.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => [
+		uniqueIndex("review_pages_organization_id_pr_id_unique").on(
+			table.organizationId,
+			table.githubPullRequestId,
+		),
+		index("review_pages_page_id_idx").on(table.pageId),
+	],
+);
+
+export type InsertReviewPage = typeof reviewPages.$inferInsert;
+export type SelectReviewPage = typeof reviewPages.$inferSelect;
 
 export const pageCommentThreads = pgTable(
 	"page_comment_threads",

@@ -12,6 +12,10 @@
 			"types": "./src/router/page/schema.ts",
 			"default": "./src/router/page/schema.ts"
 		},
+		"./review-schema": {
+			"types": "./src/router/review/schema.ts",
+			"default": "./src/router/review/schema.ts"
+		},
 		"./integrations/*": {
 			"types": "./src/lib/integrations/*/index.ts",
 			"default": "./src/lib/integrations/*/index.ts"

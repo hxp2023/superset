@@ -13,6 +13,7 @@ import { integrationRouter } from "./router/integration";
 import { organizationRouter } from "./router/organization";
 import { pageRouter } from "./router/page";
 import { pageCommentRouter } from "./router/page-comment";
+import { reviewRouter } from "./router/review";
 import { supportRouter } from "./router/support/support";
 import { taskRouter } from "./router/task";
 import { teamRouter } from "./router/team";
@@ -36,6 +37,7 @@ export const appRouter = createTRPCRouter({
 	organization: organizationRouter,
 	page: pageRouter,
 	pageComment: pageCommentRouter,
+	review: reviewRouter,
 	support: supportRouter,
 	task: taskRouter,
 	team: teamRouter,

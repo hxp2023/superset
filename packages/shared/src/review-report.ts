@@ -1,0 +1,734 @@
+export interface ReviewReportFinding {
+	file: string;
+	line?: number;
+	category?: string;
+	summary: string;
+	shortSummary?: string;
+	failureScenario: string;
+	verdict?: "CONFIRMED" | "PLAUSIBLE";
+}
+
+export interface ReviewReportInput {
+	title: string;
+	repo?: string;
+	prNumber?: number;
+	prUrl?: string;
+	branch?: string;
+	commitSha?: string;
+	effortLevel?: string;
+	generatedAt: string | Date;
+	findings: ReviewReportFinding[];
+	/** Raw unified diff text, e.g. the output of `gh pr diff <n>`. */
+	diff?: string;
+}
+
+interface DiffLine {
+	type: "add" | "remove" | "context" | "hunk";
+	content: string;
+}
+
+interface DiffFile {
+	path: string;
+	additions: number;
+	deletions: number;
+	binary: boolean;
+	lines: DiffLine[];
+}
+
+/**
+ * Parses `git diff --git` unified-diff text — the same format `gh pr diff`
+ * emits and the app's own getDiff procedure passes to its diff viewer — into
+ * per-file line lists. Deliberately minimal: enough for typical PR diffs,
+ * not a full patch-application parser.
+ */
+function parseUnifiedDiff(diffText: string): DiffFile[] {
+	const files: DiffFile[] = [];
+	let current: DiffFile | null = null;
+
+	for (const line of diffText.split("\n")) {
+		if (line.startsWith("diff --git ")) {
+			if (current?.path) files.push(current);
+			current = {
+				path: "",
+				additions: 0,
+				deletions: 0,
+				binary: false,
+				lines: [],
+			};
+			// Fallback for diffs with no --- /+++ lines (binary files) and a
+			// sensible initial value otherwise (renames land on the b/ path).
+			const match = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+			if (match) current.path = match[2] ?? match[1] ?? "";
+			continue;
+		}
+		if (!current) continue;
+
+		if (line.startsWith("--- ")) {
+			const path = line.slice(4).trim();
+			if (!current.path && path !== "/dev/null") {
+				current.path = path.replace(/^a\//, "");
+			}
+			continue;
+		}
+		if (line.startsWith("+++ ")) {
+			const path = line.slice(4).trim();
+			if (path !== "/dev/null") current.path = path.replace(/^b\//, "");
+			continue;
+		}
+		if (line.startsWith("Binary files ")) {
+			current.binary = true;
+			continue;
+		}
+		if (
+			line.startsWith("index ") ||
+			line.startsWith("new file mode") ||
+			line.startsWith("deleted file mode") ||
+			line.startsWith("similarity index") ||
+			line.startsWith("rename from") ||
+			line.startsWith("rename to")
+		) {
+			continue;
+		}
+		if (line.startsWith("@@")) {
+			current.lines.push({ type: "hunk", content: line });
+			continue;
+		}
+		if (line.startsWith("+")) {
+			current.additions += 1;
+			current.lines.push({ type: "add", content: line.slice(1) });
+			continue;
+		}
+		if (line.startsWith("-")) {
+			current.deletions += 1;
+			current.lines.push({ type: "remove", content: line.slice(1) });
+			continue;
+		}
+		if (line.startsWith("\\")) continue; // "\ No newline at end of file"
+		if (line.startsWith(" ") || line === "") {
+			current.lines.push({ type: "context", content: line.slice(1) });
+		}
+	}
+	if (current?.path) files.push(current);
+
+	return files;
+}
+
+type Tone = "confirmed" | "plausible" | "unverified" | "clear";
+
+// A CONFIRMED finding is bad news, an unverified one is informational only —
+// reuse the same red/amber/gray severity language the PR review screens use
+// for reviewDecision and check status, not a green-means-good scale.
+const VERDICT_GROUPS: ReadonlyArray<{
+	key: ReviewReportFinding["verdict"];
+	label: string;
+	tone: Tone;
+}> = [
+	{ key: "CONFIRMED", label: "Confirmed", tone: "confirmed" },
+	{ key: "PLAUSIBLE", label: "Plausible", tone: "plausible" },
+	{ key: undefined, label: "Unverified", tone: "unverified" },
+];
+
+// Lucide outline icons (24x24, stroke-based) — the same icon language (and
+// path data) as the react-icons Lu* set the app's PR screens use.
+const ICON_PATHS = {
+	x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+	alert:
+		'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+	minus: '<path d="M5 12h14"/>',
+	check: '<path d="M20 6 9 17l-5-5"/>',
+	arrowUpRight: '<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+	chevronRight: '<path d="m9 18 6-6-6-6"/>',
+	gitBranch:
+		'<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+} as const;
+
+// FaGithub from react-icons — the same mark the real PR header's
+// open-in-GitHub button renders (filled, not stroked, hence not in
+// ICON_PATHS).
+const GITHUB_ICON_SVG =
+	'<svg class="icon gh" viewBox="0 0 496 512" fill="currentColor" aria-hidden="true"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>';
+
+const TONE_ICON: Record<Tone, keyof typeof ICON_PATHS> = {
+	confirmed: "x",
+	plausible: "alert",
+	unverified: "minus",
+	clear: "check",
+};
+
+function icon(name: keyof typeof ICON_PATHS, className: string): string {
+	return `<svg class="icon ${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]}</svg>`;
+}
+
+function escapeHtml(input: string): string {
+	return input
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+}
+
+function githubBlobUrl(
+	repo: string,
+	commitSha: string,
+	file: string,
+	line?: number,
+): string {
+	const path = file
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/");
+	const fragment = line ? `#L${line}` : "";
+	return `https://github.com/${repo}/blob/${commitSha}/${path}${fragment}`;
+}
+
+function renderLocation(
+	finding: ReviewReportFinding,
+	repo?: string,
+	commitSha?: string,
+): string {
+	const label = escapeHtml(
+		finding.line ? `${finding.file}:${finding.line}` : finding.file,
+	);
+	const labelHtml = `<span class="location-label mono">${label}</span>`;
+	if (!repo || !commitSha) {
+		return `<span class="location">${labelHtml}</span>`;
+	}
+	const url = githubBlobUrl(repo, commitSha, finding.file, finding.line);
+	return `<a class="location" href="${escapeHtml(url)}">${labelHtml}${icon("arrowUpRight", "arrow")}</a>`;
+}
+
+function renderFinding(
+	finding: ReviewReportFinding,
+	tone: Tone,
+	repo?: string,
+	commitSha?: string,
+): string {
+	const category = finding.category
+		? `<span class="category">${escapeHtml(finding.category)}</span>`
+		: "";
+	return `
+<div class="finding">
+	<div class="finding-head">
+		${icon(TONE_ICON[tone], `tone-${tone}`)}
+		${category}
+		${renderLocation(finding, repo, commitSha)}
+	</div>
+	<p class="summary">${escapeHtml(finding.summary)}</p>
+	<details class="failure">
+		<summary>${icon("chevronRight", "chev")}Failure scenario</summary>
+		<p>${escapeHtml(finding.failureScenario)}</p>
+	</details>
+</div>`;
+}
+
+function renderDiffLine(line: DiffLine): string {
+	if (line.type === "hunk") {
+		return `<div class="diff-hunk mono">${escapeHtml(line.content)}</div>`;
+	}
+	const marker = line.type === "add" ? "+" : line.type === "remove" ? "-" : " ";
+	return `
+<div class="diff-line diff-${line.type}">
+	<span class="diff-marker">${marker}</span>
+	<pre class="mono">${escapeHtml(line.content)}</pre>
+</div>`;
+}
+
+function renderDiffFile(file: DiffFile): string {
+	const stats = [
+		file.additions > 0
+			? `<span class="diff-stat-add">+${file.additions}</span>`
+			: "",
+		file.deletions > 0
+			? `<span class="diff-stat-del">-${file.deletions}</span>`
+			: "",
+	].join("");
+
+	const body = file.binary
+		? `<div class="diff-binary">Binary file not shown</div>`
+		: file.lines.map(renderDiffLine).join("\n");
+
+	return `
+<details class="diff-file" open>
+	<summary>
+		${icon("chevronRight", "chev")}
+		<span class="diff-file-path mono">${escapeHtml(file.path)}</span>
+		<span class="diff-stats">${stats}</span>
+	</summary>
+	<div class="diff-body">${body}</div>
+</details>`;
+}
+
+function renderCodeTab(diffText: string): string {
+	const files = parseUnifiedDiff(diffText);
+	if (files.length === 0) {
+		return `<div class="section-body"><div class="empty-row">No file changes to show.</div></div>`;
+	}
+	return files.map(renderDiffFile).join("\n");
+}
+
+function renderSummaryPill(counts: Record<Tone, number>): string {
+	const confirmed = counts.confirmed;
+	const plausible = counts.plausible;
+	const unverified = counts.unverified;
+
+	const { tone, label } =
+		confirmed > 0
+			? { tone: "confirmed" as const, label: `${confirmed} confirmed` }
+			: plausible > 0
+				? { tone: "plausible" as const, label: `${plausible} plausible` }
+				: unverified > 0
+					? {
+							tone: "unverified" as const,
+							label: `${unverified} finding${unverified === 1 ? "" : "s"}`,
+						}
+					: { tone: "clear" as const, label: "No issues found" };
+
+	return `<span class="pill pill-${tone}">${icon(TONE_ICON[tone], "")}${label}</span>`;
+}
+
+const MONTHS = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+] as const;
+
+// The real meta row shows a relative age ("3h ago"), which a static page
+// can't keep truthful — an absolute date is the honest equivalent.
+function formatGeneratedAt(value: string | Date): string | null {
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return null;
+	return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+}
+
+function renderMetaItems(review: ReviewReportInput): string[] {
+	const items: string[] = [];
+	if (review.prNumber) {
+		items.push(`<span class="meta-num mono">#${review.prNumber}</span>`);
+	}
+	if (review.repo) {
+		items.push(`<span class="meta-plain">${escapeHtml(review.repo)}</span>`);
+	}
+	if (review.branch) {
+		items.push(
+			`<span class="branch mono">${icon("gitBranch", "")}<span class="branch-label">${escapeHtml(review.branch)}</span></span>`,
+		);
+	}
+	if (review.commitSha) {
+		items.push(
+			`<span class="meta-mono mono">${escapeHtml(review.commitSha.slice(0, 7))}</span>`,
+		);
+	}
+	if (review.effortLevel) {
+		items.push(
+			`<span class="meta-plain">${escapeHtml(review.effortLevel)} review</span>`,
+		);
+	}
+	const generated = formatGeneratedAt(review.generatedAt);
+	if (generated) {
+		items.push(`<span class="meta-plain">generated ${generated}</span>`);
+	}
+	return items;
+}
+
+const META_SEPARATOR = "\n\t\t<span aria-hidden>·</span>\n\t\t";
+
+export function renderReviewReportHtml(review: ReviewReportInput): string {
+	const groups = VERDICT_GROUPS.map((group) => ({
+		...group,
+		findings: review.findings.filter((f) => f.verdict === group.key),
+	})).filter((group) => group.findings.length > 0);
+
+	const counts: Record<Tone, number> = {
+		confirmed: review.findings.filter((f) => f.verdict === "CONFIRMED").length,
+		plausible: review.findings.filter((f) => f.verdict === "PLAUSIBLE").length,
+		unverified: review.findings.filter((f) => !f.verdict).length,
+		clear: 0,
+	};
+
+	const body =
+		groups.length === 0
+			? `<div class="section-body"><div class="empty-row">${icon("check", "")}No findings — this review didn't flag anything.</div></div>`
+			: groups
+					.map(
+						(group) => `
+<section>
+	<div class="section-head">
+		<h2>${group.label}</h2>
+		<span class="section-summary">${group.findings.length} finding${group.findings.length === 1 ? "" : "s"}</span>
+	</div>
+	<div class="section-body">
+		${group.findings.map((f) => renderFinding(f, group.tone, review.repo, review.commitSha)).join("\n")}
+	</div>
+</section>`,
+					)
+					.join("\n");
+
+	const titleHtml = escapeHtml(review.title);
+	const metaItems = [renderSummaryPill(counts), ...renderMetaItems(review)];
+	const githubButtonHtml = review.prUrl
+		? `<a class="gh-btn" href="${escapeHtml(review.prUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open pull request in GitHub" title="Open pull request in GitHub">${GITHUB_ICON_SVG}</a>`
+		: "";
+	const tabBarHtml = review.diff
+		? `<label for="tab-summary" class="tab-label">Summary</label>
+		<label for="tab-code" class="tab-label">Code</label>`
+		: `<span class="tab-label tab-label-active">Summary</span>`;
+
+	return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${titleHtml}</title>
+<style>
+/* Tokens mirror the app's globals.css (light :root.light values, dark :root
+   defaults). A public page has no app theme switcher, so dark rides the
+   prefers-color-scheme media query instead of the .dark class. */
+:root {
+	--background: #f9f9fa;
+	--foreground: oklch(0.145 0 0);
+	--muted: oklch(0.97 0 0);
+	--muted-foreground: #4a4847;
+	--accent: oklch(0.97 0 0);
+	--border: oklch(0.922 0 0);
+	--ring: oklch(0.708 0 0);
+	/* Pill colors mirror the PR state badge formula (Tailwind v4 rose/amber
+	   oklch tokens + the explicit open-badge hex); icon colors mirror the
+	   check-status icon palette (red-600/emerald-600) — the app itself uses
+	   two different reds for these two contexts. */
+	--tone-confirmed-bg: oklch(94.1% 0.03 12.58);
+	--tone-confirmed-fg: oklch(58.6% 0.253 17.585);
+	--icon-confirmed-fg: oklch(57.7% 0.245 27.325);
+	--tone-plausible-bg: oklch(96.2% 0.059 95.617);
+	--tone-plausible-fg: oklch(66.6% 0.179 58.318);
+	--tone-clear-bg: #dcfae8;
+	--tone-clear-fg: #00a558;
+	--icon-clear-fg: oklch(59.6% 0.145 163.225);
+	/* Diff line colors match the app's own file-diff-tool.tsx (Tailwind v4
+	   green/red oklch tokens): border/bg stay fixed, only the text color
+	   shifts between light and dark. */
+	--diff-add-border: oklch(72.3% 0.219 149.579);
+	--diff-add-bg: color-mix(in oklab, oklch(72.3% 0.219 149.579) 10%, transparent);
+	--diff-add-fg: oklch(52.7% 0.154 150.069);
+	--diff-remove-border: oklch(63.7% 0.237 25.331);
+	--diff-remove-bg: color-mix(in oklab, oklch(63.7% 0.237 25.331) 10%, transparent);
+	--diff-remove-fg: oklch(50.5% 0.213 27.518);
+	/* Diff-stat counts use green-500/red-500 in both themes, exactly like
+	   file-diff-tool's +N/-N status node. */
+	--diff-stat-add: oklch(72.3% 0.219 149.579);
+	--diff-stat-del: oklch(63.7% 0.237 25.331);
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: #151110;
+		--foreground: #eae8e6;
+		--muted: #2a2827;
+		--muted-foreground: #a8a5a3;
+		--accent: #2a2827;
+		--border: #2a2827;
+		--ring: #3a3837;
+		--tone-confirmed-bg: #4a2020;
+		--tone-confirmed-fg: #e0918a;
+		--icon-confirmed-fg: #f87171;
+		--tone-plausible-bg: #78350f;
+		--tone-plausible-fg: #fbbf24;
+		--tone-clear-bg: #064e3b;
+		--tone-clear-fg: #34d399;
+		--icon-clear-fg: #34d399;
+		--diff-add-fg: oklch(79.2% 0.209 151.711);
+		--diff-remove-fg: oklch(70.4% 0.191 22.216);
+	}
+	.gh-btn:hover { background: color-mix(in oklab, var(--accent) 50%, transparent); }
+}
+* { box-sizing: border-box; border-color: var(--border); }
+html, body { margin: 0; padding: 0; }
+body {
+	background: var(--background);
+	color: var(--foreground);
+	font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-size: 1rem;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+/* Scrollbars match the app's global scrollbar styling. */
+* { scrollbar-width: thin; scrollbar-color: rgb(63 63 70 / 0.5) transparent; }
+*::-webkit-scrollbar { width: 12px; height: 12px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+	background-color: rgb(63 63 70 / 0.5);
+	border-radius: 6px;
+	border: 3px solid transparent;
+	background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: rgb(82 82 91 / 0.7); }
+*::-webkit-scrollbar-corner { background: transparent; }
+.icon { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; flex-shrink: 0; }
+a { color: inherit; text-decoration: none; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+/* Header block: flex shrink-0 flex-col border-b border-border, same as the
+   real PR detail page's header. */
+header { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+.tab-row { display: flex; height: 2.5rem; align-items: center; gap: 0.25rem; padding: 0 1rem; }
+.tab-label {
+	cursor: pointer;
+	user-select: none;
+	border-radius: 8px;
+	padding: 0.25rem 0.5rem;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	font-weight: 500;
+	color: var(--muted-foreground);
+	transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tab-label:hover { color: var(--foreground); }
+.tab-label-active { background: var(--accent); color: var(--foreground); cursor: default; }
+#tab-summary:checked ~ header label[for="tab-summary"],
+#tab-code:checked ~ header label[for="tab-code"] {
+	background: var(--accent);
+	color: var(--foreground);
+}
+.title-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0 1rem 0.75rem;
+}
+h1 {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 1.25rem;
+	line-height: 1.25;
+	font-weight: 600;
+	margin: 0;
+}
+/* Ghost icon-sm button (size-8, rounded-md, hover:bg-accent) wrapping the
+   FaGithub mark, like the real header's open-in-GitHub button. */
+.gh-btn {
+	display: inline-flex;
+	flex-shrink: 0;
+	width: 2rem;
+	height: 2rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+	color: var(--foreground);
+	transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gh-btn:hover { background: var(--accent); }
+.gh-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+.gh-btn .icon { width: 16px; height: 16px; }
+.meta-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0 1rem 0.75rem;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: var(--muted-foreground);
+}
+.pill {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 0.25rem;
+	border-radius: 9999px;
+	padding: 0.25rem 0.5rem;
+	font-weight: 500;
+	text-transform: capitalize;
+}
+.pill .icon { width: 12px; height: 12px; }
+.pill-confirmed { background: var(--tone-confirmed-bg); color: var(--tone-confirmed-fg); }
+.pill-plausible { background: var(--tone-plausible-bg); color: var(--tone-plausible-fg); }
+.pill-unverified { background: var(--muted); color: var(--muted-foreground); }
+.pill-clear { background: var(--tone-clear-bg); color: var(--tone-clear-fg); }
+.meta-num { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.meta-mono, .meta-plain { flex-shrink: 0; }
+.branch { display: flex; min-width: 0; flex-shrink: 1; align-items: center; gap: 0.25rem; }
+.branch .icon { width: 12px; height: 12px; }
+.branch-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Content region: px-4 py-6, @md:px-6, @4xl:py-8 like the real Summary tab. */
+.content { padding: 1.5rem 1rem; }
+@media (min-width: 28rem) { .content { padding-left: 1.5rem; padding-right: 1.5rem; } }
+@media (min-width: 56rem) { .content { padding-top: 2rem; padding-bottom: 2rem; } }
+section + section { margin-top: 2rem; }
+.section-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+h2 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; margin: 0; }
+.section-summary { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.section-body {
+	border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+	border-radius: 10px;
+	background: color-mix(in oklab, var(--muted) 15%, transparent);
+	overflow: hidden;
+}
+.finding {
+	padding: 0.625rem 0.75rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+}
+.finding:last-child { border-bottom: none; }
+.finding:hover { background: color-mix(in oklab, var(--accent) 40%, transparent); }
+.finding-head { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.tone-confirmed { color: var(--icon-confirmed-fg); }
+.tone-plausible { color: var(--tone-plausible-fg); }
+.tone-unverified { color: var(--muted-foreground); }
+.category {
+	flex-shrink: 0;
+	border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+	background: color-mix(in oklab, var(--muted) 35%, transparent);
+	border-radius: 4px;
+	padding: 0 0.25rem;
+	font-size: 0.5625rem;
+	text-transform: uppercase;
+	letter-spacing: 0.025em;
+	color: var(--muted-foreground);
+}
+.location {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+	flex: 1 1 auto;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: var(--muted-foreground);
+}
+.location-label {
+	min-width: 0;
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+a.location:hover { color: var(--foreground); text-decoration: none; }
+.location .arrow { color: var(--muted-foreground); flex-shrink: 0; }
+.summary { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; margin: 0.5rem 0 0; }
+details.failure { margin-top: 0.375rem; }
+details.failure summary {
+	cursor: pointer;
+	list-style: none;
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	font-weight: 500;
+}
+details.failure summary::-webkit-details-marker { display: none; }
+details.failure summary .chev {
+	width: 12px;
+	height: 12px;
+	color: var(--muted-foreground);
+	transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+details.failure[open] summary .chev { transform: rotate(90deg); }
+details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25rem; color: var(--muted-foreground); }
+.empty-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem;
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+.empty-row .icon { color: var(--icon-clear-fg); }
+.tab-radio { position: absolute; opacity: 0; pointer-events: none; }
+.tab-panel { display: none; }
+#tab-summary:checked ~ #panel-summary { display: block; }
+#tab-code:checked ~ #panel-code { display: block; }
+.diff-file {
+	border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+	border-radius: 10px;
+	background: color-mix(in oklab, var(--muted) 15%, transparent);
+	overflow: hidden;
+}
+.diff-file + .diff-file { margin-top: 0.75rem; }
+.diff-file summary {
+	cursor: pointer;
+	list-style: none;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.625rem 0.75rem;
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+.diff-file summary:hover { background: color-mix(in oklab, var(--accent) 40%, transparent); }
+.diff-file summary::-webkit-details-marker { display: none; }
+.diff-file summary .chev {
+	width: 12px;
+	height: 12px;
+	color: var(--muted-foreground);
+	transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.diff-file[open] summary .chev { transform: rotate(90deg); }
+.diff-file-path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-stats { flex-shrink: 0; display: flex; gap: 0.375rem; }
+.diff-stat-add { color: var(--diff-stat-add); }
+.diff-stat-del { color: var(--diff-stat-del); }
+.diff-body {
+	max-height: 480px;
+	overflow-y: auto;
+	border-top: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+.diff-hunk { padding: 0.25rem 0.625rem; color: var(--muted-foreground); background: color-mix(in oklab, var(--muted) 60%, transparent); }
+.diff-line { display: flex; padding: 0.125rem 0.625rem; border-left: 2px solid transparent; }
+.diff-line pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+.diff-marker { margin-right: 0.5rem; user-select: none; }
+.diff-add { border-left-color: var(--diff-add-border); background: var(--diff-add-bg); color: var(--diff-add-fg); }
+.diff-remove { border-left-color: var(--diff-remove-border); background: var(--diff-remove-bg); color: var(--diff-remove-fg); }
+.diff-context { color: var(--muted-foreground); }
+.diff-binary { padding: 0.625rem 0.75rem; color: var(--muted-foreground); font-style: italic; }
+</style>
+</head>
+<body>
+${
+	review.diff
+		? `<input type="radio" name="view" id="tab-summary" class="tab-radio" checked>
+<input type="radio" name="view" id="tab-code" class="tab-radio">
+`
+		: ""
+}<header>
+	<div class="tab-row">
+		${tabBarHtml}
+	</div>
+	<div class="title-row">
+		<h1>${titleHtml}</h1>
+		${githubButtonHtml}
+	</div>
+	<div class="meta-row">
+		${metaItems.join(META_SEPARATOR)}
+	</div>
+</header>
+${
+	review.diff
+		? `<div id="panel-summary" class="tab-panel content">${body}</div>
+<div id="panel-code" class="tab-panel content">${renderCodeTab(review.diff)}</div>`
+		: `<main class="content">${body}</main>`
+}
+</body>
+</html>`;
+}
