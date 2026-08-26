@@ -1,14 +1,34 @@
 import { z } from "zod";
-import { pageFields } from "../page/schema";
+import {
+	hasCompleteWorkspaceLink,
+	pageFields,
+	WORKSPACE_LINK_MESSAGE,
+} from "../page/schema";
+
+/**
+ * Field-level schemas shared by this router's inputs and by the MCP tool
+ * definition that fronts them. A constraint declared here is declared once —
+ * the agent-facing tool schema decorates these rather than restating them,
+ * so the two can't drift.
+ */
+export const reviewFindingFields = {
+	file: z.string().min(1),
+	line: z.number().int().positive(),
+	category: z.string().max(60),
+	summary: z.string().min(1),
+	shortSummary: z.string().max(200),
+	failureScenario: z.string().min(1),
+	verdict: z.enum(["CONFIRMED", "PLAUSIBLE"]),
+} as const;
 
 export const reviewFindingSchema = z.object({
-	file: z.string().min(1),
-	line: z.number().int().positive().optional(),
-	category: z.string().max(60).optional(),
-	summary: z.string().min(1),
-	shortSummary: z.string().max(200).optional(),
-	failureScenario: z.string().min(1),
-	verdict: z.enum(["CONFIRMED", "PLAUSIBLE"]).optional(),
+	file: reviewFindingFields.file,
+	line: reviewFindingFields.line.optional(),
+	category: reviewFindingFields.category.optional(),
+	summary: reviewFindingFields.summary,
+	shortSummary: reviewFindingFields.shortSummary.optional(),
+	failureScenario: reviewFindingFields.failureScenario,
+	verdict: reviewFindingFields.verdict.optional(),
 });
 
 const publishReviewFieldsSchema = z.object({
@@ -47,10 +67,9 @@ export const REVIEW_ANCHOR_MESSAGE = {
 	path: ["githubPullRequestId"],
 };
 
-export const publishReviewSchema = publishReviewFieldsSchema.refine(
-	hasReviewAnchor,
-	REVIEW_ANCHOR_MESSAGE,
-);
+export const publishReviewSchema = publishReviewFieldsSchema
+	.refine(hasCompleteWorkspaceLink, WORKSPACE_LINK_MESSAGE)
+	.refine(hasReviewAnchor, REVIEW_ANCHOR_MESSAGE);
 
 export type PublishReviewInput = z.infer<typeof publishReviewSchema>;
 

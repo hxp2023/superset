@@ -1,8 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { pageFields } from "@superset/trpc/page-schema";
+import {
+	hasCompleteWorkspaceLink,
+	pageFields,
+	WORKSPACE_LINK_MESSAGE,
+} from "@superset/trpc/page-schema";
 import {
 	hasReviewAnchor,
 	REVIEW_ANCHOR_MESSAGE,
+	reviewFindingFields,
 } from "@superset/trpc/review-schema";
 import { z } from "zod";
 import { createMcpCaller } from "../../caller";
@@ -12,27 +17,29 @@ import { optionalish } from "../../optionalish";
 // Field names are camelCase to match every other tool in this file (pageFields
 // etc.) — the `--share` integration on the `/code-review` side is expected to
 // map from ReportFindings' snake_case shape (file, failure_scenario,
-// short_summary, verdict) onto this one.
+// short_summary, verdict) onto this one. Constraints (min/max/enum) come from
+// reviewFindingFields, declared once in the trpc schema, so the two can't
+// drift — this only adds the MCP-specific null-tolerance and descriptions.
 const reviewFindingInputSchema = z.object({
-	file: z
-		.string()
-		.min(1)
-		.describe("Repo-relative path of the file the finding is in."),
-	line: optionalish(z.number().int().positive()).describe(
+	file: reviewFindingFields.file.describe(
+		"Repo-relative path of the file the finding is in.",
+	),
+	line: optionalish(reviewFindingFields.line).describe(
 		"1-indexed line the finding anchors to.",
 	),
-	category: optionalish(z.string().max(60)).describe(
+	category: optionalish(reviewFindingFields.category).describe(
 		'Short kebab-case slug of the finding type, e.g. "correctness".',
 	),
-	summary: z.string().min(1).describe("One-sentence statement of the defect."),
-	shortSummary: optionalish(z.string().max(200)).describe(
+	summary: reviewFindingFields.summary.describe(
+		"One-sentence statement of the defect.",
+	),
+	shortSummary: optionalish(reviewFindingFields.shortSummary).describe(
 		"Compressed label for compact UI (≤60 chars).",
 	),
-	failureScenario: z
-		.string()
-		.min(1)
-		.describe("Concrete inputs/state → wrong output/crash."),
-	verdict: optionalish(z.enum(["CONFIRMED", "PLAUSIBLE"])).describe(
+	failureScenario: reviewFindingFields.failureScenario.describe(
+		"Concrete inputs/state → wrong output/crash.",
+	),
+	verdict: optionalish(reviewFindingFields.verdict).describe(
 		"Set when a verify pass ran.",
 	),
 });
@@ -76,10 +83,18 @@ export function register(server: McpServer): void {
 					"Raw unified diff text, e.g. the output of `gh pr diff <n>`. When given, the published page gets a Code tab alongside Summary, matching the app's own PR view.",
 				),
 			})
+			.refine(hasCompleteWorkspaceLink, WORKSPACE_LINK_MESSAGE)
 			.refine(hasReviewAnchor, REVIEW_ANCHOR_MESSAGE),
 		handler: async (input, ctx) => {
 			const caller = createMcpCaller(ctx);
-			return caller.review.publish(input);
+			const { description, ...rest } = input;
+			return caller.review.publish({
+				...rest,
+				// "" is the only value where this field passes validation, and a
+				// republish patches on `!== undefined` — forwarding an empty
+				// string would silently wipe an existing description.
+				...(description ? { description } : {}),
+			});
 		},
 	});
 }

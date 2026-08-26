@@ -237,4 +237,85 @@ describe("renderReviewReportHtml", () => {
 		expect(html).not.toContain("<script>alert(1)</script>");
 		expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
 	});
+
+	it("does not mistake a removed/added comment line for a diff header", () => {
+		// Original file content is "-- old comment" / "++ new comment" (two
+		// leading chars); prepending the diff's own single +/- marker makes the
+		// raw lines "--- old comment" / "+++ new comment", which collide with
+		// the ---/+++ header-line checks unless header parsing has stopped.
+		const diff = [
+			"diff --git a/query.sql b/query.sql",
+			"--- a/query.sql",
+			"+++ b/query.sql",
+			"@@ -1,2 +1,2 @@",
+			"--- old comment",
+			"+++ new comment",
+		].join("\n");
+
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff,
+		});
+		expect(html).toContain('class="diff-line diff-remove"');
+		expect(html).toContain('class="diff-line diff-add"');
+		expect(html).toContain("-- old comment");
+		expect(html).toContain("++ new comment");
+	});
+
+	it("resolves a pure rename with no content change from rename to/from lines, even with no a/b prefix", () => {
+		const diff = [
+			"diff --git old.ts new.ts",
+			"similarity index 100%",
+			"rename from old.ts",
+			"rename to new.ts",
+		].join("\n");
+
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff,
+		});
+		expect(html).toContain("new.ts");
+		expect(html).not.toContain("No file changes to show");
+	});
+
+	it("does not drop the last line when the diff text ends with a trailing newline", () => {
+		const diff = `${[
+			"diff --git a/src/foo.ts b/src/foo.ts",
+			"--- a/src/foo.ts",
+			"+++ b/src/foo.ts",
+			"@@ -1,3 +1,3 @@",
+			" context line",
+			"-removed line",
+			"+added line",
+		].join("\n")}\n`;
+
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff,
+		});
+		const lineCount = (html.match(/class="diff-line /g) ?? []).length;
+		expect(lineCount).toBe(3);
+	});
+
+	it("resolves the full path when it contains a literal ' b/' substring", () => {
+		const diff = [
+			"diff --git a/a.ts b/a b/c.ts",
+			"index abc1234..def5678 100644",
+			"Binary files a/a.ts and b/a b/c.ts differ",
+		].join("\n");
+
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff,
+		});
+		expect(html).toContain("a b/c.ts");
+	});
 });

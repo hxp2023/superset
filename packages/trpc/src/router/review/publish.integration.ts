@@ -32,6 +32,7 @@ const { eq } = await import("drizzle-orm");
 const { publishReview } = await import("./publish");
 
 const ORG = crypto.randomUUID();
+const OTHER_ORG = crypto.randomUUID();
 const USER = crypto.randomUUID();
 const OTHER_USER = crypto.randomUUID();
 const WORKSPACE = crypto.randomUUID();
@@ -59,15 +60,20 @@ const publish = (input: Record<string, unknown>) =>
 	});
 
 let repositoryId: string;
+let foreignRepositoryId: string;
 
-async function makePullRequest(prNumber: number) {
+async function makePullRequestIn(
+	organizationId: string,
+	repoId: string,
+	prNumber: number,
+) {
 	const [pr] = await db
 		.insert(githubPullRequests)
 		.values({
-			repositoryId,
-			organizationId: ORG,
+			repositoryId: repoId,
+			organizationId,
 			prNumber,
-			nodeId: `node-${suffix}-${prNumber}`,
+			nodeId: `node-${suffix}-${organizationId}-${prNumber}`,
 			headBranch: "feature",
 			headSha: "abc1234",
 			baseBranch: "main",
@@ -81,12 +87,20 @@ async function makePullRequest(prNumber: number) {
 	return pr;
 }
 
+const makePullRequest = (prNumber: number) =>
+	makePullRequestIn(ORG, repositoryId, prNumber);
+const makeForeignPullRequest = (prNumber: number) =>
+	makePullRequestIn(OTHER_ORG, foreignRepositoryId, prNumber);
+
 beforeAll(async () => {
-	await db.insert(organizations).values({
-		id: ORG,
-		name: "Test Org",
-		slug: `test-org-review-${suffix}`,
-	});
+	await db.insert(organizations).values([
+		{ id: ORG, name: "Test Org", slug: `test-org-review-${suffix}` },
+		{
+			id: OTHER_ORG,
+			name: "Other Test Org",
+			slug: `other-test-org-review-${suffix}`,
+		},
+	]);
 	await db.insert(users).values([
 		{
 			id: USER,
@@ -143,10 +157,41 @@ beforeAll(async () => {
 		.returning();
 	if (!repository) throw new Error("failed to insert repository");
 	repositoryId = repository.id;
+
+	const [foreignInstallation] = await db
+		.insert(githubInstallations)
+		.values({
+			organizationId: OTHER_ORG,
+			connectedByUserId: USER,
+			installationId: `install-foreign-${suffix}`,
+			accountLogin: "other-org",
+			accountType: "Organization",
+		})
+		.returning();
+	if (!foreignInstallation) {
+		throw new Error("failed to insert foreign installation");
+	}
+
+	const [foreignRepository] = await db
+		.insert(githubRepositories)
+		.values({
+			installationId: foreignInstallation.id,
+			organizationId: OTHER_ORG,
+			repoId: `repo-foreign-${suffix}`,
+			owner: "other-org",
+			name: "other-repo",
+			fullName: "other-org/other-repo",
+		})
+		.returning();
+	if (!foreignRepository) {
+		throw new Error("failed to insert foreign repository");
+	}
+	foreignRepositoryId = foreignRepository.id;
 });
 
 afterAll(async () => {
 	await db.delete(organizations).where(eq(organizations.id, ORG));
+	await db.delete(organizations).where(eq(organizations.id, OTHER_ORG));
 	await db.delete(users).where(eq(users.id, USER));
 	await db.delete(users).where(eq(users.id, OTHER_USER));
 	await dbWs.$client.end?.();
@@ -235,5 +280,81 @@ describe("publishReview", () => {
 			.where(eq(pageVersions.pageId, result.id));
 		const stored = blobStore.get(row?.blobPathname ?? "");
 		expect(stored?.toString()).toContain("a.ts:1");
+	});
+});
+
+describe("access control and visibility", () => {
+	test("rejects a githubPullRequestId that doesn't exist", async () => {
+		await expect(
+			publish({ githubPullRequestId: crypto.randomUUID() }),
+		).rejects.toThrow(/not found/i);
+	});
+
+	test("rejects a githubPullRequestId that belongs to a different org", async () => {
+		const foreignPr = await makeForeignPullRequest(1);
+		await expect(
+			publish({ githubPullRequestId: foreignPr.id }),
+		).rejects.toThrow(/not found/i);
+	});
+
+	test("a teammate can add a version to a review someone else published", async () => {
+		const pr = await makePullRequest(20);
+		const first = await publish({ githubPullRequestId: pr.id });
+
+		const second = await publishReview({
+			input: {
+				title: "Test Review",
+				findings,
+				githubPullRequestId: pr.id,
+			} as never,
+			organizationId: ORG,
+			userId: OTHER_USER,
+		});
+
+		expect(second.id).toBe(first.id);
+		expect(second.version).toBe(2);
+	});
+
+	test("republishing without visibility leaves a manually-tightened just_me alone", async () => {
+		const pr = await makePullRequest(21);
+		const first = await publish({
+			githubPullRequestId: pr.id,
+			visibility: "just_me",
+		});
+		expect(first.visibility).toBe("just_me");
+
+		const second = await publish({ githubPullRequestId: pr.id });
+		expect(second.visibility).toBe("just_me");
+	});
+
+	test("reviewing two different PRs from the same workspace/entryPath does not collide", async () => {
+		const prA = await makePullRequest(22);
+		const prB = await makePullRequest(23);
+		const sharedEntryPath = ".superset/review.html";
+
+		const a = await publish({
+			githubPullRequestId: prA.id,
+			workspaceId: WORKSPACE,
+			entryPath: sharedEntryPath,
+		});
+		const b = await publish({
+			githubPullRequestId: prB.id,
+			workspaceId: WORKSPACE,
+			entryPath: sharedEntryPath,
+		});
+
+		expect(a.id).not.toBe(b.id);
+
+		const [linkA] = await db
+			.select()
+			.from(reviewPages)
+			.where(eq(reviewPages.githubPullRequestId, prA.id));
+		expect(linkA?.pageId).toBe(a.id);
+
+		const [linkB] = await db
+			.select()
+			.from(reviewPages)
+			.where(eq(reviewPages.githubPullRequestId, prB.id));
+		expect(linkB?.pageId).toBe(b.id);
 	});
 });

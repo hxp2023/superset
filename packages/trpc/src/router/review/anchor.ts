@@ -1,7 +1,40 @@
 import { db } from "@superset/db/client";
-import { reviewPages } from "@superset/db/schema";
+import {
+	githubPullRequests,
+	pages,
+	pageVersions,
+	reviewPages,
+} from "@superset/db/schema";
 import { TRPCError } from "@trpc/server";
+import { del } from "@vercel/blob";
 import { and, eq } from "drizzle-orm";
+
+/**
+ * The `github_pull_requests` FK only requires the row to exist, not that it
+ * belongs to the caller's org — without this check, an org could link a
+ * review page to a PR row that actually belongs to a different org.
+ */
+export async function assertPullRequestInOrg(
+	organizationId: string,
+	githubPullRequestId: string,
+): Promise<void> {
+	const [row] = await db
+		.select({ id: githubPullRequests.id })
+		.from(githubPullRequests)
+		.where(
+			and(
+				eq(githubPullRequests.id, githubPullRequestId),
+				eq(githubPullRequests.organizationId, organizationId),
+			),
+		)
+		.limit(1);
+	if (!row) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "Pull request not found",
+		});
+	}
+}
 
 export async function findLinkedPageId(
 	organizationId: string,
@@ -18,6 +51,32 @@ export async function findLinkedPageId(
 		)
 		.limit(1);
 	return row?.pageId ?? null;
+}
+
+// Cleans up a page this call just created but lost the race to link — the
+// alternative is a permanent orphaned, org-visible page with a wasted blob
+// upload sitting around forever. Doesn't prevent the race itself (that would
+// need a lock spanning publishPage's own transaction), just bounds the harm.
+async function deleteOrphanedPage(pageId: string): Promise<void> {
+	const rows = await db
+		.select({ blobPathname: pageVersions.blobPathname })
+		.from(pageVersions)
+		.where(eq(pageVersions.pageId, pageId));
+
+	await db.delete(pages).where(eq(pages.id, pageId));
+
+	const pathnames = rows.map((row) => row.blobPathname);
+	if (pathnames.length > 0) {
+		try {
+			await del(pathnames);
+		} catch (error) {
+			console.error("[reviews] blob cleanup failed after orphan delete", {
+				pageId,
+				pathnames,
+				error,
+			});
+		}
+	}
 }
 
 // A no-op if this PR is already linked to `pageId` (the common re-review
@@ -44,6 +103,7 @@ export async function linkReviewPage({
 
 	const existing = await findLinkedPageId(organizationId, githubPullRequestId);
 	if (existing !== pageId) {
+		await deleteOrphanedPage(pageId);
 		throw new TRPCError({
 			code: "CONFLICT",
 			message:

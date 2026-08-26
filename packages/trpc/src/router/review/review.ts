@@ -3,7 +3,6 @@ import { pages } from "@superset/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
-import { assertPageReadable } from "../page/access";
 import { pageUrl } from "../page/page-url";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { findLinkedPageId } from "./anchor";
@@ -42,7 +41,12 @@ export const reviewRouter = {
 				)
 				.limit(1);
 			if (!page) return null;
-			assertPageReadable(page, userId);
+			// A linked page the caller can't read (private, someone else's) is
+			// indistinguishable from "no review" to this caller — return null
+			// for both instead of throwing for one and not the other.
+			if (page.visibility === "just_me" && page.createdByUserId !== userId) {
+				return null;
+			}
 
 			return {
 				id: page.id,

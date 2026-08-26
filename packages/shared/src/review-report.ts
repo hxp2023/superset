@@ -44,8 +44,17 @@ interface DiffFile {
 function parseUnifiedDiff(diffText: string): DiffFile[] {
 	const files: DiffFile[] = [];
 	let current: DiffFile | null = null;
+	// Header lines (---/+++/rename from&to/index/etc.) only ever appear before
+	// a file's first hunk marker; once a hunk starts, every line is content.
+	// Needed because a removed/added line whose own text starts with "-- " or
+	// "++ " (a SQL/Lua/Haskell comment, say) becomes "--- ..."/"+++ ..." once
+	// the diff's leading +/- marker is prepended, which would otherwise
+	// collide with the header-line checks below.
+	let inHeader = true;
 
-	for (const line of diffText.split("\n")) {
+	// Trim exactly one trailing newline (typical of real `gh pr diff` output)
+	// so it doesn't split into a spurious trailing empty context line.
+	for (const line of diffText.replace(/\n$/, "").split("\n")) {
 		if (line.startsWith("diff --git ")) {
 			if (current?.path) files.push(current);
 			current = {
@@ -55,44 +64,57 @@ function parseUnifiedDiff(diffText: string): DiffFile[] {
 				binary: false,
 				lines: [],
 			};
-			// Fallback for diffs with no --- /+++ lines (binary files) and a
-			// sensible initial value otherwise (renames land on the b/ path).
-			const match = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+			inHeader = true;
+			// Best-effort initial guess, ambiguous when a path itself contains
+			// " b/" — the non-greedy first group at least resolves the common
+			// case correctly. More authoritative lines below (---/+++/rename
+			// to) override this whenever present; it's the only source for a
+			// binary file's path, which has none of those.
+			const match = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
 			if (match) current.path = match[2] ?? match[1] ?? "";
 			continue;
 		}
 		if (!current) continue;
 
-		if (line.startsWith("--- ")) {
-			const path = line.slice(4).trim();
-			if (!current.path && path !== "/dev/null") {
-				current.path = path.replace(/^a\//, "");
-			}
-			continue;
-		}
-		if (line.startsWith("+++ ")) {
-			const path = line.slice(4).trim();
-			if (path !== "/dev/null") current.path = path.replace(/^b\//, "");
-			continue;
-		}
-		if (line.startsWith("Binary files ")) {
-			current.binary = true;
-			continue;
-		}
-		if (
-			line.startsWith("index ") ||
-			line.startsWith("new file mode") ||
-			line.startsWith("deleted file mode") ||
-			line.startsWith("similarity index") ||
-			line.startsWith("rename from") ||
-			line.startsWith("rename to")
-		) {
-			continue;
-		}
 		if (line.startsWith("@@")) {
+			inHeader = false;
 			current.lines.push({ type: "hunk", content: line });
 			continue;
 		}
+
+		if (inHeader) {
+			// Always bare paths, prefix or not — the definitive source for a
+			// pure rename (no content change), which has no --- /+++ lines.
+			if (line.startsWith("rename to ")) {
+				current.path = line.slice("rename to ".length).trim();
+				continue;
+			}
+			if (line.startsWith("rename from ")) {
+				if (!current.path) {
+					current.path = line.slice("rename from ".length).trim();
+				}
+				continue;
+			}
+			if (line.startsWith("--- ")) {
+				const path = line.slice(4).trim();
+				if (!current.path && path !== "/dev/null") {
+					current.path = path.replace(/^a\//, "");
+				}
+				continue;
+			}
+			if (line.startsWith("+++ ")) {
+				const path = line.slice(4).trim();
+				if (path !== "/dev/null") current.path = path.replace(/^b\//, "");
+				continue;
+			}
+			if (line.startsWith("Binary files ")) {
+				current.binary = true;
+				continue;
+			}
+			// Other header noise (index/mode/similarity lines) — nothing to do.
+			continue;
+		}
+
 		if (line.startsWith("+")) {
 			current.additions += 1;
 			current.lines.push({ type: "add", content: line.slice(1) });
