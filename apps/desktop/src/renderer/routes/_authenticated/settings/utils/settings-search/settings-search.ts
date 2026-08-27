@@ -44,6 +44,8 @@ export const SETTING_ITEM_ID = {
 	GIT_DELETE_LOCAL_BRANCH: "git-delete-local-branch",
 	GIT_WORKTREE_LOCATION: "git-worktree-location",
 
+	MEMORY_FILES: "memory-files",
+
 	AGENTS_ENABLED: "agents-enabled",
 	AGENTS_COMMANDS: "agents-commands",
 	AGENTS_TASK_PROMPTS: "agents-task-prompts",
@@ -183,6 +185,8 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.GIT_BRANCH_PREFIX]: "shared",
 	[SETTING_ITEM_ID.GIT_DELETE_LOCAL_BRANCH]: "v1",
 	[SETTING_ITEM_ID.GIT_WORKTREE_LOCATION]: "shared",
+
+	[SETTING_ITEM_ID.MEMORY_FILES]: "v2",
 
 	[SETTING_ITEM_ID.AGENTS_ENABLED]: "shared",
 	[SETTING_ITEM_ID.AGENTS_COMMANDS]: "shared",
@@ -843,6 +847,24 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"arc",
 			"chromium",
 			"migrate",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.MEMORY_FILES,
+		section: "memory",
+		title: "Agent memory",
+		description:
+			"Browse and edit what each agent remembers: global instructions, project files, auto-memory notes",
+		keywords: [
+			"memory",
+			"claude.md",
+			"agents.md",
+			"gemini.md",
+			"instructions",
+			"rules",
+			"notes",
+			"remember",
+			"context",
 		],
 	},
 	{

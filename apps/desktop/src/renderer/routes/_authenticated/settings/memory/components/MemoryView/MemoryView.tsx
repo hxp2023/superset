@@ -23,7 +23,7 @@ import {
 } from "./constants";
 import { targetKey } from "./utils/targetKey";
 
-const routeApi = getRouteApi("/_authenticated/_dashboard/memory/");
+const routeApi = getRouteApi("/_authenticated/settings/memory/");
 
 const PRESET_LABELS = new Map(
 	HOST_AGENT_PRESETS.map((preset) => [preset.presetId, preset.label]),
@@ -103,7 +103,7 @@ export function MemoryView() {
 
 	return (
 		<div className="flex h-full w-full flex-col">
-			<header className="shrink-0 border-b px-6 pb-4">
+			<header className="shrink-0 border-b px-6 pt-5 pb-4">
 				<h1 className="text-lg font-semibold">Memory</h1>
 				<p className="mt-0.5 text-sm text-muted-foreground">
 					What each agent remembers on this machine — global instructions,
@@ -126,7 +126,7 @@ export function MemoryView() {
 						selectedPresetId={selectedPresetId}
 						onSelect={(presetId) =>
 							void navigate({
-								to: "/memory",
+								to: "/settings/memory",
 								search: { agent: presetId },
 								replace: true,
 							})

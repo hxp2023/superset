@@ -12,6 +12,7 @@ import {
 	KeyRoundIcon,
 	LinkIcon,
 	type LucideIcon,
+	NotebookPenIcon,
 	PaletteIcon,
 	ServerIcon,
 	ShieldIcon,
@@ -125,6 +126,13 @@ const TABS: SettingsTab[] = [
 		keywords: ["security", "relay"],
 	},
 	{ id: "agents", title: "Agents", path: "/settings/agents", icon: WrenchIcon },
+	{
+		id: "memory",
+		title: "Memory",
+		path: "/settings/memory",
+		icon: NotebookPenIcon,
+		keywords: ["claude.md", "agents.md", "instructions", "notes"],
+	},
 	{
 		id: "presets",
 		title: "Presets",

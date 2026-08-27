@@ -1,5 +1,7 @@
+import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { cn } from "@superset/ui/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 import { useMemo } from "react";
 import {
 	HiOutlineBeaker,
@@ -21,7 +23,13 @@ import {
 	HiOutlineUser,
 	HiOutlineUserGroup,
 } from "react-icons/hi2";
-import { LuBrain, LuGitBranch, LuKeyboard } from "react-icons/lu";
+import {
+	LuBrain,
+	LuGitBranch,
+	LuKeyboard,
+	LuNotebookPen,
+} from "react-icons/lu";
+import { env } from "renderer/env.renderer";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { SettingsSection } from "renderer/stores/settings-state";
@@ -42,6 +50,7 @@ type SettingsRoute =
 	| "/settings/browser"
 	| "/settings/git"
 	| "/settings/agents"
+	| "/settings/memory"
 	| "/settings/terminal"
 	| "/settings/links"
 	| "/settings/models"
@@ -117,6 +126,12 @@ const SECTION_GROUPS: SectionGroup[] = [
 				section: "agents",
 				label: "Agents",
 				icon: <HiOutlineCpuChip className="h-4 w-4" />,
+			},
+			{
+				id: "/settings/memory",
+				section: "memory",
+				label: "Memory",
+				icon: <LuNotebookPen className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/terminal",
@@ -222,6 +237,11 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 	const { data: platform } = electronTrpc.window.getPlatform.useQuery();
 	const isMac = platform === "darwin";
 	const isV2CloudEnabled = useIsV2CloudEnabled();
+	// Same gate as the /settings/memory route: flag-hidden until rollout,
+	// visible in dev builds.
+	const isMemoryEnabled =
+		(useFeatureFlagEnabled(FEATURE_FLAGS.MEMORY) ?? false) ||
+		env.NODE_ENV === "development";
 	const allowedSections = useMemo(
 		() => getAllowedSectionsForVariant(isV2CloudEnabled),
 		[isV2CloudEnabled],
@@ -232,7 +252,9 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 			{SECTION_GROUPS.map((group, groupIndex) => {
 				const platformItems = group.items.filter(
 					(item) =>
-						(!item.macOnly || isMac) && allowedSections.has(item.section),
+						(!item.macOnly || isMac) &&
+						allowedSections.has(item.section) &&
+						(item.section !== "memory" || isMemoryEnabled),
 				);
 				const filteredItems = matchCounts
 					? platformItems.filter((item) => (matchCounts[item.section] ?? 0) > 0)

@@ -12,6 +12,7 @@ export type SettingsSection =
 	| "browser"
 	| "git"
 	| "agents"
+	| "memory"
 	| "terminal"
 	| "links"
 	| "models"

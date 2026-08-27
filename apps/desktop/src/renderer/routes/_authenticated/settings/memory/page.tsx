@@ -6,11 +6,11 @@ import { env } from "renderer/env.renderer";
 import { MemoryView } from "./components/MemoryView";
 
 interface MemorySearch {
-	/** presetId of the agent whose memory file is open. */
+	/** presetId of the agent whose memory files are open. */
 	agent?: string;
 }
 
-export const Route = createFileRoute("/_authenticated/_dashboard/memory/")({
+export const Route = createFileRoute("/_authenticated/settings/memory/")({
 	validateSearch: (search: Record<string, unknown>): MemorySearch =>
 		typeof search.agent === "string" && search.agent.length > 0
 			? { agent: search.agent }
@@ -25,7 +25,7 @@ function MemoryPage() {
 	const isEnabled = useFeatureFlagEnabled(FEATURE_FLAGS.MEMORY);
 	if (env.NODE_ENV === "development") return <MemoryView />;
 	if (isEnabled === undefined) return null;
-	if (!isEnabled) return <Redirect to="/v2-workspaces" />;
+	if (!isEnabled) return <Redirect to="/settings/account" />;
 
 	return <MemoryView />;
 }
