@@ -113,7 +113,11 @@ export const PERSISTED_KEY_REGISTRY: ReadonlyArray<
 	],
 	[
 		"src/renderer/stores/createDismissalsStore/createDismissalsStore.ts",
-		["desktop-notice-dismissals-v1", "v2-setup-card-dismissals-v1"],
+		[
+			"desktop-notice-dismissals-v1",
+			"v2-setup-card-dismissals-v1",
+			"browser-import-banner-dismissals-v1",
+		],
 	],
 	["src/renderer/stores/workspace-agents-row.ts", ["workspace-agents-row"]],
 	[
@@ -142,6 +146,11 @@ export const PERSISTED_KEY_REGISTRY: ReadonlyArray<
 		"src/renderer/components/PostHogUserIdentifier/PostHogUserIdentifier.tsx",
 		["active_organization_id"],
 	],
+	[
+		"src/renderer/routes/_authenticated/components/LeaderboardAutoPublish/hooks/useLeaderboardAutoPublish/autoPublishState.ts",
+		["leaderboard-auto-publish-v1"],
+	],
+	["src/renderer/lib/leaderboard/askedState.ts", ["leaderboard-asked-v1"]],
 	[
 		"src/renderer/hooks/useAgentModelPreference/useAgentModelPreference.ts",
 		["lastSelectedV2WorkspaceCreateModelByPreset"],
