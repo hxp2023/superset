@@ -43,7 +43,7 @@ const TEST_IMAGE = "superset-sandbox-e2e:local";
 const PSK = "e2e-psk-secret";
 const NOTIFY_TEMPLATE = resolve(
 	import.meta.dir,
-	"../../../../apps/desktop/src/main/lib/agent-setup/templates/notify-hook.template.sh",
+	"../../../agent-setup/templates/notify-hook.template.sh",
 );
 
 async function run(command: string, args: string[]): Promise<string> {
@@ -172,6 +172,7 @@ describe.skipIf(!DOCKER_TESTS)("sandbox end-to-end", () => {
 				workspacePath: row.worktreePath,
 				rootPath: scenario.repo.repoPath,
 				cwd: row.worktreePath,
+				db: scenario.host.db,
 			});
 			expect(spec.shell).toBe("docker");
 			expect(spec.expectsReadyMarker).toBe(true);

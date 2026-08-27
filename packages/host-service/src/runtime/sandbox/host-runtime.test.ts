@@ -29,6 +29,16 @@ const BASE_ENV = {
 	PATH: "/usr/bin:/bin",
 };
 
+// Satisfies the default-account lookup (`db.select().from(hostSettings).get()`)
+// with "no selection", so the launch env gets no account overlay.
+const FAKE_DB = {
+	select: () => ({ from: () => ({ get: () => undefined }) }),
+	query: {
+		workspaces: { findFirst: () => ({ sync: () => undefined }) },
+		projects: { findFirst: () => ({ sync: () => undefined }) },
+	},
+} as unknown as Parameters<typeof getWorkspaceRuntime>[0];
+
 const LAUNCH_CONTEXT = {
 	terminalId: "term-1",
 	workspaceId: "ws-1",
@@ -36,6 +46,7 @@ const LAUNCH_CONTEXT = {
 	rootPath: "/tmp/repo",
 	cwd: "/tmp/worktrees/ws-1/sub",
 	themeType: "light" as const,
+	db: FAKE_DB,
 };
 
 describe("HostRuntime", () => {
@@ -81,6 +92,7 @@ describe("HostRuntime", () => {
 			baseEnv,
 			shell,
 			supersetHomeDir: homeDir,
+			organizationId: process.env.ORGANIZATION_ID || "",
 			themeType: LAUNCH_CONTEXT.themeType,
 			cwd: LAUNCH_CONTEXT.cwd,
 			terminalId: LAUNCH_CONTEXT.terminalId,
@@ -135,14 +147,8 @@ describe("HostRuntime", () => {
 	test("registry resolves unsandboxed workspaces to the shared host runtime", () => {
 		// Registry falls back to the host runtime when the workspace row is
 		// missing or has sandboxEnabled=false — a fake empty db covers both.
-		const fakeDb = {
-			query: {
-				workspaces: { findFirst: () => ({ sync: () => undefined }) },
-				projects: { findFirst: () => ({ sync: () => undefined }) },
-			},
-		} as unknown as Parameters<typeof getWorkspaceRuntime>[0];
-		const runtime = getWorkspaceRuntime(fakeDb, "any-workspace");
+		const runtime = getWorkspaceRuntime(FAKE_DB, "any-workspace");
 		expect(runtime.kind).toBe("host");
-		expect(runtime).toBe(getWorkspaceRuntime(fakeDb, "another-workspace"));
+		expect(runtime).toBe(getWorkspaceRuntime(FAKE_DB, "another-workspace"));
 	});
 });
