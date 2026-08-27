@@ -1,6 +1,6 @@
 {
-  "id": "b698a486-e93d-48bd-ab0e-266a9905573c",
-  "prevId": "e646d7b7-dba2-4d2e-967d-2835c1523f42",
+  "id": "e646d7b7-dba2-4d2e-967d-2835c1523f42",
+  "prevId": "da182aae-eef3-47bf-9019-ca972cf72723",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5679,21 +5679,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "repo_owner": {
-          "name": "repo_owner",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "repo_name": {
-          "name": "repo_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "pr_number": {
-          "name": "pr_number",
-          "type": "integer",
+        "github_pull_request_id": {
+          "name": "github_pull_request_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -5712,8 +5700,8 @@
         }
       },
       "indexes": {
-        "review_pages_org_repo_pr_unique": {
-          "name": "review_pages_org_repo_pr_unique",
+        "review_pages_organization_id_pr_id_unique": {
+          "name": "review_pages_organization_id_pr_id_unique",
           "columns": [
             {
               "expression": "organization_id",
@@ -5722,19 +5710,7 @@
               "nulls": "last"
             },
             {
-              "expression": "repo_owner",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "repo_name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "pr_number",
+              "expression": "github_pull_request_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5769,6 +5745,19 @@
           "schemaTo": "auth",
           "columnsFrom": [
             "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "review_pages_github_pull_request_id_github_pull_requests_id_fk": {
+          "name": "review_pages_github_pull_request_id_github_pull_requests_id_fk",
+          "tableFrom": "review_pages",
+          "tableTo": "github_pull_requests",
+          "columnsFrom": [
+            "github_pull_request_id"
           ],
           "columnsTo": [
             "id"
