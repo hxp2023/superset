@@ -53,3 +53,7 @@ jobs:
           tags: ghcr.io/superset-sh/sandbox:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+# NOTE: the GHCR package must be made PUBLIC once (Packages → sandbox →
+# Package settings → Change visibility) so hosts can `docker pull` the default
+# ghcr.io/superset-sh/sandbox:latest without a login. Until then, non-dev
+# provisioning fails with "denied"; dev hosts use the local superset-sandbox:dev.

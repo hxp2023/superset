@@ -272,7 +272,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		if (!authorized) return c.json({ error: "Unauthorized" }, 401);
 		// Sandbox-token principals get the same workspace scoping as tRPC: only
 		// their own terminals, never host-scoped sockets or session creation.
-		const sandboxWs = resolveSandboxTokenWorkspace(queryToken ?? bearer ?? "");
+		// Resolve BOTH channels independently — a sandbox bearer paired with a
+		// junk `?token=` must not skip the ACL (CWE-863).
+		const sandboxWs =
+			resolveSandboxTokenWorkspace(bearer ?? "") ??
+			resolveSandboxTokenWorkspace(queryToken ?? "");
 		if (sandboxWs) {
 			const decision = checkSandboxWsAccess({
 				path: new URL(c.req.url).pathname,

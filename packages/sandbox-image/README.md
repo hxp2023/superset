@@ -49,8 +49,18 @@ them installed; their host config dirs already mount into the sandbox.
 ## Publishing
 
 `.github/workflows/publish-sandbox-image.yml` builds and pushes the multi-arch
-image to `ghcr.io/superset-sh/sandbox:latest` on every push to `main` that
-touches this package (or via manual `workflow_dispatch`). That is the default
-`sandbox.image` for non-development hosts. For local development the runtime
-defaults to the locally built `superset-sandbox:dev` instead, so a published
-image isn't required to dogfood.
+image to `ghcr.io/superset-sh/sandbox`. Pushes to `main` that touch this
+package publish `:latest`; a manual `workflow_dispatch` publishes `:latest` by
+default or a custom `tag` input.
+
+`:latest` is the default `sandbox.image` for non-development hosts
+(`packages/host-service/src/runtime/sandbox/docker-args.ts`). Only `:latest`
+feeds that default — a manual versioned publish (e.g. `:2026-09-01`) does NOT
+change the image workspaces pull unless you also point `sandbox.image` at it.
+
+**Before the default is usable in production, the GHCR package must be public**
+(Packages → sandbox → Package settings → Change visibility → Public). Hosts run
+`docker pull` with no login path, so a private package fails provisioning with
+"denied"/"not found". For local development none of this applies: the runtime
+defaults to the locally built `superset-sandbox:dev`, so no published image is
+required to dogfood.
