@@ -15,6 +15,7 @@ import {
 	createContainer,
 	imageExists,
 	inspectContainer,
+	listWorkspaceContainerNames,
 	pullImage,
 	removeContainer,
 	startContainer,
@@ -26,6 +27,7 @@ import {
 	CONTAINER_HOST_DIR,
 	CONTAINER_SUPERSET_DIR,
 	getSandboxContainerName,
+	getSupersetHomeDir,
 	getWorkspaceSandboxPaths,
 } from "./paths.ts";
 import { selectPublishablePorts } from "./port-probe.ts";
@@ -46,6 +48,8 @@ export interface EnsureContainerParams {
 	worktreePath: string;
 	repoPath: string;
 	branch: string;
+	/** Human-readable container-name slug (workspace name/branch). */
+	nameSlug: string;
 	settings: ResolvedSandboxSettings;
 }
 
@@ -176,7 +180,7 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 	// Also re-registers the token in-memory after host-service restarts.
 	const cliToken = await ensureCliTokenFile(params.workspaceId);
 
-	const name = getSandboxContainerName(params.workspaceId);
+	const name = getSandboxContainerName(params.workspaceId, params.nameSlug);
 	const configHash = computeConfigHash(params.settings);
 	const inspection = await inspectContainer(name);
 
@@ -219,11 +223,21 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 		}
 	}
 
+	// A rename (workspace or branch) changes the display name; the old-named
+	// container for this workspace would otherwise linger as a duplicate.
+	const staleNames = (
+		await listWorkspaceContainerNames(params.workspaceId)
+	).filter((existing) => existing !== name);
+	for (const stale of staleNames) {
+		await removeContainer(stale);
+	}
+
 	await createContainer(
 		buildContainerCreateArgs({
 			name,
 			workspaceId: params.workspaceId,
 			configHash,
+			ownerHome: getSupersetHomeDir(),
 			image: params.settings.image,
 			runtime: params.settings.runtime,
 			network: params.settings.network,
@@ -255,7 +269,11 @@ export async function destroyWorkspaceSandbox(
 	provisioningStates.delete(workspaceId);
 	const availability = await checkDockerAvailable();
 	if (availability.ok) {
-		await removeContainer(getSandboxContainerName(workspaceId));
+		// By label, not by name: display names drift (slug/rename) and legacy
+		// containers used the bare superset-ws-<id> form.
+		for (const name of await listWorkspaceContainerNames(workspaceId)) {
+			await removeContainer(name);
+		}
 	} else {
 		console.warn(
 			`[sandbox] docker unavailable during destroy of ${workspaceId}; ` +

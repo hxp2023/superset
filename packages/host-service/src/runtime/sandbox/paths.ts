@@ -56,6 +56,34 @@ export function getWorkspaceSandboxPaths(
 	};
 }
 
-export function getSandboxContainerName(workspaceId: string): string {
-	return `superset-ws-${workspaceId}`;
+const CONTAINER_SLUG_MAX = 30;
+
+/**
+ * Docker-safe, human-readable slug from workspace naming parts (name,
+ * branch). Duplicate/empty parts collapse; "" when nothing usable survives.
+ */
+export function sandboxNameSlug(
+	...parts: Array<string | null | undefined>
+): string {
+	const unique = [...new Set(parts.filter((p): p is string => !!p))];
+	return unique
+		.join("-")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, CONTAINER_SLUG_MAX)
+		.replace(/-+$/, "");
+}
+
+/**
+ * Container name: readable slug (so Docker Desktop shows which workspace it
+ * is) + short workspace-id suffix for uniqueness. The workspace-id LABEL is
+ * authoritative for cleanup — names are display + exec targeting only.
+ */
+export function getSandboxContainerName(
+	workspaceId: string,
+	nameSlug?: string,
+): string {
+	if (!nameSlug) return `superset-ws-${workspaceId}`;
+	return `superset-${nameSlug}-${workspaceId.slice(0, 8)}`;
 }

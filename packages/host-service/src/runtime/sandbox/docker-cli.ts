@@ -178,10 +178,30 @@ export async function removeContainer(name: string): Promise<void> {
 export interface ManagedContainer {
 	name: string;
 	workspaceId: string | null;
+	/** OWNER_HOME_LABEL value; null on containers from before the label. */
+	ownerHome: string | null;
 	running: boolean;
 }
 
 /** All containers carrying the Superset managed label, running or not. */
+/**
+ * All container names labeled with this workspace id — authoritative lookup
+ * for destroy/cleanup, since display names can drift (rename, slug change).
+ */
+export async function listWorkspaceContainerNames(
+	workspaceId: string,
+): Promise<string[]> {
+	const out = await docker([
+		"ps",
+		"-a",
+		"--filter",
+		`label=com.superset.workspace-id=${workspaceId}`,
+		"--format",
+		"{{.Names}}",
+	]);
+	return out.split("\n").filter((name) => name.trim().length > 0);
+}
+
 export async function listManagedContainers(): Promise<ManagedContainer[]> {
 	const out = await docker([
 		"ps",
@@ -200,13 +220,15 @@ export async function listManagedContainers(): Promise<ManagedContainer[]> {
 				state: string;
 				labels: string;
 			};
-			const workspaceLabel = parsed.labels
+			const labelPairs = parsed.labels
 				.split(",")
-				.map((pair) => pair.split("="))
-				.find(([key]) => key === "com.superset.workspace-id");
+				.map((pair) => pair.split("="));
+			const labelValue = (key: string) =>
+				labelPairs.find(([k]) => k === key)?.[1] ?? null;
 			containers.push({
 				name: parsed.name,
-				workspaceId: workspaceLabel?.[1] ?? null,
+				workspaceId: labelValue("com.superset.workspace-id"),
+				ownerHome: labelValue("com.superset.home"),
 				running: parsed.state === "running",
 			});
 		} catch {

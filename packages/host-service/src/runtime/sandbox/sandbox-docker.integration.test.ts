@@ -48,7 +48,10 @@ describe.skipIf(!DOCKER_TESTS)("sandbox docker integration", () => {
 	let repoPath: string;
 	let worktreePath: string;
 	let savedHomeDir: string | undefined;
-	const containerName = getSandboxContainerName(WORKSPACE_ID);
+	const containerName = getSandboxContainerName(
+		WORKSPACE_ID,
+		"inttest-feature",
+	);
 
 	beforeAll(async () => {
 		fixtureRoot = mkdtempSync(join(tmpdir(), "superset-sandbox-int-"));
@@ -133,6 +136,7 @@ describe.skipIf(!DOCKER_TESTS)("sandbox docker integration", () => {
 				worktreePath,
 				repoPath,
 				branch: "feature",
+				nameSlug: "inttest-feature",
 				settings,
 			});
 
@@ -150,6 +154,7 @@ describe.skipIf(!DOCKER_TESTS)("sandbox docker integration", () => {
 				worktreePath,
 				repoPath,
 				branch: "feature",
+				nameSlug: "inttest-feature",
 				settings,
 			});
 

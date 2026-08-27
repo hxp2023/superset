@@ -19,11 +19,20 @@ export interface PublishedPort {
 export const MANAGED_LABEL = "com.superset.managed=true";
 export const WORKSPACE_ID_LABEL = "com.superset.workspace-id";
 export const CONFIG_HASH_LABEL = "com.superset.config-hash";
+/**
+ * Which host-service instance owns the container, keyed by its superset home
+ * dir. Reconcile only touches containers with ITS OWN home label — a test
+ * host or a second dev instance must never sweep another instance's
+ * containers as orphans.
+ */
+export const OWNER_HOME_LABEL = "com.superset.home";
 
 export interface ContainerCreateSpec {
 	name: string;
 	workspaceId: string;
 	configHash: string;
+	/** Superset home dir of the owning host-service (OWNER_HOME_LABEL). */
+	ownerHome: string;
 	image: string;
 	runtime?: string;
 	network: "bridge" | "none";
@@ -59,6 +68,8 @@ export function buildContainerCreateArgs(spec: ContainerCreateSpec): string[] {
 		`${WORKSPACE_ID_LABEL}=${spec.workspaceId}`,
 		"--label",
 		`${CONFIG_HASH_LABEL}=${spec.configHash}`,
+		"--label",
+		`${OWNER_HOME_LABEL}=${spec.ownerHome}`,
 		"--restart",
 		"unless-stopped",
 		"--init",

@@ -6,13 +6,23 @@ import { computeConfigHash } from "./container-manager.ts";
 import { resolveSandboxSettings } from "./docker-args.ts";
 import { DockerRuntime } from "./docker-runtime.ts";
 import { HostRuntime } from "./host-runtime.ts";
+import { sandboxNameSlug } from "./paths.ts";
 import type { WorkspaceRuntime } from "./workspace-runtime.ts";
 
 const hostRuntime = new HostRuntime();
 const dockerRuntimes = new Map<
 	string,
-	{ configHash: string; runtime: DockerRuntime }
+	{ configHash: string; nameSlug: string; runtime: DockerRuntime }
 >();
+
+/** Container-name slug from a workspace row — shared with tests so name
+ * expectations can't drift from what the runtime actually creates. */
+export function computeWorkspaceNameSlug(row: {
+	name: string | null;
+	branch: string;
+}): string {
+	return sandboxNameSlug(row.name, row.branch);
+}
 
 /**
  * Resolve the execution runtime for a workspace.
@@ -44,18 +54,25 @@ export function getWorkspaceRuntime(
 		})?.sandbox ?? {};
 	const settings = resolveSandboxSettings(sandboxConfig);
 	const configHash = computeConfigHash(settings);
+	const nameSlug = computeWorkspaceNameSlug(workspace);
 
 	const cached = dockerRuntimes.get(workspaceId);
-	if (cached && cached.configHash === configHash) return cached.runtime;
+	if (
+		cached &&
+		cached.configHash === configHash &&
+		cached.nameSlug === nameSlug
+	)
+		return cached.runtime;
 
 	const runtime = new DockerRuntime({
 		workspaceId,
 		worktreePath: workspace.worktreePath,
 		repoPath: project.repoPath,
 		branch: workspace.branch,
+		nameSlug,
 		settings,
 	});
-	dockerRuntimes.set(workspaceId, { configHash, runtime });
+	dockerRuntimes.set(workspaceId, { configHash, nameSlug, runtime });
 	return runtime;
 }
 

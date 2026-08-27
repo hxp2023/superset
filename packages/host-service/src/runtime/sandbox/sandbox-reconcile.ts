@@ -6,6 +6,7 @@ import {
 	listManagedContainers,
 	removeContainer,
 } from "./docker-cli.ts";
+import { getSupersetHomeDir } from "./paths.ts";
 
 /**
  * Startup sweep: remove Superset-managed containers whose workspace row is
@@ -20,7 +21,14 @@ export async function runSandboxReconcile(db: HostDb): Promise<void> {
 	const containers = await listManagedContainers();
 	if (containers.length === 0) return;
 
+	const ownerHome = getSupersetHomeDir();
 	for (const container of containers) {
+		// Only sweep containers THIS host instance created. Several instances
+		// share one docker daemon (dev app, integration tests, multiple orgs);
+		// another instance's live workspace looks like an orphan in our DB.
+		// Unlabeled containers (pre-ownership builds) are left alone too —
+		// never delete what we can't prove we own.
+		if (container.ownerHome !== ownerHome) continue;
 		const workspace = container.workspaceId
 			? db.query.workspaces
 					.findFirst({

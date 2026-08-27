@@ -29,6 +29,8 @@ export interface DockerRuntimeParams {
 	worktreePath: string;
 	repoPath: string;
 	branch: string;
+	/** Human-readable container-name slug (workspace name/branch). */
+	nameSlug: string;
 	settings: ResolvedSandboxSettings;
 }
 
@@ -71,7 +73,10 @@ export class DockerRuntime implements WorkspaceRuntime {
 		return {
 			shell: "docker",
 			argv: buildExecArgs({
-				containerName: getSandboxContainerName(this.params.workspaceId),
+				containerName: getSandboxContainerName(
+					this.params.workspaceId,
+					this.params.nameSlug,
+				),
 				cwd: ctx.cwd,
 				env,
 				command: ["/bin/bash", "--rcfile", CONTAINER_BASH_RCFILE],

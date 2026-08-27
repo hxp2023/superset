@@ -31,7 +31,10 @@ import { terminalAgentBindings, workspaces } from "../../src/db/schema";
 import { PskHostAuthProvider } from "../../src/providers/host-auth";
 import { inspectContainer } from "../../src/runtime/sandbox/docker-cli";
 import { getSandboxContainerName } from "../../src/runtime/sandbox/paths";
-import { getWorkspaceRuntime } from "../../src/runtime/sandbox/registry";
+import {
+	computeWorkspaceNameSlug,
+	getWorkspaceRuntime,
+} from "../../src/runtime/sandbox/registry";
 import { cloudFlows } from "../helpers/cloud-fakes";
 import { createProjectScenario } from "../helpers/scenarios";
 import { seedTerminalSession } from "../helpers/seed";
@@ -151,7 +154,10 @@ describe.skipIf(!DOCKER_TESTS)("sandbox end-to-end", () => {
 				.get();
 			if (!row) throw new Error("workspace row missing");
 			expect(row.sandboxEnabled).toBe(true);
-			const containerName = getSandboxContainerName(workspaceId);
+			const containerName = getSandboxContainerName(
+				workspaceId,
+				computeWorkspaceNameSlug(row),
+			);
 
 			// ── Runtime resolution + container ensure ─────────────────────
 			const runtime = getWorkspaceRuntime(scenario.host.db, workspaceId);
