@@ -203,6 +203,25 @@ describe("GitWatcher lazy registration (regression coverage for #6729)", () => {
 		expect(internals(scenario.gitWatcher).interest.has(id)).toBe(false);
 	});
 
+	test("watchWorkspace emits a catch-up git:changed once attached, even with no new activity", async () => {
+		const scenario = await createScenario(1);
+		scenarios.push(scenario);
+		scenario.gitWatcher.start();
+
+		const id = scenario.workspaceIds[0] as string;
+		const events: string[] = [];
+		scenario.gitWatcher.onChanged((event) => events.push(event.workspaceId));
+
+		// No `.git/` or worktree activity happens here — attaching is the only
+		// thing that occurs. watchWorkspace's DB lookup + `git rev-parse` are
+		// async, so anything that changed in that window has no fs.watch
+		// coverage; without a catch-up emit on successful attach, a consumer
+		// that read stale state right before this call would never refresh.
+		scenario.gitWatcher.watchWorkspace(id);
+
+		await waitFor(() => events.includes(id), { timeoutMs: 5_000 });
+	});
+
 	test("archiving a workspace with a pending debounce timer does not later emit a stale git:changed", async () => {
 		const scenario = await createScenario(1);
 		scenarios.push(scenario);

@@ -681,6 +681,14 @@ export class GitWatcher {
 			disposeWorktreeWatch,
 		});
 		this.refreshIgnoredDirs(workspaceId, worktreePath, true);
+
+		// A change can land in the gap between watchWorkspace() and this line
+		// (the DB lookup + `git rev-parse` above are async) and go unobserved —
+		// fs.watch only reports events from here forward. One coalesced
+		// catch-up emit closes that window; consumers already treat every
+		// git:changed as "re-check status", so a possibly-redundant emit costs
+		// one extra read, not incorrect state.
+		this.markGitDirDirty(workspaceId);
 	}
 
 	/**
