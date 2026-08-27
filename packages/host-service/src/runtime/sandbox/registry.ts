@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../db/index.ts";
-import { projects, workspaces } from "../../db/schema.ts";
+import { hostSettings, projects, workspaces } from "../../db/schema.ts";
 import { loadSetupConfig } from "../setup/config.ts";
 import { computeConfigHash } from "./container-manager.ts";
 import { resolveSandboxSettings } from "./docker-args.ts";
@@ -65,8 +65,10 @@ export function evictWorkspaceRuntime(workspaceId: string): void {
 }
 
 /**
- * The sticky sandbox decision for a NEW workspace, resolved from the
- * project's sandbox config at create time and persisted on the row.
+ * The sticky sandbox decision for a NEW workspace, resolved at create time
+ * and persisted on the row. Precedence: an explicit `sandbox.enabled` in the
+ * project's config (true OR false) wins; otherwise the host-wide
+ * "sandbox new workspaces" default from settings applies.
  */
 export function resolveSandboxEnabledForNewWorkspace(
 	db: HostDb,
@@ -82,5 +84,8 @@ export function resolveSandboxEnabledForNewWorkspace(
 		projectId,
 		worktreePath,
 	});
-	return config?.sandbox?.enabled === true;
+	const projectSetting = config?.sandbox?.enabled;
+	if (typeof projectSetting === "boolean") return projectSetting;
+	const settingsRow = db.select().from(hostSettings).get();
+	return settingsRow?.sandboxNewWorkspaces === true;
 }

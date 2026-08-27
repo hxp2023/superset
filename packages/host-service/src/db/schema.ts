@@ -124,6 +124,13 @@ export const hostSettings = sqliteTable("host_settings", {
 	// inject (CLAUDE_CONFIG_DIR / CODEX_HOME). Null = the system default login.
 	defaultClaudeConfigDir: text("default_claude_config_dir"),
 	defaultCodexHome: text("default_codex_home"),
+	// Host-wide default for NEW workspaces: run their terminals in a sandbox.
+	// A project's explicit `sandbox.enabled` config always wins over this.
+	sandboxNewWorkspaces: integer("sandbox_new_workspaces", { mode: "boolean" }),
+	// Which sandbox backend the default uses. Only "docker" exists today; the
+	// column keeps the settings dropdown forward-compatible with future
+	// lightweight OS-level sandboxes.
+	sandboxProvider: text("sandbox_provider").$type<"docker">(),
 });
 
 export const pullRequests = sqliteTable(
