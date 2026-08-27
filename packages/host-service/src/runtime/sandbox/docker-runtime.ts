@@ -62,6 +62,11 @@ export class DockerRuntime implements WorkspaceRuntime {
 			// (meaningless across the container boundary) with these.
 			SUPERSET_HOST_ENDPOINT: getContainerHostEndpoint(),
 			SUPERSET_HOST_TOKEN_FILE: `${CONTAINER_HOST_DIR}/token`,
+			// The container runs as root; Claude Code refuses
+			// --dangerously-skip-permissions as root unless this marks the
+			// environment as an intentional sandbox (its devcontainer escape
+			// hatch). Accurate here — that isolation is the whole point.
+			IS_SANDBOX: "1",
 		};
 		return {
 			shell: "docker",
