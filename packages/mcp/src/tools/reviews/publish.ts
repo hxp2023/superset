@@ -49,17 +49,14 @@ export function register(server: McpServer): void {
 		name: "reviews_publish",
 		annotations: { destructiveHint: false },
 		description:
-			"Publish a code review's findings as a shareable page and return its public URL. Builds on the same Pages infrastructure as `pages_publish` — read that tool's description for the underlying constraints (self-contained HTML rendering, no external requests). Unlike a generic page, a review defaults to `org` visibility, not `just_me`: a review is meant to be seen by the team as soon as it exists. Anchor the review so a later re-review of the same PR adds a version instead of minting a duplicate page: pass `githubPullRequestId` whenever the review is of a real GitHub PR — this is the anchor that lets a standalone re-review find the same page even with no workspace — or `workspaceId` + `entryPath` when there is no PR row to anchor to. Passing both is fine and recommended when available.",
+			"Publish a code review's findings as a shareable page and return its public URL. Builds on the same Pages infrastructure as `pages_publish` — read that tool's description for the underlying constraints (self-contained HTML rendering, no external requests). Unlike a generic page, a review defaults to `org` visibility, not `just_me`: a review is meant to be seen by the team as soon as it exists. Anchor the review so a later re-review of the same PR adds a version instead of minting a duplicate page: whenever the review is of a real GitHub PR, `prUrl` IS the anchor — its owner/repo/number are parsed straight out of the link (e.g. from `gh pr view <n> --json url`), no Superset-side GitHub integration required — and it is required unless `workspaceId` + `entryPath` are given as the fallback anchor. Passing both is fine and recommended when available.",
 		inputSchema: z
 			.object({
-				githubPullRequestId: optionalish(z.string().uuid()).describe(
-					"The PR this review is for. Preferred anchor — lets re-reviewing the same PR from anywhere add a version to the same page.",
-				),
 				workspaceId: optionalish(pageFields.workspaceId).describe(
 					"The workspace this review ran in, if any. Get it from the SUPERSET_WORKSPACE_ID environment variable, or `superset workspaces list`.",
 				),
 				entryPath: optionalish(pageFields.entryPath).describe(
-					"Where this review lives in the workspace, e.g. `.superset/review.html`. Required alongside workspaceId when githubPullRequestId is not given.",
+					"Where this review lives in the workspace, e.g. `.superset/review.html`. Required alongside workspaceId when prUrl is not a GitHub PR link.",
 				),
 				title: pageFields.title.describe("Review title, e.g. the PR title."),
 				description: optionalish(pageFields.description),
@@ -67,7 +64,9 @@ export function register(server: McpServer): void {
 					"`owner/repo`, used to link each finding's file:line to its GitHub blob.",
 				),
 				prNumber: optionalish(z.number().int().positive()),
-				prUrl: optionalish(z.string().url()),
+				prUrl: optionalish(z.string().url()).describe(
+					"The PR's github.com link, e.g. from `gh pr view <n> --json url`. This is the anchor: re-reviewing the same PR from anywhere adds a version to the same page.",
+				),
 				branch: optionalish(z.string().max(200)),
 				commitSha: optionalish(z.string().max(64)).describe(
 					"Commit the review ran against. Required alongside `repo` to link findings to GitHub.",

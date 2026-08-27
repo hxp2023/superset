@@ -1,5 +1,6 @@
 import { db } from "@superset/db/client";
 import { pages } from "@superset/db/schema";
+import { parseGithubPullRequestUrl } from "@superset/shared/github-pr-url";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
@@ -27,10 +28,11 @@ export const reviewRouter = {
 			const organizationId = await requireActiveOrgMembership(ctx);
 			const userId = ctx.session.user.id;
 
-			const pageId = await findLinkedPageId(
-				organizationId,
-				input.githubPullRequestId,
-			);
+			// The schema's refine guarantees this parses.
+			const pr = parseGithubPullRequestUrl(input.prUrl);
+			if (!pr) return null;
+
+			const pageId = await findLinkedPageId(organizationId, pr);
 			if (!pageId) return null;
 
 			const [page] = await db

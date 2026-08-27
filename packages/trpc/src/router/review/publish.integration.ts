@@ -18,9 +18,6 @@ mock.module("@vercel/blob", () => ({
 
 const { db, dbWs } = await import("@superset/db/client");
 const {
-	githubInstallations,
-	githubPullRequests,
-	githubRepositories,
 	members,
 	organizations,
 	pageVersions,
@@ -28,8 +25,9 @@ const {
 	users,
 	workspacePages,
 } = await import("@superset/db/schema");
-const { eq } = await import("drizzle-orm");
+const { and, eq } = await import("drizzle-orm");
 const { publishReview } = await import("./publish");
+const { publishReviewSchema } = await import("./schema");
 
 const ORG = crypto.randomUUID();
 const OTHER_ORG = crypto.randomUUID();
@@ -48,6 +46,10 @@ const findings = [
 	},
 ];
 
+// Each test gets its own PR number, so anchors never collide across tests.
+const prUrl = (prNumber: number) =>
+	`https://github.com/superset-sh/superset/pull/${prNumber}`;
+
 const publish = (input: Record<string, unknown>) =>
 	publishReview({
 		input: {
@@ -59,38 +61,18 @@ const publish = (input: Record<string, unknown>) =>
 		userId: USER,
 	});
 
-let repositoryId: string;
-let foreignRepositoryId: string;
-
-async function makePullRequestIn(
-	organizationId: string,
-	repoId: string,
-	prNumber: number,
-) {
-	const [pr] = await db
-		.insert(githubPullRequests)
-		.values({
-			repositoryId: repoId,
-			organizationId,
-			prNumber,
-			nodeId: `node-${suffix}-${organizationId}-${prNumber}`,
-			headBranch: "feature",
-			headSha: "abc1234",
-			baseBranch: "main",
-			title: "Add feature",
-			url: `https://github.com/superset-sh/superset/pull/${prNumber}`,
-			authorLogin: "octocat",
-			state: "open",
-		})
-		.returning();
-	if (!pr) throw new Error("failed to insert pull request");
-	return pr;
-}
-
-const makePullRequest = (prNumber: number) =>
-	makePullRequestIn(ORG, repositoryId, prNumber);
-const makeForeignPullRequest = (prNumber: number) =>
-	makePullRequestIn(OTHER_ORG, foreignRepositoryId, prNumber);
+const linksFor = (prNumber: number, organizationId = ORG) =>
+	db
+		.select()
+		.from(reviewPages)
+		.where(
+			and(
+				eq(reviewPages.organizationId, organizationId),
+				eq(reviewPages.repoOwner, "superset-sh"),
+				eq(reviewPages.repoName, "superset"),
+				eq(reviewPages.prNumber, prNumber),
+			),
+		);
 
 beforeAll(async () => {
 	await db.insert(organizations).values([
@@ -131,62 +113,6 @@ beforeAll(async () => {
 			createdAt: new Date(),
 		},
 	]);
-
-	const [installation] = await db
-		.insert(githubInstallations)
-		.values({
-			organizationId: ORG,
-			connectedByUserId: USER,
-			installationId: `install-${suffix}`,
-			accountLogin: "superset-sh",
-			accountType: "Organization",
-		})
-		.returning();
-	if (!installation) throw new Error("failed to insert installation");
-
-	const [repository] = await db
-		.insert(githubRepositories)
-		.values({
-			installationId: installation.id,
-			organizationId: ORG,
-			repoId: `repo-${suffix}`,
-			owner: "superset-sh",
-			name: "superset",
-			fullName: "superset-sh/superset",
-		})
-		.returning();
-	if (!repository) throw new Error("failed to insert repository");
-	repositoryId = repository.id;
-
-	const [foreignInstallation] = await db
-		.insert(githubInstallations)
-		.values({
-			organizationId: OTHER_ORG,
-			connectedByUserId: USER,
-			installationId: `install-foreign-${suffix}`,
-			accountLogin: "other-org",
-			accountType: "Organization",
-		})
-		.returning();
-	if (!foreignInstallation) {
-		throw new Error("failed to insert foreign installation");
-	}
-
-	const [foreignRepository] = await db
-		.insert(githubRepositories)
-		.values({
-			installationId: foreignInstallation.id,
-			organizationId: OTHER_ORG,
-			repoId: `repo-foreign-${suffix}`,
-			owner: "other-org",
-			name: "other-repo",
-			fullName: "other-org/other-repo",
-		})
-		.returning();
-	if (!foreignRepository) {
-		throw new Error("failed to insert foreign repository");
-	}
-	foreignRepositoryId = foreignRepository.id;
 });
 
 afterAll(async () => {
@@ -199,39 +125,31 @@ afterAll(async () => {
 
 describe("publishReview", () => {
 	test("first publish for a PR creates a page at v1 and links it", async () => {
-		const pr = await makePullRequest(1);
-		const result = await publish({ githubPullRequestId: pr.id });
+		const result = await publish({ prUrl: prUrl(1) });
 
 		expect(result.version).toBe(1);
 		expect(result.visibility).toBe("org");
 
-		const [link] = await db
-			.select()
-			.from(reviewPages)
-			.where(eq(reviewPages.githubPullRequestId, pr.id));
-		expect(link?.pageId).toBe(result.id);
+		const links = await linksFor(1);
+		expect(links).toHaveLength(1);
+		expect(links[0]?.pageId).toBe(result.id);
 	});
 
 	test("re-reviewing the same PR adds a version to the same page", async () => {
-		const pr = await makePullRequest(2);
-		const first = await publish({ githubPullRequestId: pr.id });
-		const second = await publish({ githubPullRequestId: pr.id });
+		const first = await publish({ prUrl: prUrl(2) });
+		const second = await publish({ prUrl: prUrl(2) });
 
 		expect(second.id).toBe(first.id);
 		expect(second.version).toBe(2);
 
-		const links = await db
-			.select()
-			.from(reviewPages)
-			.where(eq(reviewPages.githubPullRequestId, pr.id));
+		const links = await linksFor(2);
 		expect(links).toHaveLength(1);
 	});
 
-	test("a standalone review (PR id only) and a later workspace-anchored review of the same PR share one page", async () => {
-		const pr = await makePullRequest(3);
-		const standalone = await publish({ githubPullRequestId: pr.id });
+	test("a standalone review (prUrl only) and a later workspace-anchored review of the same PR share one page", async () => {
+		const standalone = await publish({ prUrl: prUrl(3) });
 		const workspaceRun = await publish({
-			githubPullRequestId: pr.id,
+			prUrl: prUrl(3),
 			workspaceId: WORKSPACE,
 			entryPath: ".superset/review.html",
 		});
@@ -241,14 +159,39 @@ describe("publishReview", () => {
 	});
 
 	test("different PRs get different pages", async () => {
-		const prA = await makePullRequest(4);
-		const prB = await makePullRequest(5);
-		const a = await publish({ githubPullRequestId: prA.id });
-		const b = await publish({ githubPullRequestId: prB.id });
+		const a = await publish({ prUrl: prUrl(4) });
+		const b = await publish({ prUrl: prUrl(5) });
 		expect(a.id).not.toBe(b.id);
 	});
 
-	test("workspace-anchored review with no PR id behaves like a plain page: same entryPath versions, no reviewPages row", async () => {
+	test("URL casing of owner/repo doesn't fork the anchor", async () => {
+		const first = await publish({
+			prUrl: `https://github.com/Superset-SH/Superset/pull/6`,
+		});
+		const second = await publish({ prUrl: prUrl(6) });
+
+		expect(second.id).toBe(first.id);
+		expect(second.version).toBe(2);
+
+		const links = await linksFor(6);
+		expect(links).toHaveLength(1);
+	});
+
+	test("the same PR reviewed in two different orgs gets two independent pages", async () => {
+		const mine = await publish({ prUrl: prUrl(7) });
+		const theirs = await publishReview({
+			input: { title: "Test Review", findings, prUrl: prUrl(7) } as never,
+			organizationId: OTHER_ORG,
+			userId: USER,
+		});
+
+		expect(theirs.id).not.toBe(mine.id);
+		expect(theirs.version).toBe(1);
+		expect(await linksFor(7)).toHaveLength(1);
+		expect(await linksFor(7, OTHER_ORG)).toHaveLength(1);
+	});
+
+	test("workspace-anchored review with no PR link behaves like a plain page: same entryPath versions, no reviewPages row", async () => {
 		const first = await publish({
 			workspaceId: WORKSPACE,
 			entryPath: "no-pr/review.html",
@@ -268,10 +211,24 @@ describe("publishReview", () => {
 		expect(links).toHaveLength(1);
 	});
 
-	test("the rendered HTML embeds the findings", async () => {
-		const pr = await makePullRequest(6);
+	test("a non-GitHub prUrl stays display-only: the workspace anchors, no reviewPages row", async () => {
 		const result = await publish({
-			githubPullRequestId: pr.id,
+			prUrl: "https://gitlab.com/acme/widgets/-/merge_requests/9",
+			workspaceId: WORKSPACE,
+			entryPath: "gitlab/review.html",
+		});
+
+		expect(result.version).toBe(1);
+		const links = await db
+			.select()
+			.from(reviewPages)
+			.where(eq(reviewPages.pageId, result.id));
+		expect(links).toHaveLength(0);
+	});
+
+	test("the rendered HTML embeds the findings", async () => {
+		const result = await publish({
+			prUrl: prUrl(8),
 			title: "Renders findings",
 		});
 		const [row] = await db
@@ -283,29 +240,48 @@ describe("publishReview", () => {
 	});
 });
 
+describe("schema validation", () => {
+	const base = { title: "Test Review", findings };
+
+	test("a malformed prUrl with no workspace fallback is rejected", async () => {
+		const result = publishReviewSchema.safeParse({
+			...base,
+			prUrl: "https://github.com/superset-sh/superset",
+		});
+		expect(result.success).toBe(false);
+	});
+
+	test("a non-GitHub prUrl alone is not an anchor", async () => {
+		const result = publishReviewSchema.safeParse({
+			...base,
+			prUrl: "https://gitlab.com/acme/widgets/-/merge_requests/9",
+		});
+		expect(result.success).toBe(false);
+	});
+
+	test("no anchor at all is rejected", async () => {
+		const result = publishReviewSchema.safeParse(base);
+		expect(result.success).toBe(false);
+	});
+
+	test("a GitHub PR link alone is a complete anchor", async () => {
+		const result = publishReviewSchema.safeParse({
+			...base,
+			prUrl: prUrl(1),
+		});
+		expect(result.success).toBe(true);
+	});
+});
+
 describe("access control and visibility", () => {
-	test("rejects a githubPullRequestId that doesn't exist", async () => {
-		await expect(
-			publish({ githubPullRequestId: crypto.randomUUID() }),
-		).rejects.toThrow(/not found/i);
-	});
-
-	test("rejects a githubPullRequestId that belongs to a different org", async () => {
-		const foreignPr = await makeForeignPullRequest(1);
-		await expect(
-			publish({ githubPullRequestId: foreignPr.id }),
-		).rejects.toThrow(/not found/i);
-	});
-
 	test("a teammate can add a version to a review someone else published", async () => {
-		const pr = await makePullRequest(20);
-		const first = await publish({ githubPullRequestId: pr.id });
+		const first = await publish({ prUrl: prUrl(20) });
 
 		const second = await publishReview({
 			input: {
 				title: "Test Review",
 				findings,
-				githubPullRequestId: pr.id,
+				prUrl: prUrl(20),
 			} as never,
 			organizationId: ORG,
 			userId: OTHER_USER,
@@ -316,45 +292,36 @@ describe("access control and visibility", () => {
 	});
 
 	test("republishing without visibility leaves a manually-tightened just_me alone", async () => {
-		const pr = await makePullRequest(21);
 		const first = await publish({
-			githubPullRequestId: pr.id,
+			prUrl: prUrl(21),
 			visibility: "just_me",
 		});
 		expect(first.visibility).toBe("just_me");
 
-		const second = await publish({ githubPullRequestId: pr.id });
+		const second = await publish({ prUrl: prUrl(21) });
 		expect(second.visibility).toBe("just_me");
 	});
 
 	test("reviewing two different PRs from the same workspace/entryPath does not collide", async () => {
-		const prA = await makePullRequest(22);
-		const prB = await makePullRequest(23);
 		const sharedEntryPath = ".superset/review.html";
 
 		const a = await publish({
-			githubPullRequestId: prA.id,
+			prUrl: prUrl(22),
 			workspaceId: WORKSPACE,
 			entryPath: sharedEntryPath,
 		});
 		const b = await publish({
-			githubPullRequestId: prB.id,
+			prUrl: prUrl(23),
 			workspaceId: WORKSPACE,
 			entryPath: sharedEntryPath,
 		});
 
 		expect(a.id).not.toBe(b.id);
 
-		const [linkA] = await db
-			.select()
-			.from(reviewPages)
-			.where(eq(reviewPages.githubPullRequestId, prA.id));
-		expect(linkA?.pageId).toBe(a.id);
+		const linksA = await linksFor(22);
+		expect(linksA[0]?.pageId).toBe(a.id);
 
-		const [linkB] = await db
-			.select()
-			.from(reviewPages)
-			.where(eq(reviewPages.githubPullRequestId, prB.id));
-		expect(linkB?.pageId).toBe(b.id);
+		const linksB = await linksFor(23);
+		expect(linksB[0]?.pageId).toBe(b.id);
 	});
 });

@@ -38,7 +38,7 @@ import {
 	v2WorkspaceTypeValues,
 	workspaceTypeValues,
 } from "./enums";
-import { githubPullRequests, githubRepositories } from "./github";
+import { githubRepositories } from "./github";
 import type {
 	AutomationEventDispatchInput,
 	IntegrationConfig,
@@ -1310,6 +1310,12 @@ export type SelectWorkspacePage = typeof workspacePages.$inferSelect;
  * workspace (e.g. a standalone cloud review of `owner/repo#123`). Workspace-
  * anchored reviews don't need this — they key off `workspacePages` like any
  * other page — this is the fallback lookup for the ones that can't.
+ *
+ * The PR identity is parsed out of its github.com URL, not a FK into
+ * `github_pull_requests` — that table only has rows for repos with the GitHub
+ * App installed and synced, and the realistic publisher (a `gh`-CLI-driven
+ * review skill) only ever knows the URL. `repoOwner`/`repoName` are stored
+ * lowercased (GitHub treats both case-insensitively).
  */
 export const reviewPages = pgTable(
 	"review_pages",
@@ -1318,9 +1324,9 @@ export const reviewPages = pgTable(
 		organizationId: uuid("organization_id")
 			.notNull()
 			.references(() => organizations.id, { onDelete: "cascade" }),
-		githubPullRequestId: uuid("github_pull_request_id")
-			.notNull()
-			.references(() => githubPullRequests.id, { onDelete: "cascade" }),
+		repoOwner: text("repo_owner").notNull(),
+		repoName: text("repo_name").notNull(),
+		prNumber: integer("pr_number").notNull(),
 		pageId: uuid("page_id")
 			.notNull()
 			.references(() => pages.id, { onDelete: "cascade" }),
@@ -1329,9 +1335,11 @@ export const reviewPages = pgTable(
 			.defaultNow(),
 	},
 	(table) => [
-		uniqueIndex("review_pages_organization_id_pr_id_unique").on(
+		uniqueIndex("review_pages_org_repo_pr_unique").on(
 			table.organizationId,
-			table.githubPullRequestId,
+			table.repoOwner,
+			table.repoName,
+			table.prNumber,
 		),
 		index("review_pages_page_id_idx").on(table.pageId),
 	],

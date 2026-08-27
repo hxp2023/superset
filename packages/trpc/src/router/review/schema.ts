@@ -1,3 +1,4 @@
+import { parseGithubPullRequestUrl } from "@superset/shared/github-pr-url";
 import { z } from "zod";
 import {
 	hasCompleteWorkspaceLink,
@@ -32,7 +33,6 @@ export const reviewFindingSchema = z.object({
 });
 
 const publishReviewFieldsSchema = z.object({
-	githubPullRequestId: z.string().uuid().optional(),
 	workspaceId: pageFields.workspaceId.optional(),
 	entryPath: pageFields.entryPath.optional(),
 	title: pageFields.title,
@@ -49,22 +49,26 @@ const publishReviewFieldsSchema = z.object({
 });
 
 /**
- * A review publish must name either the PR it belongs to or the workspace/path
- * it was published from — without one of those, nothing can find this review
- * again to add a version rather than mint a duplicate page.
+ * A review publish must name either the PR it belongs to (a parseable
+ * github.com pull request URL — the PR's identity is derived from the link,
+ * not from any DB row) or the workspace/path it was published from — without
+ * one of those, nothing can find this review again to add a version rather
+ * than mint a duplicate page. Rejecting an unparseable prUrl here, when there
+ * is no workspace fallback, turns a confusing later miss into a fast, clear
+ * validation error.
  */
 export const hasReviewAnchor = (value: {
-	githubPullRequestId?: string | undefined;
+	prUrl?: string | undefined;
 	workspaceId?: string | undefined;
 	entryPath?: string | undefined;
 }) =>
-	Boolean(value.githubPullRequestId) ||
+	(value.prUrl != null && parseGithubPullRequestUrl(value.prUrl) !== null) ||
 	Boolean(value.workspaceId && value.entryPath);
 
 export const REVIEW_ANCHOR_MESSAGE = {
 	message:
-		"A review publish must name where it belongs: pass githubPullRequestId, or workspaceId and entryPath",
-	path: ["githubPullRequestId"],
+		"A review publish must name where it belongs: pass prUrl (a github.com pull request link), or workspaceId and entryPath",
+	path: ["prUrl"],
 };
 
 export const publishReviewSchema = publishReviewFieldsSchema
@@ -74,5 +78,10 @@ export const publishReviewSchema = publishReviewFieldsSchema
 export type PublishReviewInput = z.infer<typeof publishReviewSchema>;
 
 export const getReviewForPullRequestSchema = z.object({
-	githubPullRequestId: z.string().uuid(),
+	prUrl: z
+		.string()
+		.url()
+		.refine((url) => parseGithubPullRequestUrl(url) !== null, {
+			message: "prUrl must be a github.com pull request link",
+		}),
 });

@@ -1,54 +1,29 @@
 import { db } from "@superset/db/client";
-import {
-	githubPullRequests,
-	pages,
-	pageVersions,
-	reviewPages,
-} from "@superset/db/schema";
+import { pages, pageVersions, reviewPages } from "@superset/db/schema";
+import type { ParsedGithubPullRequestUrl } from "@superset/shared/github-pr-url";
 import { TRPCError } from "@trpc/server";
 import { del } from "@vercel/blob";
 import { and, eq } from "drizzle-orm";
 
-/**
- * The `github_pull_requests` FK only requires the row to exist, not that it
- * belongs to the caller's org — without this check, an org could link a
- * review page to a PR row that actually belongs to a different org.
- */
-export async function assertPullRequestInOrg(
-	organizationId: string,
-	githubPullRequestId: string,
-): Promise<void> {
-	const [row] = await db
-		.select({ id: githubPullRequests.id })
-		.from(githubPullRequests)
-		.where(
-			and(
-				eq(githubPullRequests.id, githubPullRequestId),
-				eq(githubPullRequests.organizationId, organizationId),
-			),
-		)
-		.limit(1);
-	if (!row) {
-		throw new TRPCError({
-			code: "NOT_FOUND",
-			message: "Pull request not found",
-		});
-	}
-}
+// `parseGithubPullRequestUrl` already lowercases owner/repo, so the triple is
+// safe to compare and store as-is — the org boundary is the organizationId
+// column itself, no cross-org ownership check needed.
+const anchorFilter = (organizationId: string, pr: ParsedGithubPullRequestUrl) =>
+	and(
+		eq(reviewPages.organizationId, organizationId),
+		eq(reviewPages.repoOwner, pr.owner),
+		eq(reviewPages.repoName, pr.repo),
+		eq(reviewPages.prNumber, pr.number),
+	);
 
 export async function findLinkedPageId(
 	organizationId: string,
-	githubPullRequestId: string,
+	pr: ParsedGithubPullRequestUrl,
 ): Promise<string | null> {
 	const [row] = await db
 		.select({ pageId: reviewPages.pageId })
 		.from(reviewPages)
-		.where(
-			and(
-				eq(reviewPages.organizationId, organizationId),
-				eq(reviewPages.githubPullRequestId, githubPullRequestId),
-			),
-		)
+		.where(anchorFilter(organizationId, pr))
 		.limit(1);
 	return row?.pageId ?? null;
 }
@@ -85,23 +60,34 @@ async function deleteOrphanedPage(pageId: string): Promise<void> {
 // just the race between that read and this write.
 export async function linkReviewPage({
 	organizationId,
-	githubPullRequestId,
+	pr,
 	pageId,
 }: {
 	organizationId: string;
-	githubPullRequestId: string;
+	pr: ParsedGithubPullRequestUrl;
 	pageId: string;
 }): Promise<void> {
 	const [inserted] = await db
 		.insert(reviewPages)
-		.values({ organizationId, githubPullRequestId, pageId })
+		.values({
+			organizationId,
+			repoOwner: pr.owner,
+			repoName: pr.repo,
+			prNumber: pr.number,
+			pageId,
+		})
 		.onConflictDoNothing({
-			target: [reviewPages.organizationId, reviewPages.githubPullRequestId],
+			target: [
+				reviewPages.organizationId,
+				reviewPages.repoOwner,
+				reviewPages.repoName,
+				reviewPages.prNumber,
+			],
 		})
 		.returning();
 	if (inserted) return;
 
-	const existing = await findLinkedPageId(organizationId, githubPullRequestId);
+	const existing = await findLinkedPageId(organizationId, pr);
 	if (existing !== pageId) {
 		await deleteOrphanedPage(pageId);
 		throw new TRPCError({

@@ -407,10 +407,6 @@ export const reviewPagesRelations = relations(reviewPages, ({ one }) => ({
 		fields: [reviewPages.organizationId],
 		references: [organizations.id],
 	}),
-	pullRequest: one(githubPullRequests, {
-		fields: [reviewPages.githubPullRequestId],
-		references: [githubPullRequests.id],
-	}),
 	page: one(pages, {
 		fields: [reviewPages.pageId],
 		references: [pages.id],
