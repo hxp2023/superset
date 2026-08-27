@@ -390,7 +390,10 @@ function maybeCleanupConnection(hostUrl: string): void {
 	if (
 		state.refCount > 0 ||
 		state.listeners.size > 0 ||
-		state.statusListeners.size > 0
+		state.statusListeners.size > 0 ||
+		state.fsWatchedWorkspaces.size > 0 ||
+		state.fsWatchedFiles.size > 0 ||
+		state.gitWatchedWorkspaces.size > 0
 	) {
 		return;
 	}
