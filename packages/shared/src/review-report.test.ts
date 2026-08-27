@@ -150,6 +150,53 @@ describe("renderReviewReportHtml", () => {
 		expect(html).toContain("<span aria-hidden>·</span>");
 	});
 
+	it("renders the PR state badge and author, undotted, before the dotted meta items", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			prNumber: 42,
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+			prState: "merged",
+			authorLogin: "octocat",
+			authorAvatarUrl: "https://example.com/a.png",
+		});
+		expect(html).toContain('<span class="state-badge state-merged">');
+		expect(html).toContain(
+			'<img class="author-avatar" src="https://example.com/a.png" alt="">',
+		);
+		expect(html).toContain("octocat");
+		// No dot between badge and author; a dot before the PR number.
+		const badge = html.indexOf("state-badge");
+		const author = html.indexOf('class="author"');
+		const firstDot = html.indexOf("<span aria-hidden>·</span>");
+		expect(badge).toBeGreaterThan(-1);
+		expect(author).toBeGreaterThan(badge);
+		expect(firstDot).toBeGreaterThan(author);
+	});
+
+	it("falls back to an initial-letter avatar when the author has no avatar URL", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+			authorLogin: "reviewer",
+		});
+		expect(html).toContain(
+			'<span class="author-avatar author-avatar-fallback">R</span>',
+		);
+	});
+
+	it("shows a relative age instead of the generated date when createdAt is given", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+			createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+		});
+		expect(html).toContain("2h ago");
+		expect(html).not.toContain("generated ");
+	});
+
 	it("renders a Code tab with added/removed/context lines and per-file stats", () => {
 		const diff = [
 			"diff --git a/src/foo.ts b/src/foo.ts",
@@ -326,6 +373,18 @@ describe("renderReviewReportHtml", () => {
 		);
 		expect(html).toContain("<li>fast</li>");
 		expect(html).toContain("<li>simple</li>");
+	});
+
+	it("shows a No-description placeholder for a body-less PR instead of the findings empty state", () => {
+		const html = renderReviewReportHtml({
+			title: "Add caching layer",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "",
+		});
+		expect(html).not.toContain("No findings");
+		expect(html).toContain(
+			'<p class="no-description">No description provided.</p>',
+		);
 	});
 
 	it("omits the findings pill for a plain PR description view", () => {

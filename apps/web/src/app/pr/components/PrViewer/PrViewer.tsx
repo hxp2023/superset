@@ -49,7 +49,14 @@ export function PrViewer() {
 			prUrl: pr.htmlUrl,
 			branch: pr.headBranch,
 			generatedAt: pr.updatedAt,
-			description: pr.description ?? undefined,
+			// Same precedence as the app's normalizePRState: draft wins.
+			prState: pr.isDraft ? "draft" : pr.merged ? "merged" : pr.state,
+			authorLogin: pr.authorLogin,
+			authorAvatarUrl: pr.authorAvatarUrl,
+			createdAt: pr.createdAt,
+			// "" (not undefined) so a body-less PR still renders as a plain PR
+			// view — "No description provided." — never the findings empty state.
+			description: pr.description ?? "",
 			diff: pr.diff,
 			comments: pr.comments.map((comment) => ({
 				authorLogin: comment.authorLogin,

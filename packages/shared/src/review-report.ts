@@ -30,14 +30,25 @@ export interface ReviewReportInput {
 	/** Raw unified diff text, e.g. the output of `gh pr diff <n>`. */
 	diff?: string;
 	/**
-	 * A PR's own markdown description. Rendered in the Summary tab only when
-	 * there are no findings — a plain PR view (no AI review ever ran) has no
-	 * findings to show, and the findings summary pill would misleadingly imply
-	 * a review ran and found nothing.
+	 * A PR's own markdown description. When set (even to ""), and there are no
+	 * findings, the Summary tab renders as a plain PR view — a description (or
+	 * a "No description provided." placeholder) instead of the findings empty
+	 * state, whose "no findings" copy would misleadingly imply a review ran.
+	 * Undefined means this is a review report, not a PR view.
 	 */
 	description?: string;
 	/** The PR's conversation comments, oldest first. Only shown alongside `description`. */
 	comments?: ReviewReportComment[];
+	/** Normalized PR state for the header badge, matching the real header's precedence (draft wins over merged/closed). */
+	prState?: "open" | "closed" | "merged" | "draft";
+	authorLogin?: string;
+	authorAvatarUrl?: string | null;
+	/**
+	 * When set, the meta row shows a relative age ("2h ago") like the real PR
+	 * header instead of the generated date — truthful here (unlike the static
+	 * share pages) because the /pr viewer renders this HTML at view time.
+	 */
+	createdAt?: string | Date;
 }
 
 interface DiffSegment {
@@ -309,6 +320,13 @@ const ICON_PATHS = {
 	chevronRight: '<path d="m9 18 6-6-6-6"/>',
 	gitBranch:
 		'<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+	// The three PR-state marks the real header's PRIcon renders (Lucide
+	// git-pull-request-arrow / git-merge / circle-dot).
+	gitPullRequest:
+		'<circle cx="5" cy="6" r="3"/><path d="M5 9v12"/><circle cx="19" cy="18" r="3"/><path d="m15 9-3-3 3-3"/><path d="M12 6h5a2 2 0 0 1 2 2v7"/>',
+	gitMerge:
+		'<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>',
+	circleDot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
 } as const;
 
 // FaGithub from react-icons — the same mark the real PR header's
@@ -537,8 +555,58 @@ function formatGeneratedAt(value: string | Date): string | null {
 	return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
 }
 
+// Mirrors the desktop's formatRelativeTime scale exactly ("now", Ns, Nm, Nh,
+// Nd, Nmo) with the header's own " ago" suffix rule.
+function formatRelativeAge(value: string | Date): string | null {
+	const timestamp = new Date(value).getTime();
+	if (Number.isNaN(timestamp)) return null;
+	const diffMs = Math.max(0, Date.now() - timestamp);
+	const seconds = Math.floor(diffMs / 1000);
+	const minutes = Math.floor(diffMs / 60000);
+	const hours = Math.floor(minutes / 60);
+	const days = Math.floor(hours / 24);
+	const months = Math.floor(days / 30);
+	if (seconds < 5) return "now";
+	if (minutes < 1) return `${seconds}s ago`;
+	if (minutes < 60) return `${minutes}m ago`;
+	if (hours < 24) return `${hours}h ago`;
+	if (days < 30) return `${days}d ago`;
+	return `${months}mo ago`;
+}
+
+const PR_STATE_ICONS: Record<
+	NonNullable<ReviewReportInput["prState"]>,
+	keyof typeof ICON_PATHS
+> = {
+	open: "gitPullRequest",
+	draft: "gitPullRequest",
+	merged: "gitMerge",
+	closed: "circleDot",
+};
+
+function renderStateBadge(
+	state: NonNullable<ReviewReportInput["prState"]>,
+): string {
+	return `<span class="state-badge state-${state}">${icon(PR_STATE_ICONS[state], "")}${state}</span>`;
+}
+
+function renderAuthor(review: ReviewReportInput): string {
+	const login = escapeHtml(review.authorLogin ?? "");
+	const avatar = review.authorAvatarUrl
+		? `<img class="author-avatar" src="${escapeHtml(review.authorAvatarUrl)}" alt="">`
+		: `<span class="author-avatar author-avatar-fallback">${login.slice(0, 1).toUpperCase()}</span>`;
+	return `<span class="author">${avatar}${login}</span>`;
+}
+
 function renderMetaItems(review: ReviewReportInput): string[] {
 	const items: string[] = [];
+	// The state badge and author sit side by side with no separator dot
+	// between them, exactly like the real header; dots resume from the PR
+	// number on.
+	const leading: string[] = [];
+	if (review.prState) leading.push(renderStateBadge(review.prState));
+	if (review.authorLogin) leading.push(renderAuthor(review));
+	if (leading.length > 0) items.push(leading.join("\n\t\t"));
 	if (review.prNumber) {
 		items.push(`<span class="meta-num mono">#${review.prNumber}</span>`);
 	}
@@ -560,9 +628,14 @@ function renderMetaItems(review: ReviewReportInput): string[] {
 			`<span class="meta-plain">${escapeHtml(review.effortLevel)} review</span>`,
 		);
 	}
-	const generated = formatGeneratedAt(review.generatedAt);
-	if (generated) {
-		items.push(`<span class="meta-plain">generated ${generated}</span>`);
+	const age = review.createdAt ? formatRelativeAge(review.createdAt) : null;
+	if (age) {
+		items.push(`<span class="meta-plain">${age}</span>`);
+	} else {
+		const generated = formatGeneratedAt(review.generatedAt);
+		if (generated) {
+			items.push(`<span class="meta-plain">generated ${generated}</span>`);
+		}
 	}
 	return items;
 }
@@ -919,10 +992,14 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 	// A plain PR view (no AI review ever ran) has no findings to show — a
 	// description renders instead of the "no findings" empty state, and the
 	// findings pill is dropped rather than implying a review ran clean.
-	const isPlainPrView = findings.length === 0 && Boolean(review.description);
+	const isPlainPrView =
+		findings.length === 0 && review.description !== undefined;
 
+	const descriptionHtml = review.description?.trim()
+		? `<div class="markdown">${renderMarkdown(review.description)}</div>`
+		: `<p class="no-description">No description provided.</p>`;
 	const body = isPlainPrView
-		? `<div class="markdown">${renderMarkdown(review.description ?? "")}</div>${renderComments(review.comments ?? [])}`
+		? `${descriptionHtml}${renderComments(review.comments ?? [])}`
 		: groups.length === 0
 			? `<div class="section-body"><div class="empty-row">${icon("check", "")}No findings — this review didn't flag anything.</div></div>`
 			: groups
@@ -982,6 +1059,11 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 	--tone-clear-bg: #dcfae8;
 	--tone-clear-fg: #00a558;
 	--icon-clear-fg: oklch(59.6% 0.145 163.225);
+	/* Merged-PR badge (Tailwind violet-100/violet-600, dark values hand-tuned
+	   in the app's STATE_BADGE_STYLES); open reuses tone-clear, closed reuses
+	   tone-confirmed — same pairs the real badge uses. */
+	--state-merged-bg: oklch(94.3% 0.029 294.588);
+	--state-merged-fg: oklch(54.1% 0.281 293.009);
 	/* Diff line colors match the app's own file-diff-tool.tsx (Tailwind v4
 	   green/red oklch tokens): border/bg stay fixed, only the text color
 	   shifts between light and dark. */
@@ -1017,6 +1099,8 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 		--tone-clear-bg: #064e3b;
 		--tone-clear-fg: #34d399;
 		--icon-clear-fg: #34d399;
+		--state-merged-bg: #322b47;
+		--state-merged-fg: #b0a6d9;
 		--diff-add-fg: oklch(79.2% 0.209 151.711);
 		--diff-remove-fg: oklch(70.4% 0.191 22.216);
 	}
@@ -1130,6 +1214,32 @@ h1 {
 .pill-plausible { background: var(--tone-plausible-bg); color: var(--tone-plausible-fg); }
 .pill-unverified { background: var(--muted); color: var(--muted-foreground); }
 .pill-clear { background: var(--tone-clear-bg); color: var(--tone-clear-fg); }
+/* PR state pill: rounded-full px-2 py-1 font-medium capitalize + a size-3
+   icon, exactly like the real header's badge. */
+.state-badge {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 0.25rem;
+	border-radius: 9999px;
+	padding: 0.25rem 0.5rem;
+	font-weight: 500;
+	text-transform: capitalize;
+}
+.state-badge .icon { width: 12px; height: 12px; }
+.state-open { background: var(--tone-clear-bg); color: var(--tone-clear-fg); }
+.state-closed { background: var(--tone-confirmed-bg); color: var(--tone-confirmed-fg); }
+.state-merged { background: var(--state-merged-bg); color: var(--state-merged-fg); }
+.state-draft { background: var(--muted); color: var(--muted-foreground); }
+.author { display: flex; flex-shrink: 0; align-items: center; gap: 0.375rem; }
+.author-avatar { width: 20px; height: 20px; border-radius: 9999px; flex-shrink: 0; }
+.author-avatar-fallback {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: color-mix(in oklab, var(--muted) 60%, transparent);
+	font-size: 9px;
+}
 .meta-num { flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .meta-mono, .meta-plain { flex-shrink: 0; }
 .branch { display: flex; min-width: 0; flex-shrink: 1; align-items: center; gap: 0.25rem; }
@@ -1344,6 +1454,8 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 .markdown table { border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
 .markdown th, .markdown td { border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); padding: 0.375rem 0.625rem; text-align: left; }
 .markdown th { background: color-mix(in oklab, var(--muted) 35%, transparent); font-weight: 600; }
+/* Same copy and styling as the real Summary tab's empty description. */
+.no-description { margin: 0; font-size: 0.875rem; font-style: italic; color: var(--muted-foreground); }
 .comments { margin-top: 2rem; }
 .comments-heading { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; margin: 0 0 0.75rem; }
 .comments-count { color: var(--muted-foreground); font-weight: 400; }
