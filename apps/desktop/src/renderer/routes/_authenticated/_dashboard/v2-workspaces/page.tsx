@@ -149,27 +149,40 @@ function V2WorkspacesPage() {
 		});
 	}
 
+	// Debounced: each navigate() re-renders every router-state subscriber
+	// app-wide (the dashboard sidebar most expensively), so syncing per
+	// keystroke made typing in the search box wait on full sidebar renders.
+	// The URL is only a deep-link mirror — one trailing update suffices.
 	useEffect(() => {
-		const syncUrl = navigate({
-			search: {
-				q: searchQuery || undefined,
-				device:
-					deviceFilter !== DEVICE_FILTER_THIS_DEVICE ? deviceFilter : undefined,
-				projects: projectFilters.length ? projectFilters.join(",") : undefined,
-				pr: prStateFilters.length ? prStateFilters.join(",") : undefined,
-				agent: agentStatusFilters.length
-					? agentStatusFilters.join(",")
-					: undefined,
-				creators: creatorFilters.length ? creatorFilters.join(",") : undefined,
-				pin: pinFilter !== "all" ? pinFilter : undefined,
-				view: viewMode !== "board" ? viewMode : undefined,
-				archived: archivedWindow !== "none" ? archivedWindow : undefined,
-			},
-			replace: true,
-		});
-		void Promise.resolve(syncUrl).catch((error) => {
-			console.error("[v2-workspaces] filter URL sync failed", error);
-		});
+		const timeout = setTimeout(() => {
+			const syncUrl = navigate({
+				search: {
+					q: searchQuery || undefined,
+					device:
+						deviceFilter !== DEVICE_FILTER_THIS_DEVICE
+							? deviceFilter
+							: undefined,
+					projects: projectFilters.length
+						? projectFilters.join(",")
+						: undefined,
+					pr: prStateFilters.length ? prStateFilters.join(",") : undefined,
+					agent: agentStatusFilters.length
+						? agentStatusFilters.join(",")
+						: undefined,
+					creators: creatorFilters.length
+						? creatorFilters.join(",")
+						: undefined,
+					pin: pinFilter !== "all" ? pinFilter : undefined,
+					view: viewMode !== "board" ? viewMode : undefined,
+					archived: archivedWindow !== "none" ? archivedWindow : undefined,
+				},
+				replace: true,
+			});
+			void Promise.resolve(syncUrl).catch((error) => {
+				console.error("[v2-workspaces] filter URL sync failed", error);
+			});
+		}, 300);
+		return () => clearTimeout(timeout);
 	}, [
 		navigate,
 		searchQuery,
@@ -183,6 +196,11 @@ function V2WorkspacesPage() {
 		archivedWindow,
 	]);
 
+	// Deferred so per-keystroke filtering leaves the input's critical path:
+	// the sync render reuses the previous results and the recompute follows
+	// at background priority.
+	const deferredSearchQuery = useDeferredValue(searchQuery);
+
 	const {
 		all,
 		isReady,
@@ -192,7 +210,7 @@ function V2WorkspacesPage() {
 		hostsById,
 		projectsById,
 	} = useAccessibleV2Workspaces({
-		searchQuery,
+		searchQuery: deferredSearchQuery,
 		deviceFilter,
 		projectFilters,
 		prStateFilters,
