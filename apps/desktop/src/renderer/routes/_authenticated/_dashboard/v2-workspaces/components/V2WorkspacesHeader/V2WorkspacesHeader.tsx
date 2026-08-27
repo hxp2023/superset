@@ -350,7 +350,7 @@ export function V2WorkspacesHeader({
 								) : (
 									<LuFolder className="size-3.5" />
 								)}
-								<span className="max-w-[12rem] truncate">
+								<span className="max-w-[12rem] truncate @max-2xl:max-w-20">
 									{projectFilterLabel}
 								</span>
 								<LuChevronDown className="size-3 opacity-60" />
@@ -404,7 +404,8 @@ export function V2WorkspacesHeader({
 								)}
 							>
 								<LuListFilter className="size-3.5" />
-								Filter
+								{/* Narrow containers keep icon + count; the word goes. */}
+								<span className="@max-2xl:hidden">Filter</span>
 								{activeFilterCount > 0 ? (
 									<span className="flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-accent-foreground">
 										{activeFilterCount}
@@ -585,7 +586,7 @@ export function V2WorkspacesHeader({
 								className="h-8 gap-1.5 px-2 font-normal text-muted-foreground"
 							>
 								<LuArrowDownUp className="size-3.5" />
-								Display
+								<span className="@max-2xl:hidden">Display</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="min-w-[12rem]">
@@ -668,7 +669,7 @@ export function V2WorkspacesHeader({
 							onClick={() => setViewMode("list")}
 						>
 							<LuList className="size-3.5" />
-							List
+							<span className="@max-2xl:hidden">List</span>
 						</button>
 						<button
 							type="button"
@@ -682,7 +683,7 @@ export function V2WorkspacesHeader({
 							onClick={() => setViewMode("board")}
 						>
 							<LuSquareKanban className="size-3.5" />
-							Board
+							<span className="@max-2xl:hidden">Board</span>
 						</button>
 					</fieldset>
 				</div>

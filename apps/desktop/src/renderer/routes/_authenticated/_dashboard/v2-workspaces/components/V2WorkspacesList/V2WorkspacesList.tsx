@@ -169,7 +169,8 @@ export function V2WorkspacesList({
 	}
 
 	return (
-		<div className="min-h-0 flex-1 overflow-y-auto">
+		// @container so rows can shed metadata as the pane narrows.
+		<div className="@container min-h-0 flex-1 overflow-y-auto">
 			{sections.map((section) => (
 				<StatusSectionGroup
 					key={section.column}

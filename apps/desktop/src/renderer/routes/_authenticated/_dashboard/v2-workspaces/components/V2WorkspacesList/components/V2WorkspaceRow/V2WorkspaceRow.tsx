@@ -163,7 +163,7 @@ export const V2WorkspaceRow = memo(function V2WorkspaceRow({
 					(workspace.diffStats.additions > 0 ||
 						workspace.diffStats.deletions > 0) ? (
 						<span
-							className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] tabular-nums leading-none"
+							className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] tabular-nums leading-none @max-lg:hidden"
 							title={`${workspace.diffStats.fileCount} changed ${workspace.diffStats.fileCount === 1 ? "file" : "files"}`}
 						>
 							<span className="text-emerald-600/80 dark:text-emerald-400/70">
@@ -183,7 +183,10 @@ export const V2WorkspaceRow = memo(function V2WorkspaceRow({
 						title={workspace.hostName}
 					>
 						<DeviceIcon className="size-3 shrink-0" />
-						<span className="min-w-0 truncate">{workspace.hostName}</span>
+						{/* Narrow panes keep the glyph (name stays in the title). */}
+						<span className="min-w-0 truncate @max-2xl:hidden">
+							{workspace.hostName}
+						</span>
 						{isDeviceOffline ? (
 							<span
 								aria-hidden
