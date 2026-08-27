@@ -29,6 +29,7 @@ export interface HostWorkspaceRow extends HostShapedWorkspace {
 	worktreeExists: boolean;
 	/** True when the workspace's terminals run inside a sandbox container. */
 	sandboxed?: boolean;
+	sandboxStatus?: "provisioning" | "ready" | "error";
 	/** Non-null = archived tombstone (only served on `includeArchived`). */
 	archivedAt?: number | null;
 	archiveReason?: "merged" | "deleted" | null;
@@ -40,6 +41,7 @@ export interface HostWorkspaceItem extends HostShapedWorkspace {
 	worktreeExists?: boolean;
 	/** True when the workspace's terminals run inside a sandbox container. */
 	sandboxed?: boolean;
+	sandboxStatus?: "provisioning" | "ready" | "error";
 	/** False when the host didn't answer. */
 	hostReachable: boolean;
 	/** Non-null = archived tombstone (only present on `includeArchived`). */
@@ -237,6 +239,7 @@ export function applyWorkspaceChangedEvent(
 		updatedAt: new Date(snapshot.updatedAt),
 		worktreePath: snapshot.worktreePath,
 		sandboxed: snapshot.sandboxed,
+		sandboxStatus: snapshot.sandboxStatus,
 		// A host broadcasting created/updated just acted on the worktree;
 		// keep a known value over assuming.
 		worktreeExists: existing?.worktreeExists ?? true,

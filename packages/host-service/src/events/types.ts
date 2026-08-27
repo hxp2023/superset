@@ -72,6 +72,12 @@ export interface WorkspaceSnapshot {
 	updatedAt: number;
 	/** True when the workspace's terminals run inside a sandbox container. */
 	sandboxed: boolean;
+	/**
+	 * Container-provision progress for sandboxed workspaces, driven by the
+	 * eager bootstrap at create. Undefined when not sandboxed or when the
+	 * state is unknown (e.g. after a host-service restart).
+	 */
+	sandboxStatus?: "provisioning" | "ready" | "error";
 }
 
 export interface WorkspaceChangedMessage {

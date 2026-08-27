@@ -125,7 +125,17 @@ export interface ResolvedSandboxSettings {
 	cloneDepth?: number;
 }
 
-export const DEFAULT_SANDBOX_IMAGE = "ghcr.io/superset-sh/sandbox:latest";
+/** Locally-built tag (`bun run --cwd packages/sandbox-image build:image`). */
+export const LOCAL_SANDBOX_IMAGE = "superset-sandbox:dev";
+export const PUBLISHED_SANDBOX_IMAGE = "ghcr.io/superset-sh/sandbox:latest";
+/**
+ * Development builds default to the locally-built image — the published one
+ * doesn't exist until the image CI ships, and dev machines build their own.
+ */
+export const DEFAULT_SANDBOX_IMAGE =
+	process.env.NODE_ENV === "development"
+		? LOCAL_SANDBOX_IMAGE
+		: PUBLISHED_SANDBOX_IMAGE;
 const DEFAULT_PIDS_LIMIT = 2048;
 
 /** Apply defaults to a parsed SandboxConfig. */

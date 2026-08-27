@@ -6,6 +6,7 @@ import { basename, join } from "node:path";
 import {
 	buildContainerCreateArgs,
 	CONFIG_HASH_LABEL,
+	LOCAL_SANDBOX_IMAGE,
 	type MountSpec,
 	type ResolvedSandboxSettings,
 } from "./docker-args.ts";
@@ -109,6 +110,30 @@ function buildWorkspaceMounts(
 
 const ensureInFlight = new Map<string, Promise<void>>();
 
+export type SandboxProvisioningState = "provisioning" | "ready" | "error";
+
+/**
+ * In-memory container-provision state per workspace, surfaced on
+ * WorkspaceSnapshot so the renderer can show "Initializing sandbox…" during
+ * eager bootstrap. Not persisted: after a host restart the state is unknown
+ * until the next ensure, which is exactly when it becomes interesting again.
+ */
+const provisioningStates = new Map<string, SandboxProvisioningState>();
+
+export function getSandboxProvisioningState(
+	workspaceId: string,
+): SandboxProvisioningState | undefined {
+	return provisioningStates.get(workspaceId);
+}
+
+/** Flag the workspace as provisioning before its ensure work is scheduled,
+ * so a snapshot emitted in the same tick already shows the step. */
+export function markSandboxProvisioning(workspaceId: string): void {
+	if (provisioningStates.get(workspaceId) !== "ready") {
+		provisioningStates.set(workspaceId, "provisioning");
+	}
+}
+
 /**
  * Ensure the workspace's sandbox container exists and is running.
  * Single-flight per workspace: concurrent terminal opens (agent + setup
@@ -117,9 +142,18 @@ const ensureInFlight = new Map<string, Promise<void>>();
 export function ensureContainer(params: EnsureContainerParams): Promise<void> {
 	const existing = ensureInFlight.get(params.workspaceId);
 	if (existing) return existing;
-	const promise = doEnsureContainer(params).finally(() => {
-		ensureInFlight.delete(params.workspaceId);
-	});
+	provisioningStates.set(params.workspaceId, "provisioning");
+	const promise = doEnsureContainer(params)
+		.then(() => {
+			provisioningStates.set(params.workspaceId, "ready");
+		})
+		.catch((error) => {
+			provisioningStates.set(params.workspaceId, "error");
+			throw error;
+		})
+		.finally(() => {
+			ensureInFlight.delete(params.workspaceId);
+		});
 	ensureInFlight.set(params.workspaceId, promise);
 	return promise;
 }
@@ -175,8 +209,12 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 			await pullImage(params.settings.image);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
+			const hint =
+				params.settings.image === LOCAL_SANDBOX_IMAGE
+					? " Build it locally: bun run --cwd packages/sandbox-image build:image"
+					: " Set sandbox.image in .superset/config.json to a reachable image.";
 			throw new SandboxError(
-				`Failed to pull sandbox image ${params.settings.image}: ${message}`,
+				`Failed to pull sandbox image ${params.settings.image}: ${message}.${hint}`,
 			);
 		}
 	}
@@ -214,6 +252,7 @@ export async function destroyWorkspaceSandbox(
 ): Promise<void> {
 	dropHookToken(workspaceId);
 	dropCliToken(workspaceId);
+	provisioningStates.delete(workspaceId);
 	const availability = await checkDockerAvailable();
 	if (availability.ok) {
 		await removeContainer(getSandboxContainerName(workspaceId));

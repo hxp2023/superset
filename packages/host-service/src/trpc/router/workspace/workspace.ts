@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { projects, workspaces } from "../../../db/schema";
+import { getSandboxProvisioningState } from "../../../runtime/sandbox/container-manager";
 import {
 	toCloudShape,
 	updateLocalWorkspace,
@@ -68,6 +69,9 @@ export const workspaceRouter = router({
 				...toCloudShape(row, ctx.organizationId),
 				worktreePath: row.worktreePath,
 				sandboxed: row.sandboxEnabled,
+				sandboxStatus: row.sandboxEnabled
+					? getSandboxProvisioningState(row.id)
+					: undefined,
 				// Tombstones' worktrees are gone by definition; stat-checking an
 				// unbounded, forever-growing archive on every poll adds up.
 				worktreeExists:

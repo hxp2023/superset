@@ -122,7 +122,14 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 			}
 		}, [isActive]);
 
-		const creationStatusText = isPending ? "Creating…" : null;
+		// Sandbox provisioning outlives the create mutation (container ensure is
+		// fire-and-forget), so it shows both during and after the pending state.
+		const creationStatusText =
+			workspace.sandboxStatus === "provisioning"
+				? "Initializing sandbox…"
+				: isPending
+					? "Creating…"
+					: null;
 		const isMainWorkspace = workspace.type === "main";
 		// No hover action button on the local main workspace: a stray click on the
 		// minus would remove the project's anchor row. Removal stays available via

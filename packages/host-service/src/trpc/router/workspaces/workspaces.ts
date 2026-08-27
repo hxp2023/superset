@@ -12,6 +12,7 @@ import { createGitEnvResolver } from "../../../runtime/git";
 import { type ResolvedRef, resolveRef } from "../../../runtime/git/refs";
 import { syncSandboxCommits } from "../../../runtime/sandbox/git-sync";
 import { resolveSandboxEnabledForNewWorkspace } from "../../../runtime/sandbox/registry";
+import { bootstrapWorkspaceSandbox } from "../../../runtime/sandbox/sandbox-bootstrap";
 import type { HostServiceContext } from "../../../types";
 import { getHostWorkerPool } from "../../../workers/host-worker-pool";
 import { gitFetchBaseRefTask } from "../../../workers/tasks/git";
@@ -506,6 +507,16 @@ async function registerLocalWorkspace(args: {
 			code: "INTERNAL_SERVER_ERROR",
 			message: `Failed to persist workspace locally: ${err instanceof Error ? err.message : String(err)}`,
 		});
+	}
+
+	// Provision the sandbox container now (fire-and-forget) rather than on
+	// first terminal — creation shows "Initializing sandbox…" and the first
+	// PTY joins the in-flight ensure instead of paying the cold start.
+	if (localRow.sandboxEnabled) {
+		bootstrapWorkspaceSandbox(
+			{ db: ctx.db, eventBus: ctx.eventBus },
+			localRow.id,
+		);
 	}
 
 	void ctx.api.v2Workspace.trackCreated
