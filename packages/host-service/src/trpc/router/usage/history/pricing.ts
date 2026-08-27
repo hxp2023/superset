@@ -49,9 +49,41 @@ const CODEX_RATES: Record<string, ModelRate> = {
 	"gpt-4o": { inputPerM: 2.5, outputPerM: 10 },
 };
 
+const GROK_RATES: Record<string, ModelRate> = {
+	"grok-4.6": { inputPerM: 2, outputPerM: 6 },
+	"grok-4.5": { inputPerM: 2, outputPerM: 6 },
+	"grok-4-fast": { inputPerM: 0.2, outputPerM: 0.5 },
+	"grok-4": { inputPerM: 3, outputPerM: 15 },
+	"grok-code": { inputPerM: 0.2, outputPerM: 1.5 },
+	"grok-3-mini": { inputPerM: 0.3, outputPerM: 0.5 },
+	"grok-3": { inputPerM: 3, outputPerM: 15 },
+};
+
+// Cursor prices per request server-side; its usage events carry the real
+// cost, so this table is only the fallback for events without one.
+const CURSOR_RATES: Record<string, ModelRate> = {
+	composer: { inputPerM: 1.25, outputPerM: 10 },
+};
+
+/** Multi-model harnesses (opencode, pi, omp, copilot, fx) route to many
+ * upstream providers — match against every table we know. Harness-reported
+ * costs, when present, take precedence over these rates anyway. */
+const MULTI_PROVIDER_RATES: Record<string, ModelRate> = {
+	...CLAUDE_RATES,
+	...CODEX_RATES,
+	...GROK_RATES,
+};
+
 const RATES_BY_PROVIDER: Record<UsageProvider, Record<string, ModelRate>> = {
 	claude: CLAUDE_RATES,
 	codex: CODEX_RATES,
+	grok: GROK_RATES,
+	cursor: CURSOR_RATES,
+	opencode: MULTI_PROVIDER_RATES,
+	copilot: MULTI_PROVIDER_RATES,
+	pi: MULTI_PROVIDER_RATES,
+	omp: MULTI_PROVIDER_RATES,
+	fx: MULTI_PROVIDER_RATES,
 };
 
 const cheapestByProvider = new Map<UsageProvider, ModelRate>();
