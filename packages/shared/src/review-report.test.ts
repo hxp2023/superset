@@ -491,4 +491,87 @@ describe("renderReviewReportHtml", () => {
 		expect(html).toContain('id="diff-file-0"');
 		expect(html).toContain('id="diff-file-1"');
 	});
+
+	it("strips HTML comments from a description instead of showing them as text", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description:
+				"Real text.\n\n<!-- This is an auto-generated comment: bot marker -->\n\nMore text.",
+		});
+		expect(html).not.toContain("auto-generated comment");
+		expect(html).not.toContain("&lt;!--");
+		expect(html).toContain("Real text.");
+		expect(html).toContain("More text.");
+	});
+
+	it("renders an allowlisted inline HTML tag instead of escaping it", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description:
+				"Written for commit abc123. <sup>Updates on new commits.</sup>",
+		});
+		expect(html).toContain("<sup>Updates on new commits.</sup>");
+		expect(html).not.toContain("&lt;sup&gt;");
+	});
+
+	it("renders a multi-line raw HTML block (bot badge pattern) with sanitized attributes", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: [
+				"Some text.",
+				"",
+				'<a href="https://example.com/pr/1" target="_self" rel="bogus">',
+				"<picture>",
+				'<source media="(prefers-color-scheme: dark)" srcset="https://example.com/dark.svg">',
+				'<img alt="Review" src="https://example.com/badge.svg">',
+				"</picture>",
+				"</a>",
+				"",
+				"More text.",
+			].join("\n"),
+		});
+		expect(html).toContain('<a href="https://example.com/pr/1"');
+		// The source's own target/rel are never trusted — we always force ours.
+		expect(html).toContain('target="_blank" rel="noopener noreferrer"');
+		expect(html).not.toContain('target="_self"');
+		expect(html).not.toContain("bogus");
+		expect(html).toContain("<picture>");
+		expect(html).toContain(
+			'<source media="(prefers-color-scheme: dark)" srcset="https://example.com/dark.svg">',
+		);
+		expect(html).toContain(
+			'<img alt="Review" src="https://example.com/badge.svg">',
+		);
+		expect(html).toContain("Some text.");
+		expect(html).toContain("More text.");
+	});
+
+	it("drops a disallowed tag and any event-handler/javascript: attribute, even inside allowed tags", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description:
+				'<script>alert(1)</script>\n\n<img src="x" onerror="alert(1)">\n\n<a href="javascript:alert(1)">click</a>',
+		});
+		expect(html).not.toContain("<script>");
+		expect(html).not.toContain("onerror");
+		expect(html).not.toContain("javascript:");
+	});
+
+	it("renders GitHub task-list checkboxes instead of literal [x]/[ ] text", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "- [x] Done thing\n- [ ] Todo thing",
+		});
+		expect(html).toContain(
+			'<li class="task-list-item"><input type="checkbox" disabled checked> Done thing</li>',
+		);
+		expect(html).toContain(
+			'<li class="task-list-item"><input type="checkbox" disabled> Todo thing</li>',
+		);
+	});
 });

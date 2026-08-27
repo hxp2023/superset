@@ -563,7 +563,127 @@ const META_SEPARATOR = "\n\t\t<span aria-hidden>·</span>\n\t\t";
 // unescaped in real prose.
 const CODE_PLACEHOLDER = "CODE";
 
-/** Inline markdown within a single line/paragraph: code, bold, italic, links. */
+/**
+ * Raw HTML a PR description is allowed to embed and have actually rendered,
+ * instead of showing up as visible `&lt;sup&gt;` garbage. GitHub descriptions
+ * routinely contain hand-written or bot-generated HTML (badges, `<details>`
+ * spoilers, `<sup>`/`<br>`) alongside plain markdown — real CommonMark (and
+ * GitHub's renderer) render both. Anything not on this list is left for
+ * `escapeHtml` to neutralize as plain text, same as today.
+ */
+const ALLOWED_HTML_TAGS = [
+	"a",
+	"b",
+	"i",
+	"em",
+	"strong",
+	"code",
+	"pre",
+	"br",
+	"hr",
+	"sup",
+	"sub",
+	"small",
+	"mark",
+	"kbd",
+	"p",
+	"div",
+	"span",
+	"details",
+	"summary",
+	"table",
+	"thead",
+	"tbody",
+	"tr",
+	"td",
+	"th",
+	"ul",
+	"ol",
+	"li",
+	"blockquote",
+	"img",
+	"picture",
+	"source",
+	"figure",
+	"figcaption",
+] as const;
+const VOID_HTML_TAGS = new Set(["br", "hr", "img", "source"]);
+/** Attributes kept per tag; everything else (style, on*, id, class, …) is dropped. */
+const ALLOWED_HTML_ATTRS: Partial<
+	Record<(typeof ALLOWED_HTML_TAGS)[number], string[]>
+> = {
+	img: ["src", "alt", "title", "width", "height"],
+	source: ["srcset", "src", "media", "type"],
+	details: ["open"],
+	td: ["align", "colspan", "rowspan"],
+	th: ["align", "colspan", "rowspan"],
+};
+const SAFE_URL_SCHEME = /^(https?:|mailto:)/i;
+
+// Matches only a complete `<tag ...>`, `<tag ... />`, or `</tag>` for a
+// tag name in ALLOWED_HTML_TAGS — anything else (a stray `<`, a "5 < 10"
+// comparison, a disallowed tag like `<script>`) simply doesn't match and
+// falls through to normal text escaping.
+const INLINE_HTML_TAG_PATTERN = new RegExp(
+	`<\\/?(?:${ALLOWED_HTML_TAGS.join("|")})(?:\\s[^<>]*)?\\/?>`,
+	"gi",
+);
+
+/** Rebuilds one matched tag with only its allowlisted, scheme-checked attributes. */
+function sanitizeTag(tag: string): string {
+	const isClosing = tag.startsWith("</");
+	const name = /^<\/?([a-zA-Z][a-zA-Z0-9]*)/.exec(tag)?.[1]?.toLowerCase();
+	if (!name) return "";
+	if (isClosing) return VOID_HTML_TAGS.has(name) ? "" : `</${name}>`;
+
+	const allowedAttrs =
+		ALLOWED_HTML_ATTRS[name as (typeof ALLOWED_HTML_TAGS)[number]] ?? [];
+	const attrs: string[] = [];
+	for (const match of tag.matchAll(/([a-zA-Z-:]+)\s*=\s*"([^"]*)"/g)) {
+		const attrName = match[1]?.toLowerCase();
+		const attrValue = match[2] ?? "";
+		if (!attrName || !allowedAttrs.includes(attrName)) continue;
+		if (
+			(attrName === "src" || attrName === "href") &&
+			!SAFE_URL_SCHEME.test(attrValue)
+		) {
+			continue;
+		}
+		attrs.push(`${attrName}="${escapeHtml(attrValue)}"`);
+	}
+	// A raw <a href> gets the same forced target/rel as markdown links below —
+	// the source's own target/rel (if any) is never trusted or kept.
+	if (name === "a" && /\shref\s*=/.test(tag)) {
+		const hrefMatch = /href\s*=\s*"([^"]*)"/.exec(tag);
+		const href = hrefMatch?.[1];
+		if (href && SAFE_URL_SCHEME.test(href)) {
+			attrs.unshift(`href="${escapeHtml(href)}"`);
+			attrs.push('target="_blank"', 'rel="noopener noreferrer"');
+		} else {
+			return ""; // an <a> with no safe href isn't worth keeping as a tag
+		}
+	}
+	const attrsHtml = attrs.length > 0 ? ` ${attrs.join(" ")}` : "";
+	return `<${name}${attrsHtml}>`;
+}
+
+/**
+ * Escapes plain text but passes allowlisted HTML tags through (sanitized) as
+ * real markup — used for both inline text and raw HTML blocks below.
+ */
+function sanitizeInlineHtml(text: string): string {
+	let result = "";
+	let lastIndex = 0;
+	for (const match of text.matchAll(INLINE_HTML_TAG_PATTERN)) {
+		result += escapeHtml(text.slice(lastIndex, match.index));
+		result += sanitizeTag(match[0]);
+		lastIndex = match.index + match[0].length;
+	}
+	result += escapeHtml(text.slice(lastIndex));
+	return result;
+}
+
+/** Inline markdown within a single line/paragraph: code, bold, italic, links, safe raw HTML. */
 function renderInline(text: string): string {
 	const codeSpans: string[] = [];
 	// Pull inline code out first so its literal contents never get treated as
@@ -574,7 +694,7 @@ function renderInline(text: string): string {
 		return CODE_PLACEHOLDER;
 	});
 
-	let html = escapeHtml(withPlaceholders);
+	let html = sanitizeInlineHtml(withPlaceholders);
 	// Links first — its own escaped brackets/parens would otherwise collide
 	// with the bold/italic patterns below. A PR description is authored by
 	// whoever opened the PR, not us — reject any scheme but http(s)/mailto so
@@ -598,13 +718,27 @@ function renderInline(text: string): string {
 	return html.replaceAll(CODE_PLACEHOLDER, () => codeSpans[spanIndex++] ?? "");
 }
 
+/** `- [x] done` / `- [ ] todo` — GitHub's task-list checkbox syntax. */
+function renderListItem(item: string): string {
+	const task = /^\[([ xX])\]\s+(.*)$/.exec(item);
+	if (!task) return `<li>${renderInline(item)}</li>`;
+	const checked = task[1] !== " ";
+	return `<li class="task-list-item"><input type="checkbox" disabled${checked ? " checked" : ""}> ${renderInline(task[2] ?? "")}</li>`;
+}
+
 /**
  * Minimal markdown-to-HTML for a PR's own description — headers, fenced code
- * blocks, blockquotes, lists, and paragraphs with inline formatting. Not a
- * full CommonMark implementation (no nested lists, no tables); this package
- * stays dependency-free by design, same reasoning as parseUnifiedDiff above.
+ * blocks, blockquotes, lists, task checkboxes, and paragraphs with inline
+ * formatting (including a safe subset of raw HTML — see ALLOWED_HTML_TAGS).
+ * Not a full CommonMark implementation (no nested lists, no tables); this
+ * package stays dependency-free by design, same reasoning as
+ * parseUnifiedDiff above.
  */
-function renderMarkdown(markdown: string): string {
+function renderMarkdown(rawMarkdown: string): string {
+	// HTML comments (bot-generated descriptions lean on these to hide
+	// metadata markers) render as nothing, same as every real markdown
+	// renderer — not as visible "&lt;!-- ... --&gt;" text.
+	const markdown = rawMarkdown.replace(/<!--[\s\S]*?-->/g, "");
 	const lines = markdown.replace(/\r\n/g, "\n").split("\n");
 	const blocks: string[] = [];
 	let paragraph: string[] = [];
@@ -618,10 +752,9 @@ function renderMarkdown(markdown: string): string {
 	};
 	const flushList = () => {
 		if (!list) return;
-		const items = list.items
-			.map((item) => `<li>${renderInline(item)}</li>`)
-			.join("");
-		blocks.push(`<${list.tag}>${items}</${list.tag}>`);
+		blocks.push(
+			`<${list.tag}>${list.items.map(renderListItem).join("")}</${list.tag}>`,
+		);
 		list = null;
 	};
 	const flushQuote = () => {
@@ -652,6 +785,25 @@ function renderMarkdown(markdown: string): string {
 				`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
 			);
 			i += 1; // skip closing fence
+			continue;
+		}
+
+		// A line opening or closing one of our allowed HTML tags starts a raw
+		// HTML block — real bot-generated PR descriptions embed multi-line
+		// blocks like `<a href=…><picture><source …><img …></picture></a>` or
+		// `<details><summary>…</summary>…</details>` for badges/collapsibles.
+		// Consumed verbatim through the next blank line (CommonMark's own
+		// blank-line-terminated HTML block rule), then sanitized as one unit
+		// rather than run through paragraph/list parsing.
+		if (/^<\/?[a-zA-Z]/.test(line.trim())) {
+			flushAll();
+			const htmlLines: string[] = [line];
+			i += 1;
+			while (i < lines.length && !/^\s*$/.test(lines[i] ?? "")) {
+				htmlLines.push(lines[i] ?? "");
+				i += 1;
+			}
+			blocks.push(sanitizeInlineHtml(htmlLines.join("\n")));
 			continue;
 		}
 
@@ -1143,6 +1295,15 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 .markdown pre code { background: none; padding: 0; }
 .markdown a { color: var(--foreground); text-decoration: underline; text-underline-offset: 2px; }
 .markdown hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+.markdown img, .markdown picture { max-width: 100%; height: auto; }
+.markdown .task-list-item { list-style: none; margin-left: -1.25rem; }
+.markdown .task-list-item input { margin-right: 0.375rem; vertical-align: middle; }
+.markdown details { margin: 0.75rem 0; border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); border-radius: 8px; padding: 0.5rem 0.75rem; }
+.markdown summary { cursor: pointer; font-weight: 500; }
+.markdown details[open] summary { margin-bottom: 0.5rem; }
+.markdown table { border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+.markdown th, .markdown td { border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); padding: 0.375rem 0.625rem; text-align: left; }
+.markdown th { background: color-mix(in oklab, var(--muted) 35%, transparent); font-weight: 600; }
 </style>
 </head>
 <body>
