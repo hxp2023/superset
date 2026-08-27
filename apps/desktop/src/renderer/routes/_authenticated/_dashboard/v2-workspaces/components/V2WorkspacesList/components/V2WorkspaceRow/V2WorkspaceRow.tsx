@@ -1,5 +1,6 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
+import { memo } from "react";
 import { CgLaptop } from "react-icons/cg";
 import { LuLaptop, LuMonitor } from "react-icons/lu";
 import { WorkspaceNameMarquee } from "renderer/components/WorkspaceNameMarquee";
@@ -22,7 +23,11 @@ function formatCount(count: number): string {
 	return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}k`;
 }
 
-export function V2WorkspaceRow({
+// Memoized: filter/sort changes re-render the whole list, and at hundreds of
+// rows (each carrying a context menu, marquee, and tooltips) that costs
+// hundreds of ms per menu-checkbox toggle. Workspace object identities are
+// stable across those changes, so unchanged rows must skip.
+export const V2WorkspaceRow = memo(function V2WorkspaceRow({
 	workspace,
 	isCurrentRoute,
 }: V2WorkspaceRowProps) {
@@ -197,4 +202,4 @@ export function V2WorkspaceRow({
 			)}
 		</V2WorkspaceContextMenu>
 	);
-}
+});

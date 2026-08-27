@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useDeferredValue, useEffect, useRef } from "react";
 import { V2WorkspacesBoard } from "./components/V2WorkspacesBoard";
 import { V2WorkspacesHeader } from "./components/V2WorkspacesHeader";
 import { V2WorkspacesList } from "./components/V2WorkspacesList";
@@ -204,6 +204,11 @@ function V2WorkspacesPage() {
 		includeArchived: true,
 	});
 
+	// Re-rendering hundreds of rows takes hundreds of ms; deferring keeps
+	// filter menus and checkboxes painting instantly while the list catches
+	// up at background priority.
+	const deferredWorkspaces = useDeferredValue(all);
+
 	return (
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
 			<V2WorkspacesHeader
@@ -214,9 +219,9 @@ function V2WorkspacesPage() {
 				projectsById={projectsById}
 			/>
 			{viewMode === "board" ? (
-				<V2WorkspacesBoard workspaces={all} isReady={isReady} />
+				<V2WorkspacesBoard workspaces={deferredWorkspaces} isReady={isReady} />
 			) : (
-				<V2WorkspacesList workspaces={all} isReady={isReady} />
+				<V2WorkspacesList workspaces={deferredWorkspaces} isReady={isReady} />
 			)}
 		</div>
 	);

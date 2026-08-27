@@ -1,5 +1,6 @@
 import { Badge } from "@superset/ui/badge";
 import { cn } from "@superset/ui/utils";
+import { memo } from "react";
 import { LuGitBranch, LuLaptop, LuMonitor } from "react-icons/lu";
 import { V2WorkspaceContextMenu } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/components/V2WorkspaceContextMenu";
 import { WorkspaceChecksDot } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/components/WorkspaceChecksDot";
@@ -12,7 +13,9 @@ interface V2WorkspacesBoardCardProps {
 	workspace: AccessibleV2Workspace;
 }
 
-export function V2WorkspacesBoardCard({
+// Memoized for the same reason as V2WorkspaceRow: board-wide filter changes
+// must not re-render every card.
+export const V2WorkspacesBoardCard = memo(function V2WorkspacesBoardCard({
 	workspace,
 }: V2WorkspacesBoardCardProps) {
 	// Archived tombstones have no worktree or terminals left — no navigation
@@ -27,7 +30,7 @@ export function V2WorkspacesBoardCard({
 			)}
 		</V2WorkspaceContextMenu>
 	);
-}
+});
 
 function BoardCardBody({
 	workspace,

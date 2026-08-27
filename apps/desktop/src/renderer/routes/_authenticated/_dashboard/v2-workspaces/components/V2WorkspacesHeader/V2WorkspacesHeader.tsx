@@ -211,6 +211,16 @@ export function V2WorkspacesHeader({
 			: projectFilters.length === 1
 				? projectNameFor(projectFilters[0])
 				: `${projectFilters.length} projects`;
+	const singleProjectFilter =
+		projectFilters.length === 1 ? projectFilters[0] : null;
+	const singleProjectIconUrl =
+		singleProjectFilter && singleProjectFilter !== PROJECT_FILTER_SESSIONS
+			? (projectOptions.find(
+					(project) => project.projectId === singleProjectFilter,
+				)?.iconUrl ??
+				projectsById.get(singleProjectFilter)?.iconUrl ??
+				null)
+			: null;
 
 	const toggleIn = (values: string[], value: string) =>
 		values.includes(value)
@@ -239,7 +249,7 @@ export function V2WorkspacesHeader({
 		>
 			{/* Title row — also the window-drag surface now that it spans the top. */}
 			<div className="drag flex items-center justify-between gap-3 pb-3">
-				<DropdownMenu>
+				<DropdownMenu modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
 							variant="ghost"
@@ -318,7 +328,7 @@ export function V2WorkspacesHeader({
 				/>
 
 				<div className="flex min-w-0 items-center gap-2 overflow-x-auto hide-scrollbar">
-					<DropdownMenu>
+					<DropdownMenu modal={false}>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
@@ -328,7 +338,18 @@ export function V2WorkspacesHeader({
 									projectFilters.length === 0 && "text-muted-foreground",
 								)}
 							>
-								<LuFolder className="size-3.5" />
+								{singleProjectFilter === PROJECT_FILTER_SESSIONS ? (
+									<LuTerminal className="size-3.5" />
+								) : singleProjectFilter ? (
+									<V2WorkspaceProjectIcon
+										projectName={projectFilterLabel}
+										iconUrl={singleProjectIconUrl}
+										size="sm"
+										className="size-4 text-[9px]"
+									/>
+								) : (
+									<LuFolder className="size-3.5" />
+								)}
 								<span className="max-w-[12rem] truncate">
 									{projectFilterLabel}
 								</span>
@@ -372,7 +393,7 @@ export function V2WorkspacesHeader({
 
 					<div className="h-4 w-px shrink-0 bg-border" />
 
-					<DropdownMenu>
+					<DropdownMenu modal={false}>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
@@ -556,7 +577,7 @@ export function V2WorkspacesHeader({
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					<DropdownMenu>
+					<DropdownMenu modal={false}>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
