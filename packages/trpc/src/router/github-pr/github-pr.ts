@@ -25,6 +25,12 @@ export interface GithubPrComment {
 	htmlUrl: string;
 }
 
+export interface GithubPrCheck {
+	name: string;
+	status: "success" | "failure" | "pending" | "skipped" | "cancelled";
+	url: string | null;
+}
+
 export interface GithubPrContent {
 	owner: string;
 	repo: string;
@@ -48,6 +54,8 @@ export interface GithubPrContent {
 	diff: string;
 	/** Top-level conversation comments, oldest first. Capped at 100. */
 	comments: GithubPrComment[];
+	/** CI check runs + legacy commit statuses for the head commit, deduped by name. */
+	checks: GithubPrCheck[];
 }
 
 /** The subset of GitHub's PR API response this router actually reads. */
@@ -59,7 +67,7 @@ interface GithubApiPullRequest {
 	merged?: boolean;
 	merged_at?: string | null;
 	draft?: boolean;
-	head: { ref: string };
+	head: { ref: string; sha: string };
 	base: { ref: string };
 	html_url: string;
 	created_at: string;
@@ -76,6 +84,95 @@ interface GithubApiComment {
 	user: { login: string; avatar_url: string | null } | null;
 	created_at: string;
 	html_url: string;
+}
+
+interface GithubApiCheckRun {
+	name?: string | null;
+	status?: string | null;
+	conclusion?: string | null;
+	details_url?: string | null;
+	html_url?: string | null;
+	started_at?: string | null;
+	completed_at?: string | null;
+}
+
+interface GithubApiCommitStatus {
+	context?: string | null;
+	state?: string | null;
+	target_url?: string | null;
+	created_at?: string | null;
+}
+
+// The status/conclusion → CheckStatus mapping and name-dedup below mirror the
+// host-service's parseCheckContexts (pull-request-mappers.ts), which feeds the
+// real PR view's Checks section — same vocabulary, same recency rule.
+function mapCheckRunStatus(
+	status: string | null | undefined,
+	conclusion: string | null | undefined,
+): GithubPrCheck["status"] {
+	if (status?.toLowerCase() !== "completed") return "pending";
+	switch (conclusion?.toLowerCase()) {
+		case "success":
+			return "success";
+		case "failure":
+		case "timed_out":
+		case "action_required":
+			return "failure";
+		case "cancelled":
+			return "cancelled";
+		case "skipped":
+		case "neutral":
+			return "skipped";
+		default:
+			return "pending";
+	}
+}
+
+function mapCommitStatusState(
+	state: string | null | undefined,
+): GithubPrCheck["status"] {
+	switch (state?.toLowerCase()) {
+		case "success":
+			return "success";
+		case "failure":
+		case "error":
+			return "failure";
+		default:
+			return "pending";
+	}
+}
+
+function toChecks(
+	checkRuns: GithubApiCheckRun[],
+	statuses: GithubApiCommitStatus[],
+): GithubPrCheck[] {
+	const withRecency = [
+		...checkRuns
+			.filter((run) => run.name)
+			.map((run) => ({
+				name: run.name as string,
+				status: mapCheckRunStatus(run.status, run.conclusion),
+				url: run.details_url ?? run.html_url ?? null,
+				recency: Date.parse(run.completed_at ?? run.started_at ?? "") || 0,
+			})),
+		...statuses
+			.filter((status) => status.context && status.state)
+			.map((status) => ({
+				name: status.context as string,
+				status: mapCommitStatusState(status.state),
+				url: status.target_url ?? null,
+				recency: Date.parse(status.created_at ?? "") || 0,
+			})),
+	];
+	// A re-run check appears once per attempt — keep only the latest per name.
+	const deduped = new Map<string, (typeof withRecency)[number]>();
+	for (const check of withRecency) {
+		const existing = deduped.get(check.name);
+		if (!existing || check.recency > existing.recency) {
+			deduped.set(check.name, check);
+		}
+	}
+	return [...deduped.values()].map(({ recency: _recency, ...check }) => check);
 }
 
 function toComment(comment: GithubApiComment): GithubPrComment {
@@ -96,6 +193,7 @@ function toContent(
 	pr: GithubApiPullRequest,
 	diff: string,
 	comments: GithubApiComment[],
+	checks: GithubPrCheck[],
 ): GithubPrContent {
 	return {
 		owner,
@@ -118,6 +216,7 @@ function toContent(
 		changedFiles: pr.changed_files ?? 0,
 		diff,
 		comments: comments.map(toComment),
+		checks,
 	};
 }
 
@@ -168,13 +267,39 @@ async function fetchViaInstallation(
 				per_page: 100,
 			}),
 		]);
+		const typedPr = pr as unknown as GithubApiPullRequest;
+		// Checks need the head sha from the PR response, so they can't join the
+		// Promise.all above. A checks failure degrades to an empty list rather
+		// than failing the whole view — the diff/description are still useful.
+		const checks = await octokit.rest.checks
+			.listForRef({
+				owner,
+				repo,
+				ref: typedPr.head.sha,
+				per_page: 100,
+			})
+			.then(async ({ data }) => {
+				const { data: combined } =
+					await octokit.rest.repos.getCombinedStatusForRef({
+						owner,
+						repo,
+						ref: typedPr.head.sha,
+						per_page: 100,
+					});
+				return toChecks(
+					data.check_runs as GithubApiCheckRun[],
+					combined.statuses as GithubApiCommitStatus[],
+				);
+			})
+			.catch(() => []);
 		return toContent(
 			owner,
 			repo,
 			number,
-			pr as unknown as GithubApiPullRequest,
+			typedPr,
 			diffResponse.data as unknown as string,
 			comments as unknown as GithubApiComment[],
+			checks,
 		);
 	} catch {
 		return null;
@@ -207,7 +332,36 @@ async function fetchPublic(
 	const comments = commentsResponse.ok
 		? ((await commentsResponse.json()) as GithubApiComment[])
 		: [];
-	return toContent(owner, repo, number, pr, diff, comments);
+	// Checks need the head sha from the PR response, so they can't join the
+	// Promise.all above. A checks failure degrades to an empty list rather
+	// than failing the whole view — the diff/description are still useful.
+	const checksBase = `https://api.github.com/repos/${owner}/${repo}/commits/${pr.head.sha}`;
+	const [checkRunsResponse, statusResponse] = await Promise.all([
+		fetch(`${checksBase}/check-runs?per_page=100`, {
+			headers: { Accept: "application/vnd.github+json" },
+		}),
+		fetch(`${checksBase}/status?per_page=100`, {
+			headers: { Accept: "application/vnd.github+json" },
+		}),
+	]);
+	const checkRuns = checkRunsResponse.ok
+		? ((
+				(await checkRunsResponse.json()) as { check_runs?: GithubApiCheckRun[] }
+			).check_runs ?? [])
+		: [];
+	const statuses = statusResponse.ok
+		? (((await statusResponse.json()) as { statuses?: GithubApiCommitStatus[] })
+				.statuses ?? [])
+		: [];
+	return toContent(
+		owner,
+		repo,
+		number,
+		pr,
+		diff,
+		comments,
+		toChecks(checkRuns, statuses),
+	);
 }
 
 export const githubPrRouter = {

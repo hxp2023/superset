@@ -197,6 +197,61 @@ describe("renderReviewReportHtml", () => {
 		expect(html).not.toContain("generated ");
 	});
 
+	it("renders the checks aside with per-status rows and an All-passed summary", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+			checks: [
+				{ name: "Lint", status: "success", url: "https://ci.example/1" },
+				{ name: "Test", status: "success", url: null },
+			],
+		});
+		expect(html).toContain('<span class="checks-summary">All 2 passed</span>');
+		expect(html).toContain(
+			'<a class="check-row" href="https://ci.example/1" target="_blank" rel="noopener noreferrer">',
+		);
+		expect(html).toContain('<span class="check-name">Lint</span>');
+		expect(html).toContain('<span class="check-label">Passed</span>');
+	});
+
+	it("summarizes failing over pending and ignores skipped/cancelled in the count", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+			checks: [
+				{ name: "a", status: "failure" },
+				{ name: "b", status: "pending" },
+				{ name: "c", status: "skipped" },
+			],
+		});
+		expect(html).toContain('<span class="checks-summary">1 failing</span>');
+		expect(html).toContain('<span class="check-label">Failed</span>');
+		expect(html).toContain('<span class="check-label">Running</span>');
+		expect(html).toContain('<span class="check-label">Skipped</span>');
+	});
+
+	it("shows the checks empty row for [] and no checks section when undefined", () => {
+		const withEmpty = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+			checks: [],
+		});
+		expect(withEmpty).toContain("No checks reported for the latest commit.");
+		expect(withEmpty).toContain(
+			'<span class="checks-summary">No checks reported</span>',
+		);
+
+		const without = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Body.",
+		});
+		expect(without).not.toContain('<section class="checks">');
+	});
+
 	it("renders a Code tab with added/removed/context lines and per-file stats", () => {
 		const diff = [
 			"diff --git a/src/foo.ts b/src/foo.ts",

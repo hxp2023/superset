@@ -57,6 +57,7 @@ export function PrViewer() {
 			// "" (not undefined) so a body-less PR still renders as a plain PR
 			// view — "No description provided." — never the findings empty state.
 			description: pr.description ?? "",
+			checks: pr.checks,
 			diff: pr.diff,
 			comments: pr.comments.map((comment) => ({
 				authorLogin: comment.authorLogin,

@@ -8,6 +8,12 @@ export interface ReviewReportFinding {
 	verdict?: "CONFIRMED" | "PLAUSIBLE";
 }
 
+export interface ReviewReportCheck {
+	name: string;
+	status: "success" | "failure" | "pending" | "skipped" | "cancelled";
+	url?: string | null;
+}
+
 export interface ReviewReportComment {
 	authorLogin: string;
 	authorAvatarUrl?: string | null;
@@ -39,6 +45,12 @@ export interface ReviewReportInput {
 	description?: string;
 	/** The PR's conversation comments, oldest first. Only shown alongside `description`. */
 	comments?: ReviewReportComment[];
+	/**
+	 * CI checks for the head commit. Only rendered in the plain-PR view, as a
+	 * right-hand aside like the real Summary tab; [] still shows the section
+	 * with its "No checks reported" empty row, undefined hides it entirely.
+	 */
+	checks?: ReviewReportCheck[];
 	/** Normalized PR state for the header badge, matching the real header's precedence (draft wins over merged/closed). */
 	prState?: "open" | "closed" | "merged" | "draft";
 	authorLogin?: string;
@@ -327,6 +339,12 @@ const ICON_PATHS = {
 	gitMerge:
 		'<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>',
 	circleDot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
+	// The check-status marks CHECK_STATUS_ICONS uses (Lucide loader-circle /
+	// skip-forward, plus circle-minus for the checks empty row).
+	loader: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+	skipForward:
+		'<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+	circleMinus: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/>',
 } as const;
 
 // FaGithub from react-icons — the same mark the real PR header's
@@ -946,6 +964,59 @@ function renderMarkdown(rawMarkdown: string): string {
 	return blocks.join("\n");
 }
 
+// Same word-per-outcome vocabulary as the real Checks section's rows.
+const CHECK_STATUS_META: Record<
+	ReviewReportCheck["status"],
+	{ icon: keyof typeof ICON_PATHS; label: string }
+> = {
+	success: { icon: "check", label: "Passed" },
+	failure: { icon: "x", label: "Failed" },
+	pending: { icon: "loader", label: "Running" },
+	skipped: { icon: "skipForward", label: "Skipped" },
+	cancelled: { icon: "minus", label: "Cancelled" },
+};
+
+/** Mirrors summarizePullRequestChecks: skipped/cancelled don't count. */
+function checksSummaryLabel(checks: ReviewReportCheck[]): string {
+	const relevant = checks.filter(
+		(check) => check.status !== "skipped" && check.status !== "cancelled",
+	);
+	const failing = relevant.filter((c) => c.status === "failure").length;
+	const pending = relevant.filter((c) => c.status === "pending").length;
+	if (relevant.length === 0) {
+		return checks.length === 0
+			? "No checks reported"
+			: "All checks skipped or cancelled";
+	}
+	if (failing > 0) return `${failing} failing`;
+	if (pending > 0) return `${pending} running`;
+	return `All ${relevant.length} passed`;
+}
+
+function renderCheckRow(check: ReviewReportCheck): string {
+	const meta = CHECK_STATUS_META[check.status];
+	const inner = `${icon(meta.icon, `check-icon-${check.status}`)}<span class="check-name">${escapeHtml(check.name)}</span><span class="check-label">${meta.label}</span>${check.url ? icon("arrowUpRight", "arrow") : ""}`;
+	if (check.url) {
+		return `<a class="check-row" href="${escapeHtml(check.url)}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
+	}
+	return `<div class="check-row">${inner}</div>`;
+}
+
+function renderChecksSection(checks: ReviewReportCheck[]): string {
+	const rows =
+		checks.length === 0
+			? `<div class="check-empty">${icon("circleMinus", "")}No checks reported for the latest commit.</div>`
+			: checks.map(renderCheckRow).join("\n");
+	return `
+<section class="checks">
+	<div class="checks-head">
+		<h2>Checks</h2>
+		<span class="checks-summary">${checksSummaryLabel(checks)}</span>
+	</div>
+	${rows}
+</section>`;
+}
+
 function renderComment(comment: ReviewReportComment): string {
 	const author = escapeHtml(comment.authorLogin);
 	const avatar = comment.authorAvatarUrl
@@ -998,8 +1069,15 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 	const descriptionHtml = review.description?.trim()
 		? `<div class="markdown">${renderMarkdown(review.description)}</div>`
 		: `<p class="no-description">No description provided.</p>`;
+	// Same shape as the real Summary tab's grid: description (and, unlike the
+	// app, the conversation) in the main column, checks in a sticky aside that
+	// moves below on narrow screens.
+	const plainPrBody = `<div class="summary-grid">
+	<div class="summary-main">${descriptionHtml}${renderComments(review.comments ?? [])}</div>
+	${review.checks ? `<aside class="summary-aside">${renderChecksSection(review.checks)}</aside>` : ""}
+</div>`;
 	const body = isPlainPrView
-		? `${descriptionHtml}${renderComments(review.comments ?? [])}`
+		? plainPrBody
 		: groups.length === 0
 			? `<div class="section-body"><div class="empty-row">${icon("check", "")}No findings — this review didn't flag anything.</div></div>`
 			: groups
@@ -1456,6 +1534,52 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 .markdown th { background: color-mix(in oklab, var(--muted) 35%, transparent); font-weight: 600; }
 /* Same copy and styling as the real Summary tab's empty description. */
 .no-description { margin: 0; font-size: 0.875rem; font-style: italic; color: var(--muted-foreground); }
+/* Description + checks grid, like the real Summary tab's
+   @3xl:grid-cols-[minmax(0,1fr)_20rem] with a sticky aside. */
+.summary-grid { display: grid; gap: 2rem; }
+@media (min-width: 48rem) {
+	.summary-grid { grid-template-columns: minmax(0, 1fr) 20rem; }
+	.summary-aside { position: sticky; top: 1rem; align-self: start; }
+}
+.summary-main { min-width: 0; }
+.checks-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+.checks-summary { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); }
+.check-row {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0 -0.5rem;
+	border-radius: 8px;
+	padding: 0.375rem 0.5rem;
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+a.check-row:hover { background: color-mix(in oklab, var(--accent) 40%, transparent); }
+.check-name { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.check-label { flex-shrink: 0; color: var(--muted-foreground); }
+.check-row .arrow { color: var(--muted-foreground); }
+.check-icon-success { color: var(--icon-clear-fg); }
+.check-icon-failure { color: var(--icon-confirmed-fg); }
+.check-icon-pending { color: var(--tone-plausible-fg); animation: spin 1s linear infinite; }
+.check-icon-skipped, .check-icon-cancelled { color: var(--muted-foreground); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .check-icon-pending { animation: none; } }
+.check-empty {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 0;
+	font-size: 0.75rem;
+	line-height: 1rem;
+	color: var(--muted-foreground);
+}
 .comments { margin-top: 2rem; }
 .comments-heading { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; margin: 0 0 0.75rem; }
 .comments-count { color: var(--muted-foreground); font-weight: 400; }
