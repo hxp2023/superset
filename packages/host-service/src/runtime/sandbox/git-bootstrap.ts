@@ -12,8 +12,7 @@
 
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { CONTAINER_GIT_DIR, getWorkspaceSandboxPaths } from "./paths.ts";
 
@@ -109,7 +108,16 @@ export async function ensureSandboxGit(
 	params: GitBootstrapParams,
 ): Promise<void> {
 	const paths = getWorkspaceSandboxPaths(params.workspaceId);
-	if (existsSync(join(paths.gitDir, "HEAD"))) return;
+	// The bootstrap-sha file is the LAST artifact written, so it is the only
+	// safe "done" sentinel: keying off gitDir/HEAD would treat a run
+	// interrupted after the bare clone but before the .git mask as complete,
+	// leaving the isolation mask absent. Anything short of the sentinel is a
+	// partial state — wipe and rebuild it atomically.
+	if (existsSync(paths.bootstrapShaFile)) return;
+	if (existsSync(paths.gitDir) || existsSync(paths.dotGitFile)) {
+		await rm(paths.gitDir, { recursive: true, force: true });
+		await rm(paths.dotGitFile, { force: true });
+	}
 
 	await mkdir(paths.stateDir, { recursive: true });
 
@@ -131,5 +139,6 @@ export async function ensureSandboxGit(
 	await writeFile(paths.dotGitFile, `gitdir: ${CONTAINER_GIT_DIR}\n`, {
 		mode: 0o444,
 	});
+	// Written last: its presence marks the bootstrap complete (see above).
 	await writeFile(paths.bootstrapShaFile, `${headSha}\n`, { mode: 0o644 });
 }

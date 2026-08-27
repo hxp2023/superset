@@ -156,13 +156,27 @@ export function validateSandboxConfig(
 	const obj = value as Record<string, unknown>;
 	const result: SandboxConfig = {};
 
-	for (const field of ["enabled", "agentConfig"] as const) {
-		const fieldValue = obj[field];
-		if (fieldValue === undefined) continue;
-		if (typeof fieldValue !== "boolean") {
-			return invalid(source, `'${field}' must be a boolean`);
+	if (obj.enabled !== undefined) {
+		if (typeof obj.enabled !== "boolean") {
+			return invalid(source, "'enabled' must be a boolean");
 		}
-		result[field] = fieldValue;
+		result.enabled = obj.enabled;
+	}
+	// agentConfig bind-mounts the host user's live agent credentials
+	// (~/.claude, ~/.codex, ...) into the container. A cloned repo must not be
+	// able to turn that on for itself — same trust rule as mounts/env.
+	if (obj.agentConfig !== undefined) {
+		if (typeof obj.agentConfig !== "boolean") {
+			return invalid(source, "'agentConfig' must be a boolean");
+		}
+		if (!options.machineLocal) {
+			console.warn(
+				`Ignoring sandbox 'agentConfig' from ${source}: only machine-local ` +
+					"config (~/.superset/projects/... or config.local.json) may set it",
+			);
+		} else {
+			result.agentConfig = obj.agentConfig;
+		}
 	}
 	for (const field of ["image", "runtime"] as const) {
 		const fieldValue = obj[field];

@@ -164,6 +164,25 @@ export async function startContainer(name: string): Promise<void> {
 	await docker(["start", name], { timeoutMs: 60_000 });
 }
 
+/**
+ * Rename a container in place. Unlike remove+recreate, this preserves the
+ * running container and its live `docker exec` (terminal) sessions. Returns
+ * false if the source is gone or the target name is already taken, so the
+ * caller can fall back to removal.
+ */
+export async function renameContainer(
+	from: string,
+	to: string,
+): Promise<boolean> {
+	try {
+		await docker(["rename", from, to], { timeoutMs: 30_000 });
+		return true;
+	} catch (error) {
+		if (error instanceof DockerCliError) return false;
+		throw error;
+	}
+}
+
 export async function removeContainer(name: string): Promise<void> {
 	try {
 		await docker(["rm", "-f", name], { timeoutMs: 60_000 });

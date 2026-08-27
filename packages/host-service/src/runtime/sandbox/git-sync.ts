@@ -94,6 +94,16 @@ export async function syncSandboxCommits(args: {
 		return { status: "no-sandbox-history" };
 	}
 
+	// `reset --mixed` moves whatever branch is checked out. Guard against the
+	// worktree having switched away from args.branch (manual checkout, detached
+	// HEAD) so we never advance the wrong branch to the sandbox commit.
+	const checkedOutBranch = (
+		await git(args.worktreePath, ["rev-parse", "--abbrev-ref", "HEAD"])
+	).trim();
+	if (checkedOutBranch !== args.branch) {
+		return { status: "diverged", ref };
+	}
+
 	const headSha = (await git(args.worktreePath, ["rev-parse", "HEAD"])).trim();
 	if (headSha === sandboxSha) return { status: "up-to-date", ref };
 

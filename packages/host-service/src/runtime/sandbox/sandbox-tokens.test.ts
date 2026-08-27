@@ -17,17 +17,19 @@ describe("sandbox hook tokens", () => {
 		expect(getOrCreateHookToken("ws-b")).not.toBe(a);
 	});
 
-	test("verification is tolerant of absence, strict on mismatch", () => {
-		// No token registered (host workspace): everything passes.
+	test("verification passes when no token is registered", () => {
+		// No token registered (host workspace, pre-update script): all pass.
 		expect(verifyHookToken("ws-none", undefined)).toBe(true);
 		expect(verifyHookToken("ws-none", "whatever")).toBe(true);
+	});
 
+	test("verification requires a matching token once one is registered", () => {
 		const token = getOrCreateHookToken("ws-a");
-		// Token-less request from a pre-update notify script passes.
-		expect(verifyHookToken("ws-a", undefined)).toBe(true);
-		expect(verifyHookToken("ws-a", token)).toBe(true);
+		// A registered workspace rejects both a missing and a wrong token.
+		expect(verifyHookToken("ws-a", undefined)).toBe(false);
 		expect(verifyHookToken("ws-a", "wrong")).toBe(false);
 		expect(verifyHookToken("ws-a", `${token}x`)).toBe(false);
+		expect(verifyHookToken("ws-a", token)).toBe(true);
 	});
 
 	test("dropped tokens stop constraining verification", () => {

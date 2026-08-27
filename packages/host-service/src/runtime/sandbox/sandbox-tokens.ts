@@ -26,16 +26,18 @@ export function dropHookToken(workspaceId: string): void {
 }
 
 /**
- * Tolerant verification: only a PRESENT-but-mismatched token is rejected.
- * No registered token (host workspaces) and token-less requests (pre-update
- * notify scripts) both pass.
+ * Verification: a workspace with a registered token REQUIRES a matching one —
+ * a missing or wrong token is rejected. Workspaces with no registered token
+ * (host workspaces, pre-update notify scripts) still pass, so this only
+ * tightens sandboxed workspaces without breaking the unsandboxed path.
  */
 export function verifyHookToken(
 	workspaceId: string,
 	presented: string | undefined,
 ): boolean {
 	const registered = hookTokens.get(workspaceId);
-	if (!registered || presented === undefined) return true;
+	if (!registered) return true;
+	if (presented === undefined) return false;
 	const a = Buffer.from(presented);
 	const b = Buffer.from(registered);
 	return a.length === b.length && timingSafeEqual(a, b);

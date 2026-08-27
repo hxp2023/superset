@@ -167,7 +167,9 @@ export function resolveSandboxSettings(
 		},
 		extraMounts: (config.mounts ?? []).map(parseConfigMount),
 		envPassthrough: config.env ?? [],
-		mountAgentConfig: config.agentConfig ?? true,
+		// Default OFF: mounting host agent credentials is opt-in via
+		// machine-local config, so a repo-enabled sandbox never gets them.
+		mountAgentConfig: config.agentConfig ?? false,
 		...(config.git?.cloneDepth && { cloneDepth: config.git.cloneDepth }),
 	};
 }

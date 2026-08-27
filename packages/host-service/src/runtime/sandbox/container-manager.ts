@@ -19,6 +19,7 @@ import {
 	listWorkspaceContainerNames,
 	pullImage,
 	removeContainer,
+	renameContainer,
 	startContainer,
 } from "./docker-cli.ts";
 import { ensureSandboxGit } from "./git-bootstrap.ts";
@@ -63,9 +64,11 @@ export function computeConfigHash(settings: ResolvedSandboxSettings): string {
 
 /**
  * Host agent config mounted read-write so agents inside the sandbox reuse
- * host auth (and OAuth refreshes stay coherent both ways). Accepted v1
- * trade-off — documented in the sandbox config; per-workspace agent homes
- * with in-container login are the hardening follow-up.
+ * host auth (and OAuth refreshes stay coherent both ways). OPT-IN only: gated
+ * behind `agentConfig`, which is honored solely from machine-local config —
+ * a cloned repo can never mount the host user's credentials into its own
+ * sandbox. Per-workspace agent homes with in-container login are the
+ * hardening follow-up.
  *
  * The path list lives in agent-setup next to each agent's wrapper writer,
  * so new agents get their config into sandboxes without touching this file.
@@ -189,6 +192,20 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 
 	const name = getSandboxContainerName(params.workspaceId, params.nameSlug);
 	const configHash = computeConfigHash(params.settings);
+
+	// Heal a display-name drift (workspace or branch rename) by renaming the
+	// existing container in place. `docker rename` keeps the container AND its
+	// live exec/terminal sessions alive, unlike remove+recreate. Only if the
+	// rename can't apply (target taken, source gone) do we fall back to
+	// removing the stale-named leftover.
+	const priorNames = (
+		await listWorkspaceContainerNames(params.workspaceId)
+	).filter((existing) => existing !== name);
+	for (const prior of priorNames) {
+		const renamed = await renameContainer(prior, name);
+		if (!renamed) await removeContainer(prior);
+	}
+
 	const inspection = await inspectContainer(name);
 
 	if (inspection.exists) {
@@ -233,15 +250,6 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 				`Failed to pull sandbox image ${params.settings.image}: ${message}.${hint}`,
 			);
 		}
-	}
-
-	// A rename (workspace or branch) changes the display name; the old-named
-	// container for this workspace would otherwise linger as a duplicate.
-	const staleNames = (
-		await listWorkspaceContainerNames(params.workspaceId)
-	).filter((existing) => existing !== name);
-	for (const stale of staleNames) {
-		await removeContainer(stale);
 	}
 
 	await createContainer(

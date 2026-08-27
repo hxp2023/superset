@@ -122,7 +122,7 @@ describe("resolveSandboxSettings", () => {
 			resources: { pidsLimit: 2048 },
 			extraMounts: [],
 			envPassthrough: [],
-			mountAgentConfig: true,
+			mountAgentConfig: false,
 		});
 	});
 

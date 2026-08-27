@@ -37,17 +37,30 @@ describe("validateSandboxConfig", () => {
 		});
 	});
 
-	test("drops mounts and env from repo-shipped sources but keeps the rest", () => {
+	test("drops mounts, env, and agentConfig from repo-shipped sources but keeps the rest", () => {
 		const config = validateSandboxConfig(
 			{
 				enabled: true,
+				image: "repo/custom:latest",
+				agentConfig: true,
 				mounts: ["/Users/victim/.ssh"],
 				env: ["AWS_SECRET_ACCESS_KEY"],
 			},
 			"repo/.superset/config.json",
 			REPO_SOURCE,
 		);
-		expect(config).toEqual({ enabled: true });
+		// A cloned repo can opt its workspaces into a sandbox and pick an image,
+		// but must NOT be able to mount the host's agent credentials.
+		expect(config).toEqual({ enabled: true, image: "repo/custom:latest" });
+	});
+
+	test("keeps agentConfig from a machine-local source", () => {
+		const config = validateSandboxConfig(
+			{ enabled: true, agentConfig: true },
+			"~/.superset/projects/app/config.json",
+			MACHINE_LOCAL,
+		);
+		expect(config).toEqual({ enabled: true, agentConfig: true });
 	});
 
 	test.each([
