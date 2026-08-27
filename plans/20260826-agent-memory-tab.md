@@ -2,9 +2,10 @@
 
 ## What
 
-A new top-level dashboard tab, **Memory**, that shows what each coding agent
-remembers on this machine and lets the user edit it with the existing TipTap
-markdown editor. Three columns: agents → files → editor. Per agent it covers:
+A new **Settings → Memory** tab (Editor & Workflow group, next to Agents)
+that shows what each coding agent remembers on this machine and lets the user
+edit it with the existing TipTap markdown editor. Three columns: agents →
+files → editor. Per agent it covers:
 
 - the **global** instruction file (Claude Code's `~/.claude/CLAUDE.md`, Codex's
   `~/.codex/AGENTS.md`, Gemini's `GEMINI.md`, opencode's `AGENTS.md`);
@@ -60,9 +61,11 @@ never a path — copying the shape of the desktop `plugins.getSkillContent`/
 
 ### Desktop renderer (`apps/desktop`)
 
-- New route dir `routes/_authenticated/_dashboard/memory/` — `layout.tsx`
-  (drag strip + scroll reset, same as plugins) and `page.tsx` (feature-flag
-  gate with dev bypass, `?agent=` search param for deep links).
+- New route dir `routes/_authenticated/settings/memory/` — `page.tsx`
+  (feature-flag gate with dev bypass, `?agent=` search param for deep links).
+  Built first as a dashboard tab, then relocated: this is configuration of
+  agent state, so it belongs beside Settings → Agents rather than holding a
+  top-level sidebar slot.
 - `MemoryView` — three columns: `MemoryAgentList` (rail with per-agent file
   counts) + `MemoryFileList` (grouped Global / per-project files) +
   `MemoryEditor`. Host = active local host from `useLocalHostService`, same as
@@ -74,9 +77,10 @@ never a path — copying the shape of the desktop `plugins.getSkillContent`/
   revision. Clean editors adopt external changes on focus refetch (agents
   rewrite these files mid-session); dirty editors keep the draft and surface
   `CONFLICT` on save with a Reload action.
-- Sidebar buttons (collapsed rail + expanded list) and the
-  `onDashboardViewRoute` predicate line in `_dashboard/layout.tsx`, gated like
-  Plugins: `FEATURE_FLAGS.MEMORY` or dev build.
+- Settings registration: sidebar item in `GeneralSettings` (flag-gated like
+  the route: `FEATURE_FLAGS.MEMORY` or dev build), `SettingsSection` type,
+  search index entry (v2 variant), `usesInnerSidebar` + section/path maps in
+  `settings/layout.tsx`, and a settings command-palette tab.
 - `AgentIcon` promoted from `settings/agents/components/V2AgentsSettings/...`
   to `renderer/components/AgentIcon` — the Memory tab is its first consumer
   outside settings.
