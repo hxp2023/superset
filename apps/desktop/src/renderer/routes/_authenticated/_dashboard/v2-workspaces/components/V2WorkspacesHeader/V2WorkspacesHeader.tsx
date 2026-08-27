@@ -79,13 +79,6 @@ const ARCHIVED_WINDOW_LABELS: Record<V2WorkspacesArchivedWindow, string> = {
 	all: "All",
 };
 
-const ARCHIVED_TRIGGER_LABELS: Record<V2WorkspacesArchivedWindow, string> = {
-	none: "Hiding archived",
-	week: "Archived: past week",
-	month: "Archived: past month",
-	all: "Showing archived",
-};
-
 interface V2WorkspacesHeaderProps {
 	hostOptions: V2WorkspaceHostOption[];
 	projectOptions: V2WorkspaceProjectOption[];
@@ -224,8 +217,8 @@ export function V2WorkspacesHeader({
 			? values.filter((entry) => entry !== value)
 			: [...values, value];
 
-	// Device, project, and archived are first-class controls that show their
-	// own state; the Filter badge only counts what lives inside its menu.
+	// Device and project are first-class controls that show their own state;
+	// the Filter badge only counts what lives inside its menu.
 	const activeFilterCount =
 		(prStateFilters.length > 0 ? 1 : 0) +
 		(agentStatusFilters.length > 0 ? 1 : 0) +
@@ -320,7 +313,7 @@ export function V2WorkspacesHeader({
 					onChange={setSearchQuery}
 					placeholder="Search workspaces…"
 					label="Search workspaces"
-					className="bg-transparent shadow-none dark:bg-transparent"
+					className="bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
 					containerClassName="-ml-3"
 				/>
 
@@ -374,44 +367,6 @@ export function V2WorkspacesHeader({
 									</DropdownMenuItem>
 								</>
 							) : null}
-						</DropdownMenuContent>
-					</DropdownMenu>
-
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="ghost"
-								size="sm"
-								className={cn(
-									"h-8 gap-1.5 px-2 font-normal",
-									archivedWindow === "none" && "text-muted-foreground",
-								)}
-							>
-								<LuArchive className="size-3.5" />
-								{ARCHIVED_TRIGGER_LABELS[archivedWindow]}
-								<LuChevronDown className="size-3 opacity-60" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="min-w-[10rem]">
-							<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-								Archived
-							</DropdownMenuLabel>
-							<DropdownMenuRadioGroup
-								value={archivedWindow}
-								onValueChange={(next) =>
-									setArchivedWindow(next as V2WorkspacesArchivedWindow)
-								}
-							>
-								{(
-									Object.keys(
-										ARCHIVED_WINDOW_LABELS,
-									) as V2WorkspacesArchivedWindow[]
-								).map((window) => (
-									<DropdownMenuRadioItem key={window} value={window}>
-										{ARCHIVED_WINDOW_LABELS[window]}
-									</DropdownMenuRadioItem>
-								))}
-							</DropdownMenuRadioGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
 
@@ -625,6 +580,29 @@ export function V2WorkspacesHeader({
 								{V2_WORKSPACES_SORT_MODES.map((mode) => (
 									<DropdownMenuRadioItem key={mode} value={mode}>
 										{V2_WORKSPACES_SORT_LABELS[mode]}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuRadioGroup>
+							<DropdownMenuSeparator />
+							<DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+								<span className="flex items-center gap-1.5">
+									<LuArchive className="size-3" />
+									Archived
+								</span>
+							</DropdownMenuLabel>
+							<DropdownMenuRadioGroup
+								value={archivedWindow}
+								onValueChange={(next) =>
+									setArchivedWindow(next as V2WorkspacesArchivedWindow)
+								}
+							>
+								{(
+									Object.keys(
+										ARCHIVED_WINDOW_LABELS,
+									) as V2WorkspacesArchivedWindow[]
+								).map((window) => (
+									<DropdownMenuRadioItem key={window} value={window}>
+										{ARCHIVED_WINDOW_LABELS[window]}
 									</DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>
