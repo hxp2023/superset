@@ -40,21 +40,29 @@ export async function ensureCliTokenFile(
 	return { hostDir };
 }
 
-/** Timing-safe check against every registered sandbox CLI token. */
-export function isValidSandboxCliToken(presented: string): boolean {
+/**
+ * The workspace a sandbox CLI token belongs to, or null if it matches none.
+ * Timing-safe: compares against every registered token with no early exit, so
+ * the work is independent of match position.
+ */
+export function resolveSandboxTokenWorkspace(presented: string): string | null {
 	const presentedBuffer = Buffer.from(presented);
-	let valid = false;
-	for (const token of cliTokens.values()) {
+	let match: string | null = null;
+	for (const [workspaceId, token] of cliTokens.entries()) {
 		const tokenBuffer = Buffer.from(token);
 		if (
 			presentedBuffer.length === tokenBuffer.length &&
 			timingSafeEqual(presentedBuffer, tokenBuffer)
 		) {
-			// No early exit: keep comparison count independent of match position.
-			valid = true;
+			match = workspaceId;
 		}
 	}
-	return valid;
+	return match;
+}
+
+/** Timing-safe check against every registered sandbox CLI token. */
+export function isValidSandboxCliToken(presented: string): boolean {
+	return resolveSandboxTokenWorkspace(presented) !== null;
 }
 
 export function dropCliToken(workspaceId: string): void {

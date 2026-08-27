@@ -483,6 +483,13 @@ async function registerLocalWorkspace(args: {
 	worktreePath: string;
 	taskId: string | undefined;
 	rollbackWorktree: () => Promise<void>;
+	/**
+	 * Skip the eager sandbox bootstrap here — the caller will trigger it after
+	 * a possible AI branch rename, so the isolated git dir is initialized with
+	 * the FINAL branch (bootstrapping before the rename strands commits under
+	 * the old ref, which syncSandbox then can't find).
+	 */
+	deferSandboxBootstrap?: boolean;
 }): Promise<CloudWorkspace> {
 	const { ctx } = args;
 
@@ -511,8 +518,9 @@ async function registerLocalWorkspace(args: {
 
 	// Provision the sandbox container now (fire-and-forget) rather than on
 	// first terminal — creation shows "Initializing sandbox…" and the first
-	// PTY joins the in-flight ensure instead of paying the cold start.
-	if (localRow.sandboxEnabled) {
+	// PTY joins the in-flight ensure instead of paying the cold start. Skipped
+	// when the caller defers past a pending branch rename (see the param doc).
+	if (localRow.sandboxEnabled && !args.deferSandboxBootstrap) {
 		bootstrapWorkspaceSandbox(
 			{ db: ctx.db, eventBus: ctx.eventBus },
 			localRow.id,
@@ -1072,6 +1080,7 @@ export const workspacesRouter = router({
 									});
 							}
 
+							aiCanRenameBranch = !typedBranch;
 							workspaceRow = await registerLocalWorkspace({
 								ctx,
 								id: input.id,
@@ -1081,8 +1090,12 @@ export const workspacesRouter = router({
 								worktreePath,
 								taskId: input.taskId,
 								rollbackWorktree,
+								// A branch rename may still be applied below; bootstrap
+								// the sandbox only after it so the isolated git dir gets
+								// the final branch name.
+								deferSandboxBootstrap:
+									aiCanRenameBranch && aiNamesPromise != null,
 							});
-							aiCanRenameBranch = !typedBranch;
 						}
 					}
 				}
@@ -1122,6 +1135,25 @@ export const workspacesRouter = router({
 					} catch (err) {
 						console.warn("[workspaces.create] AI rename failed", err);
 					}
+				}
+			}
+
+			// Deferred until after the possible rename above (matches the
+			// deferSandboxBootstrap condition passed to registerLocalWorkspace):
+			// the workspace row now carries the final branch, so the isolated
+			// git dir bootstraps on the right ref. No-op if not sandboxed.
+			if (
+				workspaceRow &&
+				!alreadyExists &&
+				aiCanRenameBranch &&
+				aiNamesPromise != null
+			) {
+				const finalRow = getLocalWorkspace(ctx.db, workspaceRow.id);
+				if (finalRow?.sandboxEnabled) {
+					bootstrapWorkspaceSandbox(
+						{ db: ctx.db, eventBus: ctx.eventBus },
+						workspaceRow.id,
+					);
 				}
 			}
 

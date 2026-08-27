@@ -10,6 +10,7 @@ import {
 	CONTAINER_BASH_RCFILE,
 	CONTAINER_HOST_DIR,
 	getSandboxContainerName,
+	getWorkspaceSandboxPaths,
 } from "./paths.ts";
 import { getOrCreateHookToken } from "./sandbox-tokens.ts";
 import type {
@@ -88,6 +89,9 @@ export class DockerRuntime implements WorkspaceRuntime {
 			// The generated container rcfile always installs the OSC 133;A
 			// prompt marker (sandbox-home.ts owns the contract).
 			expectsReadyMarker: true,
+			// Staged launch scripts must be readable inside the container at the
+			// same host path — this dir is bind-mounted there (container-manager).
+			stagingDir: getWorkspaceSandboxPaths(this.params.workspaceId).launchDir,
 		};
 	}
 

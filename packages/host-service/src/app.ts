@@ -20,6 +20,7 @@ import { createGitEnvResolver, createGitFactory } from "./runtime/git";
 import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
 import { runProjectBackfill } from "./runtime/project-backfill";
 import { PullRequestRuntimeManager } from "./runtime/pull-requests";
+import { resolveSandboxTokenWorkspace } from "./runtime/sandbox/sandbox-cli-tokens";
 import { runSandboxReconcile } from "./runtime/sandbox/sandbox-reconcile";
 import {
 	readSandboxIdentity,
@@ -36,6 +37,7 @@ import {
 	execGh as defaultExecGh,
 	type ExecGh,
 } from "./trpc/router/workspace-creation/utils/exec-gh";
+import { checkSandboxWsAccess } from "./trpc/sandbox-token-acl";
 import type { ApiClient, BrowserBridgeConfig } from "./types";
 import { getHostWorkerPool } from "./workers/host-worker-pool";
 import { gitWorkspaceRefsTask } from "./workers/tasks/git";
@@ -256,11 +258,27 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	})();
 
 	const wsAuth: MiddlewareHandler = async (c, next) => {
-		const token = c.req.query("token");
+		const queryToken = c.req.query("token");
+		const authHeader = c.req.header("authorization");
+		const bearer = authHeader?.startsWith("Bearer ")
+			? authHeader.slice(7)
+			: undefined;
 		const authorized =
 			(await providers.hostAuth.validate(c.req.raw)) ||
-			(token && (await providers.hostAuth.validateToken(token)));
+			(queryToken != null &&
+				(await providers.hostAuth.validateToken(queryToken)));
 		if (!authorized) return c.json({ error: "Unauthorized" }, 401);
+		// Sandbox-token principals get the same workspace scoping as tRPC: only
+		// their own terminals, never host-scoped sockets or session creation.
+		const sandboxWs = resolveSandboxTokenWorkspace(queryToken ?? bearer ?? "");
+		if (sandboxWs) {
+			const decision = checkSandboxWsAccess({
+				path: new URL(c.req.url).pathname,
+				tokenWorkspaceId: sandboxWs,
+				db,
+			});
+			if (!decision.allowed) return c.json({ error: "Forbidden" }, 403);
+		}
 		return next();
 	};
 	app.use("/terminal/*", wsAuth);
@@ -296,6 +314,16 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 			allowMethodOverride: true,
 			createContext: async (_opts, c) => {
 				const isAuthenticated = await providers.hostAuth.validate(c.req.raw);
+				// Identify a sandbox-token principal so protectedProcedure can
+				// scope it to its own workspace. The bearer is the same token the
+				// container's bundled CLI sends; PSK requests resolve to null.
+				const authHeader = c.req.header("authorization");
+				const bearer = authHeader?.startsWith("Bearer ")
+					? authHeader.slice(7)
+					: undefined;
+				const sandboxWorkspaceId = bearer
+					? (resolveSandboxTokenWorkspace(bearer) ?? undefined)
+					: undefined;
 				return {
 					git,
 					credentials: providers.credentials,
@@ -308,6 +336,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 					terminalAgentStore,
 					organizationId: config.organizationId,
 					isAuthenticated,
+					sandboxWorkspaceId,
 					clientMachineId:
 						c.req.header("x-superset-client-machine-id") ?? undefined,
 					agentHookHeaderToken:

@@ -508,6 +508,13 @@ interface TerminalSession {
 	launchShellName: string;
 
 	/**
+	 * Where to stage launch scripts (long initial commands, fish transport).
+	 * Set for sandbox runtimes to a bind-mounted host dir readable at the same
+	 * path inside the container; undefined → host tmpdir().
+	 */
+	stagingDir?: string;
+
+	/**
 	 * Side-channel UTF-8 decoder. portManager.checkOutputForHint takes a
 	 * string and does text-pattern matching for "Local: http://…" hints,
 	 * so we keep a per-session StringDecoder that buffers partial codepoints
@@ -1633,10 +1640,10 @@ function stageInitialCommandScript(
 ): { typedLine: string; scriptPath: string } | null {
 	const safeId = session.terminalId.replace(/[^\w-]/g, "_").slice(0, 60);
 	const scriptPath = join(
-		tmpdir(),
+		session.stagingDir ?? tmpdir(),
 		`superset-launch-${safeId}-${randomBytes(4).toString("hex")}.sh`,
 	);
-	// tmpdir paths never contain quotes, so this quoting is identical in
+	// staging-dir paths never contain quotes, so this quoting is identical in
 	// POSIX shells and fish.
 	const quotedPath = `'${scriptPath.replaceAll("'", "'\\''")}'`;
 	const sourceKeyword = session.launchShellName === "fish" ? "source" : ".";
@@ -1961,7 +1968,7 @@ function stageFishPromptTransport(
 ): { commandText: string; promptPath: string } | null {
 	const safeId = session.terminalId.replace(/[^\w-]/g, "_").slice(0, 60);
 	const promptPath = join(
-		tmpdir(),
+		session.stagingDir ?? tmpdir(),
 		`superset-launch-prompt-${safeId}-${randomBytes(4).toString("hex")}.txt`,
 	);
 	try {
@@ -2704,6 +2711,7 @@ export async function createTerminalSessionInternal({
 		// host-service lifetime — flag it as queued so we don't double-fire it.
 		initialCommandQueued: isAdopted,
 		launchShellName: basename(launch.shell),
+		stagingDir: launch.stagingDir,
 		portHintDecoder: new StringDecoder("utf8"),
 		modeTracker,
 		adoptionReplaySettled: Promise.resolve(),

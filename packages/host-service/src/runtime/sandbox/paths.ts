@@ -42,6 +42,12 @@ export interface WorkspaceSandboxPaths {
 	dotGitFile: string;
 	/** HEAD sha the sandbox git dir was bootstrapped from. */
 	bootstrapShaFile: string;
+	/**
+	 * Host dir for staged launch scripts (long initial commands / fish prompt
+	 * transport), bind-mounted at the SAME path inside the container so the
+	 * `source <path>` the shell runs resolves in both. Removed with stateDir.
+	 */
+	launchDir: string;
 }
 
 export function getWorkspaceSandboxPaths(
@@ -53,6 +59,7 @@ export function getWorkspaceSandboxPaths(
 		gitDir: join(stateDir, "git"),
 		dotGitFile: join(stateDir, "dot-git"),
 		bootstrapShaFile: join(stateDir, "bootstrap-sha"),
+		launchDir: join(stateDir, "launch"),
 	};
 }
 

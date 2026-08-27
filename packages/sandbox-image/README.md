@@ -48,6 +48,9 @@ them installed; their host config dirs already mount into the sandbox.
 
 ## Publishing
 
-CI publishing to `ghcr.io/superset-sh/sandbox` (multi-arch, with the linux
-`superset` CLI baked in) is planned; until then build locally and override
-`sandbox.image`.
+`.github/workflows/publish-sandbox-image.yml` builds and pushes the multi-arch
+image to `ghcr.io/superset-sh/sandbox:latest` on every push to `main` that
+touches this package (or via manual `workflow_dispatch`). That is the default
+`sandbox.image` for non-development hosts. For local development the runtime
+defaults to the locally built `superset-sandbox:dev` instead, so a published
+image isn't required to dogfood.

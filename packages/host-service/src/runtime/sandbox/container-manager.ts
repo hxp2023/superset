@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { AGENT_HOME_CONFIG_PATHS } from "@superset/agent-setup/agent-home-paths";
@@ -111,6 +111,10 @@ function buildWorkspaceMounts(
 			readOnly: true,
 		},
 		{ source: paths.gitDir, target: CONTAINER_GIT_DIR },
+		// Staged launch scripts at their host path (read-write), so a long
+		// initial command / fish transport the shell `source`s resolves in the
+		// container. Same source==target keeps the typed path valid both sides.
+		{ source: paths.launchDir, target: paths.launchDir },
 		// File-over-file mask: hides the worktree's real .git pointer (which
 		// targets the unmounted main repo) behind the sandbox git dir path.
 		{
@@ -189,6 +193,10 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 	});
 	// Also re-registers the token in-memory after host-service restarts.
 	const cliToken = await ensureCliTokenFile(params.workspaceId);
+	// Bind-mount target for staged launch scripts must exist before create.
+	await mkdir(getWorkspaceSandboxPaths(params.workspaceId).launchDir, {
+		recursive: true,
+	});
 
 	const name = getSandboxContainerName(params.workspaceId, params.nameSlug);
 	const configHash = computeConfigHash(params.settings);

@@ -40,6 +40,12 @@ export interface PtyLaunchSpec {
 	 * initial commands can safely wait for shell readiness before typing.
 	 */
 	expectsReadyMarker: boolean;
+	/**
+	 * Directory for staged launch scripts (long initial commands, fish prompt
+	 * transport). Must be readable by the shell at the SAME path — for the
+	 * docker runtime this is a bind-mounted host dir. Undefined → host tmpdir.
+	 */
+	stagingDir?: string;
 }
 
 export interface WorkspaceRuntime {
