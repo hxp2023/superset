@@ -303,6 +303,60 @@ describe("renderReviewReportHtml", () => {
 		expect(lineCount).toBe(3);
 	});
 
+	it("renders a plain PR's markdown description instead of the findings empty state when no findings are given", () => {
+		const html = renderReviewReportHtml({
+			title: "Add caching layer",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description:
+				"## Summary\n\nAdds a **cache** with `LRU` eviction.\n\n- fast\n- simple",
+		});
+		expect(html).not.toContain("No findings");
+		expect(html).toContain('<div class="markdown">');
+		expect(html).toContain("<h2>Summary</h2>");
+		expect(html).toContain(
+			"Adds a <strong>cache</strong> with <code>LRU</code> eviction.",
+		);
+		expect(html).toContain("<li>fast</li>");
+		expect(html).toContain("<li>simple</li>");
+	});
+
+	it("omits the findings pill for a plain PR description view", () => {
+		const html = renderReviewReportHtml({
+			title: "Add caching layer",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Plain body.",
+		});
+		expect(html).not.toContain('class="pill');
+	});
+
+	it("prefers findings over a description when both are given", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "Should not render.",
+			findings: [
+				{
+					file: "a.ts",
+					summary: "confirmed issue",
+					failureScenario: "n/a",
+					verdict: "CONFIRMED",
+				},
+			],
+		});
+		expect(html).toContain("confirmed issue");
+		expect(html).not.toContain('<div class="markdown">');
+	});
+
+	it("escapes HTML in a markdown description and in link/code spans", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "<script>alert(1)</script>\n\n[click](javascript:alert(1))",
+		});
+		expect(html).not.toContain("<script>alert(1)</script>");
+		expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+	});
+
 	it("resolves the full path when it contains a literal ' b/' substring", () => {
 		const diff = [
 			"diff --git a/a.ts b/a b/c.ts",

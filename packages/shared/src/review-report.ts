@@ -17,9 +17,16 @@ export interface ReviewReportInput {
 	commitSha?: string;
 	effortLevel?: string;
 	generatedAt: string | Date;
-	findings: ReviewReportFinding[];
+	findings?: ReviewReportFinding[];
 	/** Raw unified diff text, e.g. the output of `gh pr diff <n>`. */
 	diff?: string;
+	/**
+	 * A PR's own markdown description. Rendered in the Summary tab only when
+	 * there are no findings — a plain PR view (no AI review ever ran) has no
+	 * findings to show, and the findings summary pill would misleadingly imply
+	 * a review ran and found nothing.
+	 */
+	description?: string;
 }
 
 interface DiffLine {
@@ -364,21 +371,180 @@ function renderMetaItems(review: ReviewReportInput): string[] {
 
 const META_SEPARATOR = "\n\t\t<span aria-hidden>·</span>\n\t\t";
 
+// A plain-string placeholder (not a regex) sidesteps both the control-char
+// lint a regex literal would trip and any risk of the token appearing
+// unescaped in real prose.
+const CODE_PLACEHOLDER = "CODE";
+
+/** Inline markdown within a single line/paragraph: code, bold, italic, links. */
+function renderInline(text: string): string {
+	const codeSpans: string[] = [];
+	// Pull inline code out first so its literal contents never get treated as
+	// bold/italic/link syntax, then patch the escaped spans back in by a
+	// placeholder token unlikely to collide with real prose.
+	const withPlaceholders = text.replace(/`([^`]+)`/g, (_match, code) => {
+		codeSpans.push(`<code>${escapeHtml(code)}</code>`);
+		return CODE_PLACEHOLDER;
+	});
+
+	let html = escapeHtml(withPlaceholders);
+	// Links first — its own escaped brackets/parens would otherwise collide
+	// with the bold/italic patterns below. A PR description is authored by
+	// whoever opened the PR, not us — reject any scheme but http(s)/mailto so
+	// a `javascript:`/`data:` link can't run script on click; anything else
+	// degrades to plain (already-escaped) text rather than a live link.
+	html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label, url) => {
+		const isSafe = /^(https?:|mailto:)/i.test(url) || /^[^a-z]/i.test(url);
+		if (!isSafe) return match;
+		return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+	});
+	html = html.replace(
+		/\*\*([^*]+)\*\*|__([^_]+)__/g,
+		(_match, a, b) => `<strong>${a ?? b}</strong>`,
+	);
+	html = html.replace(
+		/\*([^*]+)\*|_([^_]+)_/g,
+		(_match, a, b) => `<em>${a ?? b}</em>`,
+	);
+
+	let spanIndex = 0;
+	return html.replaceAll(CODE_PLACEHOLDER, () => codeSpans[spanIndex++] ?? "");
+}
+
+/**
+ * Minimal markdown-to-HTML for a PR's own description — headers, fenced code
+ * blocks, blockquotes, lists, and paragraphs with inline formatting. Not a
+ * full CommonMark implementation (no nested lists, no tables); this package
+ * stays dependency-free by design, same reasoning as parseUnifiedDiff above.
+ */
+function renderMarkdown(markdown: string): string {
+	const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+	const blocks: string[] = [];
+	let paragraph: string[] = [];
+	let list: { tag: "ul" | "ol"; items: string[] } | null = null;
+	let quote: string[] | null = null;
+
+	const flushParagraph = () => {
+		if (paragraph.length === 0) return;
+		blocks.push(`<p>${renderInline(paragraph.join(" "))}</p>`);
+		paragraph = [];
+	};
+	const flushList = () => {
+		if (!list) return;
+		const items = list.items
+			.map((item) => `<li>${renderInline(item)}</li>`)
+			.join("");
+		blocks.push(`<${list.tag}>${items}</${list.tag}>`);
+		list = null;
+	};
+	const flushQuote = () => {
+		if (!quote) return;
+		blocks.push(`<blockquote>${renderInline(quote.join(" "))}</blockquote>`);
+		quote = null;
+	};
+	const flushAll = () => {
+		flushParagraph();
+		flushList();
+		flushQuote();
+	};
+
+	let i = 0;
+	while (i < lines.length) {
+		const line = lines[i] ?? "";
+
+		const fence = /^```(\w*)\s*$/.exec(line);
+		if (fence) {
+			flushAll();
+			const codeLines: string[] = [];
+			i += 1;
+			while (i < lines.length && !/^```\s*$/.test(lines[i] ?? "")) {
+				codeLines.push(lines[i] ?? "");
+				i += 1;
+			}
+			blocks.push(
+				`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
+			);
+			i += 1; // skip closing fence
+			continue;
+		}
+
+		const heading = /^(#{1,4})\s+(.*)$/.exec(line);
+		if (heading?.[1] && heading[2] !== undefined) {
+			flushAll();
+			const level = heading[1].length;
+			blocks.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+			i += 1;
+			continue;
+		}
+
+		if (/^\s*>\s?/.test(line)) {
+			flushParagraph();
+			flushList();
+			quote ??= [];
+			quote.push(line.replace(/^\s*>\s?/, ""));
+			i += 1;
+			continue;
+		}
+		flushQuote();
+
+		const unordered = /^\s*[-*]\s+(.*)$/.exec(line);
+		const ordered = /^\s*\d+\.\s+(.*)$/.exec(line);
+		if (unordered || ordered) {
+			flushParagraph();
+			const tag = ordered ? "ol" : "ul";
+			const item = (unordered?.[1] ?? ordered?.[1] ?? "").trim();
+			if (!list || list.tag !== tag) {
+				flushList();
+				list = { tag, items: [] };
+			}
+			list.items.push(item);
+			i += 1;
+			continue;
+		}
+		flushList();
+
+		if (/^\s*$/.test(line)) {
+			flushParagraph();
+			i += 1;
+			continue;
+		}
+		if (/^(---|\*\*\*|___)\s*$/.test(line)) {
+			flushParagraph();
+			blocks.push("<hr>");
+			i += 1;
+			continue;
+		}
+
+		paragraph.push(line.trim());
+		i += 1;
+	}
+	flushAll();
+
+	return blocks.join("\n");
+}
+
 export function renderReviewReportHtml(review: ReviewReportInput): string {
+	const findings = review.findings ?? [];
 	const groups = VERDICT_GROUPS.map((group) => ({
 		...group,
-		findings: review.findings.filter((f) => f.verdict === group.key),
+		findings: findings.filter((f) => f.verdict === group.key),
 	})).filter((group) => group.findings.length > 0);
 
 	const counts: Record<Tone, number> = {
-		confirmed: review.findings.filter((f) => f.verdict === "CONFIRMED").length,
-		plausible: review.findings.filter((f) => f.verdict === "PLAUSIBLE").length,
-		unverified: review.findings.filter((f) => !f.verdict).length,
+		confirmed: findings.filter((f) => f.verdict === "CONFIRMED").length,
+		plausible: findings.filter((f) => f.verdict === "PLAUSIBLE").length,
+		unverified: findings.filter((f) => !f.verdict).length,
 		clear: 0,
 	};
 
-	const body =
-		groups.length === 0
+	// A plain PR view (no AI review ever ran) has no findings to show — a
+	// description renders instead of the "no findings" empty state, and the
+	// findings pill is dropped rather than implying a review ran clean.
+	const isPlainPrView = findings.length === 0 && Boolean(review.description);
+
+	const body = isPlainPrView
+		? `<div class="markdown">${renderMarkdown(review.description ?? "")}</div>`
+		: groups.length === 0
 			? `<div class="section-body"><div class="empty-row">${icon("check", "")}No findings — this review didn't flag anything.</div></div>`
 			: groups
 					.map(
@@ -396,7 +562,9 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 					.join("\n");
 
 	const titleHtml = escapeHtml(review.title);
-	const metaItems = [renderSummaryPill(counts), ...renderMetaItems(review)];
+	const metaItems = isPlainPrView
+		? renderMetaItems(review)
+		: [renderSummaryPill(counts), ...renderMetaItems(review)];
 	const githubButtonHtml = review.prUrl
 		? `<a class="gh-btn" href="${escapeHtml(review.prUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open pull request in GitHub" title="Open pull request in GitHub">${GITHUB_ICON_SVG}</a>`
 		: "";
@@ -724,6 +892,24 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 .diff-remove { border-left-color: var(--diff-remove-border); background: var(--diff-remove-bg); color: var(--diff-remove-fg); }
 .diff-context { color: var(--muted-foreground); }
 .diff-binary { padding: 0.625rem 0.75rem; color: var(--muted-foreground); font-style: italic; }
+/* Plain-PR description prose — a PR body's own markdown, not app-matched
+   pixel-for-pixel like the findings/diff UI above, just clean and readable. */
+.markdown { font-size: 0.875rem; line-height: 1.6; }
+.markdown > *:first-child { margin-top: 0; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 { font-weight: 600; line-height: 1.3; margin: 1.25rem 0 0.5rem; }
+.markdown h1 { font-size: 1.25rem; }
+.markdown h2 { font-size: 1.125rem; }
+.markdown h3 { font-size: 1rem; }
+.markdown h4 { font-size: 0.875rem; }
+.markdown p { margin: 0.75rem 0; }
+.markdown ul, .markdown ol { margin: 0.75rem 0; padding-left: 1.5rem; }
+.markdown li { margin: 0.25rem 0; }
+.markdown blockquote { margin: 0.75rem 0; padding: 0 0 0 0.75rem; border-left: 3px solid var(--border); color: var(--muted-foreground); }
+.markdown code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.8125rem; background: color-mix(in oklab, var(--muted) 60%, transparent); border-radius: 4px; padding: 0.0625rem 0.3125rem; }
+.markdown pre { margin: 0.75rem 0; padding: 0.75rem; overflow-x: auto; background: color-mix(in oklab, var(--muted) 35%, transparent); border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); border-radius: 8px; }
+.markdown pre code { background: none; padding: 0; }
+.markdown a { color: var(--foreground); text-decoration: underline; text-underline-offset: 2px; }
+.markdown hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
 </style>
 </head>
 <body>
