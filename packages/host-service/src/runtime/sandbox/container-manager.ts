@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, join } from "node:path";
+import { join } from "node:path";
+import { AGENT_HOME_CONFIG_PATHS } from "@superset/agent-setup/agent-home-paths";
 import {
 	buildContainerCreateArgs,
 	CONFIG_HASH_LABEL,
@@ -65,16 +66,22 @@ export function computeConfigHash(settings: ResolvedSandboxSettings): string {
  * host auth (and OAuth refreshes stay coherent both ways). Accepted v1
  * trade-off — documented in the sandbox config; per-workspace agent homes
  * with in-container login are the hardening follow-up.
+ *
+ * The path list lives in agent-setup next to each agent's wrapper writer,
+ * so new agents get their config into sandboxes without touching this file.
+ * Only paths that exist on the host are mounted — an agent the user never
+ * ran contributes nothing.
  */
 function buildAgentConfigMounts(): MountSpec[] {
 	const home = homedir();
-	return [".claude", ".claude.json", ".codex"]
-		.map((entry) => join(home, entry))
-		.filter((source) => existsSync(source))
-		.map((source) => ({
-			source,
-			target: `${CONTAINER_HOME_DIR}/${basename(source)}`,
-		}));
+	return AGENT_HOME_CONFIG_PATHS.filter((entry) =>
+		existsSync(join(home, entry)),
+	).map((entry) => ({
+		source: join(home, entry),
+		// Preserve the home-relative shape (e.g. .config/opencode) so XDG
+		// paths land where the CLI looks for them in-container.
+		target: `${CONTAINER_HOME_DIR}/${entry}`,
+	}));
 }
 
 function buildWorkspaceMounts(
