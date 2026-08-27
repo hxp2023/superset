@@ -172,7 +172,9 @@ describe("renderReviewReportHtml", () => {
 
 		expect(html).toContain('id="tab-summary"');
 		expect(html).toContain('id="panel-code"');
-		expect(html).toContain("src/foo.ts");
+		expect(html).toContain(
+			'<span class="diff-file-dir">src/</span><span class="diff-file-base">foo.ts</span>',
+		);
 		expect(html).toContain('<span class="diff-stat-add">+1</span>');
 		expect(html).toContain('<span class="diff-stat-del">-1</span>');
 		expect(html).toContain('class="diff-line diff-add"');
@@ -199,7 +201,9 @@ describe("renderReviewReportHtml", () => {
 			findings: [],
 			diff,
 		});
-		expect(html).toContain("src/gone.ts");
+		expect(html).toContain(
+			'<span class="diff-file-dir">src/</span><span class="diff-file-base">gone.ts</span>',
+		);
 		expect(html).toContain('<span class="diff-stat-del">-2</span>');
 	});
 
@@ -260,8 +264,12 @@ describe("renderReviewReportHtml", () => {
 		});
 		expect(html).toContain('class="diff-line diff-remove"');
 		expect(html).toContain('class="diff-line diff-add"');
-		expect(html).toContain("-- old comment");
-		expect(html).toContain("++ new comment");
+		// Word-level diff pairs the two lines and highlights only the changed
+		// span — "old"/"new" — leaving the shared " comment" suffix plain.
+		expect(html).toContain(
+			'<mark class="diff-word-remove">-- old</mark> comment',
+		);
+		expect(html).toContain('<mark class="diff-word-add">++ new</mark> comment');
 	});
 
 	it("resolves a pure rename with no content change from rename to/from lines, even with no a/b prefix", () => {
@@ -370,6 +378,117 @@ describe("renderReviewReportHtml", () => {
 			findings: [],
 			diff,
 		});
-		expect(html).toContain("a b/c.ts");
+		expect(html).toContain(
+			'<span class="diff-file-dir">a b/</span><span class="diff-file-base">c.ts</span>',
+		);
+	});
+
+	it("numbers context/add/remove lines from the hunk header, old and new columns independently", () => {
+		const diff = [
+			"diff --git a/src/foo.ts b/src/foo.ts",
+			"--- a/src/foo.ts",
+			"+++ b/src/foo.ts",
+			"@@ -10,3 +10,4 @@",
+			" kept line",
+			"-removed line",
+			"+added line one",
+			"+added line two",
+			" trailing context",
+		].join("\n");
+
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff,
+		});
+
+		// Context line 10 keeps the same number on both sides.
+		expect(html).toContain(
+			'<span class="diff-ln">10</span>\n\t<span class="diff-ln">10</span>',
+		);
+		// The removed line only has an old-side number.
+		expect(html).toContain(
+			'<span class="diff-ln">11</span>\n\t<span class="diff-ln"></span>',
+		);
+		// Both added lines only have new-side numbers, continuing from 11.
+		expect(html).toContain(
+			'<span class="diff-ln"></span>\n\t<span class="diff-ln">11</span>',
+		);
+		expect(html).toContain(
+			'<span class="diff-ln"></span>\n\t<span class="diff-ln">12</span>',
+		);
+		// Trailing context resumes in sync: old 12, new 13.
+		expect(html).toContain(
+			'<span class="diff-ln">12</span>\n\t<span class="diff-ln">13</span>',
+		);
+	});
+
+	it("marks a line with no trailing newline", () => {
+		const diff = [
+			"diff --git a/src/foo.ts b/src/foo.ts",
+			"--- a/src/foo.ts",
+			"+++ b/src/foo.ts",
+			"@@ -1 +1 @@",
+			"-old",
+			"+new",
+			"\\ No newline at end of file",
+		].join("\n");
+
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff,
+		});
+		expect(html).toContain(
+			'<span class="diff-no-newline">No newline at end of file</span>',
+		);
+	});
+
+	it("shows a Files changed nav with a link per file, only when there's more than one file", () => {
+		const singleFileDiff = [
+			"diff --git a/a.ts b/a.ts",
+			"--- a/a.ts",
+			"+++ b/a.ts",
+			"@@ -1 +1 @@",
+			"-x",
+			"+y",
+		].join("\n");
+		const single = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff: singleFileDiff,
+		});
+		expect(single).not.toContain('<nav class="diff-files-nav">');
+
+		const twoFileDiff = [
+			"diff --git a/a.ts b/a.ts",
+			"--- a/a.ts",
+			"+++ b/a.ts",
+			"@@ -1 +1 @@",
+			"-x",
+			"+y",
+			"diff --git a/b.ts b/b.ts",
+			"--- a/b.ts",
+			"+++ b/b.ts",
+			"@@ -1 +1 @@",
+			"-x",
+			"+y",
+		].join("\n");
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			findings: [],
+			diff: twoFileDiff,
+		});
+		expect(html).toContain(
+			'<h3>Files changed <span class="diff-files-nav-count">2</span></h3>',
+		);
+		expect(html).toContain('<a href="#diff-file-0"');
+		expect(html).toContain('<a href="#diff-file-1"');
+		expect(html).toContain('id="diff-file-0"');
+		expect(html).toContain('id="diff-file-1"');
 	});
 });

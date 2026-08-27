@@ -29,9 +29,20 @@ export interface ReviewReportInput {
 	description?: string;
 }
 
+interface DiffSegment {
+	text: string;
+	changed: boolean;
+}
+
 interface DiffLine {
 	type: "add" | "remove" | "context" | "hunk";
 	content: string;
+	oldLine?: number;
+	newLine?: number;
+	/** No trailing newline in the source file after this line. */
+	noNewline?: boolean;
+	/** Word-level diff, set only when this line paired 1:1 with its counterpart. */
+	segments?: DiffSegment[];
 }
 
 interface DiffFile {
@@ -58,12 +69,23 @@ function parseUnifiedDiff(diffText: string): DiffFile[] {
 	// the diff's leading +/- marker is prepended, which would otherwise
 	// collide with the header-line checks below.
 	let inHeader = true;
+	// Running old/new line counters, reset at each hunk header and advanced
+	// per content line, so every rendered line can show its real line number.
+	let oldLine = 0;
+	let newLine = 0;
+
+	const finishFile = () => {
+		if (current?.path) {
+			pairWordDiffs(current.lines);
+			files.push(current);
+		}
+	};
 
 	// Trim exactly one trailing newline (typical of real `gh pr diff` output)
 	// so it doesn't split into a spurious trailing empty context line.
 	for (const line of diffText.replace(/\n$/, "").split("\n")) {
 		if (line.startsWith("diff --git ")) {
-			if (current?.path) files.push(current);
+			finishFile();
 			current = {
 				path: "",
 				additions: 0,
@@ -85,6 +107,11 @@ function parseUnifiedDiff(diffText: string): DiffFile[] {
 
 		if (line.startsWith("@@")) {
 			inHeader = false;
+			const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
+			if (hunk?.[1] && hunk[2]) {
+				oldLine = Number(hunk[1]);
+				newLine = Number(hunk[2]);
+			}
 			current.lines.push({ type: "hunk", content: line });
 			continue;
 		}
@@ -124,22 +151,124 @@ function parseUnifiedDiff(diffText: string): DiffFile[] {
 
 		if (line.startsWith("+")) {
 			current.additions += 1;
-			current.lines.push({ type: "add", content: line.slice(1) });
+			current.lines.push({ type: "add", content: line.slice(1), newLine });
+			newLine += 1;
 			continue;
 		}
 		if (line.startsWith("-")) {
 			current.deletions += 1;
-			current.lines.push({ type: "remove", content: line.slice(1) });
+			current.lines.push({ type: "remove", content: line.slice(1), oldLine });
+			oldLine += 1;
 			continue;
 		}
-		if (line.startsWith("\\")) continue; // "\ No newline at end of file"
+		if (line.startsWith("\\")) {
+			// "\ No newline at end of file" describes whichever content line
+			// immediately precedes it.
+			const last = current.lines.at(-1);
+			if (last) last.noNewline = true;
+			continue;
+		}
 		if (line.startsWith(" ") || line === "") {
-			current.lines.push({ type: "context", content: line.slice(1) });
+			current.lines.push({
+				type: "context",
+				content: line.slice(1),
+				oldLine,
+				newLine,
+			});
+			oldLine += 1;
+			newLine += 1;
 		}
 	}
-	if (current?.path) files.push(current);
-
+	finishFile();
 	return files;
+}
+
+/** Splits a line's text into word/punctuation/whitespace runs, losslessly. */
+function tokenize(text: string): string[] {
+	return text.match(/\w+|[^\w\s]|\s+/g) ?? [];
+}
+
+/**
+ * Attaches word-level diff segments to 1:1-paired remove/add line runs — the
+ * common "this line was edited" case. Left alone (segments stays unset,
+ * falling back to whole-line coloring) when a run's remove/add counts don't
+ * match, since pairing lines index-by-index across mismatched runs produces
+ * misleading highlights.
+ */
+function pairWordDiffs(lines: DiffLine[]): void {
+	let i = 0;
+	while (i < lines.length) {
+		if (lines[i]?.type !== "remove") {
+			i += 1;
+			continue;
+		}
+		let removeEnd = i;
+		while (lines[removeEnd]?.type === "remove") removeEnd += 1;
+		let addEnd = removeEnd;
+		while (lines[addEnd]?.type === "add") addEnd += 1;
+
+		const removeCount = removeEnd - i;
+		const addCount = addEnd - removeEnd;
+		if (removeCount !== addCount) {
+			i = addEnd;
+			continue;
+		}
+		for (let offset = 0; offset < removeCount; offset++) {
+			const removeLine = lines[i + offset];
+			const addLine = lines[removeEnd + offset];
+			if (!removeLine || !addLine) continue;
+			const [removeSegments, addSegments] = diffWords(
+				removeLine.content,
+				addLine.content,
+			);
+			removeLine.segments = removeSegments;
+			addLine.segments = addSegments;
+		}
+		i = addEnd;
+	}
+}
+
+/** Longest-common-prefix/suffix word diff between two lines. Simple, not a full LCS — good enough for the common single-edit-per-line case. */
+function diffWords(
+	oldText: string,
+	newText: string,
+): [DiffSegment[], DiffSegment[]] {
+	const oldTokens = tokenize(oldText);
+	const newTokens = tokenize(newText);
+	const maxCommon = Math.min(oldTokens.length, newTokens.length);
+
+	let prefix = 0;
+	while (prefix < maxCommon && oldTokens[prefix] === newTokens[prefix]) {
+		prefix += 1;
+	}
+	let suffix = 0;
+	while (
+		suffix < maxCommon - prefix &&
+		oldTokens[oldTokens.length - 1 - suffix] ===
+			newTokens[newTokens.length - 1 - suffix]
+	) {
+		suffix += 1;
+	}
+
+	const toSegments = (tokens: string[]): DiffSegment[] => {
+		const segments: DiffSegment[] = [];
+		if (prefix > 0) {
+			segments.push({ text: tokens.slice(0, prefix).join(""), changed: false });
+		}
+		const middle = tokens.slice(prefix, tokens.length - suffix);
+		if (middle.length > 0) {
+			segments.push({ text: middle.join(""), changed: true });
+		}
+		if (suffix > 0) {
+			segments.push({
+				text: tokens.slice(tokens.length - suffix).join(""),
+				changed: false,
+			});
+		}
+		return segments;
+	};
+
+	return [toSegments(oldTokens), toSegments(newTokens)];
 }
 
 type Tone = "confirmed" | "plausible" | "unverified" | "clear";
@@ -251,19 +380,51 @@ function renderFinding(
 </div>`;
 }
 
+function renderLineNumber(n: number | undefined): string {
+	return `<span class="diff-ln">${n ?? ""}</span>`;
+}
+
+function renderLineContent(line: DiffLine): string {
+	if (!line.segments) return escapeHtml(line.content);
+	const changedClass =
+		line.type === "add" ? "diff-word-add" : "diff-word-remove";
+	return line.segments
+		.map((segment) =>
+			segment.changed
+				? `<mark class="${changedClass}">${escapeHtml(segment.text)}</mark>`
+				: escapeHtml(segment.text),
+		)
+		.join("");
+}
+
 function renderDiffLine(line: DiffLine): string {
 	if (line.type === "hunk") {
 		return `<div class="diff-hunk mono">${escapeHtml(line.content)}</div>`;
 	}
 	const marker = line.type === "add" ? "+" : line.type === "remove" ? "-" : " ";
+	const noNewline = line.noNewline
+		? `<span class="diff-no-newline">No newline at end of file</span>`
+		: "";
 	return `
 <div class="diff-line diff-${line.type}">
+	${renderLineNumber(line.oldLine)}
+	${renderLineNumber(line.newLine)}
 	<span class="diff-marker">${marker}</span>
-	<pre class="mono">${escapeHtml(line.content)}</pre>
+	<pre class="mono">${renderLineContent(line)}${noNewline}</pre>
 </div>`;
 }
 
-function renderDiffFile(file: DiffFile): string {
+/** Dims the directory portion of a path, matching the real PR view's header. */
+function renderFilePath(path: string): string {
+	const slash = path.lastIndexOf("/");
+	if (slash === -1)
+		return `<span class="diff-file-base">${escapeHtml(path)}</span>`;
+	const dir = escapeHtml(path.slice(0, slash + 1));
+	const base = escapeHtml(path.slice(slash + 1));
+	return `<span class="diff-file-dir">${dir}</span><span class="diff-file-base">${base}</span>`;
+}
+
+function renderDiffFile(file: DiffFile, id: string): string {
 	const stats = [
 		file.additions > 0
 			? `<span class="diff-stat-add">+${file.additions}</span>`
@@ -278,14 +439,36 @@ function renderDiffFile(file: DiffFile): string {
 		: file.lines.map(renderDiffLine).join("\n");
 
 	return `
-<details class="diff-file" open>
+<details class="diff-file" id="${id}" open>
 	<summary>
 		${icon("chevronRight", "chev")}
-		<span class="diff-file-path mono">${escapeHtml(file.path)}</span>
+		<span class="diff-file-path mono">${renderFilePath(file.path)}</span>
 		<span class="diff-stats">${stats}</span>
 	</summary>
 	<div class="diff-body">${body}</div>
 </details>`;
+}
+
+function renderFilesNav(files: DiffFile[]): string {
+	if (files.length < 2) return "";
+	const rows = files
+		.map((file, index) => {
+			const stats = [
+				file.additions > 0
+					? `<span class="diff-stat-add">+${file.additions}</span>`
+					: "",
+				file.deletions > 0
+					? `<span class="diff-stat-del">-${file.deletions}</span>`
+					: "",
+			].join("");
+			return `<li><a href="#diff-file-${index}" class="mono">${renderFilePath(file.path)}</a><span class="diff-stats">${stats}</span></li>`;
+		})
+		.join("\n");
+	return `
+<nav class="diff-files-nav">
+	<h3>Files changed <span class="diff-files-nav-count">${files.length}</span></h3>
+	<ul>${rows}</ul>
+</nav>`;
 }
 
 function renderCodeTab(diffText: string): string {
@@ -293,7 +476,11 @@ function renderCodeTab(diffText: string): string {
 	if (files.length === 0) {
 		return `<div class="section-body"><div class="empty-row">No file changes to show.</div></div>`;
 	}
-	return files.map(renderDiffFile).join("\n");
+	const nav = renderFilesNav(files);
+	const body = files
+		.map((file, index) => renderDiffFile(file, `diff-file-${index}`))
+		.join("\n");
+	return `${nav}${body}`;
 }
 
 function renderSummaryPill(counts: Record<Tone, number>): string {
@@ -612,6 +799,10 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 	--diff-remove-border: oklch(63.7% 0.237 25.331);
 	--diff-remove-bg: color-mix(in oklab, oklch(63.7% 0.237 25.331) 10%, transparent);
 	--diff-remove-fg: oklch(50.5% 0.213 27.518);
+	/* Word-level diff highlight: same hues as the line-level tint above, at
+	   higher opacity so an edited span stands out against its own line. */
+	--diff-word-add-bg: color-mix(in oklab, oklch(72.3% 0.219 149.579) 35%, transparent);
+	--diff-word-remove-bg: color-mix(in oklab, oklch(63.7% 0.237 25.331) 35%, transparent);
 	/* Diff-stat counts use green-500/red-500 in both themes, exactly like
 	   file-diff-tool's +N/-N status node. */
 	--diff-stat-add: oklch(72.3% 0.219 149.579);
@@ -874,6 +1065,7 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 }
 .diff-file[open] summary .chev { transform: rotate(90deg); }
 .diff-file-path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-file-dir { color: var(--muted-foreground); }
 .diff-stats { flex-shrink: 0; display: flex; gap: 0.375rem; }
 .diff-stat-add { color: var(--diff-stat-add); }
 .diff-stat-del { color: var(--diff-stat-del); }
@@ -885,13 +1077,54 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 	line-height: 1rem;
 }
 .diff-hunk { padding: 0.25rem 0.625rem; color: var(--muted-foreground); background: color-mix(in oklab, var(--muted) 60%, transparent); }
-.diff-line { display: flex; padding: 0.125rem 0.625rem; border-left: 2px solid transparent; }
-.diff-line pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+.diff-line { display: flex; align-items: flex-start; padding: 0.125rem 0.625rem; border-left: 2px solid transparent; }
+.diff-line pre { margin: 0; flex: 1 1 auto; min-width: 0; white-space: pre-wrap; word-break: break-all; }
+.diff-ln {
+	flex-shrink: 0;
+	width: 2rem;
+	margin-right: 0.5rem;
+	text-align: right;
+	color: var(--muted-foreground);
+	user-select: none;
+	font-variant-numeric: tabular-nums;
+}
 .diff-marker { margin-right: 0.5rem; user-select: none; }
 .diff-add { border-left-color: var(--diff-add-border); background: var(--diff-add-bg); color: var(--diff-add-fg); }
 .diff-remove { border-left-color: var(--diff-remove-border); background: var(--diff-remove-bg); color: var(--diff-remove-fg); }
 .diff-context { color: var(--muted-foreground); }
+.diff-word-add, .diff-word-remove { border-radius: 3px; color: inherit; }
+.diff-word-add { background: var(--diff-word-add-bg); }
+.diff-word-remove { background: var(--diff-word-remove-bg); }
+.diff-no-newline { margin-left: 0.5rem; color: var(--muted-foreground); font-style: italic; }
 .diff-binary { padding: 0.625rem 0.75rem; color: var(--muted-foreground); font-style: italic; }
+.diff-files-nav {
+	border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+	border-radius: 10px;
+	background: color-mix(in oklab, var(--muted) 15%, transparent);
+	overflow: hidden;
+	margin-bottom: 0.75rem;
+}
+.diff-files-nav h3 {
+	margin: 0;
+	padding: 0.625rem 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+}
+.diff-files-nav-count { color: var(--muted-foreground); font-weight: 400; }
+.diff-files-nav ul { list-style: none; margin: 0; padding: 0; }
+.diff-files-nav li {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.75rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+}
+.diff-files-nav li:last-child { border-bottom: none; }
+.diff-files-nav li:hover { background: color-mix(in oklab, var(--accent) 40%, transparent); }
+.diff-files-nav a { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-files-nav a:hover { text-decoration: underline; }
 /* Plain-PR description prose — a PR body's own markdown, not app-matched
    pixel-for-pixel like the findings/diff UI above, just clean and readable. */
 .markdown { font-size: 0.875rem; line-height: 1.6; }
