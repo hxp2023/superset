@@ -70,11 +70,22 @@ export const AGENT_MODEL_SUPPORT: readonly AgentModelSupport[] = [
 		presetId: "claude",
 		modelFlag: "--model",
 		models: [
-			{ id: "fable", label: "Fable" },
-			{ id: "opus", label: "Opus" },
+			// Aliases track whatever the CLI considers newest in each family;
+			// the pinned ids below stay on one model release, which is what
+			// teams standardising on a known model need.
+			{ id: "fable", label: "Fable (latest)" },
+			{ id: "opus", label: "Opus (latest)" },
+			{ id: "sonnet", label: "Sonnet (latest)" },
+			{ id: "haiku", label: "Haiku (latest)" },
+			{ id: "claude-fable-5", label: "Fable 5" },
 			{ id: "claude-opus-5", label: "Opus 5" },
-			{ id: "sonnet", label: "Sonnet" },
-			{ id: "haiku", label: "Haiku" },
+			{ id: "claude-sonnet-5", label: "Sonnet 5" },
+			{ id: "claude-opus-4-8", label: "Opus 4.8" },
+			{ id: "claude-opus-4-7", label: "Opus 4.7" },
+			{ id: "claude-opus-4-6", label: "Opus 4.6" },
+			{ id: "claude-opus-4-5", label: "Opus 4.5" },
+			{ id: "claude-sonnet-4-6", label: "Sonnet 4.6" },
+			{ id: "claude-haiku-4-5", label: "Haiku 4.5" },
 		],
 	},
 	{

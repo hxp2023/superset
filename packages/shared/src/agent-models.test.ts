@@ -106,6 +106,24 @@ describe("buildAgentModelArgs", () => {
 		]);
 	});
 
+	it("offers pinned claude releases alongside the latest-tracking aliases", () => {
+		const ids = getAgentModelSupport("claude")?.models.map((m) => m.id) ?? [];
+		// Aliases follow the CLI's newest model; teams standardising on one
+		// release need an id that stays put.
+		expect(ids).toContain("opus");
+		expect(ids).toContain("claude-opus-4-8");
+		expect(ids).toContain("claude-opus-4-7");
+		expect(ids).toContain("claude-sonnet-4-6");
+		expect(ids).toContain("claude-haiku-4-5");
+	});
+
+	it("passes a pinned legacy claude model through to the CLI flag", () => {
+		expect(buildAgentModelArgs("claude", "claude-opus-4-8")).toEqual([
+			"--model",
+			"claude-opus-4-8",
+		]);
+	});
+
 	it("includes opus 5 in claude's curated list", () => {
 		expect(buildAgentModelArgs("claude", "claude-opus-5")).toEqual([
 			"--model",
