@@ -161,6 +161,12 @@ type TerminalClientMessage =
 	// The host forwards it as \x1b[I / \x1b[O only when the program actually
 	// enabled focus reporting (mode 1004), which the tracker knows.
 	| { type: "focus"; focused: boolean }
+	// Whether this client is actually showing the terminal right now — its pane
+	// is on screen and its app is foregrounded. Distinct from keyboard focus: a
+	// visible unfocused pane still has to render at the right size. Only visible
+	// clients constrain the PTY size. A client that never sends this counts as
+	// visible, so builds predating the message keep their existing sizing.
+	| { type: "visible"; visible: boolean }
 	| { type: "dispose" };
 
 // PTY output bytes travel as binary WebSocket frames — the renderer pipes
@@ -518,6 +524,15 @@ interface TerminalSession {
 	modeTracker: ModeTracker;
 
 	/**
+	 * Resolves once the daemon's post-adoption ring-buffer replay has
+	 * quiesced (immediately for non-adopted sessions). Attach paths await it
+	 * before delivering to a socket, so the mode preamble is built from a
+	 * tracker that has actually seen the program's mode bytes and replayed
+	 * bytes never broadcast to a just-attached client.
+	 */
+	adoptionReplaySettled: Promise<void>;
+
+	/**
 	 * Stream identity for seq-aware clients. Fresh per TerminalSession object
 	 * (create, adopt, respawn) — a client anchored to a different epoch has an
 	 * unknowable position (the byte counter restarted) and gets a reanchor.
@@ -551,6 +566,21 @@ interface TerminalSession {
 	 * client-focus ownership model).
 	 */
 	focusedSockets: Set<TerminalSocket>;
+	/**
+	 * Last dims each attached client reported. The PTY runs at the smallest box
+	 * across the visible ones (tmux's rule) rather than at whatever client
+	 * resized last — last-writer-wins left every other client rendering output
+	 * laid out for a width it doesn't have, and the wide-into-narrow direction
+	 * (desktop's 120 columns replayed into a phone's 45) is unreadable.
+	 */
+	clientDims: Map<TerminalSocket, { cols: number; rows: number }>;
+	/**
+	 * Sockets whose client said it is off screen. Absence means visible, so a
+	 * client that never sends the message keeps constraining the size as it
+	 * always has. Hidden clients are excluded from the minimum: a backgrounded
+	 * phone must not hold the PTY narrow for whoever is actually looking.
+	 */
+	hiddenSockets: Set<TerminalSocket>;
 
 	/**
 	 * Tail of the in-flight follow-up send (writeFramedInputToSession).
@@ -961,7 +991,7 @@ async function getOrAdoptSession({
 			});
 			if ("error" in adopted) return adopted;
 
-			await waitForAdoptionReplay(adopted);
+			await adopted.adoptionReplaySettled;
 			return adopted;
 		})();
 		adoptionsInFlight.set(terminalId, attempt);
@@ -1267,6 +1297,60 @@ function syncPtyFocus(session: TerminalSession) {
 	if (!session.modeTracker.isFocusReportingActive()) return;
 	const aggregate = session.focusedSockets.size > 0;
 	session.pty.write(aggregate ? "\x1b[I" : "\x1b[O");
+}
+
+/**
+ * Smallest box across the clients currently showing this terminal. Null when
+ * no visible client has reported dims — nothing attached, or everything
+ * attached is off screen — in which case the PTY keeps the size it has rather
+ * than being reshaped for an audience of nobody.
+ */
+function effectiveDims(
+	session: TerminalSession,
+): { cols: number; rows: number } | null {
+	let cols = Number.POSITIVE_INFINITY;
+	let rows = Number.POSITIVE_INFINITY;
+	for (const [socket, dims] of session.clientDims) {
+		if (session.hiddenSockets.has(socket)) continue;
+		if (dims.cols < cols) cols = dims.cols;
+		if (dims.rows < rows) rows = dims.rows;
+	}
+	if (!Number.isFinite(cols) || !Number.isFinite(rows)) return null;
+	return { cols, rows };
+}
+
+/**
+ * Push the visible clients' smallest box to the PTY. `force` re-sends dims the
+ * session already holds, which the resize path wants so a same-dims client
+ * resize still reaches the kernel; the visibility and detach paths resize only
+ * when the minimum actually moved.
+ */
+function applyEffectiveDims(
+	session: TerminalSession,
+	options: { force?: boolean } = {},
+) {
+	if (session.exited) return;
+	const next = effectiveDims(session);
+	if (!next) return;
+	const changed = next.cols !== session.cols || next.rows !== session.rows;
+	if (!changed && !options.force) return;
+	session.resizeGeneration += 1;
+	session.pty.resize(next.cols, next.rows);
+	session.modeTracker.resize(next.cols, next.rows);
+	session.cols = next.cols;
+	session.rows = next.rows;
+}
+
+/**
+ * Drop a departing client's size constraint. The PTY grows back to whatever
+ * the remaining viewers can show — closing the phone hands the desktop its
+ * full width back without anyone touching a pane.
+ */
+function releaseSocketDims(session: TerminalSession, ws: TerminalSocket) {
+	const hadDims = session.clientDims.delete(ws);
+	const wasHidden = session.hiddenSockets.delete(ws);
+	// A hidden client was already outside the minimum, so nothing moved.
+	if (hadDims && !wasHidden) applyEffectiveDims(session);
 }
 
 /**
@@ -2298,13 +2382,6 @@ interface CreateTerminalSessionOptions {
 	/** Only recover an already-live daemon session; never spawn a new PTY. */
 	adoptOnly?: boolean;
 	/**
-	 * Replay the daemon's ring buffer on subscribe. Default true. Pass false
-	 * when the renderer's xterm already has the scrollback — replaying then
-	 * doubles the visible output. Tradeoff: bytes the PTY produced during
-	 * the WS-down window are dropped (sub-second on a daemon swap).
-	 */
-	replayOnAdoption?: boolean;
-	/**
 	 * Deliver a "session restored" separator ahead of the first replay. Set on
 	 * the cold-restore respawn path, where the renderer paints stale scrollback
 	 * above a brand-new shell.
@@ -2358,7 +2435,6 @@ export async function createTerminalSessionInternal({
 	cols: requestedCols,
 	rows: requestedRows,
 	adoptOnly = false,
-	replayOnAdoption = true,
 	restoredNotice = false,
 }: CreateTerminalSessionOptions): Promise<
 	TerminalSession | CreateSessionError
@@ -2443,6 +2519,7 @@ export async function createTerminalSessionInternal({
 			rootPath,
 			cwd,
 			themeType,
+			db,
 		});
 	} catch (error) {
 		// Sandbox provisioning failures (docker down, image pull failed) are
@@ -2575,6 +2652,20 @@ export async function createTerminalSessionInternal({
 			})
 		: Promise.resolve();
 
+	// The tracker's leaked-mode reclaim needs the session to broadcast disarm
+	// bytes, but the session literal below needs the tracker — close over a
+	// ref assigned right after construction.
+	let reclaimSession: TerminalSession | null = null;
+	const modeTracker = createModeTracker(cols, rows, {
+		onLeakedInputModeDisarm(bytes) {
+			const s = reclaimSession;
+			if (!s || !isCurrentLiveSession(s)) return;
+			// deliverOutput feeds the tracker too, so its modes (and the next
+			// attach preamble) converge with what clients were just told.
+			deliverOutput(s, bytes);
+		},
+	});
+
 	const session: TerminalSession = {
 		terminalId,
 		workspaceId,
@@ -2614,7 +2705,8 @@ export async function createTerminalSessionInternal({
 		initialCommandQueued: isAdopted,
 		launchShellName: basename(launch.shell),
 		portHintDecoder: new StringDecoder("utf8"),
-		modeTracker: createModeTracker(cols, rows),
+		modeTracker,
+		adoptionReplaySettled: Promise.resolve(),
 		epoch: randomBytes(8).toString("hex"),
 		outputSeq: 0,
 		retained: [],
@@ -2623,7 +2715,10 @@ export async function createTerminalSessionInternal({
 		pendingRepaintNudge: null,
 		resizeGeneration: 0,
 		focusedSockets: new Set(),
+		clientDims: new Map(),
+		hiddenSockets: new Set(),
 	};
+	reclaimSession = session;
 	sessions.set(terminalId, session);
 	portManager.upsertSession(terminalId, workspaceId, pty.pid);
 
@@ -2643,9 +2738,17 @@ export async function createTerminalSessionInternal({
 		);
 	}
 
+	// Always request the daemon's ring on subscribe: it is the only way to
+	// rebuild the mode tracker after adoption (a tracker that never sees the
+	// program's `?25l`/`?1004h`/kitty bytes builds wrong preambles and
+	// disables host-side focus forwarding). Whether the replayed BYTES reach
+	// any client is decided per-attach: seq clients are protected by
+	// reanchor/anchor accounting, legacy `?replay=0` clients get the FIFO
+	// dropped at attach. Fresh (non-adopted) sessions have an empty ring, so
+	// replay is a no-op there.
 	session.unsubscribeDaemon = daemon.subscribe(
 		terminalId,
-		{ replay: replayOnAdoption },
+		{ replay: true },
 		{
 			onOutput(chunk) {
 				// Bytes flow daemon → host → xterm without UTF-8 decoding;
@@ -2753,6 +2856,12 @@ export async function createTerminalSessionInternal({
 			},
 		},
 	);
+
+	// The ring replay lands asynchronously after subscribe; attach paths
+	// await this so the first preamble reflects the rebuilt tracker.
+	if (isAdopted) {
+		session.adoptionReplaySettled = waitForAdoptionReplay(session);
+	}
 
 	if (initialCommand) {
 		queueInitialCommand(session, initialCommand);
@@ -2881,6 +2990,14 @@ export function registerWorkspaceTerminalRoute({
 
 				sendMessage(ws, { type: "title", title: session.title });
 				if (seqRequest.kind === "legacy") {
+					// Pre-seq contract: `?replay=0` means "my xterm already has
+					// the scrollback". Adoption now always pulls the daemon ring
+					// (the mode tracker needs it), so drop the FIFO here instead
+					// of double-painting this client.
+					if (c.req.query("replay") === "0") {
+						session.buffer.length = 0;
+						session.bufferBytes = 0;
+					}
 					replayBuffer(session, ws);
 				} else {
 					sendSeqAttach(session, ws, seqRequest);
@@ -2986,13 +3103,6 @@ export function registerWorkspaceTerminalRoute({
 					db,
 					eventBus,
 					adoptOnly: true,
-					// Only a client with an empty xterm wants the daemon ring
-					// dumped at it. Anchored/reanchor clients keep their own
-					// (better) copy; legacy clients signal via `?replay=0`.
-					replayOnAdoption:
-						seqRequest.kind === "legacy"
-							? c.req.query("replay") !== "0"
-							: seqRequest.kind === "new",
 				});
 				if (!("error" in adopted)) return adopted;
 				// Daemon unreachable ≠ PTY lost: the shell may still be alive behind
@@ -3046,6 +3156,12 @@ export function registerWorkspaceTerminalRoute({
 							ws.close(transient ? 1013 : 1011, toWsCloseReason(session.error));
 							return;
 						}
+						// A just-adopted session may still be receiving the daemon's
+						// ring replay: wait for it to quiesce so the mode preamble
+						// reflects the program's real state and the replayed bytes
+						// don't broadcast to this socket. Resolved immediately in
+						// every other case.
+						await session.adoptionReplaySettled;
 						if (ws.readyState !== SOCKET_OPEN) return;
 						attachSocketToSession(session, ws);
 					})().catch((error) => {
@@ -3096,6 +3212,18 @@ export function registerWorkspaceTerminalRoute({
 						return;
 					}
 
+					if (message.type === "visible") {
+						if (message.visible) {
+							session.hiddenSockets.delete(ws);
+						} else {
+							session.hiddenSockets.add(ws);
+						}
+						// Going hidden releases this client's size constraint;
+						// coming back re-imposes it.
+						applyEffectiveDims(session);
+						return;
+					}
+
 					if (message.type === "resize") {
 						const cols = normalizeTerminalDimension(
 							message.cols,
@@ -3107,19 +3235,20 @@ export function registerWorkspaceTerminalRoute({
 							MIN_TERMINAL_ROWS,
 							DEFAULT_TERMINAL_ROWS,
 						);
-						session.resizeGeneration += 1;
+						session.clientDims.set(ws, { cols, rows });
 						// A reanchor attach waits for this first client resize:
 						// changed dims deliver the repaint SIGWINCH naturally;
-						// unchanged dims need the forced nudge.
+						// unchanged dims need the forced nudge. What matters is
+						// the size the PTY ends up at, which is the minimum across
+						// visible clients — not the dims this one asked for.
+						const next = effectiveDims(session);
+						const dimsUnchanged =
+							next === null ||
+							(next.cols === session.cols && next.rows === session.rows);
 						const needsForcedNudge =
-							session.pendingRepaintNudge !== null &&
-							cols === session.cols &&
-							rows === session.rows;
+							session.pendingRepaintNudge !== null && dimsUnchanged;
 						clearPendingRepaintNudge(session);
-						session.pty.resize(cols, rows);
-						session.modeTracker.resize(cols, rows);
-						session.cols = cols;
-						session.rows = rows;
+						applyEffectiveDims(session, { force: true });
 						if (needsForcedNudge) nudgeRepaint(session);
 					}
 				},
@@ -3131,6 +3260,7 @@ export function registerWorkspaceTerminalRoute({
 					// A departing focused client may hand focus-out to the program
 					// (unless another attached client still holds focus).
 					if (session.focusedSockets.delete(ws)) syncPtyFocus(session);
+					releaseSocketDims(session, ws);
 				},
 
 				onError: (_event, ws) => {
@@ -3138,6 +3268,7 @@ export function registerWorkspaceTerminalRoute({
 					if (!session) return;
 					session.sockets.delete(ws);
 					if (session.focusedSockets.delete(ws)) syncPtyFocus(session);
+					releaseSocketDims(session, ws);
 				},
 			};
 		}),

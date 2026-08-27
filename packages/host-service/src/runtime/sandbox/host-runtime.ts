@@ -1,3 +1,4 @@
+import { resolveSupersetHomeDir } from "@superset/agent-setup/paths";
 import {
 	buildV2TerminalEnv,
 	getShellLaunchArgs,
@@ -6,6 +7,7 @@ import {
 	shellLaunchExpectsReadyMarker,
 	waitForTerminalBaseEnv,
 } from "../../terminal/env.ts";
+import { resolveDefaultAccountTerminalEnv } from "../../trpc/router/usage/default-account.ts";
 import type {
 	PtyLaunchSpec,
 	TerminalLaunchContext,
@@ -41,25 +43,35 @@ export class HostRuntime implements WorkspaceRuntime {
 		// immediately; wait for it here before the first PTY needs it.
 		await waitForTerminalBaseEnv();
 		const baseEnv = getTerminalBaseEnv();
-		const supersetHomeDir = process.env.SUPERSET_HOME_DIR || "";
+		// Fallback matters for hosts not spawned by the desktop (CLI/systemd):
+		// without it the wrapper paths, hook guard env, and shell bootstrap all
+		// silently disable (#6254).
+		const supersetHomeDir = resolveSupersetHomeDir();
 		const shell = resolveLaunchShell(baseEnv);
 		const argv = getShellLaunchArgs({ shell, supersetHomeDir });
-		const env = buildV2TerminalEnv({
-			baseEnv,
-			shell,
-			supersetHomeDir,
-			themeType: ctx.themeType,
-			cwd: ctx.cwd,
-			terminalId: ctx.terminalId,
-			workspaceId: ctx.workspaceId,
-			workspacePath: ctx.workspacePath,
-			rootPath: ctx.rootPath,
-			supersetEnv:
-				process.env.NODE_ENV === "development" ? "development" : "production",
-			agentHookPort: process.env.SUPERSET_AGENT_HOOK_PORT || "",
-			agentHookVersion: process.env.SUPERSET_AGENT_HOOK_VERSION || "",
-			hostAgentHookUrl: this.getAgentHookUrl(),
-		});
+		const env = {
+			...buildV2TerminalEnv({
+				baseEnv,
+				shell,
+				supersetHomeDir,
+				organizationId: process.env.ORGANIZATION_ID || "",
+				themeType: ctx.themeType,
+				cwd: ctx.cwd,
+				terminalId: ctx.terminalId,
+				workspaceId: ctx.workspaceId,
+				workspacePath: ctx.workspacePath,
+				rootPath: ctx.rootPath,
+				supersetEnv:
+					process.env.NODE_ENV === "development" ? "development" : "production",
+				agentHookPort: process.env.SUPERSET_AGENT_HOOK_PORT || "",
+				agentHookVersion: process.env.SUPERSET_AGENT_HOOK_VERSION || "",
+				hostAgentHookUrl: this.getAgentHookUrl(),
+			}),
+			// Usage-tab default account: provider CLIs typed or preset-launched in
+			// this terminal run on the selected login. Baked at spawn as the fast
+			// path; the agent wrappers re-resolve later switches at launch time.
+			...resolveDefaultAccountTerminalEnv(ctx.db),
+		};
 		return {
 			shell,
 			argv,

@@ -11,7 +11,7 @@ export const PRODUCT_LINKS: NavLink[] = [
 	{
 		href: "/",
 		label: "Overview",
-		description: "Run 100+ coding agents in parallel.",
+		description: "Orchestrate any coding agent.",
 	},
 	{
 		href: "/changelog",
@@ -22,6 +22,11 @@ export const PRODUCT_LINKS: NavLink[] = [
 		href: "/roadmap",
 		label: "Roadmap",
 		description: "What we're building now and next.",
+	},
+	{
+		href: "/mcp-install",
+		label: "MCP",
+		description: "Connect any AI agent to Superset.",
 	},
 ];
 

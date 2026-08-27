@@ -20,7 +20,6 @@ import {
 	FakeApiAuthProvider,
 	type FakeApiOverrides,
 	FakeHostAuthProvider,
-	FakeModelResolver,
 	MemoryGitCredentialProvider,
 } from "./fakes";
 
@@ -36,11 +35,10 @@ export interface TestHostOptions {
 	/**
 	 * Fake-runtime overrides typed as `unknown` so tests only need to
 	 * implement the methods they exercise — the real surfaces (Octokit,
-	 * ChatRuntimeManager, ChatService) are far too large to stub fully.
+	 * ChatService) are far too large to stub fully.
 	 */
 	githubFactory?: () => Promise<unknown>;
 	execGh?: (args: string[], options?: unknown) => Promise<unknown>;
-	chatRuntime?: unknown;
 	chatService?: unknown;
 	/** Override the host-auth provider (e.g. the real PskHostAuthProvider
 	 *  when a test exercises sandbox CLI-token acceptance). */
@@ -86,6 +84,18 @@ export async function createTestHost(
 	const dataDir = mkdtempSync(join(tmpdir(), "host-service-test-db-"));
 	const dbPath = join(dataDir, "host.db");
 
+	// Isolate the daemon namespace for the lifetime of this host: any code
+	// path that resolves manifests or sockets (reaper, adoption, dispose)
+	// must land in this temp home, never `~/.superset` — a test host that
+	// reads real manifests can reap or kill daemons belonging to running
+	// desktop instances. The manifest layer throws in test runs without
+	// this. Restored (not deleted) on dispose so nested harnesses keep
+	// their own isolation.
+	const priorHomeDir = process.env.SUPERSET_HOME_DIR;
+	if (!priorHomeDir) {
+		process.env.SUPERSET_HOME_DIR = dataDir;
+	}
+
 	const sqlite = new BunDatabase(dbPath, { create: true, readwrite: true });
 	sqlite.exec("PRAGMA journal_mode = WAL");
 	sqlite.exec("PRAGMA foreign_keys = ON");
@@ -107,7 +117,6 @@ export async function createTestHost(
 			auth: new FakeApiAuthProvider(),
 			hostAuth: options.hostAuth ?? new FakeHostAuthProvider(psk),
 			credentials: new MemoryGitCredentialProvider(options.githubToken ?? null),
-			modelResolver: new FakeModelResolver(),
 		},
 		db: db as unknown as HostDb,
 		api: fakeApi.client,
@@ -121,7 +130,6 @@ export async function createTestHost(
 				async () => {
 					throw new Error("execGh not configured in test");
 				},
-		chatRuntime: options.chatRuntime as CreateAppOptions["chatRuntime"],
 		chatService: options.chatService as CreateAppOptions["chatService"],
 	};
 
@@ -164,6 +172,9 @@ export async function createTestHost(
 		try {
 			await result.dispose();
 		} finally {
+			if (!priorHomeDir && process.env.SUPERSET_HOME_DIR === dataDir) {
+				delete process.env.SUPERSET_HOME_DIR;
+			}
 			try {
 				sqlite.close();
 			} catch {

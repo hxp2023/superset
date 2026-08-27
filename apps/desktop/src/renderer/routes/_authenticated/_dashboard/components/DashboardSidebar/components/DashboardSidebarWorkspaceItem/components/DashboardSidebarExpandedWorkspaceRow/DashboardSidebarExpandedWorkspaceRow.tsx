@@ -10,7 +10,9 @@ import {
 } from "react";
 import { HiCheck, HiMiniMinus, HiMiniXMark } from "react-icons/hi2";
 import { LuContainer } from "react-icons/lu";
+import { WorkspaceNameMarquee } from "renderer/components/WorkspaceNameMarquee";
 import type { DiffStats } from "renderer/hooks/host-service/useDiffStats";
+import { useFocusVisible } from "renderer/hooks/useFocusVisible";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { ProjectThumbnail } from "renderer/routes/_authenticated/components/ProjectThumbnail";
@@ -103,6 +105,13 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 		const isPending = pendingTransaction?.type === "insert";
 		const localRef = useRef<HTMLDivElement>(null);
 		const openUrl = electronTrpc.external.openUrl.useMutation();
+		// Drives the name's hover-reveal for keyboard users: the row, not the
+		// name span, is what's actually tabbable.
+		const {
+			isFocusVisible: isFocused,
+			onFocus: handleRowFocus,
+			onBlur: handleRowBlur,
+		} = useFocusVisible();
 
 		useEffect(() => {
 			if (isActive) {
@@ -163,14 +172,16 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 						}
 					}}
 					onDoubleClick={onDoubleClick}
+					onFocus={handleRowFocus}
+					onBlur={handleRowBlur}
 					className={cn(
-						"group relative flex w-full items-center py-1.5 pr-2",
-						isInSection ? "pl-8" : "pl-3",
+						"group relative flex h-7 w-full items-center pr-2",
+						isInSection ? "pl-10" : "pl-6",
 						onClick && "cursor-pointer",
 					)}
 				>
 					{isSelected ? (
-						<span className="mr-2.5 flex size-5 shrink-0 items-center justify-center text-foreground">
+						<span className="mr-2 flex size-4 shrink-0 items-center justify-center text-foreground">
 							<HiCheck className="size-3.5" />
 						</span>
 					) : (
@@ -189,7 +200,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 											}
 										}}
 										aria-label={`Open pull request #${pullRequest.number}`}
-										className="relative mr-2.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-foreground/10"
+										className="relative mr-2 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-foreground/10"
 									>
 										<DashboardSidebarWorkspaceIcon
 											hostType={hostType}
@@ -203,7 +214,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 										/>
 									</button>
 								) : (
-									<div className="relative mr-2.5 flex size-5 shrink-0 items-center justify-center">
+									<div className="relative mr-2 flex size-4 shrink-0 items-center justify-center">
 										<DashboardSidebarWorkspaceIcon
 											hostType={hostType}
 											workspaceType={workspace.type}
@@ -288,17 +299,17 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 							/>
 						) : (
 							<span className="flex min-w-0 items-center gap-1">
-								<span
+								<WorkspaceNameMarquee
+									name={name || branch}
+									forceActive={isFocused}
 									className={cn(
-										"truncate text-[13px] leading-tight transition-colors",
+										"min-w-0 flex-1 text-[13px] leading-tight transition-colors",
 										isActive || isSelected
 											? "text-foreground"
 											: "text-foreground/80",
 									)}
-								>
-									{name || branch}
-									{isSelected && <span className="sr-only">, selected</span>}
-								</span>
+								/>
+								{isSelected && <span className="sr-only">, selected</span>}
 								{workspace.sandboxed && (
 									<Tooltip delayDuration={300}>
 										<TooltipTrigger asChild>

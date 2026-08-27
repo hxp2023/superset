@@ -26,12 +26,16 @@ export const FAQ_ITEMS: FAQItem[] = [
 	{
 		question: "Which AI coding agents are supported?",
 		answer:
-			"Superset works with any CLI-based coding agent including Claude Code, OpenCode, OpenAI Codex, and more. If it runs in a terminal, it runs in Superset.",
+			"Superset works with any CLI-based coding agent, including Claude Code, OpenCode, OpenAI Codex, and more. Choose a different agent for every task without changing your workspace or review flow.",
 	},
 	{
 		question: "How does the parallel agent system work?",
 		answer:
-			"Each agent runs in its own isolated Git worktree, which means they can work on different branches or features simultaneously without conflicts. You can monitor all agents in real-time and switch between them instantly.",
+			"Every agent runs in its own Git worktree, so ten agents can work on ten branches of one repo without conflicts. You watch, review, and merge them all from one window.",
+		link: {
+			href: "/parallel-coding-agents",
+			label: "Read the guide to parallel coding agents",
+		},
 	},
 	{
 		question: "Is Superset free to use?",
@@ -42,5 +46,20 @@ export const FAQ_ITEMS: FAQItem[] = [
 		question: "Can I use my own API keys?",
 		answer:
 			"Absolutely. Superset doesn't proxy any API calls. You use your own API keys directly with whatever AI providers you choose. This means you have full control over costs and usage.",
+	},
+	{
+		question: "Is Superset open source?",
+		answer:
+			"Superset is source-available: the code is public on GitHub under Elastic License 2.0 (ELv2), which lets you inspect and self-host it subject to the license terms, but is not OSI-approved open source. Superset is unrelated to Apache Superset, the business-intelligence tool.",
+	},
+	{
+		question: "What platforms does Superset run on?",
+		answer:
+			"The desktop app runs on macOS, with an experimental Linux AppImage; Windows is not yet available. Beyond the desktop app there's a CLI, a TypeScript SDK, and an MCP server, so you can drive Superset from scripts, terminals, and other agents.",
+	},
+	{
+		question: "Is Superset just a wrapper around Claude Code?",
+		answer:
+			"No. Your agents stay independent; Superset is the orchestration layer around them. Each task gets an isolated Git worktree, persistent sessions, diff review, and scheduled runs without tying the workflow to one provider.",
 	},
 ];

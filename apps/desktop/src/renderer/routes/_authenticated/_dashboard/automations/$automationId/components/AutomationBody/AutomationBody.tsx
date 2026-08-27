@@ -1,7 +1,5 @@
-import type {
-	SelectAutomation,
-	SelectAutomationRun,
-} from "@superset/db/schema";
+import type { SelectAutomationRun } from "@superset/db/schema";
+import type { RouterOutputs } from "@superset/trpc";
 import { toast } from "@superset/ui/sonner";
 import { Switch } from "@superset/ui/switch";
 import { cn } from "@superset/ui/utils";
@@ -29,7 +27,8 @@ export function AutomationBody({
 	onToggleEnabled,
 	toggleDisabled,
 }: {
-	automation: SelectAutomation;
+	/** `get` output plus the prompt body, which rides its own procedure. */
+	automation: RouterOutputs["automation"]["get"] & { prompt: string };
 	recentRuns: SelectAutomationRun[];
 	ownerName?: string | null;
 	readOnly?: boolean;
@@ -52,6 +51,12 @@ export function AutomationBody({
 	const updateMutation = useMutation({
 		mutationFn: (patch: AutomationUpdatePatch) =>
 			apiTrpcClient.automation.update.mutate({ id: automation.id, ...patch }),
+		// Only the trigger set gets a confirmation. Every other patch shows its
+		// own result — the picker relabels, the toggle flips — but a saved
+		// trigger set looks exactly like the unsaved one it replaced.
+		onSuccess: (_result, patch) => {
+			if (patch.triggers) toast.success("Triggers saved");
+		},
 		// The pickers re-render from the Electric-synced row, so a rejected
 		// update silently snaps back without this.
 		onError: (error) =>
@@ -85,12 +90,15 @@ export function AutomationBody({
 	const { localHostId } = useWorkspaceHostOptions();
 	const hostId = automation.targetHostId ?? localHostId ?? null;
 	const hostUrl = useHostUrl(hostId);
-	const { agents: hostAgents } = useV2AgentChoices(hostUrl);
-	// Only warn once the host's terminal configs have loaded — the list always
-	// contains the built-in Superset chat entry, so length 1 means "not loaded
-	// yet / host unreachable", not "agent missing".
+	const { agents: hostAgents, isFetched: hostAgentsFetched } =
+		useV2AgentChoices(hostUrl);
+	// Only warn once the host's terminal configs have loaded — the Superset
+	// chat entry is flag-gated, so list length alone can't tell "not loaded
+	// yet / host unreachable" apart from "agent missing".
 	const agentMissing =
-		hostAgents.length > 1 && !matchAgentChoice(hostAgents, automation.agent);
+		hostAgentsFetched &&
+		hostAgents.length > 0 &&
+		!matchAgentChoice(hostAgents, automation.agent);
 
 	return (
 		<div className="flex-1 overflow-y-auto px-8 py-8">
@@ -160,12 +168,17 @@ export function AutomationBody({
 
 				{tab === "settings" ? (
 					<fieldset disabled={readOnly} className="contents">
-						<span className="mb-2 text-sm text-muted-foreground">Triggers</span>
 						<TriggersCard
 							automation={automation}
 							hostId={hostId}
 							readOnly={readOnly}
 							onUpdate={(patch) => updateMutation.mutate(patch)}
+							// Awaited, unlike the pickers: the editor holds the only copy
+							// of an unsaved set, so it must not clear its dirty state until
+							// the write actually lands.
+							onSaveTriggers={(triggers) =>
+								updateMutation.mutateAsync({ triggers })
+							}
 						/>
 
 						<span className="mt-8 mb-2 text-sm text-muted-foreground">

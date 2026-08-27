@@ -4,17 +4,45 @@
 	"private": true,
 	"type": "module",
 	"exports": {
+		"./automation-matching": {
+			"types": "./src/automation-matching/index.ts",
+			"default": "./src/automation-matching/index.ts"
+		},
+		"./automation-triggers": {
+			"types": "./src/automation-triggers.ts",
+			"default": "./src/automation-triggers.ts"
+		},
 		"./constants": {
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
+		},
+		"./format-scaled": {
+			"types": "./src/format-scaled.ts",
+			"default": "./src/format-scaled.ts"
+		},
+		"./format-tokens": {
+			"types": "./src/format-tokens.ts",
+			"default": "./src/format-tokens.ts"
 		},
 		"./git-hook-tolerance": {
 			"types": "./src/git-hook-tolerance.ts",
 			"default": "./src/git-hook-tolerance.ts"
 		},
+		"./integrations": {
+			"types": "./src/integrations.ts",
+			"default": "./src/integrations.ts"
+		},
+		"./plugins": {
+			"types": "./src/plugins/index.ts",
+			"default": "./src/plugins/index.ts"
+		},
 		"./sentry": {
 			"types": "./src/sentry.ts",
 			"default": "./src/sentry.ts"
+		},
+		"./slash-commands": {
+			"types": "./src/slash-commands.ts",
+			"default": "./src/slash-commands.ts"
 		},
 		"./terminal-wheel-handler": {
 			"types": "./src/terminal-wheel-handler/index.ts",
@@ -124,9 +152,21 @@
 			"types": "./src/agent-launch-request.ts",
 			"default": "./src/agent-launch-request.ts"
 		},
+		"./workspace-attachments": {
+			"types": "./src/workspace-attachments.ts",
+			"default": "./src/workspace-attachments.ts"
+		},
 		"./agent-permissions-migration": {
 			"types": "./src/agent-permissions-migration.ts",
 			"default": "./src/agent-permissions-migration.ts"
+		},
+		"./page-content-types": {
+			"types": "./src/page-content-types.ts",
+			"default": "./src/page-content-types.ts"
+		},
+		"./page-slug": {
+			"types": "./src/page-slug.ts",
+			"default": "./src/page-slug.ts"
 		},
 		"./task-slug": {
 			"types": "./src/task-slug.ts",
@@ -175,6 +215,10 @@
 		"./shell-ready-scanner": {
 			"types": "./src/shell-ready-scanner.ts",
 			"default": "./src/shell-ready-scanner.ts"
+		},
+		"./leaked-input-mode-reclaim": {
+			"types": "./src/leaked-input-mode-reclaim.ts",
+			"default": "./src/leaked-input-mode-reclaim.ts"
 		},
 		"./terminal-title-scanner": {
 			"types": "./src/terminal-title-scanner.ts",

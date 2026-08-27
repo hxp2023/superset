@@ -1,4 +1,9 @@
 import {
+	setupSingleAgent,
+	teardownSingleAgent,
+	writeSharedDisabledAgentIds,
+} from "@superset/agent-setup";
+import {
 	type AgentCustomDefinition,
 	type AgentPresetOverrideEnvelope,
 	BRANCH_PREFIX_MODES,
@@ -37,7 +42,6 @@ import { TRPCError } from "@trpc/server";
 import { app } from "electron";
 import { env } from "main/env.main";
 import { exitImmediately } from "main/index";
-import { setupSingleAgent, teardownSingleAgent } from "main/lib/agent-setup";
 import { hasCustomRingtone } from "main/lib/custom-ringtones";
 import { getHostServiceCoordinator } from "main/lib/host-service-coordinator";
 import { localDb } from "main/lib/local-db";
@@ -74,6 +78,10 @@ import {
 	updateAgentPresetInputSchema,
 	updateCustomAgentInputSchema,
 } from "./agent-preset-router.utils";
+import {
+	clearImportedCliTerminalScripts,
+	isPendingCliTerminalScript,
+} from "./cli-terminal-script-import";
 import {
 	setFontSettingsSchema,
 	transformFontSettings,
@@ -274,6 +282,36 @@ export const createSettingsRouter = () => {
 			}
 			return getNormalizedTerminalPresets();
 		}),
+		getPendingCliTerminalScripts: publicProcedure
+			.input(z.object({ organizationId: z.string().min(1) }))
+			.query(({ input }) =>
+				getNormalizedTerminalPresets().filter((script) =>
+					isPendingCliTerminalScript(script, input.organizationId),
+				),
+			),
+		acknowledgeCliTerminalScripts: publicProcedure
+			.input(
+				z.object({
+					organizationId: z.string().min(1),
+					ids: z.array(z.string()).min(1),
+				}),
+			)
+			.mutation(({ input }) =>
+				// Immediate transaction: a concurrent `superset scripts add` must not
+				// land between this read and write or its row would be dropped.
+				localDb.transaction(
+					() => {
+						const result = clearImportedCliTerminalScripts({
+							scripts: getNormalizedTerminalPresets(),
+							organizationId: input.organizationId,
+							ids: input.ids,
+						});
+						if (result.changed) saveTerminalPresets(result.scripts);
+						return { acknowledged: result.changed };
+					},
+					{ behavior: "immediate" },
+				),
+			),
 		getAgentPresets: publicProcedure.query(() => getResolvedAgentPresets()),
 		createCustomAgent: publicProcedure
 			.input(createCustomAgentInputSchema)
@@ -374,7 +412,6 @@ export const createSettingsRouter = () => {
 				}
 
 				const normalizedPatch = normalizeAgentPresetPatch({
-					definition,
 					patch: input.patch,
 				});
 				const nextOverrides = createOverrideEnvelopeWithPatch({
@@ -456,7 +493,7 @@ export const createSettingsRouter = () => {
 				if (!preset) {
 					throw new TRPCError({
 						code: "NOT_FOUND",
-						message: `Terminal preset ${input.id} not found`,
+						message: `Terminal script ${input.id} not found`,
 					});
 				}
 
@@ -1053,6 +1090,28 @@ export const createSettingsRouter = () => {
 				return { success: true };
 			}),
 
+		getBrowserHomepageUrl: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.browserHomepageUrl ?? null;
+		}),
+
+		setBrowserHomepageUrl: publicProcedure
+			.input(z.object({ url: z.string().trim().nullable() }))
+			.mutation(({ input }) => {
+				// An empty string clears the override; the pane falls back to about:blank.
+				const url = input.url && input.url.length > 0 ? input.url : null;
+				localDb
+					.insert(settings)
+					.values({ id: 1, browserHomepageUrl: url })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { browserHomepageUrl: url },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
 		getDefaultEditor: publicProcedure.query(() => {
 			const row = getSettings();
 			return row.defaultEditor ?? null;
@@ -1102,6 +1161,7 @@ export const createSettingsRouter = () => {
 							set: { disabledAgentHooks: next },
 						})
 						.run();
+					writeSharedDisabledAgentIds(next);
 				}
 				const ran = setupSingleAgent(input.agentId);
 				return { ran };
@@ -1135,6 +1195,7 @@ export const createSettingsRouter = () => {
 						set: { disabledAgentHooks: next },
 					})
 					.run();
+				writeSharedDisabledAgentIds(next);
 
 				const ran = input.enabled
 					? setupSingleAgent(input.agentId)

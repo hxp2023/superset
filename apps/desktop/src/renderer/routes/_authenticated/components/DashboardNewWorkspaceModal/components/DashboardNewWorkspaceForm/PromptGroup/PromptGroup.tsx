@@ -1,6 +1,7 @@
 import {
 	getAgentEffortSupport,
 	getAgentModelSupport,
+	getAgentModeSupport,
 } from "@superset/shared/agent-models";
 import { sanitizeUserBranchName } from "@superset/shared/workspace-launch";
 import {
@@ -15,6 +16,7 @@ import { Button } from "@superset/ui/button";
 import { Input } from "@superset/ui/input";
 import { isEnterSubmit } from "@superset/ui/lib/keyboard";
 import { toast } from "@superset/ui/sonner";
+import { Spinner } from "@superset/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
@@ -26,17 +28,18 @@ import { LuGitPullRequest } from "react-icons/lu";
 import { SiLinear } from "react-icons/si";
 import { AgentModelSelect } from "renderer/components/AgentModelSelect";
 import { AgentSelect } from "renderer/components/AgentSelect";
-import { LinkedIssuePill } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter/components/LinkedIssuePill";
-import { IssueLinkCommand } from "renderer/components/Chat/ChatInterface/components/IssueLinkCommand";
+import { IssueLinkCommand } from "renderer/components/IssueLinkCommand";
+import { LinkedIssuePill } from "renderer/components/LinkedIssuePill";
 import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import { useActiveOrganizationId } from "renderer/hooks/useActiveOrganizationId";
 import { useAgentEffortPreference } from "renderer/hooks/useAgentEffortPreference";
 import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferences";
 import { useAgentModelPreference } from "renderer/hooks/useAgentModelPreference";
+import { useAgentModePreference } from "renderer/hooks/useAgentModePreference";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";
 import { useV2AgentChoices } from "renderer/hooks/useV2AgentChoices";
 import { PLATFORM } from "renderer/hotkeys";
-import { authClient } from "renderer/lib/auth-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { useNewWorkspaceModalOpen } from "renderer/stores/new-workspace-modal";
@@ -44,6 +47,7 @@ import { useNewWorkspacePromptContext } from "renderer/stores/new-workspace-prom
 import { useV2WorkspaceCreateDefaultsStore } from "renderer/stores/v2-workspace-create-defaults";
 import { useDashboardNewWorkspaceDraft } from "../../../DashboardNewWorkspaceDraftContext";
 import { DevicePicker } from "../components/DevicePicker";
+import { CLOUD_HOST_ID } from "../components/DevicePicker/DevicePicker";
 import { useWorkspaceHostOptions } from "../components/DevicePicker/hooks/useWorkspaceHostOptions";
 import { AttachmentButtons } from "./components/AttachmentButtons";
 import { CompareBaseBranchPicker } from "./components/CompareBaseBranchPicker";
@@ -64,6 +68,7 @@ import {
 import {
 	AGENT_STORAGE_KEY,
 	EFFORT_STORAGE_KEY,
+	MODE_STORAGE_KEY,
 	MODEL_STORAGE_KEY,
 	PILL_BUTTON_CLASS,
 	type ProjectOption,
@@ -100,8 +105,7 @@ export function PromptGroup({
 	const hostService = useLocalHostService();
 	const { activeHostUrl, machineId } = hostService;
 	const relayUrl = useRelayUrl();
-	const { data: session } = authClient.useSession();
-	const activeOrganizationId = session?.session?.activeOrganizationId;
+	const activeOrganizationId = useActiveOrganizationId();
 	const needsSetup = selectedProject?.needsSetup === true;
 	const persistedBaseBranchDefault = useV2WorkspaceCreateDefaultsStore(
 		(state) =>
@@ -188,11 +192,12 @@ export function PromptGroup({
 		});
 
 	// ── Model picker (per agent preset) ──────────────────────────────
-	// `iconId` carries the presetId for v2 agents ("superset" for chat).
-	const selectedPresetId = useMemo(
-		() => v2Agents.find((agent) => agent.id === selectedAgent)?.iconId ?? null,
-		[v2Agents, selectedAgent],
-	);
+	// `launchPresetId` carries executable-aware capability metadata; Superset
+	// chat has no host config and falls back to its icon id.
+	const selectedPresetId = useMemo(() => {
+		const agent = v2Agents.find((candidate) => candidate.id === selectedAgent);
+		return agent?.launchPresetId ?? agent?.presetId ?? agent?.iconId ?? null;
+	}, [v2Agents, selectedAgent]);
 	const modelSupport = selectedPresetId
 		? getAgentModelSupport(selectedPresetId)
 		: undefined;
@@ -206,6 +211,13 @@ export function PromptGroup({
 	const { selectedEffort, setSelectedEffort } = useAgentEffortPreference(
 		EFFORT_STORAGE_KEY,
 		effortSupport ? selectedPresetId : null,
+	);
+	const modeSupport = selectedPresetId
+		? getAgentModeSupport(selectedPresetId)
+		: undefined;
+	const { selectedMode, setSelectedMode } = useAgentModePreference(
+		MODE_STORAGE_KEY,
+		modeSupport ? selectedPresetId : null,
 	);
 
 	// Promote the placeholder "none" → first configured agent whenever the
@@ -311,6 +323,9 @@ export function PromptGroup({
 	const submitBlocker = useMemo<string | null>(() => {
 		if (!projectId && !draft.isSession) return "Select a project";
 		const selectedHostId = draft.hostId ?? machineId;
+		// A cloud workspace is provisioned on submit, so there is no host whose
+		// readiness could block it.
+		if (selectedHostId === CLOUD_HOST_ID) return null;
 		if (!selectedHostId) return "No active host";
 		if (selectedHostId !== machineId) {
 			const remote = otherHosts.find((h) => h.id === selectedHostId);
@@ -337,11 +352,12 @@ export function PromptGroup({
 	});
 
 	// ── Submit (fork) ────────────────────────────────────────────────
-	const createWorkspace = useSubmitWorkspace(
+	const { submitWorkspace: createWorkspace, isCreating } = useSubmitWorkspace(
 		projectId,
 		selectedAgent,
 		modelSupport ? selectedModel : null,
 		effortSupport ? selectedEffort : null,
+		modeSupport ? selectedMode : null,
 		uploadAttachments,
 		promptContext,
 	);
@@ -576,6 +592,7 @@ export function PromptGroup({
 								models={modelSupport.models}
 								value={selectedModel}
 								onValueChange={setSelectedModel}
+								defaultLabel="Default model"
 								triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}
 							/>
 						)}
@@ -584,6 +601,16 @@ export function PromptGroup({
 								models={effortSupport.efforts}
 								value={selectedEffort}
 								onValueChange={setSelectedEffort}
+								defaultLabel="Default effort"
+								triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}
+							/>
+						)}
+						{modeSupport && (
+							<AgentModelSelect
+								models={modeSupport.modes}
+								value={selectedMode}
+								onValueChange={setSelectedMode}
+								defaultLabel="Direct mode"
 								triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}
 							/>
 						)}
@@ -643,13 +670,17 @@ export function PromptGroup({
 						/>
 						<PromptInputSubmit
 							className="size-[22px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
-							disabled={needsSetup}
+							disabled={needsSetup || isCreating}
 							onClick={(e) => {
 								e.preventDefault();
 								handleSubmit();
 							}}
 						>
-							<ArrowUpIcon className="size-3.5 text-muted-foreground" />
+							{isCreating ? (
+								<Spinner className="size-3.5 text-muted-foreground" />
+							) : (
+								<ArrowUpIcon className="size-3.5 text-muted-foreground" />
+							)}
 						</PromptInputSubmit>
 					</div>
 				</PromptInputFooter>

@@ -1,10 +1,13 @@
 import { createWorkspaceStore, type WorkspaceState } from "@superset/panes";
+import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 import { useEffect, useMemo, useRef } from "react";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import type { PaneViewerData } from "../../types";
+import { dropUnavailablePanes } from "./utils/dropUnavailablePanes";
 
 const EMPTY_STATE: WorkspaceState<PaneViewerData> = {
 	version: 1,
@@ -24,19 +27,29 @@ export function useV2WorkspacePaneLayout() {
 	// workspace switches, live queries can briefly return stale rows; sharing
 	// the same store across that boundary lets panes from one worktree render
 	// and persist under another.
-	const workspaceRuntime = useMemo(
-		() => ({
+	//
+	// Seed the store synchronously from the collection row (keyed by this
+	// workspace's id, so it can't serve a stale neighbor) instead of starting
+	// empty: an empty initial state blanks the whole tab bar for the first
+	// paint after every workspace switch, flashing its contents in one
+	// effect-cycle late.
+	const workspaceRuntime = useMemo(() => {
+		const seededLayout =
+			(collections.v2WorkspaceLocalState.get(workspaceId)?.paneLayout as
+				| WorkspaceState<PaneViewerData>
+				| undefined) ?? EMPTY_STATE;
+		return {
 			workspaceId,
+			seededSnapshot: getSnapshot(seededLayout),
 			store: createWorkspaceStore<PaneViewerData>({
-				initialState: EMPTY_STATE,
+				initialState: seededLayout,
 			}),
-		}),
-		[workspaceId],
-	);
+		};
+	}, [collections, workspaceId]);
 	const { store } = workspaceRuntime;
 	const syncStateRef = useRef({
 		workspaceId,
-		lastSyncedSnapshot: getSnapshot(EMPTY_STATE),
+		lastSyncedSnapshot: workspaceRuntime.seededSnapshot,
 	});
 
 	const { data: localWorkspaceRows = [], isReady: isLayoutReady } =
@@ -51,24 +64,40 @@ export function useV2WorkspacePaneLayout() {
 		);
 	const localWorkspaceState =
 		localWorkspaceRows.find((row) => row.workspaceId === workspaceId) ?? null;
+	const isPagesEnabled = useFeatureFlagEnabled(FEATURE_FLAGS.PAGES);
+	const unavailableKinds = useMemo(
+		() => (isPagesEnabled === false ? ["page"] : []),
+		[isPagesEnabled],
+	);
+
 	const persistedPaneLayout = useMemo(
 		() =>
-			localWorkspaceState?.workspaceId === workspaceId
-				? ((localWorkspaceState.paneLayout as
-						| WorkspaceState<PaneViewerData>
-						| undefined) ?? EMPTY_STATE)
-				: EMPTY_STATE,
-		[localWorkspaceState, workspaceId],
+			dropUnavailablePanes(
+				localWorkspaceState?.workspaceId === workspaceId
+					? ((localWorkspaceState.paneLayout as
+							| WorkspaceState<PaneViewerData>
+							| undefined) ?? EMPTY_STATE)
+					: EMPTY_STATE,
+				unavailableKinds,
+			),
+		[localWorkspaceState, workspaceId, unavailableKinds],
 	);
 
 	useEffect(() => {
 		syncStateRef.current = {
-			workspaceId,
-			lastSyncedSnapshot: getSnapshot(EMPTY_STATE),
+			workspaceId: workspaceRuntime.workspaceId,
+			lastSyncedSnapshot: workspaceRuntime.seededSnapshot,
 		};
-	}, [workspaceId]);
+	}, [workspaceRuntime]);
 
 	useEffect(() => {
+		// Wait for the live query to settle for the current workspace before
+		// syncing: right after a switch it can still be resolving, in which
+		// case `persistedPaneLayout` falls back to EMPTY_STATE — applying that
+		// would blank the store that was just seeded synchronously above,
+		// reintroducing the flash this seeding was meant to fix.
+		if (!isLayoutReady) return;
+
 		const nextSnapshot = getSnapshot(persistedPaneLayout);
 		if (nextSnapshot === syncStateRef.current.lastSyncedSnapshot) {
 			return;
@@ -76,7 +105,7 @@ export function useV2WorkspacePaneLayout() {
 
 		syncStateRef.current.lastSyncedSnapshot = nextSnapshot;
 		store.getState().replaceState(persistedPaneLayout);
-	}, [persistedPaneLayout, store]);
+	}, [persistedPaneLayout, store, isLayoutReady]);
 
 	useEffect(() => {
 		const unsubscribe = store.subscribe((nextStore) => {

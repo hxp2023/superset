@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "92d09836-d890-4688-baee-b241a6e59f9c",
+  "id": "d781b875-abdd-499d-8f98-7894ec606fc7",
   "prevId": "e1255119-f9b5-406c-ac75-f450890e466d",
   "tables": {
     "host_agent_configs": {
@@ -681,30 +681,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "workspace_cloud_deletes": {
-      "name": "workspace_cloud_deletes",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "queued_at": {
-          "name": "queued_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "workspaces": {
       "name": "workspaces",
       "columns": {
@@ -823,13 +799,6 @@
           "autoincrement": false,
           "default": 0
         },
-        "cloud_synced_at": {
-          "name": "cloud_synced_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "archived_at": {
           "name": "archived_at",
           "type": "integer",
@@ -843,29 +812,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "sandbox_enabled": {
-          "name": "sandbox_enabled",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "sandbox_image_digest": {
-          "name": "sandbox_image_digest",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_port_map_json": {
-          "name": "sandbox_port_map_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
         }
       },
       "indexes": {

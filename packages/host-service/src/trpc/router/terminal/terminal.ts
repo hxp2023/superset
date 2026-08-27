@@ -19,10 +19,17 @@ import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
 import { toTerminalSessionError } from "./errors";
 
-const createSessionInputSchema = z.object({
+export const createSessionInputSchema = z.object({
 	workspaceId: z.string(),
 	terminalId: z.string().optional(),
-	initialCommand: z.string().trim().min(1).optional(),
+	// An empty or whitespace-only command means "open a shell with no initial
+	// command" (e.g. a preset with no command), so normalize it to absent
+	// instead of rejecting. `launchSession` still requires a non-empty command.
+	initialCommand: z
+		.string()
+		.trim()
+		.optional()
+		.transform((value) => (value ? value : undefined)),
 	cwd: z.string().optional(),
 	themeType: z.string().optional(),
 	cols: z.number().int().positive().optional(),
@@ -164,12 +171,16 @@ export const terminalRouter = router({
 	// is framed as a bracketed paste server-side.
 	send: protectedProcedure
 		.input(
-			z.object({
-				terminalId: z.string(),
-				workspaceId: z.string(),
-				text: z.string().min(1),
-				submit: z.boolean().default(true),
-			}),
+			z
+				.object({
+					terminalId: z.string(),
+					workspaceId: z.string(),
+					text: z.string(),
+					submit: z.boolean().default(true),
+				})
+				.refine((input) => input.submit || input.text.length > 0, {
+					message: "Nothing to send",
+				}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			const result = await writeFramedInputToSession({
@@ -243,8 +254,12 @@ export const terminalRouter = router({
 				});
 			}
 
+			// Mark the binding disposed BEFORE the kill: the SIGHUP death-gasp and
+			// pty-exit events that follow would otherwise stamp it
+			// "terminal-exited" and auto-resume would resurrect a deliberately
+			// killed session at the next pane mount.
+			ctx.terminalAgentStore.markTerminalDisposed(input.terminalId);
 			await disposeSessionAndWait(input.terminalId, ctx.db);
-			ctx.terminalAgentStore.markTerminalExited(input.terminalId);
 			return { terminalId: input.terminalId, status: "disposed" as const };
 		}),
 

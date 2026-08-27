@@ -1,7 +1,12 @@
 import { CLIError } from "@superset/cli-framework";
 import { type ApiClient, createApiClient } from "./api-client";
 import { refreshAccessToken } from "./auth";
-import { readConfig, type SupersetConfig, writeConfig } from "./config";
+import {
+	readConfig,
+	resolveOrganizationId,
+	type SupersetConfig,
+	writeConfig,
+} from "./config";
 
 export type AuthSource = "override" | "config" | "oauth";
 
@@ -64,9 +69,9 @@ export async function resolveAuth(
 		);
 	}
 
-	const api = createApiClient({
-		bearer,
-		organizationId: config.organizationId,
-	});
-	return { config, api, bearer, authSource };
+	const organizationId = resolveOrganizationId(config);
+	const resolvedConfig: SupersetConfig = { ...config, organizationId };
+
+	const api = createApiClient({ bearer, organizationId });
+	return { config: resolvedConfig, api, bearer, authSource };
 }

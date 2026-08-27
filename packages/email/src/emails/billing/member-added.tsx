@@ -1,69 +1,77 @@
-import { Heading, Section, Text } from "@react-email/components";
-import { EmailLayout } from "../../components";
+import { Heading, Hr, Text } from "@react-email/components";
+import { DetailRow, EmailLayout } from "../../components";
 
 interface MemberAddedBillingEmailProps {
-	ownerName?: string | null;
+	recipientName?: string | null;
 	organizationName: string;
 	newMemberName: string;
 	newMemberEmail: string;
 	addedByName: string;
 	newSeatCount: number;
 	newMonthlyTotal: string;
+	billingInterval?: "monthly" | "yearly";
+	prorationAmount?: string | null;
+	nextInvoiceTotal?: string | null;
 }
 
 export function MemberAddedBillingEmail({
-	ownerName = "there",
+	recipientName = "there",
 	organizationName = "Acme Inc",
 	newMemberName = "Jane Doe",
 	newMemberEmail = "jane@example.com",
 	addedByName = "John Smith",
 	newSeatCount = 5,
 	newMonthlyTotal = "$50.00",
+	billingInterval = "monthly",
+	prorationAmount = "$12.40",
+	nextInvoiceTotal = "$62.40",
 }: MemberAddedBillingEmailProps) {
+	const hasPreview = Boolean(prorationAmount && nextInvoiceTotal);
+	// unit_amount is per billing period, so on an annual price this total is
+	// yearly. Labelling it monthly understates the charge twelvefold.
+	const totalLabel =
+		billingInterval === "yearly" ? "New yearly total" : "New monthly total";
+
 	return (
 		<EmailLayout
 			preview={`Billing update: ${newMemberName} was added to ${organizationName}`}
 		>
-			<Heading className="text-lg font-normal leading-7 mb-8 text-foreground text-center">
-				New member added to <strong>{organizationName}</strong>
+			<Heading className="text-[22px] font-medium leading-8 text-foreground m-0 mb-4">
+				New member added to {organizationName}
 			</Heading>
 
-			<Text className="text-base leading-[26px] mb-4 text-foreground">
-				Hi {ownerName ?? "there"},
+			<Text className="text-[15px] leading-6 text-foreground m-0 mb-4">
+				Hi {recipientName ?? "there"},
 			</Text>
 
-			<Text className="text-base leading-[26px] text-foreground mb-4">
-				{addedByName} added a new member to <strong>{organizationName}</strong>:
+			<Text className="text-[15px] leading-6 text-foreground m-0 mb-2">
+				{addedByName} added <strong>{newMemberName}</strong> ({newMemberEmail})
+				to <strong>{organizationName}</strong>. Your subscription has been
+				updated:
 			</Text>
 
-			<Section className="bg-[#f9fafb] rounded-lg p-4 mb-4">
-				<Text className="text-sm leading-5 text-foreground m-0">
-					<strong>{newMemberName}</strong>
-				</Text>
-				<Text className="text-sm leading-5 text-muted m-0">
-					{newMemberEmail}
-				</Text>
-			</Section>
+			<Hr className="border-border my-4" />
+			<DetailRow label="Seats" value={String(newSeatCount)} />
+			<DetailRow label={totalLabel} value={newMonthlyTotal} />
+			{hasPreview && (
+				<>
+					<DetailRow
+						label="Prorated for the rest of this period"
+						value={prorationAmount as string}
+					/>
+					<DetailRow label="Next invoice" value={nextInvoiceTotal as string} />
+				</>
+			)}
+			<Hr className="border-border my-4" />
 
-			<Text className="text-base leading-[26px] text-foreground mb-4">
-				Your subscription has been updated:
+			<Text className="text-[13px] leading-5 text-muted m-0 mb-4">
+				{hasPreview
+					? `Your next invoice is ${nextInvoiceTotal} — the new plan total plus ${prorationAmount} for the part of the current period the new seat covers.`
+					: "Your next invoice adds a prorated charge for the rest of the current period, so it will be higher than the plan total above."}
 			</Text>
 
-			<Section className="bg-[#f9fafb] rounded-lg p-4 mb-4">
-				<Text className="text-sm leading-5 text-foreground m-0">
-					<strong>Seats:</strong> {newSeatCount}
-				</Text>
-				<Text className="text-sm leading-5 text-foreground m-0">
-					<strong>New monthly total:</strong> {newMonthlyTotal}
-				</Text>
-			</Section>
-
-			<Text className="text-sm leading-5 text-muted mb-4">
-				The prorated amount will be reflected in your next invoice.
-			</Text>
-
-			<Text className="text-xs leading-5 text-muted">
-				You're receiving this because you're an owner of {organizationName}.
+			<Text className="text-[13px] leading-5 text-muted m-0">
+				You're receiving this because you manage billing for {organizationName}.
 			</Text>
 		</EmailLayout>
 	);

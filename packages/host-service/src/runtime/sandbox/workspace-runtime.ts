@@ -7,6 +7,8 @@
  * behavior) or inside a per-workspace sandbox container (Docker runtime).
  */
 
+import type { HostDb } from "../../db/index.ts";
+
 export interface TerminalLaunchContext {
 	terminalId: string;
 	workspaceId: string;
@@ -20,6 +22,9 @@ export interface TerminalLaunchContext {
 	/** Resolved terminal cwd (inside the worktree). */
 	cwd: string;
 	themeType?: "dark" | "light";
+	/** Host DB handle, for per-launch env that reads host state (e.g. the
+	 * usage-tab default account). */
+	db: HostDb;
 }
 
 /** Exactly what daemon.open needs, plus launch capability metadata. */

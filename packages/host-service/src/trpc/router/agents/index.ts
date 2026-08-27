@@ -3,7 +3,6 @@ export {
 	type AgentRunResult,
 	agentsRouter,
 	buildTerminalAgentLaunch,
-	isChatAgent,
 	runAgentInWorkspace,
-	validateAgentLaunchEffort,
+	validateAgentLaunchOptions,
 } from "./agents";

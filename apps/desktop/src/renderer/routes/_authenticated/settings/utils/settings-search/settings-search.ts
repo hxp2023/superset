@@ -1,9 +1,14 @@
+import {
+	INTEGRATIONS,
+	type IntegrationProvider,
+} from "@superset/shared/integrations";
 import type { SettingsSection } from "renderer/stores/settings-state";
 
 export const SETTING_ITEM_ID = {
 	ACCOUNT_PROFILE: "account-profile",
 	ACCOUNT_SIGNOUT: "account-signout",
 	ACCOUNT_DELETE: "account-delete",
+	ACCOUNT_LEADERBOARD: "account-leaderboard",
 
 	ORGANIZATION_LOGO: "organization-logo",
 	ORGANIZATION_NAME: "organization-name",
@@ -25,11 +30,18 @@ export const SETTING_ITEM_ID = {
 
 	RINGTONES_NOTIFICATION: "ringtones-notification",
 
+	USAGE_TOKENS: "usage-tokens",
+	USAGE_RESOURCES: "usage-resources",
+
 	KEYBOARD_SHORTCUTS: "keyboard-shortcuts",
 	BEHAVIOR_CONFIRM_QUIT: "behavior-confirm-quit",
 	BEHAVIOR_FILE_OPEN_MODE: "behavior-file-open-mode",
 	BEHAVIOR_RESOURCE_MONITOR: "behavior-resource-monitor",
 	BEHAVIOR_OPEN_LINKS_IN_APP: "behavior-open-links-in-app",
+	BEHAVIOR_STAR_GITHUB: "behavior-star-github",
+
+	BROWSER_HOMEPAGE: "browser-homepage",
+	BROWSER_IMPORT_HISTORY: "browser-import-history",
 
 	GIT_BRANCH_PREFIX: "git-branch-prefix",
 	GIT_DELETE_LOCAL_BRANCH: "git-delete-local-branch",
@@ -46,6 +58,7 @@ export const SETTING_ITEM_ID = {
 	TERMINAL_BACKGROUND_LIMIT: "terminal-background-limit",
 
 	LINKS_FILE: "links-file",
+	LINKS_FOLDER: "links-folder",
 	LINKS_URL: "links-url",
 	LINKS_SIDEBAR_FILE: "links-sidebar-file",
 	LINKS_PORT: "links-port",
@@ -59,10 +72,6 @@ export const SETTING_ITEM_ID = {
 	EXPERIMENTAL_WORKSPACE_AGENTS: "experimental-workspace-agents",
 	EXPERIMENTAL_WAIT_FOR_SETUP_BEFORE_AGENT:
 		"experimental-wait-for-setup-before-agent",
-
-	INTEGRATIONS_LINEAR: "integrations-linear",
-	INTEGRATIONS_GITHUB: "integrations-github",
-	INTEGRATIONS_SLACK: "integrations-slack",
 
 	BILLING_OVERVIEW: "billing-overview",
 	BILLING_PLANS: "billing-plans",
@@ -95,8 +104,18 @@ export const SETTING_ITEM_ID = {
 	HOST_DELETE: "host-delete",
 } as const;
 
+/** One settings-search row per roster entry, id derived from the provider. */
+export function integrationSettingItemId<P extends IntegrationProvider>(
+	provider: P,
+): `integrations-${P}` {
+	return `integrations-${provider}`;
+}
+
+type IntegrationSettingItemId = `integrations-${IntegrationProvider}`;
+
 export type SettingItemId =
-	(typeof SETTING_ITEM_ID)[keyof typeof SETTING_ITEM_ID];
+	| (typeof SETTING_ITEM_ID)[keyof typeof SETTING_ITEM_ID]
+	| IntegrationSettingItemId;
 
 export interface SettingsItem {
 	id: SettingItemId;
@@ -117,10 +136,20 @@ export interface SettingsItem {
  */
 export type SettingVariant = "v1" | "v2" | "shared";
 
+const INTEGRATION_ITEM_VARIANTS = Object.fromEntries(
+	INTEGRATIONS.map((integration) => [
+		integrationSettingItemId(integration.provider),
+		"shared",
+	]),
+) as Record<IntegrationSettingItemId, SettingVariant>;
+
 export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
+	...INTEGRATION_ITEM_VARIANTS,
+
 	[SETTING_ITEM_ID.ACCOUNT_PROFILE]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_SIGNOUT]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_DELETE]: "shared",
+	[SETTING_ITEM_ID.ACCOUNT_LEADERBOARD]: "shared",
 
 	[SETTING_ITEM_ID.ORGANIZATION_LOGO]: "shared",
 	[SETTING_ITEM_ID.ORGANIZATION_NAME]: "shared",
@@ -141,12 +170,20 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 
 	[SETTING_ITEM_ID.RINGTONES_NOTIFICATION]: "shared",
 
+	[SETTING_ITEM_ID.USAGE_TOKENS]: "shared",
+	[SETTING_ITEM_ID.USAGE_RESOURCES]: "shared",
+
 	[SETTING_ITEM_ID.KEYBOARD_SHORTCUTS]: "shared",
 
 	[SETTING_ITEM_ID.BEHAVIOR_CONFIRM_QUIT]: "shared",
 	[SETTING_ITEM_ID.BEHAVIOR_FILE_OPEN_MODE]: "v1",
 	[SETTING_ITEM_ID.BEHAVIOR_RESOURCE_MONITOR]: "shared",
 	[SETTING_ITEM_ID.BEHAVIOR_OPEN_LINKS_IN_APP]: "v1",
+	[SETTING_ITEM_ID.BEHAVIOR_STAR_GITHUB]: "shared",
+
+	// The in-app browser pane is a v2-only surface.
+	[SETTING_ITEM_ID.BROWSER_HOMEPAGE]: "v2",
+	[SETTING_ITEM_ID.BROWSER_IMPORT_HISTORY]: "v2",
 
 	// Branch prefix exists in both UIs — v1 `GitSettings`, v2 `V2GitSettings`.
 	[SETTING_ITEM_ID.GIT_BRANCH_PREFIX]: "shared",
@@ -164,6 +201,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.TERMINAL_BACKGROUND_LIMIT]: "v2",
 
 	[SETTING_ITEM_ID.LINKS_FILE]: "v2",
+	[SETTING_ITEM_ID.LINKS_FOLDER]: "v2",
 	[SETTING_ITEM_ID.LINKS_URL]: "v2",
 	[SETTING_ITEM_ID.LINKS_SIDEBAR_FILE]: "v2",
 	[SETTING_ITEM_ID.LINKS_PORT]: "v2",
@@ -177,10 +215,6 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.EXPERIMENTAL_WORKSPACE_AGENTS]: "v2",
 	// Gates both the v1 renderer launch and the v2 host-side launch.
 	[SETTING_ITEM_ID.EXPERIMENTAL_WAIT_FOR_SETUP_BEFORE_AGENT]: "shared",
-
-	[SETTING_ITEM_ID.INTEGRATIONS_LINEAR]: "shared",
-	[SETTING_ITEM_ID.INTEGRATIONS_GITHUB]: "shared",
-	[SETTING_ITEM_ID.INTEGRATIONS_SLACK]: "shared",
 
 	[SETTING_ITEM_ID.BILLING_OVERVIEW]: "shared",
 	[SETTING_ITEM_ID.BILLING_PLANS]: "shared",
@@ -220,6 +254,74 @@ export function isItemAllowedForVariant(
 	if (variant === "shared") return true;
 	return isV2 ? variant === "v2" : variant === "v1";
 }
+
+/**
+ * Search keywords per integration; everything else (title, description, id)
+ * comes from the shared roster. Exhaustive so a new roster entry fails
+ * typecheck until it gets keywords.
+ */
+const INTEGRATION_KEYWORDS: Record<IntegrationProvider, string[]> = {
+	linear: ["issues", "tasks", "sync", "project management"],
+	github: [
+		"repos",
+		"repositories",
+		"pull requests",
+		"pr",
+		"sync",
+		"version control",
+		"git",
+	],
+	slack: [
+		"messages",
+		"conversations",
+		"tasks",
+		"chat",
+		"sync",
+		"communication",
+	],
+	notion: [
+		"pages",
+		"databases",
+		"data sources",
+		"comments",
+		"docs",
+		"knowledge",
+	],
+	microsoft_teams: [
+		"teams",
+		"microsoft",
+		"channels",
+		"messages",
+		"chat",
+		"communication",
+	],
+	sentry: ["errors", "issues", "monitoring", "alerts", "triage"],
+	google: [
+		"calendar",
+		"gmail",
+		"email",
+		"mail",
+		"events",
+		"triggers",
+		"automations",
+	],
+};
+
+const INTEGRATION_SEARCH_ITEMS: SettingsItem[] = INTEGRATIONS.map(
+	(integration) => ({
+		id: integrationSettingItemId(integration.provider),
+		section: "integrations",
+		title: integration.label,
+		description: integration.description,
+		keywords: [
+			"integrations",
+			integration.label.toLowerCase(),
+			...INTEGRATION_KEYWORDS[integration.provider],
+			"connect",
+			"connected",
+		],
+	}),
+);
 
 export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
@@ -266,6 +368,24 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"deactivate",
 			"gdpr",
 			"erase",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.ACCOUNT_LEADERBOARD,
+		section: "account",
+		title: "Leaderboard",
+		description: "Publish your agent usage to the public leaderboard",
+		keywords: [
+			"leaderboard",
+			"rank",
+			"ranking",
+			"public",
+			"share",
+			"usage",
+			"tokens",
+			"stats",
+			"opt in",
+			"opt out",
 		],
 	},
 	{
@@ -539,6 +659,44 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		],
 	},
 	{
+		id: SETTING_ITEM_ID.USAGE_TOKENS,
+		section: "usage",
+		title: "Token usage",
+		description: "Track per-account token usage, quotas, and model spend",
+		keywords: [
+			"usage",
+			"tokens",
+			"token",
+			"cost",
+			"spend",
+			"quota",
+			"limit",
+			"plan",
+			"model",
+			"models",
+			"claude",
+			"account",
+			"history",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.USAGE_RESOURCES,
+		section: "usage",
+		title: "Machine resources",
+		description: "Monitor live CPU and memory usage on this machine",
+		keywords: [
+			"usage",
+			"resources",
+			"cpu",
+			"memory",
+			"ram",
+			"processor",
+			"machine",
+			"performance",
+			"monitor",
+		],
+	},
+	{
 		id: SETTING_ITEM_ID.KEYBOARD_SHORTCUTS,
 		section: "keyboard",
 		title: "Keyboard Shortcuts",
@@ -683,6 +841,55 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		],
 	},
 	{
+		id: SETTING_ITEM_ID.BEHAVIOR_STAR_GITHUB,
+		section: "behavior",
+		title: "Star Superset on GitHub",
+		description: "Support the project with a GitHub star",
+		keywords: [
+			"star",
+			"github",
+			"support",
+			"feedback",
+			"open source",
+			"repo",
+			"repository",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.BROWSER_HOMEPAGE,
+		section: "browser",
+		title: "Browser homepage",
+		description: "The page new in-app browser tabs open to",
+		keywords: [
+			"browser",
+			"homepage",
+			"home",
+			"start page",
+			"default url",
+			"new tab",
+			"landing",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.BROWSER_IMPORT_HISTORY,
+		section: "browser",
+		title: "Import settings from another browser",
+		description:
+			"Copy browsing history and logins from Chrome, Brave, Arc, or another Chromium browser",
+		keywords: [
+			"browser",
+			"import",
+			"history",
+			"logins",
+			"cookies",
+			"chrome",
+			"brave",
+			"arc",
+			"chromium",
+			"migrate",
+		],
+	},
+	{
 		id: SETTING_ITEM_ID.AGENTS_ENABLED,
 		section: "agents",
 		title: "Enabled agents",
@@ -724,6 +931,15 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"moonshot",
 			"grok",
 			"xai",
+			"hermes",
+			"nous",
+			"fx",
+			"vercel",
+			"antigravity",
+			"agy",
+			"google",
+			"kiro",
+			"aws",
 		],
 	},
 	{
@@ -745,12 +961,14 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.TERMINAL_PRESETS,
 		section: "terminal",
-		title: "Terminal Presets",
-		description: "Manage your terminal presets",
+		title: "Terminal Scripts",
+		description: "Manage reusable commands that launch in terminals",
 		keywords: [
 			"terminal",
 			"preset",
 			"presets",
+			"scripts",
+			"terminal scripts",
 			"commands",
 			"agent",
 			"launch",
@@ -765,7 +983,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		id: SETTING_ITEM_ID.TERMINAL_QUICK_ADD,
 		section: "terminal",
 		title: "Quick Add Templates",
-		description: "Pre-configured terminal presets",
+		description: "Pre-configured terminal scripts",
 		keywords: [
 			"terminal",
 			"quick",
@@ -785,6 +1003,15 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"moonshot",
 			"grok",
 			"xai",
+			"hermes",
+			"nous",
+			"fx",
+			"vercel",
+			"antigravity",
+			"agy",
+			"google",
+			"kiro",
+			"aws",
 		],
 	},
 	{
@@ -870,6 +1097,31 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"terminal",
 			"chat",
 			"markdown",
+			"behavior",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.LINKS_FOLDER,
+		section: "links",
+		title: "Folder links",
+		description:
+			"How folder paths open when clicked in terminals: reveal in sidebar, editor, or Finder",
+		keywords: [
+			"links",
+			"folder",
+			"directory",
+			"click",
+			"cmd",
+			"ctrl",
+			"shift",
+			"meta",
+			"finder",
+			"reveal",
+			"sidebar",
+			"editor",
+			"external",
+			"open",
+			"terminal",
 			"behavior",
 		],
 	},
@@ -1030,15 +1282,18 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.EXPERIMENTAL_INLINE_WORKSPACE_PORTS,
 		section: "experimental",
-		title: "Inline workspace ports",
+		title: "Ports in top bar dropdown",
 		description:
-			"Show detected ports under each workspace in the sidebar instead of a single panel at the bottom",
+			"Show detected ports as a dropdown in the top bar instead of a chip under each workspace",
 		keywords: [
 			"experimental",
 			"ports",
 			"port",
 			"inline",
 			"sidebar",
+			"topbar",
+			"top bar",
+			"dropdown",
 			"workspace",
 			"workspaces",
 			"dev server",
@@ -1088,59 +1343,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"install",
 		],
 	},
-	{
-		id: SETTING_ITEM_ID.INTEGRATIONS_LINEAR,
-		section: "integrations",
-		title: "Linear",
-		description: "Sync issues bidirectionally with Linear",
-		keywords: [
-			"integrations",
-			"linear",
-			"issues",
-			"tasks",
-			"sync",
-			"connect",
-			"connected",
-			"project management",
-		],
-	},
-	{
-		id: SETTING_ITEM_ID.INTEGRATIONS_GITHUB,
-		section: "integrations",
-		title: "GitHub",
-		description: "Connect repos and sync pull requests",
-		keywords: [
-			"integrations",
-			"github",
-			"repos",
-			"repositories",
-			"pull requests",
-			"pr",
-			"sync",
-			"connect",
-			"connected",
-			"version control",
-			"git",
-		],
-	},
-	{
-		id: SETTING_ITEM_ID.INTEGRATIONS_SLACK,
-		section: "integrations",
-		title: "Slack",
-		description: "Manage tasks from Slack conversations",
-		keywords: [
-			"integrations",
-			"slack",
-			"messages",
-			"conversations",
-			"tasks",
-			"chat",
-			"sync",
-			"connect",
-			"connected",
-			"communication",
-		],
-	},
+	...INTEGRATION_SEARCH_ITEMS,
 	{
 		id: SETTING_ITEM_ID.BILLING_OVERVIEW,
 		section: "billing",
@@ -1215,8 +1418,8 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.PROJECT_SCRIPTS,
 		section: "project",
-		title: "Scripts",
-		description: "Setup, teardown, and run scripts for workspaces",
+		title: "Project Lifecycle Scripts",
+		description: "Setup, teardown, and run lifecycle scripts for workspaces",
 		keywords: [
 			"project",
 			"scripts",

@@ -14,18 +14,18 @@ interface RelayOfflineNoticeProps {
 }
 
 const WRAPPER_CLASS =
-	"flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-foreground/85 select-text cursor-text";
+	"flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs leading-relaxed text-foreground/85 select-text cursor-text";
 
 const ICON = (
 	<LuTriangleAlert
-		className="mt-0.5 size-3.5 shrink-0 text-amber-500"
+		className="mt-0.5 size-3.5 shrink-0 text-warning"
 		aria-hidden="true"
 	/>
 );
 
 /**
  * Automations dispatch from the cloud through the relay, so even the local
- * device is unreachable until relay access is enabled in Settings > Security.
+ * device is unreachable until relay access is enabled in Settings > Remote Workspaces.
  * Renders nothing while connectivity is unknown (row not yet synced).
  */
 export function RelayOfflineNotice({
@@ -51,7 +51,7 @@ export function RelayOfflineNotice({
 				<Button
 					variant="outline"
 					size="sm"
-					className="ml-auto h-7 shrink-0 border-amber-500/40 bg-amber-500/10 px-2.5 text-xs text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+					className="ml-auto h-7 shrink-0 border-warning/40 bg-warning/10 px-2.5 text-xs text-warning hover:bg-warning/20"
 					disabled={isPending}
 					onClick={() =>
 						gateFeature(GATED_FEATURES.REMOTE_WORKSPACES, () =>
@@ -89,8 +89,8 @@ export function RelayOfflineNotice({
 					>
 						host settings
 					</Link>
-					, and make sure relay access is on in Settings &gt; Security on that
-					device.
+					, and make sure relay access is on in Settings &gt; Remote Workspaces
+					on that device.
 				</span>
 			</div>
 		</div>

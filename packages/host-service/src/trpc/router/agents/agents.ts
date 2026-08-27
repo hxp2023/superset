@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
 import {
 	buildAgentEffortArgs,
+	buildAgentModeArgs,
 	buildAgentModelArgs,
 	buildAgentModelEnv,
 	getAgentEffortSupport,
+	getAgentModeSupport,
+	resolveAgentLaunchPresetId,
 } from "@superset/shared/agent-models";
 import {
 	buildArgvCommand,
@@ -21,6 +23,8 @@ import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
 import { resolveAttachmentPath } from "../attachments/storage";
 import { toTerminalSessionError } from "../terminal/errors";
+import { resolveDefaultAccountEnv } from "../usage/default-account";
+import { seedAgentFolderTrust } from "../workspace-creation/shared/seed-agent-trust";
 
 interface ResolvedHostAgentConfig {
 	id: string;
@@ -177,17 +181,17 @@ export interface AgentRunInput {
 	attachmentIds?: string[];
 	model?: string;
 	effort?: string;
+	mode?: string;
 	/** Session id of a previous run of this agent to restore (e.g. a killed
 	 * session's `agentSessionId`). The prompt may be empty when resuming. */
 	resumeSessionId?: string;
 }
 
-export type AgentRunResult =
-	| { kind: "terminal"; sessionId: string; label: string }
-	| { kind: "chat"; sessionId: string; label: string };
-
-const SUPERSET_AGENT_ID = "superset";
-const SUPERSET_AGENT_LABEL = "Superset";
+export type AgentRunResult = {
+	kind: "terminal";
+	sessionId: string;
+	label: string;
+};
 
 /**
  * Validate an explicit effort override before launch. Omitting effort always
@@ -212,6 +216,33 @@ export function validateAgentEffortSelection(
 		throw new TRPCError({
 			code: "BAD_REQUEST",
 			message: `Unsupported reasoning effort "${effort}" for ${label}. Choose one of: ${support.efforts.map((option) => option.id).join(", ")}.`,
+		});
+	}
+}
+
+/**
+ * Validate an explicit launch mode before launch. Omitting mode delegates to
+ * the underlying agent's default behaviour.
+ */
+export function validateAgentModeSelection(
+	presetId: string,
+	label: string,
+	mode: string | undefined,
+): void {
+	if (!mode) return;
+
+	const support = getAgentModeSupport(presetId);
+	if (!support) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `${label} does not support a launch mode override. Omit mode to use the agent default.`,
+		});
+	}
+
+	if (!support.modes.some((option) => option.id === mode)) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `Unsupported launch mode "${mode}" for ${label}. Choose one of: ${support.modes.map((option) => option.id).join(", ")}.`,
 		});
 	}
 }
@@ -246,19 +277,11 @@ export function validateAgentResumeSelection(
  * Preflight a host-scoped launch before any larger workflow (such as
  * workspace creation) performs side effects.
  */
-export function validateAgentLaunchEffort(
+export function validateAgentLaunchOptions(
 	db: HostDb,
-	input: Pick<AgentRunInput, "agent" | "effort">,
+	input: Pick<AgentRunInput, "agent" | "effort" | "mode">,
 ): void {
-	if (!input.effort) return;
-	if (input.agent === SUPERSET_AGENT_ID) {
-		validateAgentEffortSelection(
-			SUPERSET_AGENT_ID,
-			SUPERSET_AGENT_LABEL,
-			input.effort,
-		);
-		return;
-	}
+	if (!input.effort && !input.mode) return;
 
 	const config = resolveHostAgentConfig(db, input.agent);
 	if (!config) {
@@ -267,65 +290,12 @@ export function validateAgentLaunchEffort(
 			message: `No host agent config matching '${input.agent}' (tried instance id then preset id).`,
 		});
 	}
-	validateAgentEffortSelection(config.presetId, config.label, input.effort);
-}
-
-async function resolveAttachmentsAsFiles(
-	attachmentIds: string[],
-): Promise<Array<{ data: string; mediaType: string; filename?: string }>> {
-	return attachmentIds.map((attachmentId) => {
-		const resolved = resolveAttachmentPath(attachmentId);
-		if (!resolved) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: `Attachment not found: ${attachmentId}`,
-			});
-		}
-		const bytes = readFileSync(resolved.path);
-		const data = `data:${resolved.metadata.mediaType};base64,${bytes.toString("base64")}`;
-		return {
-			data,
-			mediaType: resolved.metadata.mediaType,
-			...(resolved.metadata.originalFilename
-				? { filename: resolved.metadata.originalFilename }
-				: {}),
-		};
-	});
-}
-
-async function runChatAgent(
-	ctx: HostServiceContext,
-	input: AgentRunInput,
-	label: string,
-): Promise<AgentRunResult> {
-	const sessionId = crypto.randomUUID();
-	const files = await resolveAttachmentsAsFiles(input.attachmentIds ?? []);
-
-	await ctx.api.chat.createSession.mutate({
-		sessionId,
-		v2WorkspaceId: input.workspaceId,
-	});
-
-	// Errors surface via `getSnapshot.displayState.errorMessage` when a
-	// chat pane attaches.
-	void ctx.runtime.chat
-		.sendMessage({
-			sessionId,
-			workspaceId: input.workspaceId,
-			payload: {
-				content: input.prompt,
-				...(files.length > 0 ? { files } : {}),
-			},
-			...(input.model ? { metadata: { model: input.model } } : {}),
-		})
-		.catch((error) => {
-			console.error(
-				`[runChatAgent] sendMessage failed for ${sessionId}:`,
-				error,
-			);
-		});
-
-	return { kind: "chat", sessionId, label };
+	const launchPresetId = resolveAgentLaunchPresetId(
+		config.presetId,
+		config.command,
+	);
+	validateAgentEffortSelection(launchPresetId, config.label, input.effort);
+	validateAgentModeSelection(launchPresetId, config.label, input.mode);
 }
 
 /**
@@ -348,7 +318,12 @@ export function buildTerminalAgentLaunch(
 			message: `No host agent config matching '${input.agent}' — the agent may have been removed or this host's agents were reset. Re-select an agent (or use a preset id like "claude").`,
 		});
 	}
-	validateAgentEffortSelection(config.presetId, config.label, input.effort);
+	const launchPresetId = resolveAgentLaunchPresetId(
+		config.presetId,
+		config.command,
+	);
+	validateAgentEffortSelection(launchPresetId, config.label, input.effort);
+	validateAgentModeSelection(launchPresetId, config.label, input.mode);
 	validateAgentResumeSelection(config, input.resumeSessionId);
 
 	const resolvedAttachments: Array<{ attachmentId: string; path: string }> = [];
@@ -364,17 +339,21 @@ export function buildTerminalAgentLaunch(
 	}
 
 	const prompt = buildAttachmentBlock(input.prompt, resolvedAttachments);
-	const modelArgs = buildAgentModelArgs(config.presetId, input.model);
-	const effortArgs = buildAgentEffortArgs(config.presetId, input.effort);
+	const modelArgs = buildAgentModelArgs(launchPresetId, input.model);
+	const effortArgs = buildAgentEffortArgs(launchPresetId, input.effort);
+	const modeArgs = buildAgentModeArgs(launchPresetId, input.mode);
 	const command = buildAgentCommandString(
 		config,
 		prompt,
-		[...modelArgs, ...effortArgs],
+		[...modelArgs, ...effortArgs, ...modeArgs],
 		{ resumeSessionId: input.resumeSessionId },
 	);
-	const modelEnv = buildAgentModelEnv(config.presetId, input.model);
+	const modelEnv = buildAgentModelEnv(launchPresetId, input.model);
+	// Host-default provider account (Usage tab switcher). Per-agent env wins,
+	// so a "Claude (work)" agent with its own CLAUDE_CONFIG_DIR stays pinned.
+	const accountEnv = resolveDefaultAccountEnv(db, config.presetId);
 	return {
-		fullCommand: `${envOverlayPrefix({ ...config.env, ...modelEnv })}${command}`,
+		fullCommand: `${envOverlayPrefix({ ...accountEnv, ...config.env, ...modelEnv })}${command}`,
 		label: config.label,
 	};
 }
@@ -405,11 +384,6 @@ async function runTerminalAgent(
 	};
 }
 
-/** Sugar agents that run as chat sessions rather than terminal commands. */
-export function isChatAgent(agent: string): boolean {
-	return agent === SUPERSET_AGENT_ID;
-}
-
 export async function runAgentInWorkspace(
 	ctx: HostServiceContext,
 	input: AgentRunInput,
@@ -425,26 +399,16 @@ export async function runAgentInWorkspace(
 			message: `Workspace ${input.workspaceId} not found on this host — it may have been deleted.`,
 		});
 	}
-	if (input.agent === SUPERSET_AGENT_ID) {
-		validateAgentEffortSelection(
-			SUPERSET_AGENT_ID,
-			SUPERSET_AGENT_LABEL,
-			input.effort,
-		);
-		if (input.resumeSessionId !== undefined) {
-			// Chat sessions restore through the chat runtime, not a relaunch.
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: `${SUPERSET_AGENT_LABEL} does not support resuming a session by id. Omit resumeSessionId to start a new session.`,
-			});
+	// Session workspaces are standalone repos the host itself scaffolded, so
+	// agent CLIs can't inherit folder trust from anywhere — pre-trust the
+	// folder in the launching agent's own trust store so its first
+	// interactive boot skips the trust dialog. Worktree workspaces inherit
+	// trust from the main checkout and need nothing.
+	if (workspace.projectId === null) {
+		const config = resolveHostAgentConfig(ctx.db, input.agent);
+		if (config) {
+			await seedAgentFolderTrust(ctx.db, workspace.worktreePath, config);
 		}
-		if (input.prompt.length === 0) {
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: `${SUPERSET_AGENT_LABEL} requires a prompt to start a session.`,
-			});
-		}
-		return runChatAgent(ctx, input, SUPERSET_AGENT_LABEL);
 	}
 	return runTerminalAgent(ctx, input);
 }
@@ -455,13 +419,13 @@ export const agentsRouter = router({
 			z.object({
 				workspaceId: z.string().uuid(),
 				agent: z.string().min(1),
-				// Optional for terminal agents: an empty prompt launches the bare
-				// agent (the builder drops promptArgs). Chat agents still require
-				// one — enforced in runAgentInWorkspace where the branch is known.
+				// Optional: an empty prompt launches the bare agent (the builder
+				// drops promptArgs).
 				prompt: z.string().default(""),
 				attachmentIds: z.array(z.string().uuid()).optional(),
 				model: z.string().min(1).optional(),
 				effort: z.string().min(1).optional(),
+				mode: z.string().min(1).optional(),
 				resumeSessionId: z.string().min(1).optional(),
 			}),
 		)
