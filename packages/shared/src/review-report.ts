@@ -8,6 +8,15 @@ export interface ReviewReportFinding {
 	verdict?: "CONFIRMED" | "PLAUSIBLE";
 }
 
+export interface ReviewReportComment {
+	authorLogin: string;
+	authorAvatarUrl?: string | null;
+	/** Markdown, rendered the same way as the description. */
+	body: string;
+	createdAt: string | Date;
+	htmlUrl?: string;
+}
+
 export interface ReviewReportInput {
 	title: string;
 	repo?: string;
@@ -27,6 +36,8 @@ export interface ReviewReportInput {
 	 * a review ran and found nothing.
 	 */
 	description?: string;
+	/** The PR's conversation comments, oldest first. Only shown alongside `description`. */
+	comments?: ReviewReportComment[];
 }
 
 interface DiffSegment {
@@ -862,6 +873,35 @@ function renderMarkdown(rawMarkdown: string): string {
 	return blocks.join("\n");
 }
 
+function renderComment(comment: ReviewReportComment): string {
+	const author = escapeHtml(comment.authorLogin);
+	const avatar = comment.authorAvatarUrl
+		? `<img class="comment-avatar" src="${escapeHtml(comment.authorAvatarUrl)}" alt="">`
+		: `<span class="comment-avatar comment-avatar-fallback"></span>`;
+	const date = formatGeneratedAt(comment.createdAt);
+	const authorHtml = comment.htmlUrl
+		? `<a class="comment-author" href="${escapeHtml(comment.htmlUrl)}" target="_blank" rel="noopener noreferrer">${author}</a>`
+		: `<span class="comment-author">${author}</span>`;
+	return `
+<div class="comment">
+	<div class="comment-head">
+		${avatar}
+		${authorHtml}
+		${date ? `<span class="comment-date">commented ${date}</span>` : ""}
+	</div>
+	<div class="comment-body markdown">${renderMarkdown(comment.body)}</div>
+</div>`;
+}
+
+function renderComments(comments: ReviewReportComment[]): string {
+	if (comments.length === 0) return "";
+	return `
+<div class="comments">
+	<h2 class="comments-heading">Comments <span class="comments-count">${comments.length}</span></h2>
+	${comments.map(renderComment).join("\n")}
+</div>`;
+}
+
 export function renderReviewReportHtml(review: ReviewReportInput): string {
 	const findings = review.findings ?? [];
 	const groups = VERDICT_GROUPS.map((group) => ({
@@ -882,7 +922,7 @@ export function renderReviewReportHtml(review: ReviewReportInput): string {
 	const isPlainPrView = findings.length === 0 && Boolean(review.description);
 
 	const body = isPlainPrView
-		? `<div class="markdown">${renderMarkdown(review.description ?? "")}</div>`
+		? `<div class="markdown">${renderMarkdown(review.description ?? "")}</div>${renderComments(review.comments ?? [])}`
 		: groups.length === 0
 			? `<div class="section-body"><div class="empty-row">${icon("check", "")}No findings — this review didn't flag anything.</div></div>`
 			: groups
@@ -1304,6 +1344,32 @@ details.failure p { margin: 0.375rem 0 0; font-size: 0.875rem; line-height: 1.25
 .markdown table { border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
 .markdown th, .markdown td { border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); padding: 0.375rem 0.625rem; text-align: left; }
 .markdown th { background: color-mix(in oklab, var(--muted) 35%, transparent); font-weight: 600; }
+.comments { margin-top: 2rem; }
+.comments-heading { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; margin: 0 0 0.75rem; }
+.comments-count { color: var(--muted-foreground); font-weight: 400; }
+.comment {
+	border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+	border-radius: 10px;
+	background: color-mix(in oklab, var(--muted) 15%, transparent);
+	overflow: hidden;
+}
+.comment + .comment { margin-top: 0.75rem; }
+.comment-head {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.625rem 0.75rem;
+	border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+.comment-avatar { width: 20px; height: 20px; border-radius: 9999px; flex-shrink: 0; }
+.comment-avatar-fallback { background: color-mix(in oklab, var(--muted) 60%, transparent); }
+.comment-author { font-weight: 600; }
+.comment-date { color: var(--muted-foreground); }
+.comment-body { padding: 0.75rem; }
+.comment-body.markdown > *:first-child { margin-top: 0; }
+.comment-body.markdown > *:last-child { margin-bottom: 0; }
 </style>
 </head>
 <body>

@@ -16,6 +16,15 @@ import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { fetchGithubPrSchema } from "./schema";
 
+export interface GithubPrComment {
+	id: number;
+	authorLogin: string;
+	authorAvatarUrl: string | null;
+	body: string;
+	createdAt: string;
+	htmlUrl: string;
+}
+
 export interface GithubPrContent {
 	owner: string;
 	repo: string;
@@ -37,6 +46,8 @@ export interface GithubPrContent {
 	changedFiles: number;
 	/** Raw unified diff text. */
 	diff: string;
+	/** Top-level conversation comments, oldest first. Capped at 100. */
+	comments: GithubPrComment[];
 }
 
 /** The subset of GitHub's PR API response this router actually reads. */
@@ -58,12 +69,33 @@ interface GithubApiPullRequest {
 	changed_files?: number;
 }
 
+/** The subset of GitHub's issue-comment API response this router actually reads. */
+interface GithubApiComment {
+	id: number;
+	body: string | null;
+	user: { login: string; avatar_url: string | null } | null;
+	created_at: string;
+	html_url: string;
+}
+
+function toComment(comment: GithubApiComment): GithubPrComment {
+	return {
+		id: comment.id,
+		authorLogin: comment.user?.login ?? "unknown",
+		authorAvatarUrl: comment.user?.avatar_url ?? null,
+		body: comment.body ?? "",
+		createdAt: comment.created_at,
+		htmlUrl: comment.html_url,
+	};
+}
+
 function toContent(
 	owner: string,
 	repo: string,
 	number: number,
 	pr: GithubApiPullRequest,
 	diff: string,
+	comments: GithubApiComment[],
 ): GithubPrContent {
 	return {
 		owner,
@@ -85,6 +117,7 @@ function toContent(
 		deletions: pr.deletions ?? 0,
 		changedFiles: pr.changed_files ?? 0,
 		diff,
+		comments: comments.map(toComment),
 	};
 }
 
@@ -119,13 +152,20 @@ async function fetchViaInstallation(
 		const octokit = await app.getInstallationOctokit(
 			Number(installation.installationId),
 		);
-		const [{ data: pr }, diffResponse] = await Promise.all([
+		const [{ data: pr }, diffResponse, { data: comments }] = await Promise.all([
 			octokit.rest.pulls.get({ owner, repo, pull_number: number }),
 			octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
 				owner,
 				repo,
 				pull_number: number,
 				mediaType: { format: "diff" },
+			}),
+			// A PR *is* an issue in GitHub's API — comments live under /issues.
+			octokit.rest.issues.listComments({
+				owner,
+				repo,
+				issue_number: number,
+				per_page: 100,
 			}),
 		]);
 		return toContent(
@@ -134,6 +174,7 @@ async function fetchViaInstallation(
 			number,
 			pr as unknown as GithubApiPullRequest,
 			diffResponse.data as unknown as string,
+			comments as unknown as GithubApiComment[],
 		);
 	} catch {
 		return null;
@@ -147,9 +188,12 @@ async function fetchPublic(
 	number: number,
 ): Promise<GithubPrContent | null> {
 	const base = `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`;
-	const [metaResponse, diffResponse] = await Promise.all([
+	// A PR *is* an issue in GitHub's API — comments live under /issues, not /pulls.
+	const commentsUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${number}/comments?per_page=100`;
+	const [metaResponse, diffResponse, commentsResponse] = await Promise.all([
 		fetch(base, { headers: { Accept: "application/vnd.github+json" } }),
 		fetch(base, { headers: { Accept: "application/vnd.github.v3.diff" } }),
+		fetch(commentsUrl, { headers: { Accept: "application/vnd.github+json" } }),
 	]);
 	if (metaResponse.status === 404) return null;
 	if (!metaResponse.ok) {
@@ -160,7 +204,10 @@ async function fetchPublic(
 	}
 	const pr = (await metaResponse.json()) as GithubApiPullRequest;
 	const diff = diffResponse.ok ? await diffResponse.text() : "";
-	return toContent(owner, repo, number, pr, diff);
+	const comments = commentsResponse.ok
+		? ((await commentsResponse.json()) as GithubApiComment[])
+		: [];
+	return toContent(owner, repo, number, pr, diff, comments);
 }
 
 export const githubPrRouter = {

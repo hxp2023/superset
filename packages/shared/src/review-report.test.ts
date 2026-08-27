@@ -574,4 +574,51 @@ describe("renderReviewReportHtml", () => {
 			'<li class="task-list-item"><input type="checkbox" disabled> Todo thing</li>',
 		);
 	});
+
+	it("renders the PR's conversation comments below the description", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "The body.",
+			comments: [
+				{
+					authorLogin: "octocat",
+					authorAvatarUrl: "https://example.com/avatar.png",
+					body: "Looks **good** to me.",
+					createdAt: "2026-01-02T00:00:00.000Z",
+					htmlUrl: "https://github.com/o/r/pull/1#issuecomment-1",
+				},
+				{
+					authorLogin: "reviewer",
+					body: "One nit.",
+					createdAt: "2026-01-03T00:00:00.000Z",
+				},
+			],
+		});
+		expect(html).toContain(
+			'<h2 class="comments-heading">Comments <span class="comments-count">2</span></h2>',
+		);
+		expect(html).toContain(
+			'<img class="comment-avatar" src="https://example.com/avatar.png" alt="">',
+		);
+		expect(html).toContain(
+			'<a class="comment-author" href="https://github.com/o/r/pull/1#issuecomment-1" target="_blank" rel="noopener noreferrer">octocat</a>',
+		);
+		expect(html).toContain("Looks <strong>good</strong> to me.");
+		expect(html).toContain('<span class="comment-author">reviewer</span>');
+		expect(html).toContain(
+			'<span class="comment-avatar comment-avatar-fallback"></span>',
+		);
+		expect(html).toContain("One nit.");
+	});
+
+	it("omits the comments section entirely when there are none", () => {
+		const html = renderReviewReportHtml({
+			title: "Fix bug",
+			generatedAt: "2026-01-01T00:00:00.000Z",
+			description: "The body.",
+			comments: [],
+		});
+		expect(html).not.toContain('<div class="comments">');
+	});
 });

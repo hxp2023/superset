@@ -51,6 +51,13 @@ export function PrViewer() {
 			generatedAt: pr.updatedAt,
 			description: pr.description ?? undefined,
 			diff: pr.diff,
+			comments: pr.comments.map((comment) => ({
+				authorLogin: comment.authorLogin,
+				authorAvatarUrl: comment.authorAvatarUrl,
+				body: comment.body,
+				createdAt: comment.createdAt,
+				htmlUrl: comment.htmlUrl,
+			})),
 		});
 	}, [query.data]);
 
