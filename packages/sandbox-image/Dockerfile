@@ -11,13 +11,16 @@
 
 FROM node:22-bookworm-slim
 
-ARG CLAUDE_CODE_VERSION=latest
-ARG CODEX_VERSION=latest
-ARG OPENCODE_VERSION=latest
-ARG GEMINI_CLI_VERSION=latest
-ARG AMP_VERSION=latest
-ARG COPILOT_VERSION=latest
-ARG MASTRACODE_VERSION=latest
+# Pinned for reproducible rebuilds; override any at build time with
+# --build-arg <NAME>=<version>. Bump these deliberately when refreshing the
+# published image.
+ARG CLAUDE_CODE_VERSION=2.1.247
+ARG CODEX_VERSION=0.150.1
+ARG OPENCODE_VERSION=1.18.23
+ARG GEMINI_CLI_VERSION=0.57.0
+ARG AMP_VERSION=0.0.1787829336-g289152
+ARG COPILOT_VERSION=1.0.80
+ARG MASTRACODE_VERSION=0.36.1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

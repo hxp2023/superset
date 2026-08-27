@@ -25,8 +25,26 @@ then point a project at it (machine-local config, e.g.
 
 Any image used as `sandbox.image` must provide `/bin/bash`, `git`, `curl`,
 CA certificates, and a `sleep` binary. The default image additionally ships
-node/bun, ripgrep, jq, and pinned Claude Code + Codex CLIs (see build args
-`CLAUDE_CODE_VERSION` / `CODEX_VERSION`).
+node/bun, ripgrep, jq, `openssh-client`, `procps`, and pinned agent CLIs.
+
+### Pinned build args
+
+Each agent CLI is pinned for reproducible rebuilds; override at build time
+with `--build-arg <NAME>=<version>`:
+
+| Build arg | Package |
+| --- | --- |
+| `CLAUDE_CODE_VERSION` | `@anthropic-ai/claude-code` |
+| `CODEX_VERSION` | `@openai/codex` |
+| `OPENCODE_VERSION` | `opencode-ai` |
+| `GEMINI_CLI_VERSION` | `@google/gemini-cli` |
+| `AMP_VERSION` | `@sourcegraph/amp` |
+| `COPILOT_VERSION` | `@github/copilot` |
+| `MASTRACODE_VERSION` | `mastracode` |
+
+Agents without an official npm package (droid/Factory, cursor-agent, kimi,
+grok, vibe, pi/omp) are not bundled — supply a custom `sandbox.image` with
+them installed; their host config dirs already mount into the sandbox.
 
 ## Publishing
 

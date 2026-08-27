@@ -29,6 +29,7 @@ import { promisify } from "node:util";
 import { eq } from "drizzle-orm";
 import { terminalAgentBindings, workspaces } from "../../src/db/schema";
 import { PskHostAuthProvider } from "../../src/providers/host-auth";
+import { destroyWorkspaceSandbox } from "../../src/runtime/sandbox/container-manager";
 import { inspectContainer } from "../../src/runtime/sandbox/docker-cli";
 import { getSandboxContainerName } from "../../src/runtime/sandbox/paths";
 import {
@@ -63,6 +64,9 @@ describe.skipIf(!DOCKER_TESTS)("sandbox end-to-end", () => {
 	let savedHostPort: string | undefined;
 	let scenario: Awaited<ReturnType<typeof createProjectScenario>>;
 	let server: ReturnType<typeof Bun.serve>;
+	// Hoisted so afterAll can tear the container down even if an assertion
+	// between provision and the in-test workspace.delete throws.
+	let createdWorkspaceId: string | undefined;
 
 	beforeAll(async () => {
 		fixtureRoot = mkdtempSync(join(tmpdir(), "superset-sandbox-e2e-"));
@@ -127,6 +131,11 @@ describe.skipIf(!DOCKER_TESTS)("sandbox end-to-end", () => {
 	}, 10 * 60_000);
 
 	afterAll(async () => {
+		// Best-effort: the happy path already deleted the workspace; this only
+		// fires when an assertion aborted the test mid-run and left a container.
+		if (createdWorkspaceId) {
+			await destroyWorkspaceSandbox(createdWorkspaceId).catch(() => {});
+		}
 		server?.stop(true);
 		if (savedHomeDir === undefined) delete process.env.SUPERSET_HOME_DIR;
 		else process.env.SUPERSET_HOME_DIR = savedHomeDir;
@@ -147,6 +156,7 @@ describe.skipIf(!DOCKER_TESTS)("sandbox end-to-end", () => {
 			});
 			const workspaceId = created?.workspace?.id;
 			if (!workspaceId) throw new Error("workspace create failed");
+			createdWorkspaceId = workspaceId;
 			const row = scenario.host.db
 				.select()
 				.from(workspaces)

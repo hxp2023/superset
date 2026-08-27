@@ -74,6 +74,10 @@ export async function resolveHostTarget(
 					}),
 				],
 			}),
+			ws: {
+				baseWsUrl: envEndpoint.endpoint.replace(/^http/, "ws"),
+				token: envEndpoint.authToken,
+			},
 		};
 	}
 

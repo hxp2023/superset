@@ -428,13 +428,17 @@ async function runDestroyPhases(
 		// Sandbox-local commits live only in the isolated git dir; export
 		// them into the main repo as refs/sandbox/<id>/* first, and keep the
 		// git dir on disk if the export fails so they're never destroyed.
-		let sandboxExportFailed = false;
+		// Preserve the git dir unless commits are provably safe in the main
+		// repo. With no project there's nowhere to export to, so keep state
+		// on disk rather than destroy the only copy of sandbox-local commits.
+		let sandboxExportFailed = !project;
 		if (project) {
 			try {
 				await exportSandboxRefs({
 					repoPath: project.repoPath,
 					workspaceId: input.workspaceId,
 				});
+				sandboxExportFailed = false;
 			} catch (err) {
 				sandboxExportFailed = true;
 				const message = err instanceof Error ? err.message : String(err);
@@ -442,6 +446,10 @@ async function runDestroyPhases(
 					`Failed to export sandbox commits (sandbox git state kept on disk): ${message}`,
 				);
 			}
+		} else {
+			warnings.push(
+				"Workspace has no project; sandbox git state kept on disk to avoid losing unexported commits.",
+			);
 		}
 		try {
 			await destroyWorkspaceSandbox(input.workspaceId, {

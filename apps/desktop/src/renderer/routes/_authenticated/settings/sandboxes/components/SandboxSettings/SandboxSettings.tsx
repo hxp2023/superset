@@ -123,10 +123,14 @@ export function SandboxSettings({ hostId }: SandboxSettingsProps) {
 			),
 	});
 
+	// A failed fetch leaves `enabled`/`provider` on their fallbacks, which were
+	// never read from the host — block writes so a toggle can't persist a value
+	// derived from unknown current state.
 	const controlsDisabled =
 		!targetHostUrl ||
 		!isHostOnline ||
 		defaultsQuery.isLoading ||
+		defaultsQuery.isError ||
 		setMutation.isPending;
 
 	return (
@@ -154,6 +158,13 @@ export function SandboxSettings({ hostId }: SandboxSettingsProps) {
 					/>
 				) : null}
 			</header>
+
+			{defaultsQuery.isError ? (
+				<p className="mb-4 text-sm text-destructive">
+					Couldn't load sandbox settings from {selectedHostName}. Controls are
+					disabled until the host responds.
+				</p>
+			) : null}
 
 			<section>
 				<SettingsRow

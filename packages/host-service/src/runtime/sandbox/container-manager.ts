@@ -193,12 +193,17 @@ async function doEnsureContainer(params: EnsureContainerParams): Promise<void> {
 
 	if (inspection.exists) {
 		const staleConfig = inspection.labels[CONFIG_HASH_LABEL] !== configHash;
-		if (inspection.running && !staleConfig) return;
-		if (!inspection.running && staleConfig) {
-			// Stopped + outdated: recreate. A RUNNING container with stale
-			// config keeps serving — never kill live terminals implicitly.
+		if (inspection.running) {
+			// Already running: keep serving even with stale config — never kill
+			// live terminals implicitly; the new config lands on next recreate.
+			return;
+		}
+		if (staleConfig) {
+			// Stopped + outdated: recreate with the current config.
 			await removeContainer(name);
 		} else {
+			// Stopped + current config (daemon restart, crash, reboot, docker
+			// stop): just restart the existing container.
 			await startContainer(name);
 			return;
 		}

@@ -348,6 +348,8 @@ export function useDashboardSidebarData() {
 					taskId: workspace.taskId,
 					createdAt: workspace.createdAt,
 					updatedAt: workspace.updatedAt,
+					sandboxed: workspace.sandboxed,
+					sandboxStatus: workspace.sandboxStatus,
 					tabOrder: MAIN_WORKSPACE_TAB_ORDER,
 					sectionId: null as string | null,
 					// Auto-included mains have no local-state row; pinning one
