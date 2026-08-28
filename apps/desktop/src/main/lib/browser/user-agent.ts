@@ -1,4 +1,11 @@
-import { session } from "electron";
+import { join } from "node:path";
+import { type Session, session } from "electron";
+import {
+	chromeMajorVersion,
+	clientHintsBrandList,
+	clientHintsPlatform,
+	formatBrandVersionList,
+} from "shared/client-hints";
 
 const BROWSER_PARTITION = "persist:superset";
 
@@ -30,16 +37,83 @@ function chromePlatformToken(): string {
  * ours is too.
  */
 export function buildChromeUserAgent(): string {
-	const chromeMajor = process.versions.chrome.split(".")[0];
+	const chromeMajor = chromeMajorVersion(process.versions.chrome);
 	return `Mozilla/5.0 (${chromePlatformToken()}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeMajor}.0.0.0 Safari/537.36`;
 }
 
 /**
- * Make the browser pane's session fingerprint as ordinary Chrome. Electron's
- * default UA appends `Electron/x.y.z` and the app's product name — an
- * immediate tell to bot-detection scripts (Cloudflare, DataDome, …) that can
- * get a user's own ordinary browsing wrongly challenged or blocked.
+ * Rewrite the `sec-ch-ua*` request headers to match the UA string.
+ * `setUserAgent()` doesn't touch Chromium's UserAgentMetadata, which generates
+ * these headers independently — and Electron's brand list has "Chromium" but
+ * no "Google Chrome" entry, so without this every request carries Client
+ * Hints contradicting the UA: a stronger bot signal than the stock Electron
+ * UA ever was.
+ */
+function configureClientHintHeaders(browserSession: Session): void {
+	const chromeVersion = process.versions.chrome;
+	// Real Chrome sends the low-entropy hints on every request to a secure
+	// origin; the full-version ones only after a site opts in via Accept-CH,
+	// which Chromium tracks for us — so those are only replaced when the
+	// engine chose to send them.
+	const lowEntropyHeaders: Record<string, string> = {
+		"sec-ch-ua": formatBrandVersionList(
+			clientHintsBrandList(chromeVersion, "major"),
+		),
+		"sec-ch-ua-mobile": "?0",
+		"sec-ch-ua-platform": `"${clientHintsPlatform(process.platform)}"`,
+	};
+	const optInHeaders: Record<string, string> = {
+		"sec-ch-ua-full-version-list": formatBrandVersionList(
+			clientHintsBrandList(chromeVersion, "full"),
+		),
+		"sec-ch-ua-full-version": `"${chromeMajorVersion(chromeVersion)}.0.0.0"`,
+	};
+
+	// Electron keeps a single onBeforeSendHeaders listener per session — a
+	// second registration elsewhere would silently replace this one.
+	browserSession.webRequest.onBeforeSendHeaders((details, callback) => {
+		const headers = details.requestHeaders;
+		const present = new Set<string>();
+		for (const name of Object.keys(headers)) {
+			const lower = name.toLowerCase();
+			if (
+				Object.hasOwn(lowEntropyHeaders, lower) ||
+				Object.hasOwn(optInHeaders, lower)
+			) {
+				present.add(lower);
+				delete headers[name];
+			}
+		}
+		const secureOrigin =
+			details.url.startsWith("https:") || details.url.startsWith("wss:");
+		for (const [name, value] of Object.entries(lowEntropyHeaders)) {
+			if (secureOrigin || present.has(name)) headers[name] = value;
+		}
+		for (const [name, value] of Object.entries(optInHeaders)) {
+			if (present.has(name)) headers[name] = value;
+		}
+		callback({ requestHeaders: headers });
+	});
+}
+
+/**
+ * Make the browser pane's session fingerprint as ordinary Chrome, in all
+ * three places bot-detection scripts (Cloudflare, DataDome, PerimeterX, …)
+ * cross-check: the UA string, the `sec-ch-ua*` request headers, and the
+ * `navigator.userAgentData` object page JS reads. All are derived from the
+ * same `process.versions.chrome`, so they can never disagree. A mismatch
+ * between any two can get a user's own ordinary browsing wrongly challenged
+ * or blocked.
  */
 export function configureBrowserUserAgent(): void {
-	session.fromPartition(BROWSER_PARTITION).setUserAgent(buildChromeUserAgent());
+	const browserSession = session.fromPartition(BROWSER_PARTITION);
+	browserSession.setUserAgent(buildChromeUserAgent());
+	configureClientHintHeaders(browserSession);
+	// Headers alone don't change what live scripts read from
+	// navigator.userAgentData; a session preload rebuilds it in every frame
+	// before page scripts run.
+	browserSession.registerPreloadScript({
+		type: "frame",
+		filePath: join(__dirname, "../preload/browser-client-hints.js"),
+	});
 }
