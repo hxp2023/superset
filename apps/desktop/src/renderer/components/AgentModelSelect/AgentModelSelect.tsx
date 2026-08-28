@@ -55,11 +55,14 @@ export function AgentModelSelect({
 			</SelectTrigger>
 			<SelectContent className={contentClassName}>
 				<SelectItem value={DEFAULT_MODEL_VALUE}>{defaultLabel}</SelectItem>
-				{groupModelOptions(models).map((group, index) => (
+				{groupModelOptions(models).map((group) => (
 					<SelectGroup key={group.label ?? "ungrouped"}>
 						{group.label !== null && (
 							<>
-								{index > 0 && <SelectSeparator />}
+								{/* Every kind-change gets a rule, including the one
+								    between the default escape hatch and the first
+								    section — it is not a member of that section. */}
+								<SelectSeparator />
 								<SelectLabel className="text-xs text-muted-foreground">
 									{group.label}
 								</SelectLabel>
