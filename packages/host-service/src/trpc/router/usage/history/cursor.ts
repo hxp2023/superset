@@ -130,8 +130,11 @@ async function fetchUsageEvents(
 		};
 		const pageEvents = data.usageEventsDisplay ?? [];
 		events.push(...pageEvents);
+		// A short page always ends the scan; the reported total only ends it
+		// early when present — a missing count must not truncate to one page.
+		if (pageEvents.length < PAGE_SIZE) break;
 		const total = data.totalUsageEventsCount ?? 0;
-		if (pageEvents.length < PAGE_SIZE || events.length >= total) break;
+		if (total > 0 && events.length >= total) break;
 	}
 	return events;
 }

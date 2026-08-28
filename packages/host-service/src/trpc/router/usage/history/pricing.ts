@@ -115,13 +115,23 @@ export function matchModelRate(
 ): MatchedRate {
 	const rates = RATES_BY_PROVIDER[provider];
 	const normalized = model.toLowerCase();
+	// Multi-model harnesses vendor-qualify ids ("anthropic/claude-sonnet-4");
+	// also match on the segment after the last slash so those don't fall
+	// through to the cheapest rate.
+	const candidates = [normalized];
+	const slash = normalized.lastIndexOf("/");
+	if (slash >= 0 && slash < normalized.length - 1) {
+		candidates.push(normalized.slice(slash + 1));
+	}
 	let best: { prefix: string; rate: ModelRate } | null = null;
-	for (const [prefix, rate] of Object.entries(rates)) {
-		if (
-			normalized.startsWith(prefix) &&
-			(!best || prefix.length > best.prefix.length)
-		) {
-			best = { prefix, rate };
+	for (const candidate of candidates) {
+		for (const [prefix, rate] of Object.entries(rates)) {
+			if (
+				candidate.startsWith(prefix) &&
+				(!best || prefix.length > best.prefix.length)
+			) {
+				best = { prefix, rate };
+			}
 		}
 	}
 	if (best) return { ...best.rate, approximate: false };

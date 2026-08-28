@@ -51,14 +51,26 @@ export function UsageHistorySection({ hostUrl }: { hostUrl: string | null }) {
 			: (["claude", "codex"] satisfies Provider[]);
 	})();
 
+	// A range switch can leave every active series hidden by stale toggles —
+	// ignore the stored hides then, rather than render an empty chart.
+	const effectiveHidden = activeProviders.some(
+		(provider) => !hiddenProviders.has(provider),
+	)
+		? hiddenProviders
+		: new Set<Provider>();
+
 	const toggleProvider = (provider: Provider) => {
 		setHiddenProviders((previous) => {
 			const next = new Set(previous);
 			if (next.has(provider)) {
 				next.delete(provider);
-			} else if (next.size < activeProviders.length - 1) {
-				// Never hide the last visible series — an empty chart reads as broken.
-				next.add(provider);
+			} else {
+				// Never hide the last visible series — an empty chart reads as
+				// broken. Count only active providers; hidden inactive ones don't.
+				const visibleActive = activeProviders.filter(
+					(active) => !next.has(active),
+				).length;
+				if (visibleActive > 1) next.add(provider);
 			}
 			return next;
 		});
@@ -161,7 +173,7 @@ export function UsageHistorySection({ hostUrl }: { hostUrl: string | null }) {
 											? (metric === "usd" ? totalsFor.usd : totalsFor.tokens) /
 												denominator
 											: 0;
-									const hidden = hiddenProviders.has(provider);
+									const hidden = effectiveHidden.has(provider);
 									const icon = getPresetIcon(
 										PROVIDER_ICON_KEY[provider],
 										isDark,
@@ -259,7 +271,7 @@ export function UsageHistorySection({ hostUrl }: { hostUrl: string | null }) {
 						<UsageAreaChart
 							history={history}
 							metric={metric}
-							hiddenProviders={hiddenProviders}
+							hiddenProviders={effectiveHidden}
 							selectedDay={selectedDay}
 							onSelectDay={setSelectedDay}
 						/>
