@@ -1,8 +1,8 @@
 import { db } from "@superset/db/client";
 import { chatAttachments } from "@superset/db/schema";
 import { TRPCError } from "@trpc/server";
-import { del, put } from "@vercel/blob";
 import { userError } from "../../../../i18n-error";
+import { deleteObjects, putObject } from "../../../../lib/r2";
 
 const ALLOWED_MEDIA_TYPES = new Set([
 	"image/png",
@@ -84,13 +84,16 @@ export async function uploadChatAttachment({
 	}
 
 	const ext = getFileExtension({ filename, mediaType });
-	const pathnamePrefix = `chat-attachments/${sessionId}/${crypto.randomUUID()}.${ext}`;
+	const key = `chat-attachments/${sessionId}/${crypto.randomUUID()}.${ext}`;
+	await putObject({ key, body: buffer, contentType: mediaType });
 
-	const blob = await put(pathnamePrefix, buffer, {
-		access: "public",
-		contentType: mediaType,
-		addRandomSuffix: true,
-	});
+	const discard = () =>
+		deleteObjects([key]).catch((cleanupError) => {
+			console.error("[chat-attachments] failed to clean up orphaned object", {
+				key,
+				cleanupError,
+			});
+		});
 
 	let row: { id: string } | undefined;
 	try {
@@ -100,29 +103,19 @@ export async function uploadChatAttachment({
 				chatSessionId: sessionId,
 				createdBy: userId,
 				organizationId,
-				blobPathname: blob.pathname,
+				blobPathname: key,
 				mediaType,
 				filename,
 				sizeBytes: buffer.length,
 			})
 			.returning({ id: chatAttachments.id });
 	} catch (error) {
-		await del(blob.url).catch((cleanupError) => {
-			console.error("[chat-attachments] failed to clean up orphaned blob", {
-				pathname: blob.pathname,
-				cleanupError,
-			});
-		});
+		await discard();
 		throw error;
 	}
 
 	if (!row) {
-		await del(blob.url).catch((cleanupError) => {
-			console.error("[chat-attachments] failed to clean up orphaned blob", {
-				pathname: blob.pathname,
-				cleanupError,
-			});
-		});
+		await discard();
 		throw userError({
 			code: "INTERNAL_SERVER_ERROR",
 			message: "Failed to record chat attachment",

@@ -1,7 +1,7 @@
 import { auth } from "@superset/auth/server";
 import { db } from "@superset/db/client";
 import { chatAttachments } from "@superset/db/schema";
-import { head } from "@vercel/blob";
+import { getObject } from "@superset/trpc/storage";
 import { eq } from "drizzle-orm";
 
 const UUID_REGEX =
@@ -33,7 +33,7 @@ export async function GET(
 
 	const [attachment] = await db
 		.select({
-			blobPathname: chatAttachments.blobPathname,
+			key: chatAttachments.blobPathname,
 			mediaType: chatAttachments.mediaType,
 			filename: chatAttachments.filename,
 			ownerId: chatAttachments.createdBy,
@@ -46,31 +46,18 @@ export async function GET(
 		return new Response("Not found", { status: 404 });
 	}
 
-	let downloadUrl: string;
+	let object: Response | null;
 	try {
-		const meta = await head(attachment.blobPathname);
-		downloadUrl = meta.url;
+		object = await getObject(attachment.key);
 	} catch (error) {
-		console.error("[chat-attachments] head failed", { id, error });
+		console.error("[chat-attachments] storage fetch failed", { id, error });
+		return new Response("Failed to fetch attachment", { status: 502 });
+	}
+	if (!object?.body) {
 		return new Response("Attachment not available", { status: 404 });
 	}
 
-	let blobResp: Response;
-	try {
-		blobResp = await fetch(downloadUrl);
-	} catch (error) {
-		console.error("[chat-attachments] blob fetch threw", { id, error });
-		return new Response("Failed to fetch attachment", { status: 502 });
-	}
-	if (!blobResp.ok || !blobResp.body) {
-		console.error("[chat-attachments] blob fetch failed", {
-			id,
-			status: blobResp.status,
-		});
-		return new Response("Failed to fetch attachment", { status: 502 });
-	}
-
-	return new Response(blobResp.body, {
+	return new Response(object.body, {
 		status: 200,
 		headers: {
 			"Content-Type": attachment.mediaType,

@@ -8,9 +8,10 @@ import {
 	users,
 	workspacePages,
 } from "@superset/db/schema";
+import { pageThumbnailUrl, pageViewUrl } from "@superset/shared/usercontent";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { del, head } from "@vercel/blob";
 import { and, desc, eq, or, type SQL, sql } from "drizzle-orm";
+import { presignedGetUrl } from "../../lib/r2";
 import { protectedProcedure, userError } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { assertPageReadable, assertPageWritable } from "./access";
@@ -26,6 +27,12 @@ import {
 	setSharedVersionSchema,
 } from "./schema";
 import { resolveSharedVersion, servedVersion } from "./shared-version";
+import {
+	deletePageObjects,
+	mintPageViewToken,
+	usercontentBaseUrl,
+	writePageManifest,
+} from "./storage";
 import { assertWorkspaceAccess } from "./workspace-access";
 
 function visibilityFilter(userId: string) {
@@ -196,7 +203,27 @@ export const pageRouter = {
 					);
 
 			const rows = await scoped.orderBy(desc(pages.updatedAt));
-			return rows.map((row) => ({ ...row, url: pageUrl(row.slug) }));
+			const baseUrl = usercontentBaseUrl();
+			return await Promise.all(
+				rows.map(async (row) => {
+					const served = servedVersion(row.sharedVersion, row.latestVersion);
+					const token = await mintPageViewToken(row);
+					return {
+						...row,
+						url: pageUrl(row.slug),
+						viewUrl: pageViewUrl({ baseUrl, slug: row.slug, token }),
+						thumbnailUrl:
+							served === null
+								? null
+								: pageThumbnailUrl({
+										baseUrl,
+										slug: row.slug,
+										version: served,
+										token,
+									}),
+					};
+				}),
+			);
 		}),
 
 	get: protectedProcedure.input(pageRefSchema).query(async ({ ctx, input }) => {
@@ -209,11 +236,18 @@ export const pageRouter = {
 		});
 
 		const latestVersion = await latestVersionNumber(page.id);
+		const served = servedVersion(page.sharedVersion, latestVersion);
 		return {
 			...page,
 			url: pageUrl(page.slug),
+			viewUrl: pageViewUrl({
+				baseUrl: usercontentBaseUrl(),
+				slug: page.slug,
+				version: served,
+				token: await mintPageViewToken(page),
+			}),
 			latestVersion,
-			servedVersion: servedVersion(page.sharedVersion, latestVersion),
+			servedVersion: served,
 		};
 	}),
 
@@ -238,6 +272,7 @@ export const pageRouter = {
 					i18nKey: "serverError.page.pageNotFound",
 				});
 			}
+			await writePageManifest(page.id);
 			return { id: updated.id, visibility: updated.visibility };
 		}),
 
@@ -300,6 +335,7 @@ export const pageRouter = {
 					i18nKey: "serverError.page.pageNotFound",
 				});
 			}
+			await writePageManifest(page.id);
 			return { id: updated.id, sharedVersion: updated.sharedVersion };
 		}),
 
@@ -312,23 +348,26 @@ export const pageRouter = {
 			assertPageWritable(page, userId);
 
 			const rows = await db
-				.select({ blobPathname: pageVersions.blobPathname })
+				.select({
+					version: pageVersions.version,
+					key: pageVersions.blobPathname,
+				})
 				.from(pageVersions)
 				.where(eq(pageVersions.pageId, page.id));
 
 			await db.delete(pages).where(eq(pages.id, page.id));
 
-			const pathnames = rows.map((row) => row.blobPathname);
-			if (pathnames.length > 0) {
-				try {
-					await del(pathnames);
-				} catch (error) {
-					console.error("[pages] blob cleanup failed after delete", {
-						pageId: page.id,
-						pathnames,
-						error,
-					});
-				}
+			try {
+				await deletePageObjects({
+					pageId: page.id,
+					slug: page.slug,
+					versions: rows,
+				});
+			} catch (error) {
+				console.error("[pages] storage cleanup failed after delete", {
+					pageId: page.id,
+					error,
+				});
 			}
 
 			return { id: page.id };
@@ -402,9 +441,9 @@ export const pageRouter = {
 
 			let downloadUrl: string;
 			try {
-				downloadUrl = (await head(row.blobPathname)).url;
+				downloadUrl = await presignedGetUrl(row.blobPathname);
 			} catch (error) {
-				console.error("[pages] head failed", {
+				console.error("[pages] presign failed", {
 					pageId: page.id,
 					version,
 					error,
@@ -415,6 +454,13 @@ export const pageRouter = {
 					i18nKey: "serverError.page.pageContentIsNotAvailable",
 				});
 			}
+
+			const viewUrl = pageViewUrl({
+				baseUrl: usercontentBaseUrl(),
+				slug: page.slug,
+				version: row.version,
+				token: await mintPageViewToken(page, { version: row.version }),
+			});
 
 			return {
 				id: page.id,
@@ -435,6 +481,7 @@ export const pageRouter = {
 				sha256: row.sha256,
 				createdAt: row.createdAt,
 				downloadUrl,
+				viewUrl,
 			};
 		}),
 } satisfies TRPCRouterRecord;

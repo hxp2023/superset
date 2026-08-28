@@ -671,6 +671,21 @@
       "name": "streams",
       "version": "0.0.0",
     },
+    "apps/usercontent": {
+      "name": "@superset/usercontent",
+      "version": "0.1.0",
+      "dependencies": {
+        "@sentry/cloudflare": "10.68.0",
+        "@superset/shared": "workspace:*",
+        "hono": "4.12.34",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "5.20260801.1",
+        "@superset/typescript": "workspace:*",
+        "typescript": "6.0.3",
+        "wrangler": "4.118.0",
+      },
+    },
     "apps/web": {
       "name": "@superset/web",
       "version": "0.1.0",
@@ -1184,6 +1199,7 @@
         "@upstash/redis": "1.37.0",
         "@vercel/blob": "2.3.2",
         "@vercel/kv": "3.0.0",
+        "aws4fetch": "1.0.20",
         "drizzle-orm": "0.45.2",
         "gaxios": "7.3.1",
         "google-auth-library": "10.5.0",
@@ -3134,6 +3150,8 @@
     "@superset/typescript": ["@superset/typescript@workspace:tooling/typescript"],
 
     "@superset/ui": ["@superset/ui@workspace:packages/ui"],
+
+    "@superset/usercontent": ["@superset/usercontent@workspace:apps/usercontent"],
 
     "@superset/web": ["@superset/web@workspace:apps/web"],
 

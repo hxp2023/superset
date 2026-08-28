@@ -8,9 +8,9 @@ import {
 } from "@superset/db/schema";
 import { mintPageSlug } from "@superset/shared/page-slug";
 import { TRPCError } from "@trpc/server";
-import { del, put } from "@vercel/blob";
 import { and, desc, eq } from "drizzle-orm";
 import { userError } from "../../i18n-error";
+import { deleteObjects, putObject } from "../../lib/r2";
 import { assertPageWritable } from "./access";
 import { pageUrl } from "./page-url";
 import {
@@ -20,9 +20,25 @@ import {
 	validatePublishContent,
 } from "./publish-rules";
 import type { PublishPageInput } from "./schema";
+import { pageContentKey, writePageManifest } from "./storage";
+import { enqueuePageThumbnail } from "./thumbnail";
 import { assertWorkspaceAccess } from "./workspace-access";
 
 const MAX_PUBLISH_ATTEMPTS = 5;
+
+interface PublishedVersion {
+	id: string;
+	slug: string;
+	url: string;
+	title: string;
+	description: string | null;
+	visibility: SelectPage["visibility"];
+	version: number;
+	label: string | null;
+	contentType: string;
+	sizeBytes: number;
+	createdAt: Date;
+}
 
 export async function publishPage({
 	input,
@@ -71,20 +87,17 @@ async function runPublish({
 }) {
 	await resolveTargetPage({ executor: dbWs, input, organizationId, userId });
 
-	const blob = await put(
-		`pages/${organizationId}/${sha256}/${input.filename}`,
-		buffer,
-		{
-			access: "public",
-			contentType: input.contentType,
-			addRandomSuffix: true,
-		},
-	);
-	const uploadedUrl: string = blob.url;
+	const key = pageContentKey({
+		organizationId,
+		sha256,
+		filename: input.filename,
+	});
+	await putObject({ key, body: buffer, contentType: input.contentType });
 
 	let bodyCompleted = false;
+	let published: PublishedVersion;
 	try {
-		return await dbWs.transaction(async (tx) => {
+		published = await dbWs.transaction(async (tx) => {
 			const existing = await resolveTargetPage({
 				executor: tx,
 				input,
@@ -142,7 +155,7 @@ async function runPublish({
 					pageId: page.id,
 					version,
 					label: input.label ?? null,
-					blobPathname: blob.pathname,
+					blobPathname: key,
 					contentType: input.contentType,
 					sizeBytes: buffer.length,
 					sha256,
@@ -183,15 +196,30 @@ async function runPublish({
 		});
 	} catch (error) {
 		if (!bodyCompleted) {
-			await del(uploadedUrl).catch((cleanupError) => {
-				console.error("[pages] failed to clean up orphaned blob", {
-					url: uploadedUrl,
+			await deleteObjects([key]).catch((cleanupError) => {
+				console.error("[pages] failed to clean up orphaned object", {
+					key,
 					cleanupError,
 				});
 			});
 		}
 		throw error;
 	}
+
+	// The manifest is what the usercontent origin serves from, so the publish
+	// is not done until it is written. The thumbnail is best effort.
+	await writePageManifest(published.id);
+	void enqueuePageThumbnail({
+		pageId: published.id,
+		version: published.version,
+	}).catch((error) => {
+		console.error("[pages] failed to queue thumbnail", {
+			pageId: published.id,
+			version: published.version,
+			error,
+		});
+	});
+	return published;
 }
 
 type Tx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
