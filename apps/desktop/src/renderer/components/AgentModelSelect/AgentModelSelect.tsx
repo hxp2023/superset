@@ -55,8 +55,11 @@ export function AgentModelSelect({
 			</SelectTrigger>
 			<SelectContent className={contentClassName}>
 				<SelectItem value={DEFAULT_MODEL_VALUE}>{defaultLabel}</SelectItem>
-				{groupModelOptions(models).map((group) => (
-					<SelectGroup key={group.label ?? "ungrouped"}>
+				{groupModelOptions(models).map((group, index) => (
+					// Index-qualified: a catalog may return to an earlier header
+					// (groupModelOptions keeps those as separate sections), and a
+					// bare label would then collide as a React key.
+					<SelectGroup key={`${group.label ?? "ungrouped"}-${index}`}>
 						{group.label !== null && (
 							<>
 								{/* Every kind-change gets a rule, including the one
