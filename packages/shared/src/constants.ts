@@ -145,6 +145,12 @@ export const FEATURE_FLAGS = {
 	 * offered. Off, unloaded, offline, or a payload that isn't an array all
 	 * mean Scheduled only — the event providers exist on main ahead of their
 	 * credentials being provisioned, and each is exposed by adding its kind.
+	 *
+	 * The same payload decides which integrations the settings and web
+	 * integrations pages offer: one that only feeds automations is shown when
+	 * one of its kinds is enabled (`offeredIntegrations` in
+	 * `@superset/shared/integrations`), so a provider is connectable exactly
+	 * when its triggers are.
 	 */
 	AUTOMATION_EVENT_TRIGGERS: "automation-event-triggers",
 	/**
