@@ -38,6 +38,7 @@ import { useSidebarDiffRef } from "../../../useSidebarDiffRef";
 import { useViewedFiles } from "../../../useViewedFiles";
 import { AgentCommentComposer } from "../AgentCommentComposer";
 import { CommentThread } from "./components/CommentThread";
+import { DeferredDiffPlaceholder } from "./components/DeferredDiffPlaceholder";
 import { DiffHeaderMetadata } from "./components/DiffHeaderMetadata";
 import { DiffHeaderPrefix } from "./components/DiffHeaderPrefix";
 import { DiffSectionBar } from "./components/DiffSectionBar";
@@ -173,16 +174,15 @@ export function DiffPane({
 		onCreateNewAgentSession,
 	});
 
-	const { items, fileByItemId, hasPendingDiff, hasDiffError } =
-		useDiffCodeViewItems({
-			workspaceId,
-			files,
-			collapsedSet,
-			editingSet,
-			editorRevisionByItemId,
-			annotationsByPath: threadAnnotationsByPath,
-			extraAnnotationsByItemId: composerAnnotationsByItemId,
-		});
+	const { items, fileByItemId, requestDiff } = useDiffCodeViewItems({
+		workspaceId,
+		files,
+		collapsedSet,
+		editingSet,
+		editorRevisionByItemId,
+		annotationsByPath: threadAnnotationsByPath,
+		extraAnnotationsByItemId: composerAnnotationsByItemId,
+	});
 	fileByItemIdRef.current = fileByItemId;
 
 	const saveEditedItem = useCallback(
@@ -242,7 +242,6 @@ export function DiffPane({
 				});
 				void utils.git.getStatus.invalidate({ workspaceId });
 				void utils.git.getDiff.invalidate({ workspaceId });
-				void utils.git.getDiffBulk.invalidate({ workspaceId });
 				return true;
 			} catch (error) {
 				toast.error(
@@ -582,6 +581,20 @@ export function DiffPane({
 				if (!file) return null;
 				return <BinaryDiffPlaceholder file={file} onOpenFile={onOpenFile} />;
 			}
+			if (m.kind === "deferred-placeholder") {
+				if (item.type !== "file") return null;
+				const file = fileByItemId.get(item.id);
+				if (!file) return null;
+				return (
+					<DeferredDiffPlaceholder
+						file={file}
+						reason={m.reason}
+						autoLoad={m.autoLoad}
+						onRequest={() => requestDiff(item.id)}
+						onOpenFile={onOpenFile}
+					/>
+				);
+			}
 			if (m.kind === "composer") {
 				if (item.type !== "diff") return null;
 				return (
@@ -637,6 +650,7 @@ export function DiffPane({
 			clearComposer,
 			submitComposer,
 			fileByItemId,
+			requestDiff,
 			onOpenFile,
 			t,
 		],
@@ -648,21 +662,6 @@ export function DiffPane({
 				{isLoading
 					? t({ id: "workspace.diffPane.loading", message: "Loading…" })
 					: t({ id: "workspace.diffPane.noChanges", message: "No changes" })}
-			</div>
-		);
-	}
-
-	if (items.length === 0) {
-		return (
-			<div className="flex h-full w-full cursor-text select-text items-center justify-center text-sm text-muted-foreground">
-				{hasPendingDiff
-					? t({ id: "workspace.diffPane.diffLoading", message: "Loading…" })
-					: hasDiffError
-						? t({
-								id: "workspace.diffPane.diffLoadFailed",
-								message: "Unable to load diff",
-							})
-						: null}
 			</div>
 		);
 	}
