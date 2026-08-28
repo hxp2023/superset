@@ -117,6 +117,25 @@ describe("buildAgentModelArgs", () => {
 		expect(ids).toContain("claude-haiku-4-5");
 	});
 
+	it("labels claude's aliases and pinned releases as separate sections", () => {
+		const models = getAgentModelSupport("claude")?.models ?? [];
+		const groupOf = (id: string) =>
+			models.find((model) => model.id === id)?.group;
+		expect(groupOf("opus")).toBe("Latest");
+		expect(groupOf("claude-opus-4-8")).toBe("Pinned releases");
+		// The header carries the distinction, so labels stay bare.
+		expect(models.find((model) => model.id === "opus")?.label).toBe("Opus");
+	});
+
+	it("dates codex's retiring models in the picker, not just in a comment", () => {
+		const models = getAgentModelSupport("codex")?.models ?? [];
+		const groupOf = (id: string) =>
+			models.find((model) => model.id === id)?.group;
+		expect(groupOf("gpt-5.6-sol")).toBe("Current");
+		expect(groupOf("gpt-5.4")).toBe("Retiring 2026-08-31");
+		expect(groupOf("gpt-5.3-codex")).toBe("Retiring 2026-08-31");
+	});
+
 	it("passes a pinned legacy claude model through to the CLI flag", () => {
 		expect(buildAgentModelArgs("claude", "claude-opus-4-8")).toEqual([
 			"--model",
