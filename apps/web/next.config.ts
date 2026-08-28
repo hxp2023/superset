@@ -41,6 +41,14 @@ const relayBackupHttpOrigin = process.env.RELAY_BACKUP_URL
 const relayBackupWsOrigin = relayBackupHttpOrigin
 	? relayBackupHttpOrigin.replace(/^http/, "ws")
 	: null;
+// Published pages are framed from their own origin, one subdomain per page.
+const usercontentUrl = new URL(
+	process.env.USERCONTENT_URL ??
+		(isProduction
+			? "https://supersetusercontent.com"
+			: "http://usercontent.localhost:8787"),
+);
+const usercontentFrameSource = `${usercontentUrl.protocol}//*.${usercontentUrl.host}`;
 
 const contentSecurityPolicy = [
 	"default-src 'self'",
@@ -71,6 +79,7 @@ const contentSecurityPolicy = [
 	"font-src 'self' data: https://fonts.gstatic.com",
 	"form-action 'self'",
 	"frame-ancestors 'none'",
+	`frame-src ${usercontentFrameSource}`,
 	"img-src 'self' data: blob: https:",
 	"object-src 'none'",
 	[

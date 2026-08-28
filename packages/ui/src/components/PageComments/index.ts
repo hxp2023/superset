@@ -1,3 +1,7 @@
+export type {
+	CommentAnchor,
+	FrameRect,
+} from "@superset/shared/page-comments-runtime";
 export {
 	CommentModeButton,
 	CommentModeToggle,
@@ -24,7 +28,3 @@ export {
 	type PageCommentUser,
 	useComments,
 } from "./providers/CommentProvider";
-export type {
-	CommentAnchor,
-	FrameRect,
-} from "./utils/commentRuntime";
