@@ -1,0 +1,47 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "superset-usercontent",
+	"main": "src/index.ts",
+	"workers_dev": false,
+	// One origin per page: the wildcard route is the whole point of the zone.
+	// Both patterns need a proxied DNS record in the zone (`*` and `@`).
+	"routes": [
+		{
+			"pattern": "*.supersetusercontent.com/*",
+			"zone_name": "supersetusercontent.com"
+		},
+		{
+			"pattern": "supersetusercontent.com/*",
+			"zone_name": "supersetusercontent.com"
+		}
+	],
+	"compatibility_date": "2026-07-01",
+	"compatibility_flags": ["nodejs_als"],
+	"vars": {
+		"USERCONTENT_URL": "https://supersetusercontent.com",
+		"APP_URL": "https://app.superset.sh",
+		// Who may frame a page. `file:` is the packaged desktop renderer; a
+		// frame still needs a valid ticket, so this admits embedding, not reading.
+		"FRAME_ANCESTORS": "https://app.superset.sh file:"
+	},
+	"r2_buckets": [{ "binding": "STORAGE", "bucket_name": "superset-storage" }],
+	"observability": { "enabled": true },
+	"dev": { "port": 8787 },
+	"env": {
+		// `wrangler dev --env dev`: no routes, so the per-page host reaches the
+		// Worker as sent (with routes, local dev rewrites it to the zone).
+		// Chromium resolves `*.localhost` to loopback; curl needs `--resolve`.
+		"dev": {
+			"workers_dev": true,
+			"routes": [],
+			"vars": {
+				"USERCONTENT_URL": "http://usercontent.localhost:8787",
+				"APP_URL": "http://localhost:3000",
+				"FRAME_ANCESTORS": "http://localhost:* file:"
+			},
+			"r2_buckets": [
+				{ "binding": "STORAGE", "bucket_name": "superset-storage-dev" }
+			]
+		}
+	}
+}
