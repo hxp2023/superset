@@ -142,6 +142,57 @@ function seedDefaultsIfEmpty(db: HostDb): HostAgentConfigRow[] {
 	return listOrdered(db);
 }
 
+/**
+ * Defaults are seeded once, when the table is empty, so an install that
+ * predates a preset gaining fork support would keep an empty `forkArgs`
+ * forever and silently offer no fork for a harness whose CLI can do it.
+ *
+ * Only rows still identical to their preset are filled in: if someone has
+ * edited an agent's launch settings, their row is theirs. The one case this
+ * cannot tell apart is an untouched agent whose fork args were deliberately
+ * cleared, which comes back on the next read; re-enabling a menu item is a
+ * small enough wrong to prefer over a schema change to record the intent.
+ */
+function backfillPresetForkArgs(
+	db: HostDb,
+	rows: HostAgentConfigRow[],
+): HostAgentConfigRow[] {
+	let changed = false;
+	for (const row of rows) {
+		if (parseArgv(row.forkArgsJson).length > 0) continue;
+		const preset = getPresetById(row.presetId);
+		if (!preset || preset.forkArgs.length === 0) continue;
+		if (!rowMatchesPresetLaunch(row, preset)) continue;
+		db.update(hostAgentConfigs)
+			.set({ forkArgsJson: JSON.stringify(preset.forkArgs) })
+			.where(eq(hostAgentConfigs.id, row.id))
+			.run();
+		changed = true;
+	}
+	return changed ? listOrdered(db) : rows;
+}
+
+/** Whether a row's launch settings are still exactly what the preset ships. */
+function rowMatchesPresetLaunch(
+	row: HostAgentConfigRow,
+	preset: HostAgentPreset,
+): boolean {
+	const sameArgv = (json: string, args: string[]) => {
+		const parsed = parseArgv(json);
+		return (
+			parsed.length === args.length &&
+			parsed.every((value, index) => value === args[index])
+		);
+	};
+	return (
+		row.command === preset.command &&
+		row.promptTransport === preset.promptTransport &&
+		sameArgv(row.argsJson, preset.args) &&
+		sameArgv(row.promptArgsJson, preset.promptArgs) &&
+		sameArgv(row.resumeArgsJson, preset.resumeArgs)
+	);
+}
+
 // An icon override is either a built-in icon key ("claude") or an uploaded
 // `data:` image URI. Capped so an oversized upload can't bloat the per-machine
 // SQLite DB — the client downscales images before sending.
@@ -196,7 +247,7 @@ export const agentConfigsRouter = router({
 	 * on first call when no configs exist.
 	 */
 	list: protectedProcedure.query(({ ctx }) => {
-		const rows = seedDefaultsIfEmpty(ctx.db);
+		const rows = backfillPresetForkArgs(ctx.db, seedDefaultsIfEmpty(ctx.db));
 		return rows.map(toOutput);
 	}),
 

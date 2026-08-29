@@ -5,6 +5,7 @@ import {
 	getDefaultSeedPresets,
 	getPresetById,
 } from "@superset/shared/host-agent-presets";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import * as schema from "../../../db/schema";
@@ -28,9 +29,14 @@ function createTestDb() {
 }
 
 function createCaller() {
+	return createCallerWithDb().caller;
+}
+
+/** For tests that need to reach past the router and edit rows directly. */
+function createCallerWithDb() {
 	const db = createTestDb();
 	const ctx = { db, isAuthenticated: true } as unknown as HostServiceContext;
-	return agentConfigsRouter.createCaller(ctx);
+	return { caller: agentConfigsRouter.createCaller(ctx), db };
 }
 
 async function listFirst(
@@ -143,6 +149,40 @@ describe("agentConfigsRouter", () => {
 				const row = result.find((item) => item.presetId === presetId);
 				expect(row?.forkArgs).toEqual([]);
 			}
+		});
+
+		it("backfills fork args onto an install seeded before the preset had them", async () => {
+			const { caller, db } = createCallerWithDb();
+			const seeded = await caller.list();
+			const opencode = seeded.find((row) => row.presetId === "opencode");
+			// Simulate the pre-existing install: the row was seeded when the
+			// preset had no fork support.
+			db.update(schema.hostAgentConfigs)
+				.set({ forkArgsJson: "[]" })
+				.where(eq(schema.hostAgentConfigs.id, opencode?.id ?? ""))
+				.run();
+
+			const after = await caller.list();
+			expect(
+				after.find((row) => row.presetId === "opencode")?.forkArgs,
+			).toEqual(["--session", "{sessionId}", "--fork"]);
+		});
+
+		it("leaves a customised agent's fork args alone", async () => {
+			const { caller, db } = createCallerWithDb();
+			const seeded = await caller.list();
+			const opencode = seeded.find((row) => row.presetId === "opencode");
+			// Cleared fork args on a row whose launch command the user edited:
+			// their row, their settings.
+			db.update(schema.hostAgentConfigs)
+				.set({ forkArgsJson: "[]", command: "opencode --my-flag" })
+				.where(eq(schema.hostAgentConfigs.id, opencode?.id ?? ""))
+				.run();
+
+			const after = await caller.list();
+			expect(
+				after.find((row) => row.presetId === "opencode")?.forkArgs,
+			).toEqual([]);
 		});
 
 		it("returns existing rows on subsequent calls without re-seeding", async () => {
