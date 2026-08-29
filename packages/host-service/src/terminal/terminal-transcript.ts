@@ -28,13 +28,6 @@ const SCROLLBACK_ROWS = 200;
 /** Ceiling on stitched history, so a long-lived TUI cannot grow without end. */
 const MAX_HISTORY_ROWS = 20_000;
 
-export interface ReconstructedTranscript {
-	text: string;
-	/** `scrollback` for normal-screen programs, `viewport` for alt-screen TUIs. */
-	/** Viewport samples stitched together on their overlap. */
-	samples: number;
-}
-
 interface XtermInternals {
 	_core?: { _writeBuffer?: { writeSync(data: string | Uint8Array): void } };
 }
@@ -113,8 +106,31 @@ const REPAINT_MARKERS = [
 	`${ESC}[1;1H`,
 	ALT_SCREEN_ENTER,
 ];
-/** Backstop for a program that neither scrolls nor announces its repaints. */
-const MAX_BYTES_PER_SAMPLE = 4096;
+/**
+ * Samples are bounded two ways, and both matter.
+ *
+ * A chunk must not be able to scroll more than half a screen, or consecutive
+ * samples stop overlapping and the stitch drops whatever passed between them.
+ * Counting code units does not bound that: a double-width or wrapped line
+ * renders more rows per unit than ASCII, which lost 10 of 200 lines of
+ * wrapped CJK. Worst case is one rendered row per `cols / 2` units, so half a
+ * screen is `cols * rows / 4`.
+ *
+ * And the whole reconstruction runs synchronously inside a tRPC query, so the
+ * sample count has to stay bounded however pathological the stream is: every
+ * sample writes and then reads a viewport, and a repaint-heavy stream can
+ * otherwise cut tens of thousands of times.
+ */
+const MAX_SAMPLES = 4000;
+/** Collapses adjacent markers (`ESC[H` then `ESC[2J`) into one cut. */
+const MIN_UNITS_BETWEEN_MARKER_CUTS = 32;
+/** Last-resort cut for a program that emits neither newlines nor markers. */
+const HARD_CHUNK_CAP = 64 * 1024;
+
+function sampleChunkCap(stream: string, cols: number, rows: number): number {
+	const widthSafe = Math.max(256, Math.floor((cols * rows) / 4));
+	return Math.max(widthSafe, Math.ceil(stream.length / MAX_SAMPLES));
+}
 
 /**
  * Cut the stream so consecutive samples always overlap: at most half a screen
@@ -122,8 +138,13 @@ const MAX_BYTES_PER_SAMPLE = 4096;
  * disagree wildly here — `less` only scrolls and never erases, a ratatui TUI
  * only erases and never emits a newline — so all three rules are needed.
  */
-function splitForSampling(stream: string, rows: number): string[] {
+function splitForSampling(
+	stream: string,
+	cols: number,
+	rows: number,
+): string[] {
 	const linesPerChunk = Math.max(1, Math.floor(rows / 2));
+	const chunkCap = sampleChunkCap(stream, cols, rows);
 	const chunks: string[] = [];
 	let start = 0;
 	let newlines = 0;
@@ -132,14 +153,24 @@ function splitForSampling(stream: string, rows: number): string[] {
 		let cutAfter = -1;
 		if (stream[i] === "\n") {
 			newlines++;
-			if (newlines >= linesPerChunk) cutAfter = i;
+			// Either enough lines have gone by, or enough units have: a wrapped
+			// or double-width line renders more rows per unit than a plain one,
+			// and counting lines alone let more than a screen scroll past.
+			if (newlines >= linesPerChunk || i - start + 1 >= chunkCap) {
+				cutAfter = i;
+			}
 		} else if (stream[i] === ESC) {
 			const marker = REPAINT_MARKERS.find((candidate) =>
 				stream.startsWith(candidate, i),
 			);
-			if (marker) cutAfter = i + marker.length - 1;
+			if (marker && i - start >= MIN_UNITS_BETWEEN_MARKER_CUTS) {
+				cutAfter = i + marker.length - 1;
+			}
 		}
-		if (cutAfter < 0 && i - start + 1 >= MAX_BYTES_PER_SAMPLE) cutAfter = i;
+		// Only ever cut mid-line as a last resort: sampling halfway through a
+		// repaint reads a torn frame, which overlaps with nothing and gets
+		// appended whole.
+		if (cutAfter < 0 && i - start + 1 >= HARD_CHUNK_CAP) cutAfter = i;
 		if (cutAfter >= 0) {
 			chunks.push(stream.slice(start, cutAfter + 1));
 			start = cutAfter + 1;
@@ -174,7 +205,7 @@ export function reconstructTerminalTranscript(
 		// place and leave nothing behind. Sampling the viewport reconstructs
 		// history in both modes, so the mode never has to be guessed.
 		const history: string[] = [];
-		for (const chunk of splitForSampling(stream, rows)) {
+		for (const chunk of splitForSampling(stream, cols, rows)) {
 			write(chunk);
 			appendWithoutOverlap(history, readViewport(term), rows);
 			if (history.length > MAX_HISTORY_ROWS) {

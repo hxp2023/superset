@@ -1,8 +1,10 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import type { HostDb } from "../../../db";
@@ -339,15 +341,26 @@ describe("buildTerminalAgentLaunch", () => {
 	it("refuses a fork of a session the harness no longer has", () => {
 		const db = createTestDb();
 		seedConfig(db);
-		// The locator needs the workspace's worktree path to know where the
-		// harness would have filed the session.
+		// A refusal is only justified when the harness's project directory is
+		// visible and holds no such session, so the fixture has to provide one.
+		// Pinning the agent to a temp CLAUDE_CONFIG_DIR keeps it out of ~/.claude.
+		const configDir = mkdtempSync(join(tmpdir(), "fork-preflight-"));
+		const worktreePath = mkdtempSync(join(tmpdir(), "fork-worktree-"));
+		mkdirSync(
+			join(configDir, "projects", worktreePath.replaceAll(/[/.]/g, "-")),
+			{ recursive: true },
+		);
 		db.insert(schema.workspaces)
 			.values({
 				id: "11111111-1111-1111-1111-111111111111",
-				worktreePath: "/tmp/superset-fork-preflight-fixture",
+				worktreePath,
 				branch: "main",
 				name: "fixture",
 			})
+			.run();
+		db.update(schema.hostAgentConfigs)
+			.set({ envJson: JSON.stringify({ CLAUDE_CONFIG_DIR: configDir }) })
+			.where(eq(schema.hostAgentConfigs.presetId, "claude"))
 			.run();
 		// The claude locator reads ~/.claude/projects/<encoded cwd>/<id>.jsonl,
 		// and this workspace has no such file, so the answer is a confident no.

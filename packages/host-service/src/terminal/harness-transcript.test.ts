@@ -175,6 +175,8 @@ describe("hasHarnessSession", () => {
 		expect(
 			hasHarnessSession({ agentId: "claude", sessionId, worktreePath }),
 		).toBe(true);
+		// The project directory exists (seedClaudeSession made it) and holds no
+		// such session, which is the only shape that justifies a refusal.
 		expect(
 			hasHarnessSession({
 				agentId: "claude",
@@ -217,11 +219,12 @@ describe("hasHarnessSession", () => {
 			})?.text,
 		).toBe("User: pinned");
 
-		// Without the env it is invisible, which is exactly the bug: a confident
-		// "false" here would block a fork that would have succeeded.
+		// Without the env it is invisible. The answer is "unknown", not
+		// "missing": the default config dir has no project directory for this
+		// worktree, and a confident false there would block a working fork.
 		expect(
 			hasHarnessSession({ agentId: "claude", sessionId, worktreePath }),
-		).toBe(false);
+		).toBeNull();
 	});
 
 	test("answers null for harnesses whose sessions we cannot inspect", () => {

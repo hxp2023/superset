@@ -43,7 +43,10 @@ import type { EventBus } from "../events/index.ts";
 import { portManager } from "../ports/port-manager.ts";
 import { sweepAgentBindingsAfterDaemonLoss } from "../terminal-agents/daemon-loss-sweep.ts";
 import { markTerminalAgentBindingEnded } from "../terminal-agents/persistence.ts";
-import { resolveDefaultAccountTerminalEnv } from "../trpc/router/usage/default-account.ts";
+import {
+	resolveDefaultAccountEnv,
+	resolveDefaultAccountTerminalEnv,
+} from "../trpc/router/usage/default-account.ts";
 import {
 	DaemonClient,
 	type Signal as DaemonSignal,
@@ -1143,16 +1146,25 @@ function agentLaunchEnv(
 ): Record<string, string> | undefined {
 	if (!definitionId) return undefined;
 	const row = db
-		.select({ envJson: hostAgentConfigs.envJson })
+		.select({
+			envJson: hostAgentConfigs.envJson,
+			presetId: hostAgentConfigs.presetId,
+		})
 		.from(hostAgentConfigs)
 		.where(eq(hostAgentConfigs.id, definitionId))
 		.get();
 	if (!row) return undefined;
+	// Overlaid the same way the launch does it: the Usage tab's default
+	// account injects CLAUDE_CONFIG_DIR without touching per-agent env, and
+	// reading only the latter would look in the wrong account's directory.
+	const accountEnv = resolveDefaultAccountEnv(db, row.presetId);
 	try {
 		const parsed = JSON.parse(row.envJson) as Record<string, string>;
-		return typeof parsed === "object" && parsed !== null ? parsed : undefined;
+		const agentEnv =
+			typeof parsed === "object" && parsed !== null ? parsed : {};
+		return { ...accountEnv, ...agentEnv };
 	} catch {
-		return undefined;
+		return { ...accountEnv };
 	}
 }
 

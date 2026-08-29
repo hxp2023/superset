@@ -78,8 +78,10 @@ export function readFileTail(path: string, maxBytes: number): string | null {
 		const length = Math.min(size, maxBytes);
 		const buffer = Buffer.allocUnsafe(length);
 		fd = openSync(path, "r");
-		readSync(fd, buffer, 0, length, Math.max(0, size - length));
-		return buffer.toString("utf8");
+		// A short read would otherwise leave uninitialised heap in the tail,
+		// which then gets decoded and shipped into another agent's prompt.
+		const read = readSync(fd, buffer, 0, length, Math.max(0, size - length));
+		return buffer.subarray(0, Math.max(0, read)).toString("utf8");
 	} catch {
 		return null;
 	} finally {
@@ -194,6 +196,16 @@ export function hasHarnessSession(input: {
 				if (!worktreePath) return null;
 				const configDir = claudeConfigDir(input.env);
 				if (!existsSync(configDir)) return null;
+				// Only a project directory we can see makes an absent session
+				// file evidence. The agent may have been started in a
+				// subdirectory, or Claude may encode the path differently than
+				// this does, and neither means the session is gone.
+				const projectDir = join(
+					configDir,
+					"projects",
+					worktreePath.replaceAll(/[/.]/g, "-"),
+				);
+				if (!existsSync(projectDir)) return null;
 				return (
 					claudeTranscriptPath(worktreePath, sessionId, configDir) !== null
 				);

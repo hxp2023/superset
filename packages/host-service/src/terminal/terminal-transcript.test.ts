@@ -73,6 +73,42 @@ describe("reconstructTerminalTranscript", () => {
 		expect(distinct(text, /line-(\d+)/g)).toBe(300);
 	});
 
+	test("keeps wrapped double-width output, which code-unit chunking lost", () => {
+		// A CJK line at 80 characters is 160 columns wide, so it wraps to two
+		// rendered rows. Chunking on code units let more than a screen scroll
+		// between samples, the overlap merge then found nothing to join on, and
+		// the middle went missing: 190 of 200 lines survived.
+		let stream = `${ESC}[?1049h`;
+		for (let i = 0; i < 200; i++) {
+			stream += `行${i}-${"テスト".repeat(27)}\r\n`;
+		}
+
+		const text = reconstructTerminalTranscript(stream, {
+			cols: 120,
+			rows: 40,
+		});
+		expect(distinct(text, /行(\d+)-/g)).toBe(200);
+	});
+
+	test("bounds its work on a repaint-heavy stream", () => {
+		// Reconstruction is synchronous inside a tRPC query, so a stream that
+		// announces a repaint every few bytes must not turn into tens of
+		// thousands of viewport reads while the host serves nobody else.
+		let stream = `${ESC}[?1049h`;
+		let frame = 0;
+		while (stream.length < 1_500_000) {
+			stream += `${ESC}[H${ESC}[2J`;
+			for (let row = 0; row < 40; row++) {
+				stream += `${ESC}[${row + 1};1Hrow ${frame}-${row}`;
+			}
+			frame++;
+		}
+
+		const started = performance.now();
+		reconstructTerminalTranscript(stream, { cols: 120, rows: 40 });
+		expect(performance.now() - started).toBeLessThan(2000);
+	});
+
 	test("works on a tail that never contains the alt-screen switch", () => {
 		// The retention ring is a tail, so the `?1049h` is usually long evicted.
 		// A replay of the tail believes it is on the normal screen, where

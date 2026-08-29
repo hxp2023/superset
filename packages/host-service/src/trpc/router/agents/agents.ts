@@ -181,9 +181,12 @@ function buildForkArgv(forkArgs: string[], rawSessionId: string): string[] {
 	const sessionId = sanitizePromptForPty(rawSessionId);
 	let replaced = false;
 	const argv = forkArgs.map((arg) => {
-		if (arg !== FORK_SESSION_ID_TOKEN) return arg;
+		if (!arg.includes(FORK_SESSION_ID_TOKEN)) return arg;
 		replaced = true;
-		return sessionId;
+		// Substituted within the argument, since the settings hint invites
+		// forms like `--session-id={sessionId}`; whole-arg matching passed the
+		// literal token through and appended the id as a stray extra.
+		return arg.replaceAll(FORK_SESSION_ID_TOKEN, sessionId);
 	});
 	return replaced ? argv : [...argv, sessionId];
 }
