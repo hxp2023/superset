@@ -139,6 +139,13 @@ describe("sanitizeTerminalFontFamily", () => {
 		);
 	});
 
+	test("escapes backslashes and quotes so any name serializes to valid CSS", () => {
+		restore = stubCanvas(() => equalWidths);
+		expect(sanitizeTerminalFontFamily("Trailing\\")).toBe(
+			`"Trailing\\\\", ${nerdTail()}, monospace`,
+		);
+	});
+
 	test("quotes families that are invalid as unquoted CSS idents", () => {
 		// "0xProto Nerd Font" starts with a digit — unquoted it invalidates the
 		// whole font-family value, so canvas `ctx.font` silently keeps its default

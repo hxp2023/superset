@@ -63,7 +63,9 @@ function serializeFontFamilyList(families: string[]): string {
 		.map((family) =>
 			GENERIC_FONT_FAMILIES.has(family.toLowerCase())
 				? family
-				: `"${family.replaceAll('"', '\\"')}"`,
+				: // Backslashes first, then quotes — a family ending in "\" would
+					// otherwise escape its own closing quote and invalidate the value.
+					`"${family.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`,
 		)
 		.join(", ");
 }
