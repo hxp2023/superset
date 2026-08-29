@@ -100,7 +100,7 @@ describe("agentConfigsRouter", () => {
 			expect(codex?.resumeArgs).toEqual(["resume"]);
 		});
 
-		it("seeds native fork args for Claude and Codex", async () => {
+		it("seeds native fork args for every harness whose CLI has them", async () => {
 			const caller = createCaller();
 			const result = await caller.list();
 
@@ -114,8 +114,35 @@ describe("agentConfigsRouter", () => {
 			const codex = result.find((row) => row.presetId === "codex");
 			expect(codex?.forkArgs).toEqual(["fork", "{sessionId}"]);
 
-			const amp = result.find((row) => row.presetId === "amp");
-			expect(amp?.forkArgs).toEqual([]);
+			// Each of these mirrors the harness's own documented syntax, checked
+			// against the installed binaries: the flags are accepted and only the
+			// session id is rejected.
+			const opencode = result.find((row) => row.presetId === "opencode");
+			expect(opencode?.forkArgs).toEqual([
+				"--session",
+				"{sessionId}",
+				"--fork",
+			]);
+
+			const pi = result.find((row) => row.presetId === "pi");
+			expect(pi?.forkArgs).toEqual(["--fork", "{sessionId}"]);
+
+			const grok = result.find((row) => row.presetId === "grok");
+			expect(grok?.forkArgs).toEqual([
+				"--resume",
+				"{sessionId}",
+				"--fork-session",
+			]);
+
+			const droid = result.find((row) => row.presetId === "droid");
+			expect(droid?.forkArgs).toEqual(["--fork", "{sessionId}"]);
+
+			// No fork in their CLIs, so the menu item stays disabled rather than
+			// launching something that quietly starts fresh.
+			for (const presetId of ["amp", "gemini", "copilot", "cursor-agent"]) {
+				const row = result.find((item) => item.presetId === presetId);
+				expect(row?.forkArgs).toEqual([]);
+			}
 		});
 
 		it("returns existing rows on subsequent calls without re-seeding", async () => {

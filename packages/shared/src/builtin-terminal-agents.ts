@@ -125,6 +125,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		command: "opencode",
 		promptCommand: "opencode --prompt",
 		resumeCommand: "opencode --session",
+		forkCommand: "opencode --session {sessionId} --fork",
 		nonInteractiveCommand: "opencode run --agent plan",
 	}),
 	createBuiltinTerminalAgent({
@@ -142,6 +143,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 			"Minimal terminal coding harness for flexible coding workflows.",
 		command: "pi",
 		resumeCommand: "pi --session",
+		forkCommand: "pi --fork {sessionId}",
 		nonInteractiveCommand: "pi --no-tools -p",
 	}),
 	createBuiltinTerminalAgent({
@@ -183,6 +185,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 			"xAI's coding agent for reading, editing, and running code from the terminal.",
 		command: "grok --always-approve",
 		resumeCommand: "grok --always-approve --resume",
+		forkCommand: "grok --always-approve --resume {sessionId} --fork-session",
 		nonInteractiveCommand: "grok --permission-mode plan -p",
 		includeInDefaultTerminalPresets: true,
 	}),
@@ -201,6 +204,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		description: "Factory's autonomous coding agent for terminal workflows.",
 		command: "droid",
 		resumeCommand: "droid --resume",
+		forkCommand: "droid --fork {sessionId}",
 		nonInteractiveCommand: "droid exec",
 	}),
 	createBuiltinTerminalAgent({
