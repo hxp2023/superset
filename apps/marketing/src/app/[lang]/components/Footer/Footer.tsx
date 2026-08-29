@@ -296,10 +296,10 @@ function FooterLanguageSwitcher({ locale }: { locale?: SupportedLocale }) {
 	return (
 		<DropdownMenu modal={false}>
 			<DropdownMenuTrigger
-				aria-label={t({
+				aria-label={`${t({
 					id: "marketing.footer.languageLabel",
 					message: "Language",
-				})}
+				})}: ${LOCALE_LABELS[current]}`}
 				className="group flex w-max cursor-pointer items-center gap-2 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
 			>
 				<Languages aria-hidden className="size-4 shrink-0" />
@@ -319,7 +319,12 @@ function FooterLanguageSwitcher({ locale }: { locale?: SupportedLocale }) {
 					<DropdownMenuItem
 						key={option}
 						lang={option}
-						onClick={() => selectLocale(option)}
+						aria-current={option === current || undefined}
+						onClick={() => {
+							// Re-selecting the active locale would be a pointless
+							// full navigation to the same URL.
+							if (option !== current) selectLocale(option);
+						}}
 						className="flex cursor-pointer items-center justify-between gap-3 rounded-[3px] px-2.5 py-1.5 text-sm"
 					>
 						{LOCALE_LABELS[option]}
