@@ -12,6 +12,7 @@ import {
 	parseThemeType,
 	sessionHasRunningProcess,
 	snapshotSession,
+	transcriptSession,
 	writeFramedInputToSession,
 	writeInputToSession,
 } from "../../../terminal/terminal";
@@ -215,6 +216,30 @@ export const terminalRouter = router({
 			}
 			const { success: _success, ...snapshot } = result;
 			return { terminalId: input.terminalId, ...snapshot };
+		}),
+
+	// Recent output as readable text for handing context to another agent.
+	// Reads the retained PTY stream, not the visible screen — see
+	// transcriptSession.
+	transcript: protectedProcedure
+		.input(
+			z.object({
+				terminalId: z.string(),
+				workspaceId: z.string(),
+				maxChars: z.number().int().positive().optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const result = await transcriptSession({
+				...input,
+				db: ctx.db,
+				eventBus: ctx.eventBus,
+			});
+			if ("error" in result) {
+				throw toTerminalSessionError(result);
+			}
+			const { success: _success, ...transcript } = result;
+			return { terminalId: input.terminalId, ...transcript };
 		}),
 
 	killSession: protectedProcedure

@@ -17,6 +17,7 @@ import {
 	type ShellReadyScanState,
 	scanForShellReady,
 } from "@superset/shared/shell-ready-scanner";
+import { buildBoundedTerminalSessionTranscript } from "@superset/shared/terminal-session-handoff";
 import {
 	createTerminalTitleScanState,
 	scanForTerminalTitle,
@@ -1117,6 +1118,73 @@ export async function snapshotSession({
 	});
 	if ("error" in session) return session;
 	return { success: true, ...session.modeTracker.snapshot(maxLines) };
+}
+
+export interface TerminalTranscript {
+	text: string;
+	/**
+	 * `stream` is the retained PTY output; `screen` means the ring was empty
+	 * (nothing written since this session object was created) and the visible
+	 * screen stood in.
+	 */
+	source: "stream" | "screen";
+	/** Raw retained bytes considered, before sanitizing and bounding. */
+	streamBytes: number;
+}
+
+/**
+ * Recent output as readable text, for handing a session's context to another
+ * agent. Reads the retained PTY stream rather than the headless screen: an
+ * alt-screen TUI keeps no scrollback, so its screen holds one frame and loses
+ * everything it has already drawn over, while the stream still carries it.
+ */
+export async function transcriptSession({
+	terminalId,
+	workspaceId,
+	maxChars,
+	db,
+	eventBus,
+}: {
+	terminalId: string;
+	workspaceId: string;
+	maxChars?: number;
+	db: HostDb;
+	eventBus?: EventBus;
+}): Promise<({ success: true } & TerminalTranscript) | TerminalSessionError> {
+	const session = await getOrAdoptSession({
+		terminalId,
+		workspaceId,
+		db,
+		eventBus,
+	});
+	if ("error" in session) return session;
+
+	const raw = readRetainedFrom(session, session.retainedStartSeq);
+	const fromStream = buildBoundedTerminalSessionTranscript(
+		new TextDecoder().decode(raw),
+		maxChars,
+	);
+	if (fromStream) {
+		return {
+			success: true,
+			text: fromStream,
+			source: "stream",
+			streamBytes: raw.byteLength,
+		};
+	}
+
+	// Nothing retained (adopted session that has not written since): the
+	// visible screen is all we have, and it beats handing over nothing.
+	const screen = buildBoundedTerminalSessionTranscript(
+		session.modeTracker.snapshot().text,
+		maxChars,
+	);
+	return {
+		success: true,
+		text: screen ?? "",
+		source: "screen",
+		streamBytes: raw.byteLength,
+	};
 }
 
 function sendMessage(
