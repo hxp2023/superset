@@ -313,7 +313,7 @@ function FooterLanguageSwitcher({ locale }: { locale?: SupportedLocale }) {
 				side="bottom"
 				align="start"
 				sideOffset={8}
-				className="max-h-[min(38rem,80vh)] w-48 overflow-y-auto rounded-[5px] border border-border bg-background p-1 shadow-lg"
+				className="max-h-[min(38rem,var(--radix-dropdown-menu-content-available-height))] w-48 overflow-y-auto rounded-[5px] border border-border bg-background p-1 shadow-lg"
 			>
 				{SUPPORTED_LOCALES.map((option) => (
 					<DropdownMenuItem
