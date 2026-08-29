@@ -10299,10 +10299,18 @@ msgid "workspace.terminalPane.captureContextFailed"
 msgstr "Couldn't capture terminal context"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: formatCharacterCount(transcript.length)
+#. placeholder {1}: formatCharacterCount( estimateTokens(transcript.length), )
+#. placeholder {2}: selectedConfig.label
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalSessionHandoffMenu/TerminalSessionHandoffMenu.tsx
+msgid "workspace.terminalPane.contextDisclosureSized"
+msgstr "Sends {0} characters of terminal context (about {1} tokens) to {2}."
+
+#. js-lingui-explicit-id
 #. placeholder {0}: selectedConfig.label
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalSessionHandoffMenu/TerminalSessionHandoffMenu.tsx
-msgid "workspace.terminalPane.contextDisclosure"
-msgstr "This sends recent terminal context to {0}."
+msgid "workspace.terminalPane.contextMeasuring"
+msgstr "Measuring the context to send to {0}…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalSessionHandoffMenu/TerminalSessionHandoffMenu.tsx

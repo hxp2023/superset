@@ -1,4 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { formatNumber } from "@superset/i18n/format";
 import { buildTerminalSessionHandoffPrompt } from "@superset/shared/terminal-session-handoff";
 import { Button } from "@superset/ui/button";
 import {
@@ -27,6 +28,17 @@ import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHos
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
 
 type Placement = "split-pane" | "new-tab";
+
+/** Rough enough to size a decision: agents bill by token, not character. */
+const CHARS_PER_TOKEN = 3.5;
+
+function estimateTokens(characters: number): number {
+	return Math.round(characters / CHARS_PER_TOKEN);
+}
+
+function formatCharacterCount(value: number): string {
+	return formatNumber(value);
+}
 type SessionAction = "handoff" | "fork";
 
 interface TerminalSessionHandoffMenuProps {
@@ -55,6 +67,7 @@ export function TerminalSessionHandoffMenu({
 	const [targetConfigId, setTargetConfigId] = useState("");
 	const [placement, setPlacement] = useState<Placement>("split-pane");
 	const [isStarting, setIsStarting] = useState(false);
+	const [transcript, setTranscript] = useState<string | null>(null);
 
 	const sourceConfig = useMemo(() => {
 		const sourceId = binding?.definitionId ?? binding?.agentId;
@@ -69,6 +82,27 @@ export function TerminalSessionHandoffMenu({
 	const canFork = Boolean(
 		binding?.agentSessionId && sourceConfig?.forkArgs?.length,
 	);
+
+	// Fetched when the dialog opens rather than on Continue, so the size of
+	// what is about to be sent is on screen before the decision.
+	useEffect(() => {
+		if (action !== "handoff") {
+			setTranscript(null);
+			return;
+		}
+		let cancelled = false;
+		trpcUtils.terminal.transcript
+			.fetch({ workspaceId, terminalId })
+			.then((result) => {
+				if (!cancelled) setTranscript(result.text || "");
+			})
+			.catch(() => {
+				if (!cancelled) setTranscript("");
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [action, terminalId, trpcUtils, workspaceId]);
 
 	useEffect(() => {
 		if (action !== "handoff" || targetConfigId) return;
@@ -111,12 +145,6 @@ export function TerminalSessionHandoffMenu({
 			}
 
 			if (!selectedConfig) return;
-			// The host reads the retained PTY stream and bounds it, so this and
-			// `superset agents create --from-terminal` hand over the same text.
-			const transcript = await trpcUtils.terminal.transcript
-				.fetch({ workspaceId, terminalId })
-				.then((result) => result.text || null)
-				.catch(() => null);
 			if (!transcript) {
 				toast.error(
 					t({
@@ -208,9 +236,8 @@ export function TerminalSessionHandoffMenu({
 								</Trans>
 							) : (
 								<Trans id="workspace.terminalPane.continueWithAgentDescription">
-									Start a fresh agent session using up to 36,000 characters of
-									recent terminal context. Workspace files remain the source of
-									truth.
+									Start a fresh agent session seeded with this terminal's recent
+									context. Workspace files remain the source of truth.
 								</Trans>
 							)}
 						</DialogDescription>
@@ -243,10 +270,20 @@ export function TerminalSessionHandoffMenu({
 								/>
 								{selectedConfig && (
 									<p className="text-muted-foreground text-xs">
-										<Trans id="workspace.terminalPane.contextDisclosure">
-											This sends recent terminal context to{" "}
-											{selectedConfig.label}.
-										</Trans>
+										{transcript === null ? (
+											<Trans id="workspace.terminalPane.contextMeasuring">
+												Measuring the context to send to {selectedConfig.label}…
+											</Trans>
+										) : (
+											<Trans id="workspace.terminalPane.contextDisclosureSized">
+												Sends {formatCharacterCount(transcript.length)}{" "}
+												characters of terminal context (about{" "}
+												{formatCharacterCount(
+													estimateTokens(transcript.length),
+												)}{" "}
+												tokens) to {selectedConfig.label}.
+											</Trans>
+										)}
 									</p>
 								)}
 							</div>

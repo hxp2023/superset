@@ -10,7 +10,7 @@ import type { HostServiceClient } from "./host-target";
  */
 export async function buildHandoffPromptFromTerminal(
 	client: HostServiceClient,
-	input: { workspaceId: string; terminalId: string },
+	input: { workspaceId: string; terminalId: string; maxChars?: number },
 ): Promise<string> {
 	// A failed query and an empty terminal are different mistakes: sending
 	// someone to check the terminal id when the host was unreachable points
@@ -20,6 +20,7 @@ export async function buildHandoffPromptFromTerminal(
 		const result = await client.terminal.transcript.query({
 			workspaceId: input.workspaceId,
 			terminalId: input.terminalId,
+			...(input.maxChars ? { maxChars: input.maxChars } : {}),
 		});
 		transcript = result.text;
 	} catch (error) {

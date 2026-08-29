@@ -1,4 +1,4 @@
-import { CLIError, string } from "@superset/cli-framework";
+import { CLIError, number, string } from "@superset/cli-framework";
 import { getHostId } from "@superset/shared/host-info";
 import { command } from "../../../lib/command";
 import { resolveHostTarget } from "../../../lib/host-target";
@@ -28,6 +28,11 @@ export default command({
 		fromTerminal: string().desc(
 			"Terminal ID whose recent context seeds the new session, so another agent can pick the work up",
 		),
+		contextChars: number()
+			.int()
+			.desc(
+				"Cap the handed-over context (default 36000 characters, roughly 9-12k tokens)",
+			),
 		effort: string().desc(
 			"Reasoning effort for this launch (agent-specific; omit to use the agent default)",
 		),
@@ -100,6 +105,7 @@ export default command({
 			? await buildHandoffPromptFromTerminal(target.client, {
 					workspaceId: options.workspace,
 					terminalId: options.fromTerminal,
+					...(options.contextChars ? { maxChars: options.contextChars } : {}),
 				})
 			: (options.prompt ?? "");
 
@@ -121,7 +127,7 @@ export default command({
 		return {
 			data: result,
 			message: options.fromTerminal
-				? `Handed ${options.fromTerminal} off to ${result.label} (terminal ${result.sessionId}) in workspace ${options.workspace}`
+				? `Handed ${options.fromTerminal} off to ${result.label} with ${prompt.length} characters of context (terminal ${result.sessionId})`
 				: `Launched ${result.label} (terminal ${result.sessionId}) in workspace ${options.workspace}`,
 		};
 	},
