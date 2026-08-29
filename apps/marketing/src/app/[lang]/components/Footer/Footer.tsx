@@ -17,7 +17,7 @@ import {
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import { m } from "framer-motion";
-import { ArrowUpRight, Check, ChevronUp, Globe } from "lucide-react";
+import { ArrowUpRight, Check, ChevronUp, Languages } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -302,7 +302,7 @@ function FooterLanguageSwitcher({ locale }: { locale?: SupportedLocale }) {
 				})}
 				className="group flex w-max cursor-pointer items-center gap-2 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
 			>
-				<Globe aria-hidden className="size-4 shrink-0" />
+				<Languages aria-hidden className="size-4 shrink-0" />
 				<span lang={current}>{LOCALE_LABELS[current]}</span>
 				<ChevronUp
 					aria-hidden
