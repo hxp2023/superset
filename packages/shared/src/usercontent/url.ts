@@ -1,62 +1,63 @@
 /**
- * One origin per page: `<slug>.<usercontent host>`. The slug is already a
- * valid DNS label (lowercase alphanumerics and hyphens, at most 57 chars), so
- * it is used verbatim.
+ * One origin per page: `<pageId>.<pages host>`. A page id is a UUID, which
+ * is already a valid DNS label (lowercase hex and hyphens, 36 characters).
  */
-export function usercontentOrigin(baseUrl: string, slug: string): string {
+export function pageOrigin(baseUrl: string, pageId: string): string {
 	const base = new URL(baseUrl);
-	return `${base.protocol}//${slug}.${base.host}`;
+	return `${base.protocol}//${pageId}.${base.host}`;
 }
 
 export const THUMBNAIL_FILENAME = "thumbnail.jpg";
+export const TICKET_QUERY_PARAM = "ticket";
 
-function withToken(url: URL, token: string | undefined): string {
-	if (token) url.searchParams.set("t", token);
+function withTicket(url: URL, ticket: string | undefined): string {
+	if (ticket) url.searchParams.set(TICKET_QUERY_PARAM, ticket);
 	return url.toString();
 }
 
-/** `/` serves the shared version (or latest); `/v/<n>/` pins one. */
+/** `/` serves the shared version (or latest); `/versions/<n>/` pins one. */
 export function pageViewUrl({
 	baseUrl,
-	slug,
+	pageId,
 	version = null,
-	token,
+	ticket,
 }: {
 	baseUrl: string;
-	slug: string;
+	pageId: string;
 	version?: number | null;
-	token?: string;
+	ticket?: string;
 }): string {
-	const path = version === null ? "/" : `/v/${version}/`;
-	return withToken(new URL(path, usercontentOrigin(baseUrl, slug)), token);
+	const path = version === null ? "/" : `/versions/${version}/`;
+	return withTicket(new URL(path, pageOrigin(baseUrl, pageId)), ticket);
 }
 
 export function pageThumbnailUrl({
 	baseUrl,
-	slug,
+	pageId,
 	version,
-	token,
+	ticket,
 }: {
 	baseUrl: string;
-	slug: string;
+	pageId: string;
 	version: number;
-	token?: string;
+	ticket?: string;
 }): string {
-	return withToken(
+	return withTicket(
 		new URL(
-			`/v/${version}/${THUMBNAIL_FILENAME}`,
-			usercontentOrigin(baseUrl, slug),
+			`/versions/${version}/${THUMBNAIL_FILENAME}`,
+			pageOrigin(baseUrl, pageId),
 		),
-		token,
+		ticket,
 	);
 }
 
-const SLUG_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+const PAGE_ID_LABEL =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** The page slug a request host names, or null for the apex or a bad label. */
-export function slugFromHost(host: string, baseHost: string): string | null {
+/** The page id a request host names, or null for the apex or a bad label. */
+export function pageIdFromHost(host: string, baseHost: string): string | null {
 	const suffix = `.${baseHost}`;
 	if (!host.endsWith(suffix)) return null;
-	const slug = host.slice(0, -suffix.length);
-	return SLUG_LABEL.test(slug) ? slug : null;
+	const label = host.slice(0, -suffix.length);
+	return PAGE_ID_LABEL.test(label) ? label : null;
 }

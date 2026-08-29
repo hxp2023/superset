@@ -4,18 +4,20 @@ import {
 	injectScriptTag,
 	type PageManifest,
 	pageContentSecurityPolicy,
+	pageIdFromHost,
 	pageManifestKey,
 	pageThumbnailKey,
 	parsePageManifest,
 	RUNTIME_SCRIPT_PATH,
 	servedVersionOf,
-	slugFromHost,
-	verifyPageViewToken,
+	THUMBNAIL_FILENAME,
+	TICKET_QUERY_PARAM,
+	verifyPageTicket,
 } from "@superset/shared/usercontent";
 import { type Context, Hono } from "hono";
-import type { UsercontentEnv } from "./types";
+import type { ContentEnv } from "./types";
 
-type AppContext = { Bindings: UsercontentEnv };
+type AppContext = { Bindings: ContentEnv };
 
 const app = new Hono<AppContext>();
 
@@ -39,9 +41,9 @@ function notFound(): Response {
 async function loadManifest(
 	c: Context<AppContext>,
 ): Promise<PageManifest | null> {
-	const slug = slugFromHost(requestHost(c), baseHost(c));
-	if (!slug) return null;
-	const object = await c.env.STORAGE.get(pageManifestKey(slug));
+	const pageId = pageIdFromHost(requestHost(c), baseHost(c));
+	if (!pageId) return null;
+	const object = await c.env.PRIVATE.get(pageManifestKey(pageId));
 	if (!object) return null;
 	return parsePageManifest(await object.text());
 }
@@ -63,10 +65,13 @@ async function authorized(
 	version: number,
 ): Promise<boolean> {
 	if (manifest.visibility === "everyone") return true;
-	const ticket = c.req.query("t");
+	const ticket = c.req.query(TICKET_QUERY_PARAM);
 	if (!ticket) return false;
-	const claims = await verifyPageViewToken(
-		[c.env.USERCONTENT_TOKEN_SECRET, c.env.USERCONTENT_TOKEN_SECRET_PREVIOUS ?? ""],
+	const claims = await verifyPageTicket(
+		[
+			c.env.USERCONTENT_TOKEN_SECRET,
+			c.env.USERCONTENT_TOKEN_SECRET_PREVIOUS ?? "",
+		],
 		ticket,
 	);
 	if (!claims || claims.pageId !== manifest.pageId) return false;
@@ -98,7 +103,7 @@ async function servePage(c: Context<AppContext>): Promise<Response> {
 		return signInRedirect(c, manifest.slug);
 	}
 
-	const object = await c.env.STORAGE.get(entry.key);
+	const object = await c.env.PRIVATE.get(entry.key);
 	if (!object) return notFound();
 
 	const contentType = object.httpMetadata?.contentType ?? entry.contentType;
@@ -133,7 +138,7 @@ async function serveThumbnail(c: Context<AppContext>): Promise<Response> {
 	if (!version) return notFound();
 	if (!(await authorized(c, manifest, version))) return notFound();
 
-	const object = await c.env.STORAGE.get(
+	const object = await c.env.PRIVATE.get(
 		pageThumbnailKey(manifest.pageId, version),
 	);
 	if (!object) return notFound();
@@ -168,13 +173,19 @@ app.get(RUNTIME_SCRIPT_PATH, (c) =>
 );
 
 app.get("/", servePage);
-app.get("/v/:version", servePage);
-app.get("/v/:version/", servePage);
-app.get("/v/:version/thumbnail.jpg", serveThumbnail);
+// Relative references inside a version resolve against `/versions/<n>/`,
+// so the slashless form is a redirect, never a second address.
+app.get("/versions/:version", (c) => {
+	const url = new URL(c.req.url);
+	url.pathname = `${url.pathname}/`;
+	return c.redirect(url.toString(), 301);
+});
+app.get("/versions/:version/", servePage);
+app.get(`/versions/:version/${THUMBNAIL_FILENAME}`, serveThumbnail);
 app.notFound(() => notFound());
 
 // Exceptions only; no-op until SENTRY_DSN is set.
-const sentryOptions = (env: UsercontentEnv): Sentry.CloudflareOptions => ({
+const sentryOptions = (env: ContentEnv): Sentry.CloudflareOptions => ({
 	dsn: env.SENTRY_DSN,
 	tracesSampleRate: 0,
 	sendDefaultPii: false,
@@ -184,4 +195,4 @@ const sentryOptions = (env: UsercontentEnv): Sentry.CloudflareOptions => ({
 
 export default Sentry.withSentry(sentryOptions, {
 	fetch: app.fetch,
-} satisfies ExportedHandler<UsercontentEnv>);
+} satisfies ExportedHandler<ContentEnv>);

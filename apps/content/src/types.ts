@@ -1,5 +1,6 @@
-export interface UsercontentEnv {
-	STORAGE: R2Bucket;
+export interface ContentEnv {
+	/** Pages and files: read only through this Worker, with a ticket. */
+	PRIVATE: R2Bucket;
 	/** Base URL pages hang off, e.g. https://pages.supersetusercontent.com */
 	USERCONTENT_URL: string;
 	/** Where a reader without a ticket is sent to sign in and come back. */

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { dbWs } from "@superset/db/client";
 import {
 	pages,
@@ -6,6 +7,7 @@ import {
 	workspacePages,
 } from "@superset/db/schema";
 import { mintPageSlug } from "@superset/shared/page-slug";
+import { pageVersionKey } from "@superset/shared/usercontent";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { userError } from "../../i18n-error";
@@ -19,7 +21,7 @@ import {
 	validatePublishContent,
 } from "./publish-rules";
 import type { PublishPageInput } from "./schema";
-import { pageContentKey, writePageManifest } from "./storage";
+import { writePageManifest } from "./storage";
 import { enqueuePageThumbnail } from "./thumbnail";
 import { assertWorkspaceAccess } from "./workspace-access";
 
@@ -38,6 +40,12 @@ interface PublishedVersion {
 	sizeBytes: number;
 	createdAt: Date;
 }
+
+/**
+ * The page this publish reserved its version under was created or removed
+ * by another publish in the meantime, so the bytes sit under the wrong id.
+ */
+class TargetPageChanged extends Error {}
 
 export async function publishPage({
 	input,
@@ -60,7 +68,9 @@ export async function publishPage({
 				sha256,
 			});
 		} catch (error) {
-			if (!isVersionConflict(error)) throw error;
+			if (!isVersionConflict(error) && !(error instanceof TargetPageChanged)) {
+				throw error;
+			}
 			if (attempt < MAX_PUBLISH_ATTEMPTS) continue;
 			throw userError({
 				code: "CONFLICT",
@@ -84,13 +94,18 @@ async function runPublish({
 	buffer: Buffer;
 	sha256: string;
 }) {
-	await resolveTargetPage({ executor: dbWs, input, organizationId, userId });
-
-	const key = pageContentKey({
+	// The version number is reserved before the bytes move so the key can
+	// name it. A concurrent publish of the same page collides on the unique
+	// (page, version) index and retries under the next number.
+	const target = await resolveTargetPage({
+		executor: dbWs,
+		input,
 		organizationId,
-		sha256,
-		filename: input.filename,
+		userId,
 	});
+	const pageId = target?.id ?? randomUUID();
+	const version = (target ? await latestVersionNumber(dbWs, target.id) : 0) + 1;
+	const key = pageVersionKey(pageId, version);
 	await putObject({ key, body: buffer, contentType: input.contentType });
 
 	let bodyCompleted = false;
@@ -103,10 +118,13 @@ async function runPublish({
 				organizationId,
 				userId,
 			});
+			if ((existing?.id ?? null) !== (target?.id ?? null)) {
+				throw new TargetPageChanged();
+			}
 
 			const page = existing
 				? await applyMetadata({ tx, page: existing, input })
-				: await createPage({ tx, input, organizationId, userId });
+				: await createPage({ tx, id: pageId, input, organizationId, userId });
 
 			if (!input.pageId && input.workspaceId && input.entryPath) {
 				await assertWorkspaceAccess({
@@ -139,14 +157,6 @@ async function runPublish({
 					});
 				}
 			}
-
-			const [latest] = await tx
-				.select({ version: pageVersions.version })
-				.from(pageVersions)
-				.where(eq(pageVersions.pageId, page.id))
-				.orderBy(desc(pageVersions.version))
-				.limit(1);
-			const version = (latest?.version ?? 0) + 1;
 
 			const [row] = await tx
 				.insert(pageVersions)
@@ -197,18 +207,12 @@ async function runPublish({
 		throw error;
 	}
 
-	// The manifest is what the usercontent origin serves from, so the publish
-	// is not done until it is written. The thumbnail is best effort.
+	// The manifest is what the page's origin serves from, so the publish is
+	// not done until it is written. The thumbnail is best effort.
 	await writePageManifest(published.id);
 	void enqueuePageThumbnail({
 		pageId: published.id,
 		version: published.version,
-	}).catch((error) => {
-		console.error("[pages] failed to queue thumbnail", {
-			pageId: published.id,
-			version: published.version,
-			error,
-		});
 	});
 	return published;
 }
@@ -216,6 +220,19 @@ async function runPublish({
 type Tx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
 
 type Executor = Pick<Tx, "select">;
+
+async function latestVersionNumber(
+	executor: Executor,
+	pageId: string,
+): Promise<number> {
+	const [latest] = await executor
+		.select({ version: pageVersions.version })
+		.from(pageVersions)
+		.where(eq(pageVersions.pageId, pageId))
+		.orderBy(desc(pageVersions.version))
+		.limit(1);
+	return latest?.version ?? 0;
+}
 
 async function resolveTargetPage({
 	executor,
@@ -295,11 +312,13 @@ async function applyMetadata({
 
 async function createPage({
 	tx,
+	id,
 	input,
 	organizationId,
 	userId,
 }: {
 	tx: Tx;
+	id: string;
 	input: PublishPageInput;
 	organizationId: string;
 	userId: string;
@@ -308,6 +327,7 @@ async function createPage({
 	const [page] = await tx
 		.insert(pages)
 		.values({
+			id,
 			slug: mintPageSlug(title),
 			organizationId,
 			createdByUserId: userId,

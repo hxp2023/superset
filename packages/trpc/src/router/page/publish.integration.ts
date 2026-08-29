@@ -17,6 +17,7 @@ mock.module("../../lib/r2", () => ({
 	}) => {
 		objectStore.set(key, body);
 	},
+	objectExists: async (key: string) => objectStore.has(key),
 	getObject: async (key: string) =>
 		objectStore.has(key) ? new Response(objectStore.get(key)) : null,
 	deleteObjects: async (keys: string[]) => {
@@ -313,8 +314,9 @@ describe("publish", () => {
 
 		expect(row?.sizeBytes).toBe(Buffer.byteLength(body));
 		expect(row?.sha256).toHaveLength(64);
-		expect(row?.blobPathname).toContain(`pages/${ORG}/`);
-		expect(row?.blobPathname).toContain(row?.sha256 ?? "no-hash");
+		expect(row?.blobPathname).toBe(
+			`pages/${result.id}/versions/${result.version}/index.html`,
+		);
 	});
 });
 

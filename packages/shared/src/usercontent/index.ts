@@ -1,6 +1,6 @@
 export { pageContentSecurityPolicy } from "./csp";
 export { injectScriptTag, RUNTIME_SCRIPT_PATH } from "./inject";
-export { pageManifestKey, pageThumbnailKey } from "./keys";
+export { pageManifestKey, pageThumbnailKey, pageVersionKey } from "./keys";
 export {
 	type PageManifest,
 	type PageManifestVersion,
@@ -9,14 +9,15 @@ export {
 	servedVersionOf,
 } from "./manifest";
 export {
-	type PageViewTokenClaims,
-	signPageViewToken,
-	verifyPageViewToken,
-} from "./token";
+	type PageTicketClaims,
+	signPageTicket,
+	verifyPageTicket,
+} from "./ticket";
 export {
+	pageIdFromHost,
+	pageOrigin,
 	pageThumbnailUrl,
 	pageViewUrl,
-	slugFromHost,
 	THUMBNAIL_FILENAME,
-	usercontentOrigin,
+	TICKET_QUERY_PARAM,
 } from "./url";

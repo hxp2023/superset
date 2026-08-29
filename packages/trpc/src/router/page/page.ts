@@ -31,10 +31,11 @@ import {
 import { resolveSharedVersion, servedVersion } from "./shared-version";
 import {
 	deletePageObjects,
-	mintPageViewToken,
+	mintPageTicket,
 	usercontentBaseUrl,
 	writePageManifest,
 } from "./storage";
+import { enqueuePageThumbnail } from "./thumbnail";
 import { watchState } from "./watch";
 import { assertWorkspaceAccess } from "./workspace-access";
 
@@ -213,19 +214,19 @@ export const pageRouter = {
 			return await Promise.all(
 				rows.map(async (row) => {
 					const served = servedVersion(row.sharedVersion, row.latestVersion);
-					const token = await mintPageViewToken(row);
+					const ticket = await mintPageTicket(row);
 					return {
 						...row,
 						url: pageUrl(row.slug),
-						viewUrl: pageViewUrl({ baseUrl, slug: row.slug, token }),
+						viewUrl: pageViewUrl({ baseUrl, pageId: row.id, ticket }),
 						thumbnailUrl:
 							served === null
 								? null
 								: pageThumbnailUrl({
 										baseUrl,
-										slug: row.slug,
+										pageId: row.id,
 										version: served,
-										token,
+										ticket,
 									}),
 					};
 				}),
@@ -248,9 +249,9 @@ export const pageRouter = {
 			url: pageUrl(page.slug),
 			viewUrl: pageViewUrl({
 				baseUrl: usercontentBaseUrl(),
-				slug: page.slug,
+				pageId: page.id,
 				version: served,
-				token: await mintPageViewToken(page),
+				ticket: await mintPageTicket(page),
 			}),
 			latestVersion,
 			servedVersion: served,
@@ -359,10 +360,8 @@ export const pageRouter = {
 				}
 			}
 
-			const resolved = resolveSharedVersion(
-				input.version,
-				await latestVersionNumber(page.id),
-			);
+			const latestVersion = await latestVersionNumber(page.id);
+			const resolved = resolveSharedVersion(input.version, latestVersion);
 
 			const [updated] = await db
 				.update(pages)
@@ -378,6 +377,12 @@ export const pageRouter = {
 				});
 			}
 			await writePageManifest(page.id);
+			// The pin may land on a version that was superseded before it was
+			// ever captured; one already captured is skipped by the job.
+			const served = servedVersion(resolved, latestVersion);
+			if (served !== null) {
+				void enqueuePageThumbnail({ pageId: page.id, version: served });
+			}
 			return { id: updated.id, sharedVersion: updated.sharedVersion };
 		}),
 
@@ -402,7 +407,6 @@ export const pageRouter = {
 			try {
 				await deletePageObjects({
 					pageId: page.id,
-					slug: page.slug,
 					versions: rows,
 				});
 			} catch (error) {
@@ -499,9 +503,9 @@ export const pageRouter = {
 
 			const viewUrl = pageViewUrl({
 				baseUrl: usercontentBaseUrl(),
-				slug: page.slug,
+				pageId: page.id,
 				version: row.version,
-				token: await mintPageViewToken(page, { version: row.version }),
+				ticket: await mintPageTicket(page, { version: row.version }),
 			});
 
 			return {

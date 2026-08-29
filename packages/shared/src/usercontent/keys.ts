@@ -1,12 +1,17 @@
 /**
- * Object keys in the storage bucket the usercontent origin reads from. The
- * manifest is keyed by slug because the serving host names the page by slug;
- * everything else hangs off the page id so a rename never moves bytes.
+ * Object keys in the private bucket. A page's keys mirror the URLs the
+ * content Worker serves them at: what `/versions/3/` returns is
+ * `pages/<pageId>/versions/3/index.html`, so a key reads as its URL and a
+ * page is one prefix to list, copy or delete.
  */
-export function pageManifestKey(slug: string): string {
-	return `slugs/${slug}.json`;
+export function pageManifestKey(pageId: string): string {
+	return `pages/${pageId}/manifest.json`;
+}
+
+export function pageVersionKey(pageId: string, version: number): string {
+	return `pages/${pageId}/versions/${version}/index.html`;
 }
 
 export function pageThumbnailKey(pageId: string, version: number): string {
-	return `pages/${pageId}/thumbnails/${version}.jpg`;
+	return `pages/${pageId}/versions/${version}/thumbnail.jpg`;
 }

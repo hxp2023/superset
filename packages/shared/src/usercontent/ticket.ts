@@ -1,14 +1,14 @@
 /**
- * The viewing ticket for a non-public page: minted by the API after it has
- * checked the session against the page's visibility, verified by the
- * usercontent origin with nothing but the shared secret. It carries no
- * identity — it says "this page (and optionally this version) may be read
- * until `exp`", nothing more. HMAC-SHA256 over WebCrypto so the same code
- * runs in Node, Workers, and browsers.
+ * The ticket for a non-public page: minted by the API after it has checked
+ * the session against the page's visibility, verified by the content Worker
+ * with nothing but the shared secret. It carries no identity — it says
+ * "this page (and optionally this version) may be read until `exp`", nothing
+ * more. HMAC-SHA256 over WebCrypto so the same code runs in Node, Workers,
+ * and browsers.
  */
-export interface PageViewTokenClaims {
+export interface PageTicketClaims {
 	pageId: string;
-	/** When set, the token opens only this version. */
+	/** When set, the ticket opens only this version. */
 	version?: number;
 	/** Expiry, in seconds since the epoch. */
 	exp: number;
@@ -16,12 +16,9 @@ export interface PageViewTokenClaims {
 
 const KIND = "page";
 
-interface WireClaims {
-	/** Ticket kind, so a page ticket can never open something else. */
-	k: typeof KIND;
-	p: string;
-	v?: number;
-	e: number;
+/** What gets signed: the claims plus a kind, so a page ticket can never open something else. */
+interface WireClaims extends PageTicketClaims {
+	kind: typeof KIND;
 }
 
 const encoder = new TextEncoder();
@@ -61,15 +58,15 @@ function hmacKey(secret: string) {
 	);
 }
 
-export async function signPageViewToken(
+export async function signPageTicket(
 	secret: string,
-	claims: PageViewTokenClaims,
+	claims: PageTicketClaims,
 ): Promise<string> {
 	const wire: WireClaims = {
-		k: KIND,
-		p: claims.pageId,
-		e: claims.exp,
-		...(claims.version !== undefined ? { v: claims.version } : {}),
+		kind: KIND,
+		pageId: claims.pageId,
+		exp: claims.exp,
+		...(claims.version !== undefined ? { version: claims.version } : {}),
 	};
 	const payload = toBase64Url(encoder.encode(JSON.stringify(wire)));
 	const signature = await crypto.subtle.sign(
@@ -84,15 +81,15 @@ export async function signPageViewToken(
  * `secrets` is the current secret first, then any previous one still in its
  * grace period, so rotation never invalidates tickets already handed out.
  */
-export async function verifyPageViewToken(
+export async function verifyPageTicket(
 	secrets: string | readonly string[],
-	token: string,
+	ticket: string,
 	now: number = Date.now(),
-): Promise<PageViewTokenClaims | null> {
-	const dot = token.indexOf(".");
+): Promise<PageTicketClaims | null> {
+	const dot = ticket.indexOf(".");
 	if (dot === -1) return null;
-	const payload = token.slice(0, dot);
-	const signature = fromBase64Url(token.slice(dot + 1));
+	const payload = ticket.slice(0, dot);
+	const signature = fromBase64Url(ticket.slice(dot + 1));
 	if (!signature) return null;
 
 	let valid = false;
@@ -117,15 +114,15 @@ export async function verifyPageViewToken(
 		return null;
 	}
 	if (!wire || typeof wire !== "object") return null;
-	const { k, p, v, e } = wire as Partial<WireClaims>;
+	const { kind, pageId, version, exp } = wire as Partial<WireClaims>;
 	if (
-		k !== KIND ||
-		typeof p !== "string" ||
-		typeof e !== "number" ||
-		(v !== undefined && !Number.isInteger(v))
+		kind !== KIND ||
+		typeof pageId !== "string" ||
+		typeof exp !== "number" ||
+		(version !== undefined && !Number.isInteger(version))
 	) {
 		return null;
 	}
-	if (e * 1000 <= now) return null;
-	return { pageId: p, exp: e, ...(v !== undefined ? { version: v } : {}) };
+	if (exp * 1000 <= now) return null;
+	return { pageId, exp, ...(version !== undefined ? { version } : {}) };
 }

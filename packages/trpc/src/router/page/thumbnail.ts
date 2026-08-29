@@ -5,9 +5,9 @@ import { Client } from "@upstash/qstash";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
-import { putObject, storageEnv } from "../../lib/r2";
+import { objectExists, putObject, storageEnv } from "../../lib/r2";
 import {
-	mintPageViewToken,
+	mintPageTicket,
 	usercontentBaseUrl,
 	writePageManifest,
 } from "./storage";
@@ -24,18 +24,21 @@ export type PageThumbnailJob = z.infer<typeof pageThumbnailJobSchema>;
 const CAPTURE_WIDTH = 1280;
 const CAPTURE_HEIGHT = 880;
 const JPEG_QUALITY = 75;
-const CAPTURE_TOKEN_TTL_SECONDS = 5 * 60;
+const CAPTURE_TICKET_TTL_SECONDS = 5 * 60;
 
 /**
- * Queues a capture of the version just published. Best effort by design: a
- * page is fully published before this runs, and a missing thumbnail only
- * costs the grid a placeholder.
+ * Queues a capture of the version a page now serves. Best effort by design:
+ * the page is fully published before this runs, and a missing thumbnail only
+ * costs the grid a placeholder, so a queueing failure is logged, not thrown.
  */
 export async function enqueuePageThumbnail(
 	job: PageThumbnailJob,
 ): Promise<void> {
 	if (!env.CLOUDFLARE_BROWSER_RENDERING_TOKEN) return;
 	const url = `${env.NEXT_PUBLIC_API_URL}${PAGE_THUMBNAIL_JOB_PATH}`;
+	const failed = (error: unknown) => {
+		console.error("[pages] failed to queue thumbnail", { ...job, error });
+	};
 
 	// QStash cannot reach a local API, and the route skips signature checks in
 	// development, so call it directly.
@@ -44,27 +47,33 @@ export async function enqueuePageThumbnail(
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(job),
-		}).catch((error) => {
-			console.error("[pages] thumbnail job call failed", { ...job, error });
-		});
+		}).catch(failed);
 		return;
 	}
 
-	const qstash = new Client({ token: env.QSTASH_TOKEN });
-	await qstash.publishJSON({
-		url,
-		body: job,
-		retries: 3,
-		deduplicationId: `page-thumbnail-${job.pageId}-${job.version}`,
-	});
+	try {
+		const qstash = new Client({ token: env.QSTASH_TOKEN });
+		await qstash.publishJSON({
+			url,
+			body: job,
+			retries: 3,
+			deduplicationId: `page-thumbnail-${job.pageId}-${job.version}`,
+		});
+	} catch (error) {
+		failed(error);
+	}
 }
 
-export type PageThumbnailResult = "generated" | "superseded" | "missing";
+export type PageThumbnailResult =
+	| "generated"
+	| "existing"
+	| "superseded"
+	| "missing";
 
 /**
- * Captures the served version through the usercontent origin — the same
- * bytes, headers and policy a reader gets — and stores the JPEG next to the
- * page. Only the version the grid shows is worth rendering: an agent that
+ * Captures the served version through the page's own origin — the same
+ * bytes, headers and policy a reader gets — and stores the JPEG beside the
+ * version. Only the version the grid shows is worth rendering: an agent that
  * republished five times since this was queued gets one capture, not five.
  */
 export async function generatePageThumbnail({
@@ -89,17 +98,22 @@ export async function generatePageThumbnail({
 		.limit(1);
 	if ((page.sharedVersion ?? latest?.version) !== version) return "superseded";
 
+	// A version's capture is immutable, so re-pinning one already captured
+	// costs nothing.
+	const key = pageThumbnailKey(pageId, version);
+	if (await objectExists(key)) return "existing";
+
 	// Publish already wrote it; this repairs the rare failure so the capture
 	// below never 404s on a page that exists.
 	await writePageManifest(pageId);
 
 	const url = pageViewUrl({
 		baseUrl: usercontentBaseUrl(),
-		slug: page.slug,
+		pageId,
 		version,
-		token: await mintPageViewToken(page, {
+		ticket: await mintPageTicket(page, {
 			version,
-			ttlSeconds: CAPTURE_TOKEN_TTL_SECONDS,
+			ttlSeconds: CAPTURE_TICKET_TTL_SECONDS,
 		}),
 	});
 
@@ -136,7 +150,7 @@ export async function generatePageThumbnail({
 	}
 
 	await putObject({
-		key: pageThumbnailKey(pageId, version),
+		key,
 		body: new Uint8Array(await response.arrayBuffer()),
 		contentType: "image/jpeg",
 	});

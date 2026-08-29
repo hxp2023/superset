@@ -11,13 +11,13 @@ export function storageEnv(): {
 		CLOUDFLARE_ACCOUNT_ID,
 		R2_ACCESS_KEY_ID,
 		R2_SECRET_ACCESS_KEY,
-		R2_BUCKET,
+		R2_PRIVATE_BUCKET,
 	} = env;
 	if (
 		!CLOUDFLARE_ACCOUNT_ID ||
 		!R2_ACCESS_KEY_ID ||
 		!R2_SECRET_ACCESS_KEY ||
-		!R2_BUCKET
+		!R2_PRIVATE_BUCKET
 	) {
 		throw new Error("R2 storage is not configured");
 	}
@@ -25,7 +25,7 @@ export function storageEnv(): {
 		accountId: CLOUDFLARE_ACCOUNT_ID,
 		accessKeyId: R2_ACCESS_KEY_ID,
 		secretAccessKey: R2_SECRET_ACCESS_KEY,
-		bucket: R2_BUCKET,
+		bucket: R2_PRIVATE_BUCKET,
 	};
 }
 
@@ -79,6 +79,15 @@ export async function getObject(key: string): Promise<Response | null> {
 		throw new Error(`R2 get failed (${response.status}) for ${key}`);
 	}
 	return response;
+}
+
+export async function objectExists(key: string): Promise<boolean> {
+	const response = await aws().fetch(objectUrl(key), { method: "HEAD" });
+	if (response.status === 404) return false;
+	if (!response.ok) {
+		throw new Error(`R2 head failed (${response.status}) for ${key}`);
+	}
+	return true;
 }
 
 /** Deletes are idempotent: a missing key is not an error. */
