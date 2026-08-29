@@ -58,6 +58,77 @@ describe("TerminalAgentStore", () => {
 		expect(binding?.agentId).toBe("claude");
 	});
 
+	it("Attached refreshes the binding without downgrading an active working state", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			agentId: "codex",
+			agentSessionId: "s1",
+			occurredAt: 100,
+		});
+		// The wrapper's launch report is delayed and can land after the first
+		// prompt already marked the agent working; it must not flip the
+		// working indicator back to idle.
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Attached",
+			agentId: "codex",
+			occurredAt: 200,
+		});
+
+		const binding = store.get("t1");
+		expect(binding?.lastEventType).toBe("Start");
+		expect(binding?.lastEventAt).toBe(200);
+		expect(binding?.agentSessionId).toBe("s1");
+	});
+
+	it("Attached preserves a pending PermissionRequest state", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "PermissionRequest",
+			agentId: "codex",
+			agentSessionId: "s1",
+			occurredAt: 100,
+		});
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Attached",
+			agentId: "codex",
+			agentSessionId: "s1",
+			occurredAt: 200,
+		});
+
+		expect(store.get("t1")?.lastEventType).toBe("PermissionRequest");
+	});
+
+	it("Attached with a new session id overrides the previous session's working state", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			agentId: "codex",
+			agentSessionId: "s1",
+			occurredAt: 100,
+		});
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Attached",
+			agentId: "codex",
+			agentSessionId: "s2",
+			occurredAt: 200,
+		});
+
+		const binding = store.get("t1");
+		expect(binding?.lastEventType).toBe("Attached");
+		expect(binding?.agentSessionId).toBe("s2");
+		expect(binding?.startedAt).toBe(200);
+	});
+
 	it("deletes the binding on Detached/exit/error", () => {
 		store.recordEvent({
 			terminalId: "t1",
