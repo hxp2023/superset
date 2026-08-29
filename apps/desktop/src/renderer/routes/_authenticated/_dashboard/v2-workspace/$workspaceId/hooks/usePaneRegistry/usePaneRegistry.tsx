@@ -186,6 +186,7 @@ export function usePaneRegistry({
 			configId: string;
 			placement: "split-pane" | "new-tab";
 			prompt: string;
+			forkSessionId?: string;
 		}): Promise<{ terminalId: string } | null> => {
 			try {
 				// Host pipeline bakes the prompt into the initialCommand using the
@@ -195,6 +196,9 @@ export function usePaneRegistry({
 					workspaceId,
 					agent: input.configId,
 					prompt: input.prompt,
+					...(input.forkSessionId
+						? { forkSessionId: input.forkSessionId }
+						: {}),
 				});
 				if (result.kind !== "terminal") {
 					toast.error("Selected agent isn't a terminal agent");
@@ -391,6 +395,7 @@ export function usePaneRegistry({
 							workspaceId={workspaceId}
 							terminalId={terminalId}
 							terminalInstanceId={ctx.pane.id}
+							onCreateNewAgentSession={createNewAgentSession}
 						/>
 					);
 				},

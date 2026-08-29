@@ -8,11 +8,18 @@ import {
 } from "../../richInputOpenStore";
 import { TerminalConnectionIndicator } from "./components/TerminalConnectionIndicator";
 import { TerminalIdCopyMenu } from "./components/TerminalIdCopyMenu";
+import { TerminalSessionHandoffMenu } from "./components/TerminalSessionHandoffMenu";
 
 interface TerminalPaneHeaderExtrasProps {
 	workspaceId: string;
 	terminalId: string;
 	terminalInstanceId: string;
+	onCreateNewAgentSession: (input: {
+		configId: string;
+		placement: "split-pane" | "new-tab";
+		prompt: string;
+		forkSessionId?: string;
+	}) => Promise<{ terminalId: string } | null>;
 }
 
 /**
@@ -25,6 +32,7 @@ export function TerminalPaneHeaderExtras({
 	workspaceId,
 	terminalId,
 	terminalInstanceId,
+	onCreateNewAgentSession,
 }: TerminalPaneHeaderExtrasProps) {
 	const isOpen = useTerminalRichInputOpen();
 	const hotkeyText = useHotkeyDisplay("TOGGLE_TERMINAL_RICH_INPUT").text;
@@ -38,6 +46,11 @@ export function TerminalPaneHeaderExtras({
 				terminalInstanceId={terminalInstanceId}
 			/>
 			<TerminalIdCopyMenu workspaceId={workspaceId} terminalId={terminalId} />
+			<TerminalSessionHandoffMenu
+				workspaceId={workspaceId}
+				terminalId={terminalId}
+				onCreateNewAgentSession={onCreateNewAgentSession}
+			/>
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<button
