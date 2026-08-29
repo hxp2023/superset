@@ -50,6 +50,16 @@ describe("buildBoundedTerminalSessionTranscript", () => {
 		expect(transcript).not.toContain(esc);
 	});
 
+	it("never exceeds a budget too small to hold the truncation notice", () => {
+		for (const maxChars of [1, 10, 24, 25, 40]) {
+			const transcript = buildBoundedTerminalSessionTranscript(
+				"a\nb\nc\n".repeat(200),
+				maxChars,
+			);
+			expect(transcript?.length ?? 0).toBeLessThanOrEqual(maxChars);
+		}
+	});
+
 	it("honours an explicit character budget", () => {
 		const transcript = buildBoundedTerminalSessionTranscript(
 			`old-marker${"x".repeat(500)}new-marker`,

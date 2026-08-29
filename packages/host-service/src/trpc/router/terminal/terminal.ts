@@ -1,3 +1,4 @@
+import { TERMINAL_HANDOFF_MAX_CHARS } from "@superset/shared/terminal-session-handoff";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -226,7 +227,14 @@ export const terminalRouter = router({
 			z.object({
 				terminalId: z.string(),
 				workspaceId: z.string(),
-				maxChars: z.number().int().positive().optional(),
+				// Capped, not just positive: the budget sizes a response the host
+				// builds in memory, so a client cannot ask for an arbitrary one.
+				maxChars: z
+					.number()
+					.int()
+					.positive()
+					.max(TERMINAL_HANDOFF_MAX_CHARS)
+					.optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {

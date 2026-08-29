@@ -1,5 +1,6 @@
 import { CLIError, number, string } from "@superset/cli-framework";
 import { getHostId } from "@superset/shared/host-info";
+import { TERMINAL_HANDOFF_MAX_CHARS } from "@superset/shared/terminal-session-handoff";
 import { command } from "../../../lib/command";
 import { resolveHostTarget } from "../../../lib/host-target";
 import { findWorkspaceOnHost } from "../../../lib/host-workspaces";
@@ -30,8 +31,10 @@ export default command({
 		),
 		contextChars: number()
 			.int()
+			.min(1)
+			.max(TERMINAL_HANDOFF_MAX_CHARS)
 			.desc(
-				"Cap the handed-over context (default 36000 characters, roughly 9-12k tokens)",
+				`Cap the handed-over context, 1-${TERMINAL_HANDOFF_MAX_CHARS} characters (default ${TERMINAL_HANDOFF_MAX_CHARS}, roughly 9-12k tokens)`,
 			),
 		effort: string().desc(
 			"Reasoning effort for this launch (agent-specific; omit to use the agent default)",

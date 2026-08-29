@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, readSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -14,6 +14,13 @@ import { join } from "node:path";
 
 /** Newest turns first would invert the conversation; keep source order. */
 const MAX_HARNESS_TRANSCRIPT_CHARS = 400_000;
+/**
+ * Bytes read off the end of a session file. A long-running session's JSONL
+ * runs to megabytes (this repo's own dev session reached 3.9 MB), and the
+ * host must not load, split, and parse all of it on the event loop to answer
+ * one handoff. Generous next to the character cap the turns are trimmed to.
+ */
+const MAX_HARNESS_SOURCE_BYTES = 4 * 1024 * 1024;
 
 export interface HarnessTranscript {
 	text: string;
@@ -41,6 +48,32 @@ function claudeTranscriptPath(
 	return existsSync(path) ? path : null;
 }
 
+/**
+ * The last `maxBytes` of a file. A cut lands mid-line, and the parser already
+ * skips lines it cannot parse, so the only casualty is the oldest turn.
+ */
+export function readFileTail(path: string, maxBytes: number): string | null {
+	let fd: number | undefined;
+	try {
+		const { size } = statSync(path);
+		const length = Math.min(size, maxBytes);
+		const buffer = Buffer.allocUnsafe(length);
+		fd = openSync(path, "r");
+		readSync(fd, buffer, 0, length, Math.max(0, size - length));
+		return buffer.toString("utf8");
+	} catch {
+		return null;
+	} finally {
+		if (fd !== undefined) {
+			try {
+				closeSync(fd);
+			} catch {
+				// best effort
+			}
+		}
+	}
+}
+
 interface ClaudeEvent {
 	type?: string;
 	message?: {
@@ -66,12 +99,8 @@ function readClaudeTranscript(
 ): string | null {
 	const path = claudeTranscriptPath(worktreePath, sessionId);
 	if (!path) return null;
-	let raw: string;
-	try {
-		raw = readFileSync(path, "utf8");
-	} catch {
-		return null;
-	}
+	const raw = readFileTail(path, MAX_HARNESS_SOURCE_BYTES);
+	if (raw === null) return null;
 
 	const turns: string[] = [];
 	for (const line of raw.split("\n")) {

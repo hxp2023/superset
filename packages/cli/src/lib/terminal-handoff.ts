@@ -20,7 +20,7 @@ export async function buildHandoffPromptFromTerminal(
 		const result = await client.terminal.transcript.query({
 			workspaceId: input.workspaceId,
 			terminalId: input.terminalId,
-			...(input.maxChars ? { maxChars: input.maxChars } : {}),
+			...(input.maxChars === undefined ? {} : { maxChars: input.maxChars }),
 		});
 		transcript = result.text;
 	} catch (error) {

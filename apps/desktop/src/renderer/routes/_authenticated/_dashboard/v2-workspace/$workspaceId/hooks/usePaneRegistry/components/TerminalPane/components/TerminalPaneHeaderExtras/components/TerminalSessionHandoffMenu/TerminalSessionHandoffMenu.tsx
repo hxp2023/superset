@@ -68,6 +68,7 @@ export function TerminalSessionHandoffMenu({
 	const [placement, setPlacement] = useState<Placement>("split-pane");
 	const [isStarting, setIsStarting] = useState(false);
 	const [transcript, setTranscript] = useState<string | null>(null);
+	const [transcriptFailed, setTranscriptFailed] = useState(false);
 
 	const sourceConfig = useMemo(() => {
 		const sourceId = binding?.definitionId ?? binding?.agentId;
@@ -88,16 +89,20 @@ export function TerminalSessionHandoffMenu({
 	useEffect(() => {
 		if (action !== "handoff") {
 			setTranscript(null);
+			setTranscriptFailed(false);
 			return;
 		}
 		let cancelled = false;
+		setTranscriptFailed(false);
 		trpcUtils.terminal.transcript
 			.fetch({ workspaceId, terminalId })
 			.then((result) => {
-				if (!cancelled) setTranscript(result.text || "");
+				if (!cancelled) setTranscript(result.text ?? "");
 			})
 			.catch(() => {
-				if (!cancelled) setTranscript("");
+				// Distinct from an empty terminal: reporting "0 characters" and
+				// leaving Continue armed would fail only after the click.
+				if (!cancelled) setTranscriptFailed(true);
 			});
 		return () => {
 			cancelled = true;
@@ -270,9 +275,17 @@ export function TerminalSessionHandoffMenu({
 								/>
 								{selectedConfig && (
 									<p className="text-muted-foreground text-xs">
-										{transcript === null ? (
+										{transcriptFailed ? (
+											<Trans id="workspace.terminalPane.contextUnavailable">
+												Couldn't read this terminal's context.
+											</Trans>
+										) : transcript === null ? (
 											<Trans id="workspace.terminalPane.contextMeasuring">
 												Measuring the context to send to {selectedConfig.label}…
+											</Trans>
+										) : transcript.length === 0 ? (
+											<Trans id="workspace.terminalPane.contextEmpty">
+												This terminal has no output to hand over yet.
 											</Trans>
 										) : (
 											<Trans id="workspace.terminalPane.contextDisclosureSized">
@@ -341,7 +354,12 @@ export function TerminalSessionHandoffMenu({
 						<Button
 							onClick={start}
 							disabled={
-								isStarting || (action === "fork" ? !canFork : !selectedConfig)
+								isStarting ||
+								(action === "fork"
+									? !canFork
+									: // Nothing to hand over, or the read failed: refuse before
+										// the click rather than after it.
+										!selectedConfig || !transcript)
 							}
 						>
 							{isStarting ? (

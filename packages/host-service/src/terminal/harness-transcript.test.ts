@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { readHarnessTranscript } from "./harness-transcript";
+import { readFileTail, readHarnessTranscript } from "./harness-transcript";
 
 /**
  * The adapter reads from `~/.claude/projects/<encoded cwd>/`, so the fixture
@@ -77,6 +77,48 @@ describe("readHarnessTranscript", () => {
 			worktreePath,
 		});
 		expect(result?.text).toBe("User: first");
+	});
+
+	test("reads only the tail of a file past the byte bound", () => {
+		const dir = mkdtempSync(join(tmpdir(), "tail-fixture-"));
+		created.push(dir);
+		const path = join(dir, "big.jsonl");
+		writeFileSync(path, `${"x".repeat(5000)}TAIL-MARKER`);
+
+		const tail = readFileTail(path, 100);
+		expect(tail).toBe(`${"x".repeat(89)}TAIL-MARKER`);
+		expect(tail?.length).toBe(100);
+	});
+
+	test("reads only the tail of a very large session file", () => {
+		// A long session's JSONL runs to megabytes; the host must not load and
+		// parse all of it to answer one handoff.
+		const filler = Array.from({ length: 80_000 }, (_, i) =>
+			JSON.stringify({
+				type: "assistant",
+				message: {
+					role: "assistant",
+					content: [{ type: "text", text: `old turn ${i}` }],
+				},
+			}),
+		);
+		const { worktreePath, sessionId } = seedClaudeSession([
+			...filler,
+			JSON.stringify({
+				type: "user",
+				message: { role: "user", content: "the newest thing said" },
+			}),
+		]);
+
+		const result = readHarnessTranscript({
+			agentId: "claude",
+			agentSessionId: sessionId,
+			worktreePath,
+		});
+		expect(result?.text).toContain("the newest thing said");
+		// The oldest turns fall off the front rather than being parsed.
+		expect(result?.text).not.toContain("old turn 0\n");
+		expect(result?.text).not.toContain("old turn 1000\n");
 	});
 
 	test("declines harnesses with no store, so the PTY stream is used", () => {

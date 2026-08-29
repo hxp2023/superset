@@ -72,9 +72,13 @@ export function buildBoundedTerminalSessionTranscript(
  * as corruption rather than as a tail.
  */
 export function boundTranscriptText(text: string, maxChars: number): string {
+	if (maxChars <= 0) return "";
 	if (text.length <= maxChars) return text;
+	// A budget too small to hold the notice cannot afford to announce itself,
+	// and must not overrun what the caller asked for to do it.
 	const budget = maxChars - TRANSCRIPT_TRUNCATION_NOTICE.length - 1;
-	const tail = text.slice(-Math.max(1, budget));
+	if (budget < 1) return text.slice(-maxChars);
+	const tail = text.slice(-budget);
 	const firstBreak = tail.indexOf("\n");
 	const whole = firstBreak >= 0 ? tail.slice(firstBreak + 1) : tail;
 	return `${TRANSCRIPT_TRUNCATION_NOTICE}\n${whole}`;
