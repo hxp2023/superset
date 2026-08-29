@@ -178,6 +178,8 @@ export function hasHarnessSession(input: {
 				return hasCodexRollout(sessionId);
 			case "opencode":
 				return hasOpencodeSession(sessionId);
+			case "pi":
+				return hasPiSession(sessionId);
 			default:
 				// grok keeps sessions server-side; the rest are unsurveyed.
 				return null;
@@ -210,6 +212,26 @@ function hasCodexRollout(sessionId: string): boolean | null {
 		}
 	}
 	return visited >= 2000 ? null : false;
+}
+
+/**
+ * pi files sessions per working directory, one JSONL each, named
+ * `<timestamp>_<session id>.jsonl`. Matching on the id suffix avoids
+ * reproducing its directory-name encoding of the cwd.
+ */
+function hasPiSession(sessionId: string): boolean | null {
+	const root = join(homedir(), ".pi", "agent", "sessions");
+	if (!existsSync(root)) return null;
+	const suffix = `_${sessionId}.jsonl`;
+	let visited = 0;
+	for (const dir of readdirSync(root, { withFileTypes: true })) {
+		if (!dir.isDirectory()) continue;
+		if (visited++ > 2000) return null;
+		for (const entry of readdirSync(join(root, dir.name))) {
+			if (entry.endsWith(suffix)) return true;
+		}
+	}
+	return false;
 }
 
 /** OpenCode keeps sessions in a SQLite database in its data directory. */

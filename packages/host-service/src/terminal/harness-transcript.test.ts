@@ -187,7 +187,7 @@ describe("hasHarnessSession", () => {
 	test("answers null for harnesses whose sessions we cannot inspect", () => {
 		// grok keeps sessions server-side. Null means unknown, and the caller
 		// must not read it as absence and block a fork that would have worked.
-		for (const agentId of ["grok", "droid", "pi", "amp"]) {
+		for (const agentId of ["grok", "droid", "amp"]) {
 			expect(
 				hasHarnessSession({
 					agentId,
@@ -196,6 +196,31 @@ describe("hasHarnessSession", () => {
 				}),
 			).toBeNull();
 		}
+	});
+
+	test("finds a pi session by its id suffix", () => {
+		// pi files sessions per working directory as `<timestamp>_<id>.jsonl`,
+		// so the id is matched on the suffix rather than by rebuilding its
+		// encoding of the cwd.
+		const root = join(homedir(), ".pi", "agent", "sessions", "--fixture--");
+		mkdirSync(root, { recursive: true });
+		created.push(root);
+		const sessionId = "01a04f0f-1111-2222-3333-444455556666";
+		writeFileSync(
+			join(root, `2026-08-29T00-00-00-000Z_${sessionId}.jsonl`),
+			"{}\n",
+		);
+
+		expect(
+			hasHarnessSession({ agentId: "pi", sessionId, worktreePath: null }),
+		).toBe(true);
+		expect(
+			hasHarnessSession({
+				agentId: "pi",
+				sessionId: "01a04f0f-9999-9999-9999-999999999999",
+				worktreePath: null,
+			}),
+		).toBe(false);
 	});
 
 	test("answers null rather than false for unusable input", () => {
