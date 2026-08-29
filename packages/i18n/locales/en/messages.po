@@ -10335,7 +10335,7 @@ msgstr "Continue"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalSessionHandoffMenu/TerminalSessionHandoffMenu.tsx
 msgid "workspace.terminalPane.continueWithAgentDescription"
-msgstr "Start a fresh agent session using up to 36,000 characters of recent terminal context. Workspace files remain the source of truth."
+msgstr "Start a fresh agent session seeded with this terminal's recent context. Workspace files remain the source of truth."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalSessionHandoffMenu/TerminalSessionHandoffMenu.tsx
