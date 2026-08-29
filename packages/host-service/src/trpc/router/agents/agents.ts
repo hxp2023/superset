@@ -20,6 +20,7 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { HostDb } from "../../../db";
 import { hostAgentConfigs, workspaces } from "../../../db/schema";
+import { hasHarnessSession } from "../../../terminal/harness-transcript";
 import { createTerminalSessionInternal } from "../../../terminal/terminal";
 import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
@@ -352,6 +353,42 @@ export function validateAgentForkSelection(
 }
 
 /**
+ * Refuse a fork the harness can no longer resolve.
+ *
+ * Providers prune their session stores, and a `codex exec` session leaves no
+ * rollout at all. Without this the launch succeeds, the pane opens, and the
+ * harness reports "no rollout found for thread id" inside it — an error about
+ * a click the user made somewhere else entirely.
+ *
+ * Only a confident `false` refuses. A harness that keeps sessions server-side
+ * (grok) or in a layout we do not read answers `null`, and those launch as
+ * before rather than being blocked on our ignorance.
+ */
+function validateForkSessionIsResolvable(
+	db: HostDb,
+	config: ResolvedHostAgentConfig,
+	input: AgentRunInput,
+): void {
+	if (!input.forkSessionId) return;
+	const worktreePath = db
+		.select({ path: workspaces.worktreePath })
+		.from(workspaces)
+		.where(eq(workspaces.id, input.workspaceId))
+		.get()?.path;
+	const resolvable = hasHarnessSession({
+		agentId: config.presetId,
+		sessionId: input.forkSessionId,
+		worktreePath,
+	});
+	if (resolvable === false) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `${config.label} no longer has session ${input.forkSessionId}, so there is nothing to fork. Start a new session instead.`,
+		});
+	}
+}
+
+/**
  * Preflight a host-scoped launch before any larger workflow (such as
  * workspace creation) performs side effects.
  */
@@ -414,6 +451,7 @@ export function buildTerminalAgentLaunch(
 	}
 	validateAgentResumeSelection(config, input.resumeSessionId);
 	validateAgentForkSelection(config, input.forkSessionId);
+	validateForkSessionIsResolvable(db, config, input);
 
 	const resolvedAttachments: Array<{ attachmentId: string; path: string }> = [];
 	for (const attachmentId of input.attachmentIds ?? []) {

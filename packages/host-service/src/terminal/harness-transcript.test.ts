@@ -2,7 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { readFileTail, readHarnessTranscript } from "./harness-transcript";
+import {
+	hasHarnessSession,
+	readFileTail,
+	readHarnessTranscript,
+} from "./harness-transcript";
 
 /**
  * The adapter reads from `~/.claude/projects/<encoded cwd>/`, so the fixture
@@ -153,6 +157,59 @@ describe("readHarnessTranscript", () => {
 			readHarnessTranscript({
 				agentId: "claude",
 				agentSessionId: "../../../../etc/passwd",
+				worktreePath: "/tmp",
+			}),
+		).toBeNull();
+	});
+});
+
+describe("hasHarnessSession", () => {
+	test("finds a Claude session and misses one that never existed", () => {
+		const { worktreePath, sessionId } = seedClaudeSession([
+			JSON.stringify({
+				type: "user",
+				message: { role: "user", content: "hello" },
+			}),
+		]);
+
+		expect(
+			hasHarnessSession({ agentId: "claude", sessionId, worktreePath }),
+		).toBe(true);
+		expect(
+			hasHarnessSession({
+				agentId: "claude",
+				sessionId: "99999999-9999-4999-8999-999999999999",
+				worktreePath,
+			}),
+		).toBe(false);
+	});
+
+	test("answers null for harnesses whose sessions we cannot inspect", () => {
+		// grok keeps sessions server-side. Null means unknown, and the caller
+		// must not read it as absence and block a fork that would have worked.
+		for (const agentId of ["grok", "droid", "pi", "amp"]) {
+			expect(
+				hasHarnessSession({
+					agentId,
+					sessionId: "abc-123",
+					worktreePath: "/tmp",
+				}),
+			).toBeNull();
+		}
+	});
+
+	test("answers null rather than false for unusable input", () => {
+		expect(
+			hasHarnessSession({
+				agentId: "claude",
+				sessionId: null,
+				worktreePath: "/tmp",
+			}),
+		).toBeNull();
+		expect(
+			hasHarnessSession({
+				agentId: "claude",
+				sessionId: "../../escape",
 				worktreePath: "/tmp",
 			}),
 		).toBeNull();

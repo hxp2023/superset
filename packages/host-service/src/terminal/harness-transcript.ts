@@ -1,4 +1,12 @@
-import { closeSync, existsSync, openSync, readSync, statSync } from "node:fs";
+import { Database } from "bun:sqlite";
+import {
+	closeSync,
+	existsSync,
+	openSync,
+	readdirSync,
+	readSync,
+	statSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -138,4 +146,85 @@ export function readHarnessTranscript(input: {
 	if (agentId !== "claude") return null;
 	const text = readClaudeTranscript(worktreePath, agentSessionId);
 	return text ? { text, harness: "claude" } : null;
+}
+
+/**
+ * Whether the harness can still resolve a session id.
+ *
+ * `true` and `false` are answers; `null` means this harness keeps its sessions
+ * somewhere we cannot inspect (a server, an unknown layout) and the caller
+ * must not treat that as absence.
+ *
+ * Forking a session the provider has pruned fails inside the freshly launched
+ * pane, as the harness's own error, long after the click that asked for it.
+ * Checking first turns that into a refusal at the point of asking.
+ */
+export function hasHarnessSession(input: {
+	agentId: string | null | undefined;
+	sessionId: string | null | undefined;
+	worktreePath: string | null | undefined;
+}): boolean | null {
+	const { agentId, sessionId, worktreePath } = input;
+	if (!agentId || !sessionId) return null;
+	if (!/^[\w-]+$/.test(sessionId)) return null;
+
+	try {
+		switch (agentId) {
+			case "claude":
+				return worktreePath
+					? claudeTranscriptPath(worktreePath, sessionId) !== null
+					: null;
+			case "codex":
+				return hasCodexRollout(sessionId);
+			case "opencode":
+				return hasOpencodeSession(sessionId);
+			default:
+				// grok keeps sessions server-side; the rest are unsurveyed.
+				return null;
+		}
+	} catch {
+		// An unreadable store is not evidence the session is gone.
+		return null;
+	}
+}
+
+/** Codex names rollouts `rollout-<timestamp>-<session id>.jsonl`, in date dirs. */
+function hasCodexRollout(sessionId: string): boolean | null {
+	const root = join(homedir(), ".codex", "sessions");
+	if (!existsSync(root)) return null;
+	const suffix = `-${sessionId}.jsonl`;
+	const stack = [root];
+	// Date-partitioned three deep (year/month/day); bounded so a pathological
+	// tree cannot turn a dialog into a filesystem walk.
+	let visited = 0;
+	while (stack.length > 0 && visited < 2000) {
+		const dir = stack.pop();
+		if (!dir) break;
+		visited++;
+		for (const entry of readdirSync(dir, { withFileTypes: true })) {
+			if (entry.isDirectory()) {
+				stack.push(join(dir, entry.name));
+			} else if (entry.name.endsWith(suffix)) {
+				return true;
+			}
+		}
+	}
+	return visited >= 2000 ? null : false;
+}
+
+/** OpenCode keeps sessions in a SQLite database in its data directory. */
+function hasOpencodeSession(sessionId: string): boolean | null {
+	const dbPath = join(homedir(), ".local", "share", "opencode", "opencode.db");
+	if (!existsSync(dbPath)) return null;
+	// Read-only, but NOT `immutable`: that flag ignores the write-ahead log, so
+	// a session written moments ago reads as absent.
+	const db = new Database(dbPath, { readonly: true });
+	try {
+		const row = db
+			.query("select 1 from session where id = ? limit 1")
+			.get(sessionId);
+		return row !== null && row !== undefined;
+	} finally {
+		db.close();
+	}
 }

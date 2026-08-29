@@ -336,6 +336,62 @@ describe("buildTerminalAgentLaunch", () => {
 		).toThrow("Choose either resumeSessionId or forkSessionId, not both.");
 	});
 
+	it("refuses a fork of a session the harness no longer has", () => {
+		const db = createTestDb();
+		seedConfig(db);
+		// The locator needs the workspace's worktree path to know where the
+		// harness would have filed the session.
+		db.insert(schema.workspaces)
+			.values({
+				id: "11111111-1111-1111-1111-111111111111",
+				worktreePath: "/tmp/superset-fork-preflight-fixture",
+				branch: "main",
+				name: "fixture",
+			})
+			.run();
+		// The claude locator reads ~/.claude/projects/<encoded cwd>/<id>.jsonl,
+		// and this workspace has no such file, so the answer is a confident no.
+		expect(() =>
+			buildTerminalAgentLaunch(db, {
+				workspaceId: "11111111-1111-1111-1111-111111111111",
+				agent: "claude",
+				prompt: "",
+				forkSessionId: "99999999-9999-4999-8999-999999999999",
+			}),
+		).toThrow(/no longer has session/);
+	});
+
+	it("still forks when the harness keeps sessions somewhere we cannot read", () => {
+		const db = createTestDb();
+		db.insert(schema.hostAgentConfigs)
+			.values({
+				id: "00000000-0000-0000-0000-00000000000d",
+				presetId: "grok",
+				label: "Grok",
+				command: "grok",
+				argsJson: "[]",
+				promptTransport: "argv",
+				promptArgsJson: "[]",
+				resumeArgsJson: JSON.stringify(["--resume"]),
+				forkArgsJson: JSON.stringify([
+					"--resume",
+					"{sessionId}",
+					"--fork-session",
+				]),
+				envJson: "{}",
+				displayOrder: 3,
+			})
+			.run();
+		// Server-side sessions answer "unknown"; unknown must not block.
+		const launch = buildTerminalAgentLaunch(db, {
+			workspaceId: "11111111-1111-1111-1111-111111111111",
+			agent: "grok",
+			prompt: "",
+			forkSessionId: "99999999-9999-4999-8999-999999999999",
+		});
+		expect(launch.fullCommand).toContain("--fork-session");
+	});
+
 	it("names the conflict even when the agent cannot fork at all", () => {
 		const db = createTestDb();
 		db.insert(schema.hostAgentConfigs)
