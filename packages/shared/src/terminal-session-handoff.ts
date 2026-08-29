@@ -23,14 +23,8 @@ function stripControlCharacters(value: string): string {
 		.join("");
 }
 
-function stripTerminalControlSequences(
-	value: string,
-	maxChars: number,
-): string {
-	// Escape sequences and redraw frames inflate the raw stream well past the
-	// text they carry, so keep a wide margin before sanitizing.
+function stripTerminalControlSequences(value: string): string {
 	const withoutEscapes = value
-		.slice(-maxChars * 4)
 		.replace(OSC_PATTERN, "")
 		.replace(DCS_PATTERN, "")
 		.replace(CSI_PATTERN, "")
@@ -42,11 +36,25 @@ function stripTerminalControlSequences(
 		.trim();
 }
 
+/**
+ * Sanitizing is the expensive half, so it runs on a tail of the input rather
+ * than all of it. How long a tail is not knowable up front: a plain shell
+ * carries roughly one character of text per byte, while a redraw-heavy TUI
+ * spends ten bytes of cursor moves and colour per character. A fixed multiple
+ * silently under-delivers on the busy end (a 12:1 stream yielded 12k of a
+ * 36k budget), so widen until the budget is met or the input runs out.
+ */
 export function buildBoundedTerminalSessionTranscript(
 	rawTranscript: string,
 	maxChars: number = TERMINAL_HANDOFF_MAX_CHARS,
 ): string | null {
-	const cleaned = stripTerminalControlSequences(rawTranscript, maxChars);
+	let window = maxChars * 4;
+	let cleaned = "";
+	while (true) {
+		cleaned = stripTerminalControlSequences(rawTranscript.slice(-window));
+		if (cleaned.length >= maxChars || window >= rawTranscript.length) break;
+		window *= 4;
+	}
 	if (!cleaned) return null;
 	if (cleaned.length <= maxChars) return cleaned;
 	return cleaned.slice(-maxChars).trimStart();

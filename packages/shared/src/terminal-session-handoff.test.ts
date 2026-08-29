@@ -34,6 +34,22 @@ describe("buildBoundedTerminalSessionTranscript", () => {
 		expect(transcript).toContain("Second question and its answer");
 	});
 
+	it("fills the budget even when escapes outweigh text ten to one", () => {
+		// A redraw-heavy TUI spends most of its stream on cursor moves and
+		// colour. Sanitizing a fixed multiple of the budget silently
+		// under-delivered here; the window has to widen until the budget is met.
+		const esc = String.fromCharCode(27);
+		const paint = `${esc}[38;5;244m${esc}[1m`.repeat(12);
+		let raw = "";
+		for (let n = 0; raw.length < 600_000; n++) {
+			raw += `${esc}[${(n % 40) + 1};1H${esc}[K${paint}line-${n}${esc}[0m\r\n`;
+		}
+
+		const transcript = buildBoundedTerminalSessionTranscript(raw, 20_000);
+		expect(transcript?.length).toBeGreaterThanOrEqual(19_900);
+		expect(transcript).not.toContain(esc);
+	});
+
 	it("honours an explicit character budget", () => {
 		const transcript = buildBoundedTerminalSessionTranscript(
 			`old-marker${"x".repeat(500)}new-marker`,
