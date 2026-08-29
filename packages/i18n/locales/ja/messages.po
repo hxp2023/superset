@@ -32889,11 +32889,6 @@ msgid "workspace.diffPane.diffLoadFailed"
 msgstr "差分を読み込めません"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
-msgid "workspace.diffPane.diffTooLarge"
-msgstr "差分が大きすぎるため表示できません"
-
-#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffHeaderMetadata/DiffHeaderMetadata.tsx
 msgid "workspace.diffPane.discardChanges"
 msgstr "変更を破棄"
@@ -32981,11 +32976,6 @@ msgstr "変更のない領域を隠す"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
-msgid "workspace.diffPane.largeDiffHidden"
-msgstr "大きな差分は非表示です"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
 msgid "workspace.diffPane.loadDiff"
 msgstr "差分を読み込む"
 
@@ -33016,7 +33006,6 @@ msgstr "変更なし"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/DiffPane.tsx
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
 msgid "workspace.diffPane.openFile"
 msgstr "ファイルを開く"
 

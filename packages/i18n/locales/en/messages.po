@@ -32890,11 +32890,6 @@ msgid "workspace.diffPane.diffLoadFailed"
 msgstr "Unable to load diff"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
-msgid "workspace.diffPane.diffTooLarge"
-msgstr "Diff is too large to render"
-
-#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffHeaderMetadata/DiffHeaderMetadata.tsx
 msgid "workspace.diffPane.discardChanges"
 msgstr "Discard changes"
@@ -32982,11 +32977,6 @@ msgstr "Hide unchanged regions"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
-msgid "workspace.diffPane.largeDiffHidden"
-msgstr "Large diff hidden"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
 msgid "workspace.diffPane.loadDiff"
 msgstr "Load diff"
 
@@ -33017,7 +33007,6 @@ msgstr "No changes"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/DiffPane.tsx
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
 msgid "workspace.diffPane.openFile"
 msgstr "Open file"
 

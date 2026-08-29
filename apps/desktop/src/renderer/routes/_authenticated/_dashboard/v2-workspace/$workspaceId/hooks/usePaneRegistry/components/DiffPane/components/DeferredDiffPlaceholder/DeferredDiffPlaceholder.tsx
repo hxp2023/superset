@@ -1,34 +1,20 @@
 import { Trans } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
-import { useEffect } from "react";
 import { LuFileCode, LuLoader } from "react-icons/lu";
-import type { ChangesetFile } from "../../../../../useChangeset";
 import type { DeferredDiffReason } from "../../hooks/useDiffAnnotations";
-import { isGeneratedDiffFile } from "../../utils/diffLoadingGuards";
 
 interface DeferredDiffPlaceholderProps {
-	file: ChangesetFile;
 	reason: DeferredDiffReason;
-	autoLoad: boolean;
 	onRequest: () => void;
-	onOpenFile: (path: string, openInNewTab?: boolean) => void;
 }
 
+/** Stands in for a file whose diff isn't on screen: a generated artifact held
+ * back on purpose, a patch still in flight, or one that failed to load. */
 export function DeferredDiffPlaceholder({
-	file,
 	reason,
-	autoLoad,
 	onRequest,
-	onOpenFile,
 }: DeferredDiffPlaceholderProps) {
-	useEffect(() => {
-		if (reason !== "deferred" || !autoLoad) return;
-		const frame = requestAnimationFrame(onRequest);
-		return () => cancelAnimationFrame(frame);
-	}, [autoLoad, onRequest, reason]);
-
-	const canOpen = file.status !== "deleted";
-	const isLoading = reason === "loading" || (reason === "deferred" && autoLoad);
+	const isLoading = reason === "loading";
 
 	return (
 		<div className="flex flex-col items-center justify-center gap-3 bg-muted/30 py-8 text-muted-foreground">
@@ -44,35 +30,19 @@ export function DeferredDiffPlaceholder({
 					<Trans id="workspace.diffPane.diffLoadFailed">
 						Unable to load diff
 					</Trans>
-				) : reason === "too-large" ? (
-					<Trans id="workspace.diffPane.diffTooLarge">
-						Diff is too large to render
-					</Trans>
-				) : isGeneratedDiffFile(file.path) ? (
+				) : (
 					<Trans id="workspace.diffPane.generatedFileHidden">
 						Generated file hidden
 					</Trans>
-				) : (
-					<Trans id="workspace.diffPane.largeDiffHidden">
-						Large diff hidden
-					</Trans>
 				)}
 			</p>
-			{reason === "deferred" && !autoLoad ? (
+			{reason === "deferred" ? (
 				<Button variant="outline" size="sm" onClick={onRequest}>
 					<Trans id="workspace.diffPane.loadDiff">Load diff</Trans>
 				</Button>
 			) : reason === "error" ? (
 				<Button variant="outline" size="sm" onClick={onRequest}>
 					<Trans id="workspace.diffPane.retryDiff">Retry</Trans>
-				</Button>
-			) : reason === "too-large" && canOpen ? (
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => onOpenFile(file.path)}
-				>
-					<Trans id="workspace.diffPane.openFile">Open file</Trans>
 				</Button>
 			) : null}
 		</div>

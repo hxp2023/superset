@@ -32889,11 +32889,6 @@ msgid "workspace.diffPane.diffLoadFailed"
 msgstr "无法加载差异"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
-msgid "workspace.diffPane.diffTooLarge"
-msgstr "差异过大，无法显示"
-
-#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffHeaderMetadata/DiffHeaderMetadata.tsx
 msgid "workspace.diffPane.discardChanges"
 msgstr "放弃更改"
@@ -32981,11 +32976,6 @@ msgstr "隐藏未更改区域"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
-msgid "workspace.diffPane.largeDiffHidden"
-msgstr "已隐藏大型差异"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
 msgid "workspace.diffPane.loadDiff"
 msgstr "加载差异"
 
@@ -33016,7 +33006,6 @@ msgstr "没有更改"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/DiffPane.tsx
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DeferredDiffPlaceholder/DeferredDiffPlaceholder.tsx
 msgid "workspace.diffPane.openFile"
 msgstr "打开文件"
 
