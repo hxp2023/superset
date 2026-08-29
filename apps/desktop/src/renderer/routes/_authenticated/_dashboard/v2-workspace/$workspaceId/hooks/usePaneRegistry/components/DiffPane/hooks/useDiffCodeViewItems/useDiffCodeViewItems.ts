@@ -154,11 +154,14 @@ export function useDiffCodeViewItems({
 				map.set(request.itemId, cached.content);
 				return;
 			}
+			// react-query stamps this when *this file's* query resolves, and
+			// every file has its own query, so it moves exactly when the
+			// file's contents do. Hashing both file bodies for the same
+			// answer walked every character of the changeset on the main
+			// thread — 228ms of a profiled 24-file changeset.
 			const content = {
 				...data,
-				revision: hashString(
-					`${data.oldFile.contents}\0${data.newFile.contents}`,
-				),
+				revision: diffQueries[index]?.dataUpdatedAt ?? 0,
 			};
 			cache.set(request.itemId, { source: data, content });
 			map.set(request.itemId, content);
