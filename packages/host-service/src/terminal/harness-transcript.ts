@@ -1,4 +1,3 @@
-import { Database } from "bun:sqlite";
 import {
 	closeSync,
 	existsSync,
@@ -9,6 +8,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import Database from "better-sqlite3";
 
 /**
  * Read a session transcript from the harness's own store when it keeps one.
@@ -238,12 +238,16 @@ function hasPiSession(sessionId: string): boolean | null {
 function hasOpencodeSession(sessionId: string): boolean | null {
 	const dbPath = join(homedir(), ".local", "share", "opencode", "opencode.db");
 	if (!existsSync(dbPath)) return null;
+	// better-sqlite3, not `bun:sqlite`: the host service runs under Electron's
+	// Node, where a Bun built-in does not exist and the import crashes the
+	// process on boot.
+	//
 	// Read-only, but NOT `immutable`: that flag ignores the write-ahead log, so
 	// a session written moments ago reads as absent.
 	const db = new Database(dbPath, { readonly: true });
 	try {
 		const row = db
-			.query("select 1 from session where id = ? limit 1")
+			.prepare("select 1 from session where id = ? limit 1")
 			.get(sessionId);
 		return row !== null && row !== undefined;
 	} finally {
