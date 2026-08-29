@@ -1,3 +1,16 @@
+/**
+ * Terminal session handoff context — approach adapted from Orca.
+ *
+ * Copyright (c) 2026 Lovecast Inc.
+ * Licensed under the MIT License.
+ * See https://github.com/stablyai/orca/blob/main/LICENSE
+ *
+ * Source file: src/renderer/src/lib/agent-session-fork-context.ts
+ *
+ * The bound-sanitize-fence shape and the 36,000-character budget came from
+ * there. The transcript source, sanitizer, budget logic, and prompt are ours.
+ */
+
 export const TERMINAL_HANDOFF_MAX_CHARS = 36_000;
 
 /**
