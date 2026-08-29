@@ -156,7 +156,7 @@ function splitForSampling(stream: string, rows: number): string[] {
 export function reconstructTerminalTranscript(
 	stream: string,
 	options: { cols?: number; rows?: number } = {},
-): ReconstructedTranscript {
+): string {
 	const cols = options.cols ?? 120;
 	const rows = options.rows ?? 40;
 	const term = new Terminal({
@@ -174,16 +174,14 @@ export function reconstructTerminalTranscript(
 		// place and leave nothing behind. Sampling the viewport reconstructs
 		// history in both modes, so the mode never has to be guessed.
 		const history: string[] = [];
-		let samples = 0;
 		for (const chunk of splitForSampling(stream, rows)) {
 			write(chunk);
 			appendWithoutOverlap(history, readViewport(term), rows);
-			samples++;
 			if (history.length > MAX_HISTORY_ROWS) {
 				history.splice(0, history.length - MAX_HISTORY_ROWS);
 			}
 		}
-		return { text: history.join("\n"), samples };
+		return history.join("\n");
 	} finally {
 		term.dispose();
 	}

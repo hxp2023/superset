@@ -30,7 +30,7 @@ const distinct = (text: string, pattern: RegExp) =>
 describe("reconstructTerminalTranscript", () => {
 	test("keeps every turn a repainting TUI drew, one row per line", () => {
 		const stream = repaintingViewport(400, 24);
-		const { text } = reconstructTerminalTranscript(stream, {
+		const text = reconstructTerminalTranscript(stream, {
 			cols: 80,
 			rows: 24,
 		});
@@ -43,7 +43,7 @@ describe("reconstructTerminalTranscript", () => {
 
 	test("does not re-emit rows that only scrolled up a line", () => {
 		const stream = repaintingViewport(400, 24);
-		const { text } = reconstructTerminalTranscript(stream, {
+		const text = reconstructTerminalTranscript(stream, {
 			cols: 80,
 			rows: 24,
 		});
@@ -55,7 +55,7 @@ describe("reconstructTerminalTranscript", () => {
 	});
 
 	test("recovers scrollback the alternate screen threw away", () => {
-		const { text } = reconstructTerminalTranscript(scrollingAltScreen(300), {
+		const text = reconstructTerminalTranscript(scrollingAltScreen(300), {
 			cols: 80,
 			rows: 24,
 		});
@@ -66,7 +66,7 @@ describe("reconstructTerminalTranscript", () => {
 	test("reads a plain scrolling shell unchanged", () => {
 		let stream = "";
 		for (let i = 0; i < 300; i++) stream += `line-${i}\r\n`;
-		const { text } = reconstructTerminalTranscript(stream, {
+		const text = reconstructTerminalTranscript(stream, {
 			cols: 80,
 			rows: 24,
 		});
@@ -81,7 +81,7 @@ describe("reconstructTerminalTranscript", () => {
 		const tail = full.slice(-200_000);
 		expect(tail).not.toContain(`${ESC}[?1049h`);
 
-		const { text } = reconstructTerminalTranscript(tail, {
+		const text = reconstructTerminalTranscript(tail, {
 			cols: 80,
 			rows: 24,
 		});

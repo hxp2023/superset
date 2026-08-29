@@ -17,7 +17,6 @@ import {
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { Bot, GitFork, PanelRight, SquareStack } from "lucide-react";
@@ -36,9 +35,6 @@ function estimateTokens(characters: number): number {
 	return Math.round(characters / CHARS_PER_TOKEN);
 }
 
-function formatCharacterCount(value: number): string {
-	return formatNumber(value);
-}
 type SessionAction = "handoff" | "fork";
 
 interface TerminalSessionHandoffMenuProps {
@@ -150,15 +146,9 @@ export function TerminalSessionHandoffMenu({
 			}
 
 			if (!selectedConfig) return;
-			if (!transcript) {
-				toast.error(
-					t({
-						id: "workspace.terminalPane.captureContextFailed",
-						message: "Couldn't capture terminal context",
-					}),
-				);
-				return;
-			}
+			// Continue stays disabled without a transcript, and the dialog says
+			// why inline; this only guards the impossible.
+			if (!transcript) return;
 			const result = await onCreateNewAgentSession({
 				configId: selectedConfig.id,
 				placement,
@@ -289,11 +279,9 @@ export function TerminalSessionHandoffMenu({
 											</Trans>
 										) : (
 											<Trans id="workspace.terminalPane.contextDisclosureSized">
-												Sends {formatCharacterCount(transcript.length)}{" "}
-												characters of terminal context (about{" "}
-												{formatCharacterCount(
-													estimateTokens(transcript.length),
-												)}{" "}
+												Sends {formatNumber(transcript.length)} characters of
+												terminal context (about{" "}
+												{formatNumber(estimateTokens(transcript.length))}{" "}
 												tokens) to {selectedConfig.label}.
 											</Trans>
 										)}

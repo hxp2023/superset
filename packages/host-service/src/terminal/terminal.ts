@@ -1216,7 +1216,7 @@ export async function transcriptSession({
 			{ cols: screen.cols, rows: screen.rows },
 		);
 		const text = boundTranscriptText(
-			reconstructed.text,
+			reconstructed,
 			maxChars ?? TERMINAL_HANDOFF_MAX_CHARS,
 		);
 		if (text.trim()) {
