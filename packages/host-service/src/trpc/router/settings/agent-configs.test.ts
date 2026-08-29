@@ -100,6 +100,24 @@ describe("agentConfigsRouter", () => {
 			expect(codex?.resumeArgs).toEqual(["resume"]);
 		});
 
+		it("seeds native fork args for Claude and Codex", async () => {
+			const caller = createCaller();
+			const result = await caller.list();
+
+			const claude = result.find((row) => row.presetId === "claude");
+			expect(claude?.forkArgs).toEqual([
+				"--resume",
+				"{sessionId}",
+				"--fork-session",
+			]);
+
+			const codex = result.find((row) => row.presetId === "codex");
+			expect(codex?.forkArgs).toEqual(["fork", "{sessionId}"]);
+
+			const amp = result.find((row) => row.presetId === "amp");
+			expect(amp?.forkArgs).toEqual([]);
+		});
+
 		it("returns existing rows on subsequent calls without re-seeding", async () => {
 			const caller = createCaller();
 			const first = await caller.list();
@@ -172,8 +190,9 @@ describe("agentConfigsRouter", () => {
 			expect(created.command).toBe("my-agent");
 			expect(created.args).toEqual(["--flag"]);
 			expect(created.env).toEqual({ FOO: "bar" });
-			// Omitted resumeArgs default to "no id-based resume".
+			// Omitted session capabilities default to unsupported.
 			expect(created.resumeArgs).toEqual([]);
+			expect(created.forkArgs).toEqual([]);
 		});
 
 		it("stores supplied resumeArgs", async () => {

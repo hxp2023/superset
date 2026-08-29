@@ -64,6 +64,8 @@ export const BUILTIN_TERMINAL_AGENTS = [
 			"Anthropic's coding agent for reading code, editing files, and running terminal workflows.",
 		command: "claude --dangerously-skip-permissions",
 		resumeCommand: "claude --dangerously-skip-permissions --resume",
+		forkCommand:
+			"claude --dangerously-skip-permissions --resume {sessionId} --fork-session",
 		nonInteractiveCommand: "claude -p",
 		includeInDefaultTerminalPresets: true,
 	}),
@@ -89,6 +91,8 @@ export const BUILTIN_TERMINAL_AGENTS = [
 			"codex --dangerously-bypass-approvals-and-sandbox --dangerously-bypass-hook-trust --",
 		resumeCommand:
 			"codex --dangerously-bypass-approvals-and-sandbox --dangerously-bypass-hook-trust resume",
+		forkCommand:
+			"codex --dangerously-bypass-approvals-and-sandbox --dangerously-bypass-hook-trust fork {sessionId}",
 		nonInteractiveCommand: "codex exec --skip-git-repo-check",
 		includeInDefaultTerminalPresets: true,
 	}),
