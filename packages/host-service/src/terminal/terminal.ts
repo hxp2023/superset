@@ -17,7 +17,11 @@ import {
 	type ShellReadyScanState,
 	scanForShellReady,
 } from "@superset/shared/shell-ready-scanner";
-import { buildBoundedTerminalSessionTranscript } from "@superset/shared/terminal-session-handoff";
+import {
+	boundTranscriptText,
+	buildBoundedTerminalSessionTranscript,
+	TERMINAL_HANDOFF_MAX_CHARS,
+} from "@superset/shared/terminal-session-handoff";
 import {
 	createTerminalTitleScanState,
 	scanForTerminalTitle,
@@ -28,7 +32,12 @@ import type { Hono } from "hono";
 import { getSupervisor } from "../daemon/index.ts";
 import { isProcessAlive, readPtyDaemonManifest } from "../daemon/manifest.ts";
 import type { HostDb } from "../db/index.ts";
-import { projects, terminalSessions, workspaces } from "../db/schema.ts";
+import {
+	projects,
+	terminalAgentBindings,
+	terminalSessions,
+	workspaces,
+} from "../db/schema.ts";
 import type { EventBus } from "../events/index.ts";
 import { portManager } from "../ports/port-manager.ts";
 import { sweepAgentBindingsAfterDaemonLoss } from "../terminal-agents/daemon-loss-sweep.ts";
@@ -51,6 +60,7 @@ import {
 	shellLaunchExpectsReadyMarker,
 	waitForTerminalBaseEnv,
 } from "./env.ts";
+import { readHarnessTranscript } from "./harness-transcript.ts";
 import { listTerminalResourceSessions } from "./resource-sessions.ts";
 import {
 	getShellReadyMarkerEvidence,
@@ -61,6 +71,7 @@ import {
 	type ModeTracker,
 	type TerminalSnapshot,
 } from "./terminal-mode-tracker.ts";
+import { reconstructTerminalTranscript } from "./terminal-transcript.ts";
 import { toWsCloseReason } from "./ws-close-reason.ts";
 
 /**
@@ -1123,11 +1134,11 @@ export async function snapshotSession({
 export interface TerminalTranscript {
 	text: string;
 	/**
-	 * `stream` is the retained PTY output; `screen` means the ring was empty
-	 * (nothing written since this session object was created) and the visible
-	 * screen stood in.
+	 * `harness` is the agent's own conversation store, `stream` the retained
+	 * PTY output, and `screen` the visible screen standing in when the ring
+	 * was empty (an adopted session that has not written since).
 	 */
-	source: "stream" | "screen";
+	source: "harness" | "stream" | "screen";
 	/** Raw retained bytes considered, before sanitizing and bounding. */
 	streamBytes: number;
 }
@@ -1159,29 +1170,74 @@ export async function transcriptSession({
 	});
 	if ("error" in session) return session;
 
-	const raw = readRetainedFrom(session, session.retainedStartSeq);
-	const fromStream = buildBoundedTerminalSessionTranscript(
-		new TextDecoder().decode(raw),
-		maxChars,
-	);
-	if (fromStream) {
+	// The harness's own store first when it keeps one: same conversation,
+	// already structured, without redraw artefacts or a retention ceiling.
+	// Only while the agent still owns the terminal, though — once its session
+	// ends the terminal is a shell again, and its old conversation would
+	// describe work the terminal is no longer doing.
+	const binding = db
+		.select({
+			agentId: terminalAgentBindings.agentId,
+			agentSessionId: terminalAgentBindings.agentSessionId,
+			endedAt: terminalAgentBindings.endedAt,
+		})
+		.from(terminalAgentBindings)
+		.where(eq(terminalAgentBindings.terminalId, terminalId))
+		.get();
+	const worktreePath = db
+		.select({ path: workspaces.worktreePath })
+		.from(workspaces)
+		.where(eq(workspaces.id, workspaceId))
+		.get()?.path;
+	const harness = binding?.endedAt
+		? null
+		: readHarnessTranscript({
+				agentId: binding?.agentId,
+				agentSessionId: binding?.agentSessionId,
+				worktreePath,
+			});
+	if (harness) {
 		return {
 			success: true,
-			text: fromStream,
-			source: "stream",
-			streamBytes: raw.byteLength,
+			text: boundTranscriptText(
+				harness.text,
+				maxChars ?? TERMINAL_HANDOFF_MAX_CHARS,
+			),
+			source: "harness",
+			streamBytes: 0,
 		};
+	}
+
+	const raw = readRetainedFrom(session, session.retainedStartSeq);
+	if (raw.byteLength > 0) {
+		const screen = session.modeTracker.snapshot();
+		const reconstructed = reconstructTerminalTranscript(
+			new TextDecoder().decode(raw),
+			{ cols: screen.cols, rows: screen.rows },
+		);
+		const text = boundTranscriptText(
+			reconstructed.text,
+			maxChars ?? TERMINAL_HANDOFF_MAX_CHARS,
+		);
+		if (text.trim()) {
+			return {
+				success: true,
+				text,
+				source: "stream",
+				streamBytes: raw.byteLength,
+			};
+		}
 	}
 
 	// Nothing retained (adopted session that has not written since): the
 	// visible screen is all we have, and it beats handing over nothing.
-	const screen = buildBoundedTerminalSessionTranscript(
+	const fallback = buildBoundedTerminalSessionTranscript(
 		session.modeTracker.snapshot().text,
 		maxChars,
 	);
 	return {
 		success: true,
-		text: screen ?? "",
+		text: fallback ?? "",
 		source: "screen",
 		streamBytes: raw.byteLength,
 	};
