@@ -1,4 +1,4 @@
-import { PageCommentsView } from "@superset/ui/page-comments";
+import { CommentsSidebar, PageCommentsView } from "@superset/ui/page-comments";
 import { TRPCClientError } from "@trpc/client";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -93,11 +93,17 @@ export default async function PublishedPage({ params }: PageProps) {
 					}}
 					versions={versions}
 					currentUserId={session?.user.id}
+					slug={slug}
+					watching={page.watch.watching}
+					watchAgentId={page.watch.agentId}
 				/>
 
-				<main className="min-h-0 flex-1">
-					<PageCommentsView src={page.viewUrl} title={page.title} />
-				</main>
+				<div className="flex min-h-0 flex-1">
+					<main className="min-h-0 flex-1">
+						<PageCommentsView src={page.viewUrl} title={page.title} />
+					</main>
+					<CommentsSidebar servedVersion={page.version} />
+				</div>
 			</div>
 		</PageCommentsShell>
 	);

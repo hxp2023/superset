@@ -38,15 +38,25 @@ one. The policy is `default-src 'none'` with a short allowlist, and it is
 enforced identically in the desktop pane and the web viewer:
 
 - **No network from script.** `fetch`, `XHR`, `EventSource` and WebSockets are
-  all blocked. Write pages that need no network at all: bake the data into the
-  document as a literal.
+  all blocked, and so is `fetch("data:...")`: a page cannot read its own
+  inlined data URIs back out. Write pages that need no network at all: bake
+  the data into the document as a literal, or decode base64 in JavaScript
+  (`atob`, then `Uint8Array.from`).
+- **No compiling code at runtime.** `script-src` carries no `'unsafe-eval'`,
+  so `eval()` and `new Function()` both raise an `EvalError`. This rules out
+  inlining any library that builds functions at runtime, which includes
+  several chart and templating libraries and a number of date and expression
+  helpers. Check for it before you reach for a dependency: the page renders
+  nothing and gives no visible reason why.
 - **No external scripts or stylesheets.** `<script src="https://…">` and
   `<link rel="stylesheet" href="https://…">` are blocked, Google Fonts
   `<link>` tags included. Inline all CSS and JS. A remote font *file* is
   allowed, so an inline `@font-face { src: url(https://…) }` works.
 - **Images, video and audio may be remote** (`https:`, `data:` or `blob:`),
-  but a reader with the network off sees nothing, so prefer `data:` URIs for
-  anything the page cannot do without.
+  but prefer `data:` URIs for anything the page cannot do without: a reader
+  with the network off sees nothing, and a remote image makes every reader's
+  browser call that host directly, which hands a third party the IP address
+  of everyone who opens the page.
 - **Storage works** and is scoped to the page: `localStorage`,
   `sessionStorage`, `indexedDB` and cookies persist across reloads and across
   versions of the same page. Use it for a chosen tab or filter, never for
@@ -74,8 +84,11 @@ they need is already in the file.
    background explicitly rather than inheriting.
 
 Check before publishing: no `<script src>` or `<link rel="stylesheet">` pointing
-at a remote host, no `fetch`, page fits in 3 MB, opens correctly from `file://`
-with the network disabled.
+at a remote host, no `fetch` of any kind including of a `data:` URI, no `eval`
+or `new Function` anywhere in the file or in anything you inlined, page fits in
+3 MB, opens correctly from `file://` with the network disabled. Remote images
+are the one permitted exception: they go blank offline, which is the price of
+not inlining them.
 
 ## Design
 
@@ -142,10 +155,15 @@ quietly creates a *new* page, and the reader's link keeps showing the old one.
 
 ## Visibility
 
-`just_me` (the default) or `org`, set with `--visibility`. Anything wider is not
-settable from the CLI. A page shared for feedback needs `--visibility org`. If
-the user says "send this to the team", set it, or they'll get a 404 and no
-explanation.
+`org` (the default) or `just_me`, set with `--visibility`. Anything wider is not
+settable from the CLI. A new page is readable by the org, because that is what a
+page is usually for; pass `--visibility just_me` when the user wants a draft only
+they can open.
+
+Visibility belongs to the page, not to the publish. Republishing never changes
+it, so a page someone narrowed to `just_me` stays that way through every later
+version, and a page created before `org` became the default is still `just_me`
+until someone widens it.
 
 ## Read a page back
 
@@ -201,7 +219,8 @@ Reopen with `superset pages comments resolve --thread <id> --reopen`.
 | `Only .html files can be published as a page` | Wrong extension, or you pointed at a directory |
 | Publish rejected on size | Over 3 MB; the `data:` URIs are almost always why |
 | A new page appeared instead of a version | Published from outside the workspace, or the path changed; use `--page <id>` |
-| Reader gets a 404 | Page is still `just_me`; republish with `--visibility org` |
+| Reader gets a 404 | Page is `just_me`, either set that way or created before `org` became the default; widen it with `--visibility org` |
 | Page is blank once published, fine locally | A script threw, or the page loads a script or stylesheet from a remote host |
+| A chart or widget renders nothing and logs no error | The library compiles code with `new Function` or `eval`, which the policy refuses; pick one that does not |
 | Fonts missing when published | A Google Fonts `<link>`; inline the `@font-face` instead |
 | Images missing when published | `http://` URLs, or the reader is offline; embed as `data:` URIs |

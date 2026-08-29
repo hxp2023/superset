@@ -22,9 +22,19 @@ interface PageCommentsViewProps {
 	/** The page's own origin, which serves it with the comment runtime injected. */
 	src: string;
 	title: string;
+	initialScrollY?: number;
+	onScrollYChange?: (y: number) => void;
 }
 
-export function PageCommentsView({ src, title }: PageCommentsViewProps) {
+export function PageCommentsView({
+	src,
+	title,
+	initialScrollY,
+	onScrollYChange,
+}: PageCommentsViewProps) {
+	const scrollYRef = useRef(initialScrollY ?? 0);
+	const onScrollYChangeRef = useRef(onScrollYChange);
+	onScrollYChangeRef.current = onScrollYChange;
 	const frameRef = useRef<HTMLIFrameElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [container, setContainer] = useState({ width: 0, height: 0 });
@@ -98,18 +108,25 @@ export function PageCommentsView({ src, title }: PageCommentsViewProps) {
 		[frameOrigin],
 	);
 
+	const popoverOpen = Boolean(draft || activeThreadId);
 	useEffect(() => {
 		const element = containerRef.current;
 		if (!element) return;
-		const observer = new ResizeObserver(() => {
-			setContainer({
-				width: element.clientWidth,
-				height: element.clientHeight,
-			});
-		});
+		const measure = () => {
+			const width = element.clientWidth;
+			const height = element.clientHeight;
+			setContainer((previous) =>
+				previous.width === width && previous.height === height
+					? previous
+					: { width, height },
+			);
+		};
+		measure();
+		if (!popoverOpen) return;
+		const observer = new ResizeObserver(measure);
 		observer.observe(element);
 		return () => observer.disconnect();
-	}, []);
+	}, [popoverOpen]);
 
 	useEffect(() => {
 		const onMessage = (event: MessageEvent) => {
@@ -118,7 +135,16 @@ export function PageCommentsView({ src, title }: PageCommentsViewProps) {
 			const data = event.data as FrameMessage | undefined;
 			if (!data || data.channel !== FRAME_CHANNEL) return;
 
-			if (data.type === "ready") setFrameEpoch((epoch) => epoch + 1);
+			if (data.type === "ready") {
+				setFrameEpoch((epoch) => epoch + 1);
+				if (scrollYRef.current > 0) {
+					send({ type: "restore-scroll", y: scrollYRef.current });
+				}
+			}
+			if (data.type === "scroll") {
+				scrollYRef.current = data.y;
+				onScrollYChangeRef.current?.(data.y);
+			}
 			if (data.type === "hover") setHoverRect(data.rect);
 			if (data.type === "pointer-down") {
 				notifyFramePointerDown();
@@ -142,6 +168,7 @@ export function PageCommentsView({ src, title }: PageCommentsViewProps) {
 		frameOrigin,
 		notifyFramePointerDown,
 		openDraft,
+		send,
 		setActiveThreadId,
 		setHoverRect,
 		setRects,

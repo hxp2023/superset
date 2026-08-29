@@ -1371,7 +1371,7 @@ msgstr "Ringtones"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/commandPalette/modules/settings/commands.ts
 msgid "commandPalette.settingsTab.security"
-msgstr "Remote Workspaces"
+msgstr "Remote Access"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/commandPalette/modules/settings/commands.ts
@@ -2194,13 +2194,13 @@ msgstr "Mobile App"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/components/Paywall/constants.ts
-msgid "components.paywall.remoteWorkspaces.description"
+msgid "components.paywall.remoteAccess.description"
 msgstr "Reach this Mac from anywhere via the Superset relay, or spin up cloud workspaces. Connect from any client."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/components/Paywall/constants.ts
-msgid "components.paywall.remoteWorkspaces.title"
-msgstr "Remote Workspaces"
+msgid "components.paywall.remoteAccess.title"
+msgstr "Remote Access"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/components/Paywall/constants.ts
@@ -2595,6 +2595,41 @@ msgid "components.rankTeaser.projectedRank"
 msgstr "You'd be <0>#{0}</0> of {1}."
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.latency"
+msgstr "Latency"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.latencyValue"
+msgstr "42ms"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.live"
+msgstr "live"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.remote"
+msgstr "Remote"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.thisMac"
+msgstr "This Mac"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.tunnelEstablished"
+msgstr "Tunnel established"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteAccessDemo/RemoteAccessDemo.tsx
+msgid "components.remoteAccessDemo.windowTitle"
+msgstr "Remote Access"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/components/RemotePathPicker/RemotePathPicker.tsx
 msgid "components.remotePathPicker.cancel"
 msgstr "Cancel"
@@ -2623,41 +2658,6 @@ msgstr "Refresh"
 #: ../../apps/desktop/src/renderer/components/RemotePathPicker/RemotePathPicker.tsx
 msgid "components.remotePathPicker.title"
 msgstr "Choose a folder"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.latency"
-msgstr "Latency"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.latencyValue"
-msgstr "42ms"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.live"
-msgstr "live"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.remote"
-msgstr "Remote"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.thisMac"
-msgstr "This Mac"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.tunnelEstablished"
-msgstr "Tunnel established"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/components/Paywall/components/FeaturePreview/components/RemoteWorkspacesDemo/RemoteWorkspacesDemo.tsx
-msgid "components.remoteWorkspacesDemo.windowTitle"
-msgstr "Remote Workspaces"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/components/MarkdownRenderer/components/SafeImage/SafeImage.tsx
@@ -3346,7 +3346,7 @@ msgstr "The run was skipped because this device isn't connected to the Superset 
 #. placeholder {0}: remoteHost?.name ?? t({ id: "dashboard.automations.hostOfflineDialog.targetHostFallback", message: "the target host", })
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/components/HostOfflineRunDialog/HostOfflineRunDialog.tsx
 msgid "dashboard.automations.hostOfflineDialog.remoteBody"
-msgstr "The run was skipped because <0>{0}</0> isn't connected to the Superset relay. Make sure relay access is on in Settings > Remote Workspaces on that device, then run it again."
+msgstr "The run was skipped because <0>{0}</0> isn't connected to the Superset relay. Make sure relay access is on in Settings > Remote Access on that device, then run it again."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/components/HostOfflineRunDialog/HostOfflineRunDialog.tsx
@@ -3361,7 +3361,7 @@ msgstr "Target host is offline"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/utils/hostOfflineError/hostOfflineError.ts
 msgid "dashboard.automations.hostOfflineHelp"
-msgstr "The host isn't connected to the Superset relay. If it's this device, turn on \"Allow remote workspaces to access this device via relay\" in Settings > Remote Workspaces, then try again."
+msgstr "The host isn't connected to the Superset relay. If it's this device, turn on \"Allow remote access to this device via relay\" in Settings > Remote Access, then try again."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/page.tsx
@@ -4413,7 +4413,7 @@ msgstr "This device isn't connected to the Superset relay, so automation runs wi
 #. placeholder {0}: remoteHost.name
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/components/RelayOfflineNotice/RelayOfflineNotice.tsx
 msgid "dashboard.automations.relayOfflineNotice.remoteBody"
-msgstr "<0>{0}</0> isn't connected to the Superset relay, so its runs will be skipped. Check its <1>host settings</1>, and make sure relay access is on in Settings > Remote Workspaces on that device."
+msgstr "<0>{0}</0> isn't connected to the Superset relay, so its runs will be skipped. Check its <1>host settings</1>, and make sure relay access is on in Settings > Remote Access on that device."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/components/AutomationRow/AutomationRow.tsx
@@ -6086,6 +6086,11 @@ msgstr "Created"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/pages/components/PagesGrid/components/PageCard/PageCard.tsx
+msgid "dashboard.pages.pageCard.delete"
+msgstr "Delete"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/pages/components/PagesGrid/components/PageCard/PageCard.tsx
 msgid "dashboard.pages.pageCard.edited"
 msgstr "Edited"
 
@@ -6103,6 +6108,11 @@ msgstr "Pin"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/pages/components/PagesGrid/components/PageCard/PageCard.tsx
 msgid "dashboard.pages.pageCard.unpin"
 msgstr "Unpin"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/pages/components/PagesView/PagesView.tsx
+msgid "dashboard.pages.pageDeleted"
+msgstr "Page deleted"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/pages/components/PagesView/PagesView.tsx
@@ -17414,7 +17424,7 @@ msgstr "Sign in to {0}"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/home-connect-host/HomeConnectHostScreen.tsx
 msgid "mobile.connectHost.step3.body"
-msgstr "Settings → Security → “Allow remote workspaces to access this device via relay”."
+msgstr "Settings → Remote Access → “Allow remote access to this device via relay”."
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/home-connect-host/HomeConnectHostScreen.tsx
@@ -17819,7 +17829,7 @@ msgstr "No devices yet"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/settings/hosts/HostsSettingsScreen.tsx
 msgid "mobile.hostsSettings.emptyDescription"
-msgstr "In the Superset desktop app, open Settings → Security and turn on “Allow remote workspaces to access this device via relay”."
+msgstr "In the Superset desktop app, open Settings → Remote Access and turn on “Allow remote access to this device via relay”."
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/settings/hosts/HostsSettingsScreen.tsx
@@ -19555,11 +19565,6 @@ msgstr "Failed to create thread"
 
 #. js-lingui-explicit-id
 #: src/server-errors.ts
-msgid "serverError.pageComment.onlyAPersonCanHand"
-msgstr "Only a person can hand a thread to an agent"
-
-#. js-lingui-explicit-id
-#: src/server-errors.ts
 msgid "serverError.pageComment.onlyTheAuthorCanEdit"
 msgstr "Only the author can edit a comment"
 
@@ -19576,7 +19581,7 @@ msgstr "Page not found"
 #. js-lingui-explicit-id
 #: src/server-errors.ts
 msgid "serverError.pageComment.thisThreadHasNotBeenHanded"
-msgstr "This thread has not been handed to an agent. Someone has to hand it off from the page first."
+msgstr "This thread is not open to agents. A person has to comment on it before an agent can reply."
 
 #. js-lingui-explicit-id
 #: src/server-errors.ts
@@ -21459,8 +21464,8 @@ msgstr "Projects"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/billing/plans/page.tsx
-msgid "settings.billing.plans.rowRemoteWorkspaces"
-msgstr "Remote workspaces"
+msgid "settings.billing.plans.rowRemoteAccess"
+msgstr "Remote access"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/billing/plans/page.tsx
@@ -21694,12 +21699,12 @@ msgstr "Path copied to clipboard"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/ExposeViaRelaySection/ExposeViaRelaySection.tsx
 msgid "settings.components.exposeViaRelay.hint"
-msgstr "When off, remote workspaces can't access the files and tools on this device. You can still connect out to remote sandboxes from here. <0>Learn more<1/></0>"
+msgstr "When off, nothing else can reach the files and tools on this device. You can still connect out to remote sandboxes from here. <0>Learn more<1/></0>"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/ExposeViaRelaySection/ExposeViaRelaySection.tsx
 msgid "settings.components.exposeViaRelay.label"
-msgstr "Allow remote workspaces to access this device via relay"
+msgstr "Allow remote access to this device via relay"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/ExposeViaRelaySection/ExposeViaRelaySection.tsx
@@ -21838,8 +21843,8 @@ msgstr "Projects"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/SettingsSidebar/GeneralSettings.tsx
-msgid "settings.components.generalSettings.remoteWorkspaces"
-msgstr "Remote Workspaces"
+msgid "settings.components.generalSettings.remoteAccess"
+msgstr "Remote Access"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/SettingsSidebar/GeneralSettings.tsx
@@ -22372,8 +22377,8 @@ msgstr "Host not found in this organization."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/hosts/$hostId/components/HostSettings/HostSettings.tsx
-msgid "settings.hosts.remoteWorkspacesTitle"
-msgstr "Remote workspaces"
+msgid "settings.hosts.remoteAccessTitle"
+msgstr "Remote access"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/hosts/$hostId/components/HostSettings/HostSettings.tsx
@@ -24347,12 +24352,12 @@ msgstr "Quiet"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/security/components/SecuritySettings/SecuritySettings.tsx
 msgid "settings.security.subtitle"
-msgstr "Control how your local machine is reachable from remote workspaces"
+msgstr "Control how your local machine is reachable from elsewhere"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/security/components/SecuritySettings/SecuritySettings.tsx
 msgid "settings.security.title"
-msgstr "Remote Workspaces"
+msgstr "Remote Access"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/team/components/InvitationActions/InvitationActions.tsx
@@ -24701,6 +24706,16 @@ msgstr "Delete command {0}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/terminal/components/TerminalSettings/components/PresetRow/components/CommandsEditor/CommandsEditor.tsx
 msgid "settings.terminal.commandsEditor.placeholder"
 msgstr "Command..."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/terminal/components/TerminalSettings/components/CopyOnSelectSetting.tsx
+msgid "settings.terminal.copyOnSelect.hint"
+msgstr "Selecting text in a terminal copies it to the clipboard right away, with trailing whitespace trimmed"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/terminal/components/TerminalSettings/components/CopyOnSelectSetting.tsx
+msgid "settings.terminal.copyOnSelect.label"
+msgstr "Copy on select"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/terminal/components/TerminalSettings/components/LinkBehaviorSetting.tsx
@@ -28276,7 +28291,7 @@ msgstr "xs · sm · default · lg · icon-xs → icon-lg"
 #. js-lingui-explicit-id
 #: ../../apps/web/src/app/design/superset/components/AiAgentSection/AiAgentSection.tsx
 msgid "web.design.aiAgentSection.55CallSitesPassShowarrow"
-msgstr "55 call sites pass showArrow={false}"
+msgstr "55 call sites pass {code}"
 
 #. js-lingui-explicit-id
 #: ../../apps/web/src/app/design/superset/components/AiAgentSection/AiAgentSection.tsx
@@ -33655,45 +33670,19 @@ msgstr "Worktree missing"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatDistanceToNowStrict(binding.lastEventAt, { addSuffix: true, })
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.agentActiveSince"
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.agentActiveSinceWatch"
 msgstr "active {0}"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.agentUnreachableToast"
-msgstr "Could not reach that agent"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.handoffAria"
-msgstr "Hand off to an agent"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.handoffFailedToast"
-msgstr "Could not hand off these comments"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.handoffTitle"
-msgstr "Hand off to an agent"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.noAgentsRunning"
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.noAgentsRunningWatch"
 msgstr "No agents running here"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: open.length
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.openCommentCount"
-msgstr "{0, plural, one {# open comment} other {# open comments}}"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageHandoffMenu/PageHandoffMenu.tsx
-msgid "workspace.pagePane.sentToAgentToast"
-msgstr "Sent to agent"
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.notWatchingLabel"
+msgstr "Nothing is watching this page"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/PagePaneHeaderExtras.tsx
@@ -33706,9 +33695,34 @@ msgid "workspace.pagePane.sharePageTitle"
 msgstr "Share page"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.stopWatchFailedToast"
+msgstr "Could not stop watching"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.stopWatching"
+msgstr "Stop watching"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/utils/pagePaneLabel/pagePaneLabel.ts
 msgid "workspace.pagePane.untitledPage"
 msgstr "Untitled Page"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.watcherAria"
+msgstr "Choose which agent watches this page for comments"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.watchFailedToast"
+msgstr "Could not watch this page"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/PagePaneHeaderExtras/components/PageWatcherMenu/PageWatcherMenu.tsx
+msgid "workspace.pagePane.watchingLabel"
+msgstr "Comments go to this agent"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useDefaultPaneActions/useDefaultPaneActions.tsx
@@ -34629,6 +34643,11 @@ msgid "workspace.tabCloseGuard.processRunningTitle"
 msgstr "A process is still running in this tab"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalCopiedIndicator/TerminalCopiedIndicator.tsx
+msgid "workspace.terminal.copiedIndicator"
+msgstr "Copied"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalIdCopyMenu/TerminalIdCopyMenu.tsx
 msgid "workspace.terminalPane.agentSessionIdMenuLabel"
 msgstr "agent session ID"
@@ -34894,6 +34913,17 @@ msgstr "Terminal removed"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalConnectionIndicator/TerminalConnectionIndicator.tsx
 msgid "workspace.terminalPane.viewLog"
 msgstr "View log"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalPageWatchChip/TerminalPageWatchChip.tsx
+msgid "workspace.terminalPane.watchingAria"
+msgstr "Pages this agent is watching for comments"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: mine.length
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalPaneHeaderExtras/components/TerminalPageWatchChip/TerminalPageWatchChip.tsx
+msgid "workspace.terminalPane.watchingPageCount"
+msgstr "{0, plural, one {Watching # page for comments} other {Watching # pages for comments}}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/TerminalPane/components/TerminalSessionDropdown/TerminalSessionDropdown.tsx

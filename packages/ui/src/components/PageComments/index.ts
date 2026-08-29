@@ -6,6 +6,7 @@ export {
 	CommentModeButton,
 	CommentModeToggle,
 } from "./components/CommentModeToggle";
+export { CommentsSidebar } from "./components/CommentsSidebar";
 export { PageCommentsView } from "./components/PageCommentsView";
 export {
 	DeletePageDialog,
@@ -28,3 +29,8 @@ export {
 	type PageCommentUser,
 	useComments,
 } from "./providers/CommentProvider";
+export {
+	AGENT_DISPLAY_NAME,
+	type CommentAuthor,
+	commentAuthor,
+} from "./utils/commentAuthor";

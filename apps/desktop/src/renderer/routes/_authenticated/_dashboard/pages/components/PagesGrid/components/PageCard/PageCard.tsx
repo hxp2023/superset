@@ -7,10 +7,19 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
+import { DeletePageDialog } from "@superset/ui/page-comments";
 import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
-import { Globe, Link2, Lock, MoreVertical, Pin, PinOff } from "lucide-react";
-import type { MouseEvent } from "react";
+import {
+	Globe,
+	Link2,
+	Lock,
+	MoreVertical,
+	Pin,
+	PinOff,
+	Trash2,
+} from "lucide-react";
+import { type MouseEvent, useState } from "react";
 import { PageThumbnail } from "./components/PageThumbnail";
 
 export interface PageCardItem {
@@ -22,23 +31,35 @@ export interface PageCardItem {
 	visibility: string;
 	createdAt: Date | string;
 	updatedAt: Date | string;
+	latestVersion: number | null;
+	sharedVersion: number | null;
+	createdByUserId: string | null;
+	ownerName: string | null;
 }
 
 interface PageCardProps {
 	page: PageCardItem;
 	isPinned: boolean;
+	currentUserId: string | undefined;
 	onOpen: (page: PageCardItem, event: MouseEvent) => void;
 	onTogglePin: (pageId: string) => void;
+	onDelete: (pageId: string) => Promise<void>;
 }
 
 export function PageCard({
 	page,
 	isPinned,
+	currentUserId,
 	onOpen,
 	onTogglePin,
+	onDelete,
 }: PageCardProps) {
 	const { t } = useLingui();
+	const [deleteOpen, setDeleteOpen] = useState(false);
 	const isShared = page.visibility === "org";
+	const isOwner =
+		currentUserId !== undefined && currentUserId === page.createdByUserId;
+	const ownerName = isOwner ? null : page.ownerName;
 	const VisibilityIcon = isShared ? Globe : Lock;
 	const edited = new Date(page.updatedAt).getTime();
 	const created = new Date(page.createdAt).getTime();
@@ -85,6 +106,12 @@ export function PageCard({
 							)}{" "}
 							{timestamp}
 						</span>
+						{ownerName ? (
+							<>
+								<span aria-hidden="true">·</span>
+								<span className="truncate">{ownerName}</span>
+							</>
+						) : null}
 					</span>
 				</div>
 			</button>
@@ -128,8 +155,25 @@ export function PageCard({
 						<Link2 className="size-4" />
 						<Trans id="dashboard.pages.pageCard.copyLink">Copy link</Trans>
 					</DropdownMenuItem>
+					{isOwner ? (
+						<DropdownMenuItem
+							variant="destructive"
+							onSelect={() => setDeleteOpen(true)}
+						>
+							<Trash2 className="size-4" />
+							<Trans id="dashboard.pages.pageCard.delete">Delete</Trans>
+						</DropdownMenuItem>
+					) : null}
 				</DropdownMenuContent>
 			</DropdownMenu>
+
+			<DeletePageDialog
+				open={deleteOpen}
+				onOpenChange={setDeleteOpen}
+				title={page.title}
+				versionCount={page.latestVersion ?? 1}
+				onConfirm={() => onDelete(page.id)}
+			/>
 		</div>
 	);
 }
