@@ -184,6 +184,46 @@ describe("hasHarnessSession", () => {
 		).toBe(false);
 	});
 
+	test("looks in the config dir the agent is pinned to", () => {
+		// An agent with its own provider account carries CLAUDE_CONFIG_DIR, and
+		// its sessions live there, not under ~/.claude. Reading the default
+		// would call a live session missing and refuse a fork that works.
+		const configDir = mkdtempSync(join(tmpdir(), "claude-config-"));
+		created.push(configDir);
+		const worktreePath = mkdtempSync(join(tmpdir(), "pinned-worktree-"));
+		created.push(worktreePath);
+		const sessionId = "22222222-3333-4444-8555-666677778888";
+		const dir = join(
+			configDir,
+			"projects",
+			worktreePath.replaceAll(/[/.]/g, "-"),
+		);
+		mkdirSync(dir, { recursive: true });
+		writeFileSync(
+			join(dir, `${sessionId}.jsonl`),
+			`${JSON.stringify({ type: "user", message: { role: "user", content: "pinned" } })}\n`,
+		);
+
+		const env = { CLAUDE_CONFIG_DIR: configDir };
+		expect(
+			hasHarnessSession({ agentId: "claude", sessionId, worktreePath, env }),
+		).toBe(true);
+		expect(
+			readHarnessTranscript({
+				agentId: "claude",
+				agentSessionId: sessionId,
+				worktreePath,
+				env,
+			})?.text,
+		).toBe("User: pinned");
+
+		// Without the env it is invisible, which is exactly the bug: a confident
+		// "false" here would block a fork that would have succeeded.
+		expect(
+			hasHarnessSession({ agentId: "claude", sessionId, worktreePath }),
+		).toBe(false);
+	});
+
 	test("answers null for harnesses whose sessions we cannot inspect", () => {
 		// grok keeps sessions server-side. Null means unknown, and the caller
 		// must not read it as absence and block a fork that would have worked.

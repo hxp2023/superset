@@ -33,6 +33,7 @@ import { getSupervisor } from "../daemon/index.ts";
 import { isProcessAlive, readPtyDaemonManifest } from "../daemon/manifest.ts";
 import type { HostDb } from "../db/index.ts";
 import {
+	hostAgentConfigs,
 	projects,
 	terminalAgentBindings,
 	terminalSessions,
@@ -1131,6 +1132,30 @@ export async function snapshotSession({
 	return { success: true, ...session.modeTracker.snapshot(maxLines) };
 }
 
+/**
+ * The env a bound agent was launched with, so its session store is read from
+ * the provider account it is pinned to rather than the default directory.
+ * Best effort: an unknown binding just means the default.
+ */
+function agentLaunchEnv(
+	db: HostDb,
+	definitionId: string | null | undefined,
+): Record<string, string> | undefined {
+	if (!definitionId) return undefined;
+	const row = db
+		.select({ envJson: hostAgentConfigs.envJson })
+		.from(hostAgentConfigs)
+		.where(eq(hostAgentConfigs.id, definitionId))
+		.get();
+	if (!row) return undefined;
+	try {
+		const parsed = JSON.parse(row.envJson) as Record<string, string>;
+		return typeof parsed === "object" && parsed !== null ? parsed : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 export interface TerminalTranscript {
 	text: string;
 	/**
@@ -1179,6 +1204,7 @@ export async function transcriptSession({
 		.select({
 			agentId: terminalAgentBindings.agentId,
 			agentSessionId: terminalAgentBindings.agentSessionId,
+			definitionId: terminalAgentBindings.definitionId,
 			endedAt: terminalAgentBindings.endedAt,
 		})
 		.from(terminalAgentBindings)
@@ -1195,6 +1221,7 @@ export async function transcriptSession({
 				agentId: binding?.agentId,
 				agentSessionId: binding?.agentSessionId,
 				worktreePath,
+				env: agentLaunchEnv(db, binding?.definitionId),
 			});
 	if (harness) {
 		return {

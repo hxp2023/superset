@@ -375,10 +375,18 @@ function validateForkSessionIsResolvable(
 		.from(workspaces)
 		.where(eq(workspaces.id, input.workspaceId))
 		.get()?.path;
+	// The same env the launch will run under: an agent pinned to its own
+	// provider account keeps its sessions in that account's directory, and
+	// looking in the default one would refuse a fork that would have worked.
+	const launchEnv = {
+		...resolveDefaultAccountEnv(db, config.presetId),
+		...config.env,
+	};
 	const resolvable = hasHarnessSession({
 		agentId: config.presetId,
 		sessionId: input.forkSessionId,
 		worktreePath,
+		env: launchEnv,
 	});
 	if (resolvable === false) {
 		throw new TRPCError({

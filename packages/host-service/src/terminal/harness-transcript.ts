@@ -43,18 +43,29 @@ export interface HarnessTranscript {
 function claudeTranscriptPath(
 	worktreePath: string,
 	sessionId: string,
+	configDir: string,
 ): string | null {
 	if (!/^[\w-]+$/.test(sessionId)) return null;
 	const encoded = worktreePath.replaceAll(/[/.]/g, "-");
-	const path = join(
-		homedir(),
-		".claude",
-		"projects",
-		encoded,
-		`${sessionId}.jsonl`,
-	);
+	const path = join(configDir, "projects", encoded, `${sessionId}.jsonl`);
 	return existsSync(path) ? path : null;
 }
+
+/**
+ * Where a harness keeps its sessions for a given launch. An agent pinned to
+ * its own provider account carries `CLAUDE_CONFIG_DIR` / `CODEX_HOME`, and
+ * looking in the default location instead would report a live session as
+ * missing — the preflight would then refuse a fork that would have worked.
+ */
+function claudeConfigDir(env: HarnessEnv): string {
+	return env?.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), ".claude");
+}
+
+function codexHome(env: HarnessEnv): string {
+	return env?.CODEX_HOME?.trim() || join(homedir(), ".codex");
+}
+
+export type HarnessEnv = Record<string, string | undefined> | undefined;
 
 /**
  * The last `maxBytes` of a file. A cut lands mid-line, and the parser already
@@ -104,8 +115,9 @@ function textOf(event: ClaudeEvent): string | null {
 function readClaudeTranscript(
 	worktreePath: string,
 	sessionId: string,
+	configDir: string,
 ): string | null {
-	const path = claudeTranscriptPath(worktreePath, sessionId);
+	const path = claudeTranscriptPath(worktreePath, sessionId, configDir);
 	if (!path) return null;
 	const raw = readFileTail(path, MAX_HARNESS_SOURCE_BYTES);
 	if (raw === null) return null;
@@ -140,11 +152,17 @@ export function readHarnessTranscript(input: {
 	agentId: string | null | undefined;
 	agentSessionId: string | null | undefined;
 	worktreePath: string | null | undefined;
+	/** The launch env, so a pinned provider account is read from its own dir. */
+	env?: HarnessEnv;
 }): HarnessTranscript | null {
 	const { agentId, agentSessionId, worktreePath } = input;
 	if (!agentId || !agentSessionId || !worktreePath) return null;
 	if (agentId !== "claude") return null;
-	const text = readClaudeTranscript(worktreePath, agentSessionId);
+	const text = readClaudeTranscript(
+		worktreePath,
+		agentSessionId,
+		claudeConfigDir(input.env),
+	);
 	return text ? { text, harness: "claude" } : null;
 }
 
@@ -163,6 +181,8 @@ export function hasHarnessSession(input: {
 	agentId: string | null | undefined;
 	sessionId: string | null | undefined;
 	worktreePath: string | null | undefined;
+	/** The launch env, so a pinned provider account is read from its own dir. */
+	env?: HarnessEnv;
 }): boolean | null {
 	const { agentId, sessionId, worktreePath } = input;
 	if (!agentId || !sessionId) return null;
@@ -170,12 +190,16 @@ export function hasHarnessSession(input: {
 
 	try {
 		switch (agentId) {
-			case "claude":
-				return worktreePath
-					? claudeTranscriptPath(worktreePath, sessionId) !== null
-					: null;
+			case "claude": {
+				if (!worktreePath) return null;
+				const configDir = claudeConfigDir(input.env);
+				if (!existsSync(configDir)) return null;
+				return (
+					claudeTranscriptPath(worktreePath, sessionId, configDir) !== null
+				);
+			}
 			case "codex":
-				return hasCodexRollout(sessionId);
+				return hasCodexRollout(sessionId, codexHome(input.env));
 			case "opencode":
 				return hasOpencodeSession(sessionId);
 			case "pi":
@@ -191,8 +215,8 @@ export function hasHarnessSession(input: {
 }
 
 /** Codex names rollouts `rollout-<timestamp>-<session id>.jsonl`, in date dirs. */
-function hasCodexRollout(sessionId: string): boolean | null {
-	const root = join(homedir(), ".codex", "sessions");
+function hasCodexRollout(sessionId: string, home: string): boolean | null {
+	const root = join(home, "sessions");
 	if (!existsSync(root)) return null;
 	const suffix = `-${sessionId}.jsonl`;
 	const stack = [root];
