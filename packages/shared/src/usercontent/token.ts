@@ -14,7 +14,11 @@ export interface PageViewTokenClaims {
 	exp: number;
 }
 
+const KIND = "page";
+
 interface WireClaims {
+	/** Ticket kind, so a page ticket can never open something else. */
+	k: typeof KIND;
 	p: string;
 	v?: number;
 	e: number;
@@ -62,6 +66,7 @@ export async function signPageViewToken(
 	claims: PageViewTokenClaims,
 ): Promise<string> {
 	const wire: WireClaims = {
+		k: KIND,
 		p: claims.pageId,
 		e: claims.exp,
 		...(claims.version !== undefined ? { v: claims.version } : {}),
@@ -75,8 +80,12 @@ export async function signPageViewToken(
 	return `${payload}.${toBase64Url(new Uint8Array(signature))}`;
 }
 
+/**
+ * `secrets` is the current secret first, then any previous one still in its
+ * grace period, so rotation never invalidates tickets already handed out.
+ */
 export async function verifyPageViewToken(
-	secret: string,
+	secrets: string | readonly string[],
 	token: string,
 	now: number = Date.now(),
 ): Promise<PageViewTokenClaims | null> {
@@ -86,12 +95,17 @@ export async function verifyPageViewToken(
 	const signature = fromBase64Url(token.slice(dot + 1));
 	if (!signature) return null;
 
-	const valid = await crypto.subtle.verify(
-		"HMAC",
-		await hmacKey(secret),
-		signature,
-		encoder.encode(payload),
-	);
+	let valid = false;
+	for (const secret of typeof secrets === "string" ? [secrets] : secrets) {
+		if (!secret) continue;
+		valid = await crypto.subtle.verify(
+			"HMAC",
+			await hmacKey(secret),
+			signature,
+			encoder.encode(payload),
+		);
+		if (valid) break;
+	}
 	if (!valid) return null;
 
 	const bytes = fromBase64Url(payload);
@@ -103,8 +117,9 @@ export async function verifyPageViewToken(
 		return null;
 	}
 	if (!wire || typeof wire !== "object") return null;
-	const { p, v, e } = wire as Partial<WireClaims>;
+	const { k, p, v, e } = wire as Partial<WireClaims>;
 	if (
+		k !== KIND ||
 		typeof p !== "string" ||
 		typeof e !== "number" ||
 		(v !== undefined && !Number.isInteger(v))

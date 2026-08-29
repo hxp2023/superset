@@ -66,7 +66,7 @@ async function authorized(
 	const ticket = c.req.query("t");
 	if (!ticket) return false;
 	const claims = await verifyPageViewToken(
-		c.env.USERCONTENT_TOKEN_SECRET,
+		[c.env.USERCONTENT_TOKEN_SECRET, c.env.USERCONTENT_TOKEN_SECRET_PREVIOUS ?? ""],
 		ticket,
 	);
 	if (!claims || claims.pageId !== manifest.pageId) return false;
@@ -149,9 +149,13 @@ async function serveThumbnail(c: Context<AppContext>): Promise<Response> {
 	});
 }
 
-// The apex has nothing to serve; readers arriving there belong in the app.
+// Pages hang off `pages.<zone>`; the zone apex and `pages.` itself have
+// nothing to serve, so readers arriving there belong in the app.
 app.use("*", async (c, next) => {
-	if (requestHost(c) !== baseHost(c)) return next();
+	const host = requestHost(c);
+	const base = baseHost(c);
+	const apex = base.slice(base.indexOf(".") + 1);
+	if (host !== base && host !== apex) return next();
 	if (c.req.path === "/health") return c.json({ ok: true });
 	return c.redirect(c.env.APP_URL, 302);
 });

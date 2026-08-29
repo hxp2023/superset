@@ -3,11 +3,16 @@
 	"name": "superset-usercontent",
 	"main": "src/index.ts",
 	"workers_dev": false,
-	// One origin per page: the wildcard route is the whole point of the zone.
-	// Both patterns need a proxied DNS record in the zone (`*` and `@`).
+	// One origin per page under `pages.`; media gets its own first-level host
+	// later. Needs proxied DNS records for `*.pages`, `pages` and `@`, and
+	// Advanced Certificate Manager for the second-level wildcard certificate.
 	"routes": [
 		{
-			"pattern": "*.supersetusercontent.com/*",
+			"pattern": "*.pages.supersetusercontent.com/*",
+			"zone_name": "supersetusercontent.com"
+		},
+		{
+			"pattern": "pages.supersetusercontent.com/*",
 			"zone_name": "supersetusercontent.com"
 		},
 		{
@@ -18,7 +23,7 @@
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": ["nodejs_als"],
 	"vars": {
-		"USERCONTENT_URL": "https://supersetusercontent.com",
+		"USERCONTENT_URL": "https://pages.supersetusercontent.com",
 		"APP_URL": "https://app.superset.sh",
 		// Who may frame a page. `file:` is the packaged desktop renderer; a
 		// frame still needs a valid ticket, so this admits embedding, not reading.
@@ -35,7 +40,7 @@
 			"workers_dev": true,
 			"routes": [],
 			"vars": {
-				"USERCONTENT_URL": "http://usercontent.localhost:8787",
+				"USERCONTENT_URL": "http://pages.usercontent.localhost:8787",
 				"APP_URL": "http://localhost:3000",
 				"FRAME_ANCESTORS": "http://localhost:* file:"
 			},
