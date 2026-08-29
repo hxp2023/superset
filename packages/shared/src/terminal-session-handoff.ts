@@ -1,5 +1,12 @@
 export const TERMINAL_HANDOFF_MAX_CHARS = 36_000;
 
+/**
+ * Marks a transcript that starts mid-session. Without it a tail reads as the
+ * whole session, and the receiving agent narrates the work as if it began
+ * wherever the slice happened to land.
+ */
+export const TRANSCRIPT_TRUNCATION_NOTICE = "[earlier output omitted]";
+
 const ESCAPE = String.fromCharCode(27);
 const BELL = String.fromCharCode(7);
 const OSC_PATTERN = new RegExp(
@@ -56,8 +63,21 @@ export function buildBoundedTerminalSessionTranscript(
 		window *= 4;
 	}
 	if (!cleaned) return null;
-	if (cleaned.length <= maxChars) return cleaned;
-	return cleaned.slice(-maxChars).trimStart();
+	return boundTranscriptText(cleaned, maxChars);
+}
+
+/**
+ * Take the newest `maxChars`, cut at a line boundary rather than mid-word, and
+ * say so. Slicing blind left transcripts opening on half a line, which reads
+ * as corruption rather than as a tail.
+ */
+export function boundTranscriptText(text: string, maxChars: number): string {
+	if (text.length <= maxChars) return text;
+	const budget = maxChars - TRANSCRIPT_TRUNCATION_NOTICE.length - 1;
+	const tail = text.slice(-Math.max(1, budget));
+	const firstBreak = tail.indexOf("\n");
+	const whole = firstBreak >= 0 ? tail.slice(firstBreak + 1) : tail;
+	return `${TRANSCRIPT_TRUNCATION_NOTICE}\n${whole}`;
 }
 
 function markdownFenceFor(value: string): string {
