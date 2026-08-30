@@ -1,8 +1,9 @@
 "use client";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import { LanguageSwitcher } from "@superset/i18n/react";
 import { COMPANY } from "@superset/shared/constants";
-import { Menu } from "lucide-react";
+import { Languages, Menu } from "lucide-react";
 import Link from "next/link";
 import { MobileSearchIcon } from "@/app/(docs)/[[...slug]]/components/DocsPageLayout/components/PageClient/components/MobileSearchIcon";
 import {
@@ -94,6 +95,16 @@ export default function NavigationBar() {
 								></path>
 							</svg>
 						</NavLink>
+						{/* Icon-only: the navbar is tight, so the trigger is just the
+						    translation glyph; the real select sits on top invisibly,
+						    keeping the native accessible menu. */}
+						<li className="relative flex items-center px-1 text-muted-foreground transition-colors focus-within:text-foreground hover:text-foreground">
+							<Languages aria-hidden className="size-[1.35em]" />
+							<LanguageSwitcher
+								label={t({ id: "docs.nav.languageLabel", message: "Language" })}
+								className="absolute inset-0 cursor-pointer opacity-0"
+							/>
+						</li>
 						<a
 							href={`${COMPANY.MARKETING_URL}/download`}
 							className="ml-2 rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85"

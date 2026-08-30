@@ -1,6 +1,12 @@
 import { i18n } from "@lingui/core";
 import { messages as enMessages } from "../locales/en/messages";
-import { DEFAULT_LOCALE, resolveLocale, type SupportedLocale } from "./locales";
+import {
+	DEFAULT_LOCALE,
+	isSupportedLocale,
+	LOCALE_COOKIE,
+	resolveLocale,
+	type SupportedLocale,
+} from "./locales";
 
 export { i18n };
 export * from "./locales";
@@ -18,6 +24,18 @@ const CATALOGS: Record<string, () => Promise<{ messages: typeof enMessages }>> =
 		"zh-CN": () => import("../locales/zh-CN/messages"),
 		fr: () => import("../locales/fr/messages"),
 		ko: () => import("../locales/ko/messages"),
+		"zh-TW": () => import("../locales/zh-TW/messages"),
+		es: () => import("../locales/es/messages"),
+		de: () => import("../locales/de/messages"),
+		"pt-BR": () => import("../locales/pt-BR/messages"),
+		it: () => import("../locales/it/messages"),
+		ru: () => import("../locales/ru/messages"),
+		tr: () => import("../locales/tr/messages"),
+		pl: () => import("../locales/pl/messages"),
+		nl: () => import("../locales/nl/messages"),
+		id: () => import("../locales/id/messages"),
+		cs: () => import("../locales/cs/messages"),
+		vi: () => import("../locales/vi/messages"),
 	};
 
 const loaded = new Set<string>([DEFAULT_LOCALE]);
@@ -33,6 +51,17 @@ function ensureEnglish(): void {
 // navigator.languages (React Native, Node) pass their own preference list to
 // resolveLocale/initI18n instead. A persisted user setting takes precedence.
 export function inferLocale(): SupportedLocale {
+	// An explicit choice from a language switcher outranks browser preferences.
+	// Accessed through globalThis so this file typechecks under Node-only lib
+	// settings, where the document global does not exist.
+	const doc = (globalThis as { document?: { cookie: string } }).document;
+	if (doc) {
+		const match = doc.cookie.match(
+			new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+		);
+		const chosen = match?.[1];
+		if (chosen && isSupportedLocale(chosen)) return chosen;
+	}
 	if (typeof navigator !== "undefined" && Array.isArray(navigator.languages)) {
 		return resolveLocale(navigator.languages);
 	}
