@@ -42,8 +42,10 @@ const relayBackupWsOrigin = relayBackupHttpOrigin
 	? relayBackupHttpOrigin.replace(/^http/, "ws")
 	: null;
 // Published pages are framed from their own origin, one subdomain per page.
+// An unset GitHub Actions var arrives as an empty string, which `??`
+// does not catch — and `new URL("")` throws before Next even loads.
 const usercontentUrl = new URL(
-	process.env.USERCONTENT_URL ??
+	process.env.USERCONTENT_URL ||
 		(isProduction
 			? "https://pages.supersetusercontent.com"
 			: "http://pages.usercontent.localhost:8787"),
