@@ -48,7 +48,7 @@ export async function writePageManifest(pageId: string): Promise<void> {
 	const rows = await db
 		.select({
 			version: pageVersions.version,
-			key: pageVersions.blobPathname,
+			key: pageVersions.storageKey,
 			contentType: pageVersions.contentType,
 		})
 		.from(pageVersions)

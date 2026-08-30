@@ -164,7 +164,7 @@ async function runPublish({
 					pageId: page.id,
 					version,
 					label: input.label ?? null,
-					blobPathname: key,
+					storageKey: key,
 					contentType: input.contentType,
 					sizeBytes: buffer.length,
 					sha256,

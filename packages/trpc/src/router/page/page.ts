@@ -412,7 +412,7 @@ export const pageRouter = {
 			const rows = await db
 				.select({
 					version: pageVersions.version,
-					key: pageVersions.blobPathname,
+					key: pageVersions.storageKey,
 				})
 				.from(pageVersions)
 				.where(eq(pageVersions.pageId, page.id));
@@ -502,7 +502,7 @@ export const pageRouter = {
 
 			let downloadUrl: string;
 			try {
-				downloadUrl = await presignedGetUrl(row.blobPathname);
+				downloadUrl = await presignedGetUrl(row.storageKey);
 			} catch (error) {
 				console.error("[pages] presign failed", {
 					pageId: page.id,
@@ -542,7 +542,7 @@ export const pageRouter = {
 				sizeBytes: row.sizeBytes,
 				sha256: row.sha256,
 				createdAt: row.createdAt,
-				storageKey: row.blobPathname,
+				storageKey: row.storageKey,
 				downloadUrl,
 				viewUrl,
 			};
