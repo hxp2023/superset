@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { SquarePen } from "lucide-react";
@@ -8,6 +9,7 @@ import {
 } from "../../richInputOpenStore";
 import { TerminalConnectionIndicator } from "./components/TerminalConnectionIndicator";
 import { TerminalIdCopyMenu } from "./components/TerminalIdCopyMenu";
+import { TerminalPageWatchChip } from "./components/TerminalPageWatchChip";
 import { TerminalSessionHandoffMenu } from "./components/TerminalSessionHandoffMenu";
 
 interface TerminalPaneHeaderExtrasProps {
@@ -34,16 +36,29 @@ export function TerminalPaneHeaderExtras({
 	terminalInstanceId,
 	onCreateNewAgentSession,
 }: TerminalPaneHeaderExtrasProps) {
+	const { t } = useLingui();
 	const isOpen = useTerminalRichInputOpen();
 	const hotkeyText = useHotkeyDisplay("TOGGLE_TERMINAL_RICH_INPUT").text;
 	const label =
-		hotkeyText === "Unassigned" ? "Rich input" : `Rich input (${hotkeyText})`;
+		hotkeyText === "Unassigned"
+			? t({
+					id: "workspace.terminalPane.richInputLabel",
+					message: "Rich input",
+				})
+			: t({
+					id: "workspace.terminalPane.richInputLabelWithHotkey",
+					message: `Rich input (${hotkeyText})`,
+				});
 
 	return (
 		<div className="flex items-center">
 			<TerminalConnectionIndicator
 				terminalId={terminalId}
 				terminalInstanceId={terminalInstanceId}
+			/>
+			<TerminalPageWatchChip
+				workspaceId={workspaceId}
+				terminalId={terminalId}
 			/>
 			<TerminalIdCopyMenu workspaceId={workspaceId} terminalId={terminalId} />
 			<TerminalSessionHandoffMenu
