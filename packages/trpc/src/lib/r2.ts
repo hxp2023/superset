@@ -1,4 +1,11 @@
-import { AwsClient } from "aws4fetch";
+import {
+	DeleteObjectsCommand,
+	GetObjectCommand,
+	HeadObjectCommand,
+	PutObjectCommand,
+	S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../env";
 
 export function storageEnv(): {
@@ -29,25 +36,41 @@ export function storageEnv(): {
 	};
 }
 
-let client: AwsClient | null = null;
+let client: S3Client | null = null;
 
-function aws(): AwsClient {
+function s3(): S3Client {
 	if (!client) {
-		const { accessKeyId, secretAccessKey } = storageEnv();
-		client = new AwsClient({
-			accessKeyId,
-			secretAccessKey,
-			service: "s3",
+		const { accountId, accessKeyId, secretAccessKey } = storageEnv();
+		client = new S3Client({
 			region: "auto",
+			endpoint:
+				env.R2_ENDPOINT ?? `https://${accountId}.r2.cloudflarestorage.com`,
+			credentials: { accessKeyId, secretAccessKey },
+			// Path-style keeps emulators working and R2 accepts it.
+			forcePathStyle: true,
+			// R2 rejects the SDK's default CRC32 request checksums; Cloudflare's
+			// docs prescribe checksums only where the API requires them.
+			requestChecksumCalculation: "WHEN_REQUIRED",
+			responseChecksumValidation: "WHEN_REQUIRED",
 		});
 	}
 	return client;
 }
 
-function objectUrl(key: string): string {
-	const { accountId, bucket } = storageEnv();
-	const path = key.split("/").map(encodeURIComponent).join("/");
-	return `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${path}`;
+function bucket(): string {
+	return storageEnv().bucket;
+}
+
+function isMissing(error: unknown): boolean {
+	const candidate = error as {
+		name?: string;
+		$metadata?: { httpStatusCode?: number };
+	};
+	return (
+		candidate?.name === "NoSuchKey" ||
+		candidate?.name === "NotFound" ||
+		candidate?.$metadata?.httpStatusCode === 404
+	);
 }
 
 export async function putObject({
@@ -59,60 +82,126 @@ export async function putObject({
 	body: Uint8Array | string;
 	contentType: string;
 }): Promise<void> {
-	const response = await aws().fetch(objectUrl(key), {
-		method: "PUT",
-		// A Node Buffer is not a BodyInit to the fetch types; copying is cheap
-		// at the sizes stored here.
-		body: typeof body === "string" ? body : new Uint8Array(body),
-		headers: { "Content-Type": contentType },
-	});
-	if (!response.ok) {
-		throw new Error(`R2 put failed (${response.status}) for ${key}`);
-	}
+	await s3().send(
+		new PutObjectCommand({
+			Bucket: bucket(),
+			Key: key,
+			Body: body,
+			ContentType: contentType,
+		}),
+	);
 }
 
 /** The object's response, streaming, or null when it does not exist. */
-export async function getObject(key: string): Promise<Response | null> {
-	const response = await aws().fetch(objectUrl(key));
-	if (response.status === 404) return null;
-	if (!response.ok) {
-		throw new Error(`R2 get failed (${response.status}) for ${key}`);
+export async function getObject(
+	key: string,
+	{ range }: { range?: string } = {},
+): Promise<Response | null> {
+	try {
+		const result = await s3().send(
+			new GetObjectCommand({ Bucket: bucket(), Key: key, Range: range }),
+		);
+		if (!result.Body) return null;
+		return new Response(result.Body.transformToWebStream(), {
+			status: result.ContentRange ? 206 : 200,
+			headers: {
+				...(result.ContentType ? { "Content-Type": result.ContentType } : {}),
+				...(result.ContentRange
+					? { "Content-Range": result.ContentRange }
+					: {}),
+			},
+		});
+	} catch (error) {
+		if (isMissing(error)) return null;
+		throw error;
 	}
-	return response;
+}
+
+/** Size and stored content type, or null when the object does not exist. */
+export async function headObject(
+	key: string,
+): Promise<{ sizeBytes: number; contentType: string | null } | null> {
+	try {
+		const result = await s3().send(
+			new HeadObjectCommand({ Bucket: bucket(), Key: key }),
+		);
+		return {
+			sizeBytes: result.ContentLength ?? 0,
+			contentType: result.ContentType ?? null,
+		};
+	} catch (error) {
+		if (isMissing(error)) return null;
+		throw error;
+	}
 }
 
 export async function objectExists(key: string): Promise<boolean> {
-	const response = await aws().fetch(objectUrl(key), { method: "HEAD" });
-	if (response.status === 404) return false;
-	if (!response.ok) {
-		throw new Error(`R2 head failed (${response.status}) for ${key}`);
-	}
-	return true;
+	return (await headObject(key)) !== null;
 }
 
-/** Deletes are idempotent: a missing key is not an error. */
+/** Deletes are idempotent and batched; a missing key is not an error. */
 export async function deleteObjects(keys: readonly string[]): Promise<void> {
-	await Promise.all(
-		keys.map(async (key) => {
-			const response = await aws().fetch(objectUrl(key), { method: "DELETE" });
-			if (!response.ok && response.status !== 404) {
-				throw new Error(`R2 delete failed (${response.status}) for ${key}`);
-			}
-		}),
-	);
+	for (let i = 0; i < keys.length; i += 1000) {
+		const batch = keys.slice(i, i + 1000);
+		const result = await s3().send(
+			new DeleteObjectsCommand({
+				Bucket: bucket(),
+				Delete: {
+					Objects: batch.map((key) => ({ Key: key })),
+					Quiet: true,
+				},
+			}),
+		);
+		const failed = (result.Errors ?? []).filter(
+			(entry) => entry.Code !== "NoSuchKey",
+		);
+		if (failed.length > 0) {
+			throw new Error(
+				`R2 delete failed for ${failed.length} object(s), first: ${failed[0]?.Key} (${failed[0]?.Code})`,
+			);
+		}
+	}
 }
 
 export async function presignedGetUrl(
 	key: string,
 	expiresInSeconds = 60 * 60,
 ): Promise<string> {
-	const url = new URL(objectUrl(key));
-	url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
-	const signed = await aws().sign(
-		new Request(url.toString(), { method: "GET" }),
+	return getSignedUrl(
+		s3(),
+		new GetObjectCommand({ Bucket: bucket(), Key: key }),
+		{ expiresIn: expiresInSeconds },
+	);
+}
+
+/**
+ * A presigned PUT for a direct browser or main-process upload. The signature
+ * covers the content type and length, so the client must send exactly what
+ * `createUpload` was told — the first size gate; `complete` is the second.
+ */
+export async function presignedPutUrl({
+	key,
+	contentType,
+	contentLength,
+	expiresInSeconds = 15 * 60,
+}: {
+	key: string;
+	contentType: string;
+	contentLength: number;
+	expiresInSeconds?: number;
+}): Promise<{ url: string; headers: Record<string, string> }> {
+	const url = await getSignedUrl(
+		s3(),
+		new PutObjectCommand({
+			Bucket: bucket(),
+			Key: key,
+			ContentType: contentType,
+			ContentLength: contentLength,
+		}),
 		{
-			aws: { signQuery: true },
+			expiresIn: expiresInSeconds,
+			signableHeaders: new Set(["content-type", "content-length"]),
 		},
 	);
-	return signed.url;
+	return { url, headers: { "Content-Type": contentType } };
 }
