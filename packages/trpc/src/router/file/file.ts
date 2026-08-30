@@ -132,7 +132,9 @@ export const fileRouter = {
 				});
 			}
 
-			const sample = await getObject(key, { range: `bytes=0-${SNIFF_BYTES - 1}` });
+			const sample = await getObject(key, {
+				range: `bytes=0-${SNIFF_BYTES - 1}`,
+			});
 			const bytes = sample
 				? new Uint8Array(await sample.arrayBuffer())
 				: new Uint8Array();

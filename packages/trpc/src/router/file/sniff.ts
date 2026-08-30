@@ -50,7 +50,9 @@ function textType(bytes: Uint8Array, declared: string): string {
 				end -= 1;
 			}
 		}
-		text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.slice(0, end));
+		text = new TextDecoder("utf-8", { fatal: true }).decode(
+			bytes.slice(0, end),
+		);
 	} catch {
 		return "application/octet-stream";
 	}
@@ -70,7 +72,10 @@ function textType(bytes: Uint8Array, declared: string): string {
 	) {
 		return "text/html";
 	}
-	if (head.startsWith("<svg") || (head.startsWith("<?xml") && head.includes("<svg"))) {
+	if (
+		head.startsWith("<svg") ||
+		(head.startsWith("<?xml") && head.includes("<svg"))
+	) {
 		return "image/svg+xml";
 	}
 	if (head.startsWith("<?xml")) return "application/xml";
@@ -94,7 +99,8 @@ export function sniffContentType(bytes: Uint8Array, declared: string): string {
 	if (startsWith(bytes, 0x50, 0x4b, 0x03, 0x04)) return "application/zip";
 	if (startsWith(bytes, 0x1f, 0x8b)) return "application/gzip";
 	if (ascii(bytes, 0, "OggS")) return "audio/ogg";
-	if (ascii(bytes, 0, "ID3") || startsWith(bytes, 0xff, 0xfb)) return "audio/mpeg";
+	if (ascii(bytes, 0, "ID3") || startsWith(bytes, 0xff, 0xfb))
+		return "audio/mpeg";
 	if (ascii(bytes, 0, "wOF2")) return "font/woff2";
 	if (ascii(bytes, 0, "wOFF")) return "font/woff";
 

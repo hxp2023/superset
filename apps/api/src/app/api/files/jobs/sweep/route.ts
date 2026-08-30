@@ -1,4 +1,7 @@
-import { FILE_SWEEP_JOB_PATH, sweepPendingFiles } from "@superset/trpc/file-sweep";
+import {
+	FILE_SWEEP_JOB_PATH,
+	sweepPendingFiles,
+} from "@superset/trpc/file-sweep";
 import { verifyQstashRequest } from "@/lib/verifyQstash";
 
 export const maxDuration = 300;
@@ -11,7 +14,11 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
 	const body = await request.text();
-	const rejected = await verifyQstashRequest(request, body, FILE_SWEEP_JOB_PATH);
+	const rejected = await verifyQstashRequest(
+		request,
+		body,
+		FILE_SWEEP_JOB_PATH,
+	);
 	if (rejected) return rejected;
 
 	const result = await sweepPendingFiles();
