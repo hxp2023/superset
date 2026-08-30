@@ -8,7 +8,11 @@ import {
 	users,
 	workspacePages,
 } from "@superset/db/schema";
-import { pageThumbnailUrl, pageViewUrl } from "@superset/shared/usercontent";
+import {
+	pageThumbnailKey,
+	pageThumbnailUrl,
+	pageViewUrl,
+} from "@superset/shared/usercontent";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq, or, type SQL, sql } from "drizzle-orm";
 import { presignedGetUrl } from "../../lib/r2";
@@ -215,6 +219,12 @@ export const pageRouter = {
 				rows.map(async (row) => {
 					const served = servedVersion(row.sharedVersion, row.latestVersion);
 					const ticket = await mintPageTicket(row);
+					// Version-bound, so it turns daily instead of hourly — the capture
+					// is immutable and the stable URL is what lets it cache.
+					const thumbnailTicket =
+						served === null
+							? undefined
+							: await mintPageTicket(row, { version: served });
 					return {
 						...row,
 						url: pageUrl(row.slug),
@@ -226,8 +236,10 @@ export const pageRouter = {
 										baseUrl,
 										pageId: row.id,
 										version: served,
-										ticket,
+										ticket: thumbnailTicket,
 									}),
+						thumbnailStorageKey:
+							served === null ? null : pageThumbnailKey(row.id, served),
 					};
 				}),
 			);
@@ -251,7 +263,10 @@ export const pageRouter = {
 				baseUrl: usercontentBaseUrl(),
 				pageId: page.id,
 				version: served,
-				ticket: await mintPageTicket(page),
+				ticket: await mintPageTicket(
+					page,
+					served === null ? {} : { version: served },
+				),
 			}),
 			latestVersion,
 			servedVersion: served,
@@ -527,6 +542,7 @@ export const pageRouter = {
 				sizeBytes: row.sizeBytes,
 				sha256: row.sha256,
 				createdAt: row.createdAt,
+				storageKey: row.blobPathname,
 				downloadUrl,
 				viewUrl,
 			};

@@ -48,6 +48,13 @@ async function loadManifest(
 	return parsePageManifest(await object.text());
 }
 
+function requestTicket(c: Context<AppContext>): string | undefined {
+	// The path form carries its `~` marker in the matched segment.
+	const segment = c.req.param("ticket");
+	if (segment?.startsWith("~")) return segment.slice(1);
+	return c.req.query(TICKET_QUERY_PARAM);
+}
+
 function requestedVersion(c: Context<AppContext>): number | null | undefined {
 	const raw = c.req.param("version");
 	if (raw === undefined) return null;
@@ -65,7 +72,7 @@ async function authorized(
 	version: number,
 ): Promise<boolean> {
 	if (manifest.visibility === "everyone") return true;
-	const ticket = c.req.query(TICKET_QUERY_PARAM);
+	const ticket = requestTicket(c);
 	if (!ticket) return false;
 	const claims = await verifyPageTicket(
 		[
@@ -111,6 +118,11 @@ async function servePage(c: Context<AppContext>): Promise<Response> {
 	const ticketed = manifest.visibility !== "everyone";
 	const headers = new Headers({
 		"Content-Type": isHtml ? "text/html; charset=utf-8" : contentType,
+		// Each page is its own origin; ask for an origin-keyed agent cluster
+		// so sibling pages never share a renderer process while the PSL entry
+		// propagates.
+		"Origin-Agent-Cluster": "?1",
+		"Superset-Storage-Key": entry.key,
 		"Content-Security-Policy": pageContentSecurityPolicy(
 			c.env.FRAME_ANCESTORS.split(/\s+/).filter(Boolean),
 		),
@@ -138,18 +150,18 @@ async function serveThumbnail(c: Context<AppContext>): Promise<Response> {
 	if (!version) return notFound();
 	if (!(await authorized(c, manifest, version))) return notFound();
 
-	const object = await c.env.PRIVATE.get(
-		pageThumbnailKey(manifest.pageId, version),
-	);
+	const key = pageThumbnailKey(manifest.pageId, version);
+	const object = await c.env.PRIVATE.get(key);
 	if (!object) return notFound();
 	return new Response(object.body, {
 		headers: {
 			"Content-Type": "image/jpeg",
+			"Superset-Storage-Key": key,
 			"X-Content-Type-Options": "nosniff",
 			"Cache-Control":
 				manifest.visibility === "everyone"
 					? IMMUTABLE
-					: "private, max-age=3600",
+					: "private, max-age=86400",
 		},
 	});
 }
@@ -172,15 +184,23 @@ app.get(RUNTIME_SCRIPT_PATH, (c) =>
 	}),
 );
 
-app.get("/", servePage);
-// Relative references inside a version resolve against `/versions/<n>/`,
-// so the slashless form is a redirect, never a second address.
-app.get("/versions/:version", (c) => {
+// Relative references resolve against the directory the document was
+// served from, so slashless forms redirect — never a second address — and a
+// private document lives under its ticket segment (`/versions/3/~<ticket>/`)
+// so every relative reference inherits the ticket.
+const addTrailingSlash = (c: Context<AppContext>): Response => {
 	const url = new URL(c.req.url);
 	url.pathname = `${url.pathname}/`;
 	return c.redirect(url.toString(), 301);
-});
+};
+
+app.get("/", servePage);
+app.get("/:ticket{~[^/]+}", addTrailingSlash);
+app.get("/:ticket{~[^/]+}/", servePage);
+app.get("/versions/:version", addTrailingSlash);
 app.get("/versions/:version/", servePage);
+app.get("/versions/:version/:ticket{~[^/]+}", addTrailingSlash);
+app.get("/versions/:version/:ticket{~[^/]+}/", servePage);
 app.get(`/versions/:version/${THUMBNAIL_FILENAME}`, serveThumbnail);
 app.notFound(() => notFound());
 

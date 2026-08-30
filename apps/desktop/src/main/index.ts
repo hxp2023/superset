@@ -355,6 +355,12 @@ if (process.env.NODE_ENV === "development") {
 	parentCheckInterval.unref();
 }
 
+// Chromium refuses to cache any single entry larger than about an eighth
+// of the disk cache, and the default cache is a few hundred MB — too
+// small for a video inside a page. 1 GiB lifts the per-entry cap to
+// roughly 128 MB.
+app.commandLine.appendSwitch("disk-cache-size", String(1024 * 1024 * 1024));
+
 protocol.registerSchemesAsPrivileged([
 	{
 		scheme: "superset-icon",

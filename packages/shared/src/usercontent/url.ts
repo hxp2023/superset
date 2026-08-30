@@ -9,13 +9,16 @@ export function pageOrigin(baseUrl: string, pageId: string): string {
 
 export const THUMBNAIL_FILENAME = "thumbnail.jpg";
 export const TICKET_QUERY_PARAM = "ticket";
+export const TICKET_PATH_PREFIX = "~";
 
-function withTicket(url: URL, ticket: string | undefined): string {
-	if (ticket) url.searchParams.set(TICKET_QUERY_PARAM, ticket);
-	return url.toString();
-}
-
-/** `/` serves the shared version (or latest); `/versions/<n>/` pins one. */
+/**
+ * `/` serves the shared version (or latest); `/versions/<n>/` pins one. A
+ * ticket rides as its own path segment — `/versions/3/~<ticket>/` — so every
+ * relative reference inside the document resolves under that prefix and
+ * carries the ticket by construction, with no cookie. Thumbnails are
+ * app-referenced (the app builds the tag), so their ticket stays in the
+ * query.
+ */
 export function pageViewUrl({
 	baseUrl,
 	pageId,
@@ -27,8 +30,10 @@ export function pageViewUrl({
 	version?: number | null;
 	ticket?: string;
 }): string {
-	const path = version === null ? "/" : `/versions/${version}/`;
-	return withTicket(new URL(path, pageOrigin(baseUrl, pageId)), ticket);
+	const segments = version === null ? [] : ["versions", String(version)];
+	if (ticket) segments.push(`${TICKET_PATH_PREFIX}${ticket}`);
+	const path = segments.length === 0 ? "/" : `/${segments.join("/")}/`;
+	return new URL(path, pageOrigin(baseUrl, pageId)).toString();
 }
 
 export function pageThumbnailUrl({
@@ -42,13 +47,12 @@ export function pageThumbnailUrl({
 	version: number;
 	ticket?: string;
 }): string {
-	return withTicket(
-		new URL(
-			`/versions/${version}/${THUMBNAIL_FILENAME}`,
-			pageOrigin(baseUrl, pageId),
-		),
-		ticket,
+	const url = new URL(
+		`/versions/${version}/${THUMBNAIL_FILENAME}`,
+		pageOrigin(baseUrl, pageId),
 	);
+	if (ticket) url.searchParams.set(TICKET_QUERY_PARAM, ticket);
+	return url.toString();
 }
 
 const PAGE_ID_LABEL =
