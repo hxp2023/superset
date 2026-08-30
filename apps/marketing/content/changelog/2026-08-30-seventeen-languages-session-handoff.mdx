@@ -10,13 +10,13 @@ Superset now runs in Japanese, Simplified and Traditional Chinese, French, Korea
 
 - Desktop, web, and mobile are fully translated, down to menus, dialogs, and notifications
 - [superset.sh](https://superset.sh) and the docs have localized URLs per language, with a picker in the footer
-- The README on GitHub is translated into all sixteen languages too
+- The README on GitHub comes in all sixteen languages too
 
 ## Continue a Session with Another Agent, or Fork It <PRBadge url="https://github.com/superset-sh/superset/pull/6962" />
 
 Move a session's work to a different agent without retyping the context. Two actions behind the fork icon in an agent terminal's header:
 
-- **Continue with another agent** starts a fresh session of a different agent seeded with the terminal's recent output, for a session that is wedged, out of context, or turned out to be the wrong tool for the job
+- **Continue with another agent** starts a fresh session of a different agent seeded with the terminal's recent output, for a session that wedged, ran out of context, or turned out to be the wrong tool for the job
 - **Fork session** asks the agent for a native clone of its own session and leaves the original running
 
 ![The session handoff menu on a Claude terminal pane with Continue with another agent and Fork session actions](/changelog/2026-08-30-session-handoff.png)
@@ -52,7 +52,7 @@ An opt-in leaderboard of agent usage across Superset: tokens, sessions, models, 
 
 - **PDFs open in the file pane** - a real viewer with page thumbnails, zoom, search, and print, instead of the binary-file warning <PRBadge url="https://github.com/superset-sh/superset/pull/6909" />
 - **Copy on select** - selecting terminal text copies it immediately, like Ghostty and iTerm2; off by default in **Settings → Terminal**, based on [@VelkyVenik](https://github.com/VelkyVenik)'s original PR <PRBadge url="https://github.com/superset-sh/superset/pull/6949" />
-- **Terminal scripts** - terminal presets are renamed to [terminal scripts](https://docs.superset.sh/terminal-scripts), and `superset scripts add` registers one from the CLI; a running desktop imports it live <PRBadge url="https://github.com/superset-sh/superset/pull/6892" />
+- **Terminal scripts** - terminal presets are now [terminal scripts](https://docs.superset.sh/terminal-scripts), and `superset scripts add` registers one from the CLI; a running desktop imports it live <PRBadge url="https://github.com/superset-sh/superset/pull/6892" />
 - **Usage lives in Settings** - token spend, quotas, and machine resources moved to **Settings → Usage**, and the Settings sidebar now matches the main sidebar <PRBadge url="https://github.com/superset-sh/superset/pull/6883" />
 - **Switch accounts without losing conversations** - changing the default provider account offers to restart that provider's running agents on the new login, keeping each conversation <PRBadge url="https://github.com/superset-sh/superset/pull/6970" />
 - **Pinned Claude models** - the workspace-create picker adds pinned releases like Opus 4.8 alongside the Latest aliases, and an unsupported model fails with a clear error instead of being silently ignored <PRBadge url="https://github.com/superset-sh/superset/pull/6920" />
@@ -72,12 +72,12 @@ An opt-in leaderboard of agent usage across Superset: tokens, sessions, models, 
 - One terminal's WebGL failure no longer switches every terminal to the slower renderer <PRBadge url="https://github.com/superset-sh/superset/pull/6874" />
 - The terminal viewport no longer freezes when Pi clears its scrollback <PRBadge url="https://github.com/superset-sh/superset/pull/6956" />
 - Command palette results rank real matches first instead of fuzzy character coincidences <PRBadge url="https://github.com/superset-sh/superset/pull/6923" />
-- The organization you switched to on web is remembered across sessions <PRBadge url="https://github.com/superset-sh/superset/pull/6957" />
+- Web now remembers the organization you switched to, across sessions <PRBadge url="https://github.com/superset-sh/superset/pull/6957" />
 - "Host unreachable" no longer lingers after the host service restarts <PRBadge url="https://github.com/superset-sh/superset/pull/6900" />
 - Hosts on a build older than 1.22 show an update prompt instead of a blank terminal pane <PRBadge url="https://github.com/superset-sh/superset/pull/6998" />
 - Markdown preview code blocks are readable in light themes, and syntax comments stay readable in surface-toned themes <PRBadge url="https://github.com/superset-sh/superset/pull/6876" /> <PRBadge url="https://github.com/superset-sh/superset/pull/6873" />
 - Revoking an API key works, and the list shows only your own keys <PRBadge url="https://github.com/superset-sh/superset/pull/6877" />
-- The Pull Requests page says which GitHub credential was rejected instead of failing silently <PRBadge url="https://github.com/superset-sh/superset/pull/6911" />
+- The Pull Requests page names the rejected GitHub credential instead of failing silently <PRBadge url="https://github.com/superset-sh/superset/pull/6911" />
 - Pane resize handles no longer paint above dialogs <PRBadge url="https://github.com/superset-sh/superset/pull/6891" />
 - Interrupting a Codex turn no longer leaves the workspace stuck as working <PRBadge url="https://github.com/superset-sh/superset/pull/6963" />
 - Pasting mixed text and files keeps the text on every surface <PRBadge url="https://github.com/superset-sh/superset/pull/6939" />
