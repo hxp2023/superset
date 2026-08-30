@@ -1,4 +1,4 @@
-import { Terminal } from "@xterm/headless";
+import { HeadlessTerminal } from "./headless-xterm.ts";
 
 /**
  * Turn a raw PTY byte stream into readable text.
@@ -38,7 +38,7 @@ interface XtermInternals {
  * tracker relies on parses inline; if the pinned version stops exposing it,
  * fail loudly rather than silently transcribing blank screens.
  */
-function synchronousWriter(term: Terminal): (data: string) => void {
+function synchronousWriter(term: HeadlessTerminal): (data: string) => void {
 	const writeBuffer = (term as unknown as XtermInternals)._core?._writeBuffer;
 	if (typeof writeBuffer?.writeSync !== "function") {
 		throw new Error(
@@ -56,7 +56,7 @@ function trimTrailingBlanks(rows: string[]): string[] {
 }
 
 /** Just what is on screen now: all the alternate screen ever holds. */
-function readViewport(term: Terminal): string[] {
+function readViewport(term: HeadlessTerminal): string[] {
 	const buffer = term.buffer.active;
 	const rows: string[] = [];
 	for (let y = 0; y < term.rows; y++) {
@@ -190,7 +190,7 @@ export function reconstructTerminalTranscript(
 ): string {
 	const cols = options.cols ?? 120;
 	const rows = options.rows ?? 40;
-	const term = new Terminal({
+	const term = new HeadlessTerminal({
 		cols,
 		rows,
 		scrollback: SCROLLBACK_ROWS,
