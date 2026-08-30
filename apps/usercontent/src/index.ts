@@ -15,9 +15,9 @@ import {
 	verifyPageTicket,
 } from "@superset/shared/usercontent";
 import { type Context, Hono } from "hono";
-import type { ContentEnv } from "./types";
+import { assertEnv, type UsercontentEnv } from "./env";
 
-type AppContext = { Bindings: ContentEnv };
+type AppContext = { Bindings: UsercontentEnv };
 
 const app = new Hono<AppContext>();
 
@@ -169,6 +169,7 @@ async function serveThumbnail(c: Context<AppContext>): Promise<Response> {
 // Pages hang off `pages.<zone>`; the zone apex and `pages.` itself have
 // nothing to serve, so readers arriving there belong in the app.
 app.use("*", async (c, next) => {
+	assertEnv(c.env);
 	const host = requestHost(c);
 	const base = baseHost(c);
 	const apex = base.slice(base.indexOf(".") + 1);
@@ -205,7 +206,7 @@ app.get(`/versions/:version/${THUMBNAIL_FILENAME}`, serveThumbnail);
 app.notFound(() => notFound());
 
 // Exceptions only; no-op until SENTRY_DSN is set.
-const sentryOptions = (env: ContentEnv): Sentry.CloudflareOptions => ({
+const sentryOptions = (env: UsercontentEnv): Sentry.CloudflareOptions => ({
 	dsn: env.SENTRY_DSN,
 	tracesSampleRate: 0,
 	sendDefaultPii: false,
@@ -215,4 +216,4 @@ const sentryOptions = (env: ContentEnv): Sentry.CloudflareOptions => ({
 
 export default Sentry.withSentry(sentryOptions, {
 	fetch: app.fetch,
-} satisfies ExportedHandler<ContentEnv>);
+} satisfies ExportedHandler<UsercontentEnv>);
