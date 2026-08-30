@@ -3,6 +3,7 @@ import {
 	type DiffLineAnnotation,
 	type FileDiffMetadata,
 	type LineAnnotation,
+	parseDiffFromFile,
 	parsePatchFiles,
 } from "@pierre/diffs";
 import type { AppRouter } from "@superset/host-service";
@@ -15,7 +16,9 @@ import {
 	type ChangesetFile,
 	getChangesetFileKey,
 } from "../../../../../useChangeset";
+import { createGetDiffInput } from "../../utils/createGetDiffInput";
 import { isGeneratedDiffFile } from "../../utils/diffLoadingGuards";
+import { isMissingProcedureError } from "../../utils/isMissingProcedureError";
 import type {
 	DeferredDiffReason,
 	DiffAnnotationMetadata,
@@ -54,6 +57,24 @@ interface PatchGroup {
 	input: GetDiffPatchInput;
 	members: { file: ChangesetFile; itemId: string }[];
 }
+
+/** What a group resolves to. `patch` is the normal path; `files` is what an
+ * older host-service without `git.getDiffPatch` can still give us — the full
+ * contents per file, which parse into complete (non-partial) metadata. */
+type PatchGroupResult =
+	| { kind: "patch"; patch: string }
+	| {
+			kind: "files";
+			files: {
+				path: string;
+				oldPath?: string;
+				oldFile: { name: string; contents: string };
+				newFile: { name: string; contents: string };
+			}[];
+	  };
+
+/** How many per-file `getDiff` calls the fallback runs at once. */
+const FALLBACK_CONCURRENCY = 6;
 
 function groupKeyFor(input: GetDiffPatchInput): string {
 	return [
@@ -160,7 +181,42 @@ export function useDiffCodeViewItems({
 				group.input,
 				"query",
 			),
-			queryFn: () => trpcClient.git.getDiffPatch.query(group.input),
+			queryFn: async (): Promise<PatchGroupResult> => {
+				try {
+					const { patch } = await trpcClient.git.getDiffPatch.query(
+						group.input,
+					);
+					return { kind: "patch", patch };
+				} catch (error) {
+					if (!isMissingProcedureError(error)) throw error;
+					// Older host-service (a remote host or cloud sandbox that
+					// hasn't been updated): fetch each file's contents the way
+					// the pane used to, so the changeset still renders.
+					const members = [...group.members];
+					const files: Extract<PatchGroupResult, { kind: "files" }>["files"] =
+						[];
+					const workers = Array.from(
+						{ length: Math.min(FALLBACK_CONCURRENCY, members.length) },
+						async () => {
+							for (;;) {
+								const member = members.shift();
+								if (!member) return;
+								const { oldFile, newFile } = await trpcClient.git.getDiff.query(
+									createGetDiffInput(workspaceId, member.file),
+								);
+								files.push({
+									path: member.file.path,
+									oldPath: member.file.oldPath,
+									oldFile,
+									newFile,
+								});
+							}
+						},
+					);
+					await Promise.all(workers);
+					return { kind: "files", files };
+				}
+			},
 			staleTime: Number.POSITIVE_INFINITY,
 		})),
 	});
@@ -190,18 +246,38 @@ export function useDiffCodeViewItems({
 		patchGroups.forEach((group, index) => {
 			liveGroupKeys.add(group.key);
 			const query = patchQueries[index];
-			const patch = query?.data?.patch;
+			const data = query?.data;
 			const updatedAt = query?.dataUpdatedAt ?? 0;
 			let parsed = cache.get(group.key);
-			if (patch !== undefined && parsed?.updatedAt !== updatedAt) {
+			if (data && parsed?.updatedAt !== updatedAt) {
 				const byPath = new Map<string, FileDiffMetadata>();
-				for (const section of parsePatchFiles(
-					patch,
-					`${group.key}:${updatedAt}`,
-				)) {
-					for (const fileDiff of section.files) {
-						byPath.set(fileDiff.name, fileDiff);
-						if (fileDiff.prevName) byPath.set(fileDiff.prevName, fileDiff);
+				if (data.kind === "patch") {
+					for (const section of parsePatchFiles(
+						data.patch,
+						`${group.key}:${updatedAt}`,
+					)) {
+						for (const fileDiff of section.files) {
+							byPath.set(fileDiff.name, fileDiff);
+							if (fileDiff.prevName) byPath.set(fileDiff.prevName, fileDiff);
+						}
+					}
+				} else {
+					for (const file of data.files) {
+						byPath.set(
+							file.path,
+							parseDiffFromFile(
+								{
+									...file.oldFile,
+									name: file.oldPath ?? file.path,
+									cacheKey: `${group.key}:${updatedAt}:${file.path}:old`,
+								},
+								{
+									...file.newFile,
+									name: file.path,
+									cacheKey: `${group.key}:${updatedAt}:${file.path}:new`,
+								},
+							),
+						);
 					}
 				}
 				parsed = { updatedAt, byPath };
