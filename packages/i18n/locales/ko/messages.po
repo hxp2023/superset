@@ -6146,6 +6146,7 @@ msgstr "페이지"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/PageViewer/PageViewer.tsx
+#: ../../apps/mobile/screens/(authenticated)/page/[id]/PageViewerScreen.tsx
 msgid "dashboard.pageViewer.pageMissingDescription"
 msgstr "삭제되었거나 다른 조직에 속한 페이지일 수 있습니다."
 
@@ -6156,6 +6157,7 @@ msgstr "이 페이지는 더 이상 존재하지 않습니다"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/PageViewer/PageViewer.tsx
+#: ../../apps/mobile/screens/(authenticated)/page/[id]/PageViewerScreen.tsx
 msgid "dashboard.pageViewer.pageOpenFailedTitle"
 msgstr "이 페이지를 열 수 없습니다"
 

@@ -6146,6 +6146,7 @@ msgstr "Pages"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/PageViewer/PageViewer.tsx
+#: ../../apps/mobile/screens/(authenticated)/page/[id]/PageViewerScreen.tsx
 msgid "dashboard.pageViewer.pageMissingDescription"
 msgstr "It may have been deleted, or it belongs to another organization."
 
@@ -6156,6 +6157,7 @@ msgstr "This page no longer exists"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/PageViewer/PageViewer.tsx
+#: ../../apps/mobile/screens/(authenticated)/page/[id]/PageViewerScreen.tsx
 msgid "dashboard.pageViewer.pageOpenFailedTitle"
 msgstr "This page could not be opened"
 

@@ -6146,6 +6146,7 @@ msgstr "頁面"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/PageViewer/PageViewer.tsx
+#: ../../apps/mobile/screens/(authenticated)/page/[id]/PageViewerScreen.tsx
 msgid "dashboard.pageViewer.pageMissingDescription"
 msgstr "它可能已被刪除，或屬於另一個組織。"
 
@@ -6156,6 +6157,7 @@ msgstr "這個頁面已不存在"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/PageViewer/PageViewer.tsx
+#: ../../apps/mobile/screens/(authenticated)/page/[id]/PageViewerScreen.tsx
 msgid "dashboard.pageViewer.pageOpenFailedTitle"
 msgstr "無法開啟這個頁面"
 
