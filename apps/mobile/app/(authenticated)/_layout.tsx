@@ -105,6 +105,10 @@ export default function AuthenticatedLayout() {
 				options={{ ...glassHeaderOptions, title: "" }}
 			/>
 			<Stack.Screen
+				name="page/[id]"
+				options={{ ...glassHeaderOptions, title: "" }}
+			/>
+			<Stack.Screen
 				name="workspace/[id]/commits"
 				options={{
 					presentation: "formSheet",

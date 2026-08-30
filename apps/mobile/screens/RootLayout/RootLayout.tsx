@@ -6,6 +6,7 @@ import {
 	QueryClient,
 	QueryClientProvider,
 } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { getLocales } from "expo-localization";
 import { Stack } from "expo-router";
 import { ThemeProvider } from "expo-router/react-navigation";
@@ -16,6 +17,11 @@ import { useSession } from "@/lib/auth/client";
 import { NAV_THEME } from "@/lib/theme";
 
 Uniwind.setTheme("dark");
+
+// Bound the image disk cache (default is unlimited) so page thumbnails and
+// attachments cannot grow without limit; ContentImage keys entries by
+// storage key, so rotated ticket URLs never duplicate bytes.
+void Image.configureCache({ maxDiskSize: 512 * 1024 * 1024 });
 
 import { PostHogUserIdentifier } from "./components/PostHogUserIdentifier";
 import { PostHogProvider } from "./providers/PostHogProvider";

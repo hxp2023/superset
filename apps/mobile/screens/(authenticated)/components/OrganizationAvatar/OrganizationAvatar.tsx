@@ -1,7 +1,7 @@
-import { Image } from "expo-image";
 import { View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useTheme } from "@/hooks/useTheme";
+import { ContentImage } from "../ContentImage";
 
 export function OrganizationAvatar({
 	name,
@@ -20,10 +20,7 @@ export function OrganizationAvatar({
 				className="overflow-hidden rounded-md border border-foreground/10 bg-muted"
 				style={{ width: size, height: size }}
 			>
-				<Image
-					source={{ uri: logo }}
-					style={{ width: "100%", height: "100%" }}
-				/>
+				<ContentImage url={logo} style={{ width: "100%", height: "100%" }} />
 			</View>
 		);
 	}
