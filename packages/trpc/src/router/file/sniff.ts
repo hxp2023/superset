@@ -36,32 +36,22 @@ function fromFtyp(bytes: Uint8Array): string | null {
 }
 
 function textType(bytes: Uint8Array, declared: string): string {
-	let text: string;
-	try {
-		// The window may cut a UTF-8 sequence; trim up to three trailing bytes.
-		let end = bytes.length;
-		for (let i = 0; i < 3 && end > 0; i += 1) {
-			try {
-				text = new TextDecoder("utf-8", { fatal: true }).decode(
-					bytes.slice(0, end),
-				);
-				break;
-			} catch {
-				end -= 1;
-			}
-		}
-		text = new TextDecoder("utf-8", { fatal: true }).decode(
-			bytes.slice(0, end),
-		);
-	} catch {
-		return "application/octet-stream";
-	}
+	// Portable UTF-8 validity check: decode leniently and treat replacement
+	// characters as binary, allowing exactly one at the very end where the
+	// sample window may have cut a multi-byte sequence.
+	const decoded = new TextDecoder().decode(bytes);
+	const text = decoded.endsWith("\ufffd") ? decoded.slice(0, -1) : decoded;
+	if (text.includes("\ufffd")) return "application/octet-stream";
 	// Text with bare control characters is binary that happened to decode.
 	// biome-ignore lint/suspicious/noControlCharactersInRegex: that is the point
 	if (/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text)) {
 		return "application/octet-stream";
 	}
-	const head = text.replace(/^﻿/, "").trimStart().slice(0, 512).toLowerCase();
+	const head = text
+		.replace(/^\ufeff/, "")
+		.trimStart()
+		.slice(0, 512)
+		.toLowerCase();
 	if (
 		head.startsWith("<!doctype html") ||
 		head.startsWith("<html") ||
