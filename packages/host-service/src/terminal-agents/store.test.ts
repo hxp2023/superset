@@ -84,25 +84,36 @@ describe("TerminalAgentStore", () => {
 		expect(binding?.agentSessionId).toBe("s1");
 	});
 
-	it("Attached preserves a pending PermissionRequest state", () => {
-		store.recordEvent({
-			terminalId: "t1",
-			workspaceId: WORKSPACE,
-			eventType: "PermissionRequest",
-			agentId: "codex",
-			agentSessionId: "s1",
-			occurredAt: 100,
-		});
-		store.recordEvent({
-			terminalId: "t1",
-			workspaceId: WORKSPACE,
-			eventType: "Attached",
-			agentId: "codex",
-			agentSessionId: "s1",
-			occurredAt: 200,
-		});
+	it("Attached preserves every same-session lifecycle state, not just working ones", () => {
+		// Stop must survive: an Attached lastEventType would erase the row's
+		// resume-candidate status; Failed must survive so the failure stays
+		// surfaced.
+		for (const [i, lastEventType] of [
+			"PermissionRequest",
+			"Stop",
+			"Failed",
+		].entries()) {
+			const terminalId = `t-preserve-${i}`;
+			store.recordEvent({
+				terminalId,
+				workspaceId: WORKSPACE,
+				eventType: lastEventType,
+				agentId: "codex",
+				agentSessionId: "s1",
+				occurredAt: 100,
+			});
+			store.recordEvent({
+				terminalId,
+				workspaceId: WORKSPACE,
+				eventType: "Attached",
+				agentId: "codex",
+				agentSessionId: "s1",
+				occurredAt: 200,
+			});
 
-		expect(store.get("t1")?.lastEventType).toBe("PermissionRequest");
+			expect(store.get(terminalId)?.lastEventType).toBe(lastEventType);
+			expect(store.get(terminalId)?.lastEventAt).toBe(200);
+		}
 	});
 
 	it("Attached with a new session id overrides the previous session's working state", () => {
