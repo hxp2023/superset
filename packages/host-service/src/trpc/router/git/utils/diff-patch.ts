@@ -89,7 +89,10 @@ export async function buildDiffPatch(
 	const args = diffArgsForCategory(category, refs);
 	if (paths?.length) args.push("--", ...paths);
 
-	const tracked = await git.raw(args).catch(() => "");
+	// No `.catch` here on purpose: swallowing a failure would return an empty
+	// patch, which the renderer can't tell apart from "nothing changed" — it
+	// would render every file as a placeholder with no way to retry.
+	const tracked = await git.raw(args);
 	if (!untrackedPaths?.length) return tracked;
 
 	const untracked = await untrackedPatches(git, untrackedPaths);

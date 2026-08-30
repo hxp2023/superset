@@ -106,8 +106,12 @@ export function useDiffCodeViewItems({
 	}, [fileByItemId]);
 
 	const requestDiff = useCallback((itemId: string) => {
-		if (requestedItemIdsRef.current.has(itemId)) {
-			retryByItemIdRef.current.get(itemId)?.();
+		// A file already covered by a patch request has nothing to opt into —
+		// the only useful action is refetching its group. Held-back generated
+		// files have no group yet, so they get added to one instead.
+		const retry = retryByItemIdRef.current.get(itemId);
+		if (retry) {
+			retry();
 			return;
 		}
 		setRequestedItemIds((current) => {
@@ -252,10 +256,18 @@ export function useDiffCodeViewItems({
 
 			const fileDiff = diffByItemId.get(itemId);
 			if (!fileDiff) {
-				const reason =
-					isGeneratedDiffFile(file.path) && !requestedItemIds.has(itemId)
-						? "deferred"
-						: (reasonByItemId.get(itemId) ?? "deferred");
+				const heldBack =
+					isGeneratedDiffFile(file.path) && !requestedItemIds.has(itemId);
+				const groupReason = reasonByItemId.get(itemId) ?? "loading";
+				// The group resolved but carries no section for this path (an
+				// empty patch, or a change git expresses without hunks such as
+				// a mode-only edit). That is a failure to show the diff, not a
+				// file we chose to hold back — offer Retry, not "Load diff".
+				const reason: DeferredDiffReason = heldBack
+					? "deferred"
+					: groupReason === "deferred"
+						? "error"
+						: groupReason;
 				nextItems.push(
 					buildPlaceholderItem(annotationsByPath, file, itemId, collapsed, {
 						kind: "deferred-placeholder",

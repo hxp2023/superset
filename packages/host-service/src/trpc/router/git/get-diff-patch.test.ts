@@ -129,6 +129,18 @@ describe("gitRouter.getDiffPatch", () => {
 		expect(patch).toContain("-two");
 	});
 
+	test("a failing git diff rejects instead of returning an empty patch", async () => {
+		// An empty patch is indistinguishable from "nothing changed", which
+		// would strand every file on a placeholder with no way to retry.
+		await expect(
+			createCaller(repo).getDiffPatch({
+				workspaceId: "ws",
+				category: "commit",
+				commitHash: "0000000000000000000000000000000000000000",
+			}),
+		).rejects.toThrow();
+	});
+
 	test("the patch is a fraction of the bytes the file contents would be", async () => {
 		const big = Array.from({ length: 5_000 }, (_, i) => `line ${i}`).join("\n");
 		await writeFile(join(repo, "big.txt"), `${big}\n`);
