@@ -33,7 +33,7 @@ function ticketSecret(): string {
 }
 
 /**
- * Rewrites the manifest the content Worker serves from. Called after any
+ * Rewrites the manifest the usercontent Worker serves from. Called after any
  * change to what a page serves or who may see it; idempotent, so a failed
  * write is repaired by the next caller.
  */

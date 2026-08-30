@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "superset-content",
+	"name": "superset-usercontent",
 	"main": "src/index.ts",
 	"workers_dev": false,
 	// One origin per page under `pages.`; files get their own first-level host

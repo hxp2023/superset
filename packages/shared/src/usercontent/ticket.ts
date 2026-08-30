@@ -1,6 +1,6 @@
 /**
  * The ticket for a non-public page: minted by the API after it has checked
- * the session against the page's visibility, verified by the content Worker
+ * the session against the page's visibility, verified by the usercontent Worker
  * with nothing but the shared secret. It carries no identity — it says
  * "this page (and optionally this version) may be read until `exp`", nothing
  * more. HMAC-SHA256 over WebCrypto so the same code runs in Node, Workers,
