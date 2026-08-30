@@ -12,7 +12,7 @@ export function pageContentSecurityPolicy(
 	return [
 		"default-src 'none'",
 		"script-src 'self' 'unsafe-inline'",
-		"style-src 'unsafe-inline'",
+		"style-src 'self' 'unsafe-inline'",
 		"img-src data: blob: https:",
 		"media-src data: blob: https:",
 		"font-src data: https:",

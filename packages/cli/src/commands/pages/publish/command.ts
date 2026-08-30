@@ -1,8 +1,15 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readFileSync, statSync } from "node:fs";
 import { basename, extname, resolve } from "node:path";
 import { boolean, CLIError, positional, string } from "@superset/cli-framework";
+import { lookup as lookupMimeType } from "mime-types";
 import { command } from "../../../lib/command";
 import { resolveWorkspaceId } from "../workspaceRef";
+import {
+	collectDirectoryPublish,
+	type DirectoryAsset,
+	videoCodecWarning,
+} from "./directory";
 import {
 	EXTERNAL_ENTRY_PREFIX,
 	externalEntryPath,
@@ -13,10 +20,16 @@ import { registerWatch, watchTerminalId } from "./registerWatch";
 const VISIBILITIES = ["just_me", "org"] as const;
 
 export default command({
-	description: "Publish an HTML file as a page",
-	args: [positional("path").required().desc("Path to the .html file")],
+	description: "Publish an HTML file, or a directory of files, as a page",
+	args: [
+		positional("path")
+			.required()
+			.desc(
+				"Path to the .html file, or a directory whose index.html is the page",
+			),
+	],
 	options: {
-		title: string().desc("Page title (defaults to the filename)"),
+		title: string().desc("Page title (defaults to the file or directory name)"),
 		description: string().desc("Short description"),
 		label: string()
 			.alias("l")
@@ -33,16 +46,34 @@ export default command({
 		),
 	},
 	run: async ({ ctx, args, options }) => {
-		const filePath = resolve(process.cwd(), args.path as string);
-
-		if (!existsSync(filePath) || !statSync(filePath).isFile()) {
-			throw new CLIError(`No such file: ${args.path}`);
+		const inputPath = resolve(process.cwd(), args.path as string);
+		const stat = statSync(inputPath, { throwIfNoEntry: false });
+		if (!stat) {
+			throw new CLIError(`No such file or directory: ${args.path}`);
 		}
-		if (extname(filePath).toLowerCase() !== ".html") {
-			throw new CLIError(
-				"Only .html files can be published as a page",
-				"A page is one self-contained file: inline your CSS and JS, and embed images as data: URIs",
-			);
+
+		let entryFilePath = inputPath;
+		let assets: DirectoryAsset[] = [];
+		const isDirectory = stat.isDirectory();
+		if (isDirectory) {
+			try {
+				({ entryFilePath, assets } = collectDirectoryPublish(inputPath));
+			} catch (error) {
+				throw new CLIError(
+					error instanceof Error ? error.message : String(error),
+					"A directory publish serves index.html as the page and every other file at its relative path",
+				);
+			}
+		} else {
+			if (!stat.isFile()) {
+				throw new CLIError(`No such file: ${args.path}`);
+			}
+			if (extname(inputPath).toLowerCase() !== ".html") {
+				throw new CLIError(
+					"Only .html files can be published as a page",
+					"Publish a single self-contained file, or a directory whose index.html references its assets by relative path",
+				);
+			}
 		}
 		if (
 			options.visibility &&
@@ -54,13 +85,16 @@ export default command({
 			);
 		}
 
-		const html = readFileSync(filePath, "utf8");
+		const html = readFileSync(entryFilePath, "utf8");
 
 		const entryPath =
 			resolveEntryPath({
-				filePath,
+				filePath: entryFilePath,
 				workspacePath: process.env.SUPERSET_WORKSPACE_PATH,
-			}) ?? externalEntryPath(filePath);
+			}) ??
+			(isDirectory
+				? `${EXTERNAL_ENTRY_PREFIX}${basename(inputPath)}/index.html`
+				: externalEntryPath(entryFilePath));
 
 		const workspaceRef = options.workspace ?? process.env.SUPERSET_WORKSPACE_ID;
 		if (!workspaceRef && !options.page) {
@@ -79,13 +113,93 @@ export default command({
 			: undefined;
 		const link = workspaceId ? { entryPath, workspaceId } : undefined;
 
+		// Republishing a directory re-uploads only what changed: hashes are
+		// compared against the previous version's files. Best effort — a
+		// failed lookup just means every asset uploads.
+		let previous: Map<string, { fileId: string; sha256: string }> | null = null;
+		if (assets.length > 0) {
+			try {
+				const target = options.page
+					? { pageId: options.page }
+					: link
+						? { workspaceId: link.workspaceId, entryPath: link.entryPath }
+						: null;
+				const resolved = target
+					? await ctx.api.page.resolveByEntryPath.query(target)
+					: null;
+				if (resolved?.latestVersionId) {
+					const listed = await ctx.api.file.list.query({
+						parentKind: "page_version",
+						parentId: resolved.latestVersionId,
+					});
+					previous = new Map();
+					for (const item of listed) {
+						if (item.path) {
+							previous.set(item.path, {
+								fileId: item.file.id,
+								sha256: item.file.sha256,
+							});
+						}
+					}
+				}
+			} catch {
+				previous = null;
+			}
+		}
+
+		const warnings: string[] = [];
+		const published: { path: string; fileId: string }[] = [];
+		let reused = 0;
+		for (const asset of assets) {
+			const bytes = readFileSync(asset.filePath);
+			const sha256 = createHash("sha256").update(bytes).digest("hex");
+			const warning = videoCodecWarning(asset.path, bytes.subarray(0, 16));
+			if (warning) warnings.push(warning);
+
+			const match = previous?.get(asset.path);
+			if (match && match.sha256 === sha256) {
+				published.push({ path: asset.path, fileId: match.fileId });
+				reused += 1;
+				continue;
+			}
+
+			const created = await ctx.api.file.createUpload.mutate({
+				name: basename(asset.path),
+				contentType: lookupMimeType(asset.path) || "application/octet-stream",
+				sizeBytes: asset.sizeBytes,
+				sha256,
+			});
+			const response = await fetch(created.uploadUrl, {
+				method: "PUT",
+				headers: created.headers,
+				body: bytes,
+			});
+			if (!response.ok) {
+				throw new CLIError(
+					`Uploading ${asset.path} failed (${response.status})`,
+				);
+			}
+			await ctx.api.file.complete.mutate({ id: created.id });
+			published.push({ path: asset.path, fileId: created.id });
+		}
+
+		const defaultTitle =
+			isDirectory && !options.title
+				? basename(inputPath).replace(/[-_]+/g, " ").trim()
+				: undefined;
+
 		const page = await ctx.api.page.publish.mutate({
 			content: Buffer.from(html, "utf8").toString("base64"),
 			contentType: "text/html",
-			filename: basename(filePath),
+			filename: basename(entryFilePath),
 			...(link ?? {}),
+			...(published.length > 0 ? { assets: published } : {}),
 			...(options.page ? { pageId: options.page } : {}),
-			...(options.title ? { title: options.title } : {}),
+			...(options.title
+				? { title: options.title }
+				: defaultTitle
+					? { title: defaultTitle }
+					: {}),
 			...(options.description ? { description: options.description } : {}),
 			...(options.label ? { label: options.label } : {}),
 			...(options.visibility
@@ -97,6 +211,11 @@ export default command({
 			link && entryPath.startsWith(EXTERNAL_ENTRY_PREFIX) && !options.page
 				? `\nOutside the workspace, so this page is keyed as "${entryPath}"`
 				: "";
+		const assetNote =
+			assets.length > 0
+				? `\n${assets.length} asset${assets.length === 1 ? "" : "s"}${reused > 0 ? ` (${reused} unchanged, not re-uploaded)` : ""}`
+				: "";
+		const warningNote = warnings.length > 0 ? `\n${warnings.join("\n")}` : "";
 
 		const terminalId = watchTerminalId();
 		const organizationId = ctx.config.organizationId;
@@ -131,8 +250,8 @@ export default command({
 		}
 
 		return {
-			data: { ...page, watching },
-			message: `Published "${page.title}" v${page.version}\n${page.url}${external}${watchNote}`,
+			data: { ...page, watching, assets: published },
+			message: `Published "${page.title}" v${page.version}\n${page.url}${assetNote}${warningNote}${external}${watchNote}`,
 		};
 	},
 });

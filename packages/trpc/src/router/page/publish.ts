@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { dbWs } from "@superset/db/client";
 import {
+	attachments,
+	files,
 	pages,
 	pageVersions,
 	type SelectPage,
@@ -9,7 +11,7 @@ import {
 import { mintPageSlug } from "@superset/shared/page-slug";
 import { pageVersionKey } from "@superset/shared/usercontent";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { userError } from "../../i18n-error";
 import { deleteObjects, putObject } from "../../lib/r2";
 import { assertPageWritable } from "./access";
@@ -18,6 +20,7 @@ import {
 	isEntryPathConflict,
 	isVersionConflict,
 	titleFromFilename,
+	validateAssetPaths,
 	validatePublishContent,
 } from "./publish-rules";
 import type { PublishPageInput } from "./schema";
@@ -57,6 +60,7 @@ export async function publishPage({
 	userId: string;
 }) {
 	const { buffer, sha256 } = validatePublishContent(input);
+	validateAssetPaths(input.assets);
 
 	for (let attempt = 1; ; attempt += 1) {
 		try {
@@ -103,6 +107,7 @@ async function runPublish({
 		organizationId,
 		userId,
 	});
+	await verifyPublishAssets(input.assets, organizationId);
 	const pageId = target?.id ?? randomUUID();
 	const version = (target ? await latestVersionNumber(dbWs, target.id) : 0) + 1;
 	const key = pageVersionKey(pageId, version);
@@ -180,6 +185,17 @@ async function runPublish({
 				});
 			}
 
+			if (input.assets && input.assets.length > 0) {
+				await tx.insert(attachments).values(
+					input.assets.map((asset) => ({
+						fileId: asset.fileId,
+						parentKind: "page_version" as const,
+						parentId: row.id,
+						path: asset.path,
+					})),
+				);
+			}
+
 			bodyCompleted = true;
 			return {
 				id: page.id,
@@ -215,6 +231,35 @@ async function runPublish({
 		version: published.version,
 	});
 	return published;
+}
+
+/**
+ * Every referenced asset must already be a `ready` file in this
+ * organization — verified before the entry document moves, so a publish
+ * with a broken reference costs nothing.
+ */
+async function verifyPublishAssets(
+	assets: PublishPageInput["assets"],
+	organizationId: string,
+): Promise<void> {
+	if (!assets || assets.length === 0) return;
+	const ids = [...new Set(assets.map((asset) => asset.fileId))];
+	const rows = await dbWs
+		.select({ id: files.id, status: files.status })
+		.from(files)
+		.where(
+			and(inArray(files.id, ids), eq(files.organizationId, organizationId)),
+		);
+	const ready = new Set(
+		rows.filter((row) => row.status === "ready").map((row) => row.id),
+	);
+	const missing = ids.find((id) => !ready.has(id));
+	if (missing) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `Asset file ${missing} is missing or not completed`,
+		});
+	}
 }
 
 type Tx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];

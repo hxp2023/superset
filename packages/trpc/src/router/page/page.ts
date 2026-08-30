@@ -1,5 +1,7 @@
 import { db } from "@superset/db/client";
 import {
+	attachments,
+	files,
 	members,
 	organizations,
 	pages,
@@ -9,13 +11,15 @@ import {
 	workspacePages,
 } from "@superset/db/schema";
 import {
+	fileOriginalKey,
 	pageThumbnailKey,
 	pageThumbnailUrl,
 	pageViewUrl,
 } from "@superset/shared/usercontent";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, desc, eq, or, type SQL, sql } from "drizzle-orm";
-import { presignedGetUrl } from "../../lib/r2";
+import { and, desc, eq, inArray, or, type SQL, sql } from "drizzle-orm";
+import { z } from "zod";
+import { deleteObjects, presignedGetUrl } from "../../lib/r2";
 import { protectedProcedure, userError } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { assertPageReadable, assertPageWritable } from "./access";
@@ -25,6 +29,7 @@ import {
 	clearPageWatchSchema,
 	deletePageSchema,
 	listPagesSchema,
+	pageFields,
 	pageRefSchema,
 	publishPageSchema,
 	pullPageSchema,
@@ -274,6 +279,70 @@ export const pageRouter = {
 		};
 	}),
 
+	/**
+	 * The page a workspace path anchors to, for the CLI's directory publish:
+	 * it compares each asset's hash against the previous version and reuses
+	 * unchanged files instead of re-uploading. Mirrors the republish lookup —
+	 * only the caller's own pages match.
+	 */
+	resolveByEntryPath: protectedProcedure
+		.input(
+			z
+				.object({
+					workspaceId: pageFields.workspaceId.optional(),
+					entryPath: pageFields.entryPath.optional(),
+					pageId: pageFields.id.optional(),
+				})
+				.refine(
+					(value) =>
+						value.pageId !== undefined ||
+						(value.workspaceId !== undefined && value.entryPath !== undefined),
+					{ message: "Provide pageId, or workspaceId and entryPath together" },
+				),
+		)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			const [row] = input.pageId
+				? await db
+						.select({ page: pages })
+						.from(pages)
+						.where(
+							and(
+								eq(pages.id, input.pageId),
+								eq(pages.organizationId, organizationId),
+								eq(pages.createdByUserId, userId),
+							),
+						)
+						.limit(1)
+				: await db
+						.select({ page: pages })
+						.from(workspacePages)
+						.innerJoin(pages, eq(pages.id, workspacePages.pageId))
+						.where(
+							and(
+								eq(workspacePages.workspaceId, input.workspaceId ?? ""),
+								eq(workspacePages.entryPath, input.entryPath ?? ""),
+								eq(pages.organizationId, organizationId),
+								eq(pages.createdByUserId, userId),
+							),
+						)
+						.limit(1);
+			if (!row) return null;
+			const [latest] = await db
+				.select({ id: pageVersions.id, version: pageVersions.version })
+				.from(pageVersions)
+				.where(eq(pageVersions.pageId, row.page.id))
+				.orderBy(desc(pageVersions.version))
+				.limit(1);
+			return {
+				id: row.page.id,
+				slug: row.page.slug,
+				latestVersion: latest?.version ?? null,
+				latestVersionId: latest?.id ?? null,
+			};
+		}),
+
 	setVisibility: protectedProcedure
 		.input(setPageVisibilitySchema)
 		.mutation(async ({ ctx, input }) => {
@@ -420,6 +489,54 @@ export const pageRouter = {
 			await db.delete(pages).where(eq(pages.id, page.id));
 
 			try {
+				// Page assets are files attached to this page's versions. Deleting the
+				// page removes those attachments; a file left with no attachments at
+				// all dies with them — its whole reason to exist was this page.
+				const versionIds = await db
+					.select({ id: pageVersions.id })
+					.from(pageVersions)
+					.where(eq(pageVersions.pageId, page.id));
+				if (versionIds.length > 0) {
+					const ids = versionIds.map((row) => row.id);
+					const attached = await db
+						.select({ fileId: attachments.fileId })
+						.from(attachments)
+						.where(
+							and(
+								eq(attachments.parentKind, "page_version"),
+								inArray(attachments.parentId, ids),
+							),
+						);
+					await db
+						.delete(attachments)
+						.where(
+							and(
+								eq(attachments.parentKind, "page_version"),
+								inArray(attachments.parentId, ids),
+							),
+						);
+					const candidates = [...new Set(attached.map((row) => row.fileId))];
+					if (candidates.length > 0) {
+						const stillAttached = await db
+							.select({ fileId: attachments.fileId })
+							.from(attachments)
+							.where(inArray(attachments.fileId, candidates));
+						const keep = new Set(stillAttached.map((row) => row.fileId));
+						const orphaned = candidates.filter((id) => !keep.has(id));
+						if (orphaned.length > 0) {
+							await db.delete(files).where(inArray(files.id, orphaned));
+							await deleteObjects(orphaned.map(fileOriginalKey)).catch(
+								(error) => {
+									console.error("[pages] failed to delete asset objects", {
+										pageId: page.id,
+										error,
+									});
+								},
+							);
+						}
+					}
+				}
+
 				await deletePageObjects({
 					pageId: page.id,
 					versions: rows,
