@@ -3,6 +3,8 @@ export interface ContentEnv {
 	PRIVATE: R2Bucket;
 	/** Base URL pages hang off, e.g. https://pages.supersetusercontent.com */
 	USERCONTENT_URL: string;
+	/** Base URL for app-referenced files, e.g. https://media.supersetusercontent.com */
+	MEDIA_URL: string;
 	/** Where a reader without a ticket is sent to sign in and come back. */
 	APP_URL: string;
 	/** Space-separated CSP sources allowed to frame a page. */

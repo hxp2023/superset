@@ -16,6 +16,10 @@
 			"types": "./src/router/page/thumbnail.ts",
 			"default": "./src/router/page/thumbnail.ts"
 		},
+		"./file-sweep": {
+			"types": "./src/router/file/sweep.ts",
+			"default": "./src/router/file/sweep.ts"
+		},
 		"./storage": {
 			"types": "./src/lib/r2.ts",
 			"default": "./src/lib/r2.ts"

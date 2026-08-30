@@ -16,6 +16,10 @@
 			"zone_name": "supersetusercontent.com"
 		},
 		{
+			"pattern": "media.supersetusercontent.com/*",
+			"zone_name": "supersetusercontent.com"
+		},
+		{
 			"pattern": "supersetusercontent.com/*",
 			"zone_name": "supersetusercontent.com"
 		}
@@ -24,6 +28,7 @@
 	"compatibility_flags": ["nodejs_als"],
 	"vars": {
 		"USERCONTENT_URL": "https://pages.supersetusercontent.com",
+		"MEDIA_URL": "https://media.supersetusercontent.com",
 		"APP_URL": "https://app.superset.sh",
 		// Who may frame a page. `file:` is the packaged desktop renderer; a
 		// frame still needs a valid ticket, so this admits embedding, not reading.
@@ -43,6 +48,7 @@
 			"routes": [],
 			"vars": {
 				"USERCONTENT_URL": "http://pages.usercontent.localhost:8787",
+				"MEDIA_URL": "http://media.usercontent.localhost:8787",
 				"APP_URL": "http://localhost:3000",
 				"FRAME_ANCESTORS": "http://localhost:* file:"
 			},

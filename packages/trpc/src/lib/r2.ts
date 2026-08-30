@@ -72,13 +72,33 @@ export async function putObject({
 }
 
 /** The object's response, streaming, or null when it does not exist. */
-export async function getObject(key: string): Promise<Response | null> {
-	const response = await aws().fetch(objectUrl(key));
+export async function getObject(
+	key: string,
+	{ range }: { range?: string } = {},
+): Promise<Response | null> {
+	const response = await aws().fetch(objectUrl(key), {
+		headers: range ? { Range: range } : undefined,
+	});
 	if (response.status === 404) return null;
-	if (!response.ok) {
+	if (!response.ok && response.status !== 206) {
 		throw new Error(`R2 get failed (${response.status}) for ${key}`);
 	}
 	return response;
+}
+
+/** Size and stored content type, or null when the object does not exist. */
+export async function headObject(
+	key: string,
+): Promise<{ sizeBytes: number; contentType: string | null } | null> {
+	const response = await aws().fetch(objectUrl(key), { method: "HEAD" });
+	if (response.status === 404) return null;
+	if (!response.ok) {
+		throw new Error(`R2 head failed (${response.status}) for ${key}`);
+	}
+	return {
+		sizeBytes: Number(response.headers.get("content-length") ?? 0),
+		contentType: response.headers.get("content-type"),
+	};
 }
 
 export async function objectExists(key: string): Promise<boolean> {
@@ -115,4 +135,35 @@ export async function presignedGetUrl(
 		},
 	);
 	return signed.url;
+}
+
+/**
+ * A presigned PUT for a direct browser or main-process upload. The signature
+ * covers the content type and length, so the client must send exactly what
+ * `createUpload` was told — the first size gate; `complete` is the second.
+ */
+export async function presignedPutUrl({
+	key,
+	contentType,
+	contentLength,
+	expiresInSeconds = 15 * 60,
+}: {
+	key: string;
+	contentType: string;
+	contentLength: number;
+	expiresInSeconds?: number;
+}): Promise<{ url: string; headers: Record<string, string> }> {
+	const url = new URL(objectUrl(key));
+	url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
+	const signed = await aws().sign(
+		new Request(url.toString(), {
+			method: "PUT",
+			headers: {
+				"Content-Type": contentType,
+				"Content-Length": String(contentLength),
+			},
+		}),
+		{ aws: { signQuery: true } },
+	);
+	return { url: signed.url, headers: { "Content-Type": contentType } };
 }
