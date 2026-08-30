@@ -33,7 +33,7 @@ didn't want is noise in their org's list.
 
 Every page gets its own origin, `https://<slug>.pages.supersetusercontent.com`, and
 is framed with `sandbox="allow-scripts allow-same-origin allow-forms
-allow-popups"`. So the page is a real origin of its own — and a locked-down
+allow-popups"`. So the page is a real origin of its own, and a locked-down
 one. The policy is `default-src 'none'` with a short allowlist, and it is
 enforced identically in the desktop pane and the web viewer:
 
