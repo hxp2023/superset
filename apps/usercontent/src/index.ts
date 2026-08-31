@@ -264,7 +264,12 @@ async function serveFile(c: Context<AppContext>): Promise<Response> {
 		"Referrer-Policy": "no-referrer",
 		"X-Robots-Tag": "noindex, nofollow",
 		"Accept-Ranges": "bytes",
-		"Cache-Control": "private, max-age=86400, immutable",
+		// Like thumbnails: the browser may keep the bytes only as long as the
+		// ticket that fetched them, so revocation is bounded by ticket life.
+		"Cache-Control": `private, max-age=${Math.max(
+			0,
+			Math.min(claims.exp - Math.floor(Date.now() / 1000), 86400),
+		)}, immutable`,
 	});
 	if (range && object.range) {
 		const offset =
