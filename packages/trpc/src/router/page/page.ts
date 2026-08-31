@@ -9,13 +9,14 @@ import {
 	workspacePages,
 } from "@superset/db/schema";
 import {
+	pageManifestKey,
 	pageThumbnailKey,
 	pageThumbnailUrl,
 	pageViewUrl,
 } from "@superset/shared/usercontent";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq, or, type SQL, sql } from "drizzle-orm";
-import { presignedGetUrl } from "../../lib/r2";
+import { deleteObjects, presignedGetUrl } from "../../lib/r2";
 import { protectedProcedure, userError } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { assertPageReadable, assertPageWritable } from "./access";
@@ -412,10 +413,16 @@ export const pageRouter = {
 			const rows = await db
 				.select({
 					version: pageVersions.version,
-					key: pageVersions.blobPathname,
+					key: pageVersions.storageKey,
 				})
 				.from(pageVersions)
 				.where(eq(pageVersions.pageId, page.id));
+
+			// The manifest is the Worker's authorization source: removing it
+			// first makes deletion fail closed. If this throws, nothing has
+			// been deleted and the page still serves; once it is gone the
+			// origin 404s even if the cleanup below is interrupted.
+			await deleteObjects([pageManifestKey(page.id)]);
 
 			await db.delete(pages).where(eq(pages.id, page.id));
 
@@ -502,7 +509,7 @@ export const pageRouter = {
 
 			let downloadUrl: string;
 			try {
-				downloadUrl = await presignedGetUrl(row.blobPathname);
+				downloadUrl = await presignedGetUrl(row.storageKey);
 			} catch (error) {
 				console.error("[pages] presign failed", {
 					pageId: page.id,
@@ -542,7 +549,7 @@ export const pageRouter = {
 				sizeBytes: row.sizeBytes,
 				sha256: row.sha256,
 				createdAt: row.createdAt,
-				storageKey: row.blobPathname,
+				storageKey: row.storageKey,
 				downloadUrl,
 				viewUrl,
 			};
