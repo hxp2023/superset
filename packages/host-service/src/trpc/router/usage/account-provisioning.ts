@@ -9,13 +9,17 @@ import { existsSync } from "node:fs";
 import {
 	provisionClaudeProfile,
 	provisionCodexProfile,
+	resolveAmbientCodexHome,
 } from "@superset/agent-setup";
 import type { HostDb } from "../../../db/index.ts";
 import {
 	getDefaultAccountSelections,
 	syncDefaultAccountPointers,
 } from "./default-account.ts";
-import { shareClaudeSessionState } from "./session-share.ts";
+import {
+	shareClaudeSessionState,
+	shareCodexSessionState,
+} from "./session-share.ts";
 
 /**
  * Everything a Claude account needs on this host: the shared session state
@@ -25,6 +29,17 @@ import { shareClaudeSessionState } from "./session-share.ts";
 export async function provisionClaudeAccount(configDir: string): Promise<void> {
 	shareClaudeSessionState(configDir);
 	await provisionClaudeProfile(configDir);
+}
+
+/**
+ * The Codex twin. Both agents get session sharing: an account switch that
+ * keeps `--resume` for Claude but drops `codex resume` is the same bug twice.
+ * The share target is the same home `discoverCodexHomes` calls the system
+ * default, so the account the UI labels default is the one sessions pool into.
+ */
+export async function provisionCodexAccount(codexHome: string): Promise<void> {
+	shareCodexSessionState(codexHome, resolveAmbientCodexHome());
+	await provisionCodexProfile(codexHome);
 }
 
 /**
@@ -49,7 +64,7 @@ export async function provisionSelectedAccounts(db: HostDb): Promise<void> {
 		]);
 	}
 	if (codexHome && existsSync(codexHome)) {
-		targets.push([codexHome, () => provisionCodexProfile(codexHome)]);
+		targets.push([codexHome, () => provisionCodexAccount(codexHome)]);
 	}
 	for (const [dir, provision] of targets) {
 		try {

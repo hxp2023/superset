@@ -1,23 +1,26 @@
 /**
- * Shares session state between a secondary Claude profile dir and the
- * default `~/.claude` home via symlinks, so every login sees one
- * conversation history — switching accounts stops meaning losing
- * `--resume` and the prompt history.
+ * Shares session state between a secondary provider profile dir and that
+ * provider's default home (`~/.claude`, `~/.codex`) via symlinks, so every
+ * login sees one conversation history — switching accounts stops meaning
+ * losing `--resume` and the prompt history.
  *
- * Only surfaces a symlink can survive are shared here: directories, and
- * `history.jsonl`, which the CLI appends to in place. Config files like
- * settings.json and `.claude.json` are written with write-tmp-then-rename —
+ * Only surfaces a symlink can survive are shared here: directories, and the
+ * append-in-place history logs. Config files like settings.json,
+ * `.claude.json`, and config.toml are written with write-tmp-then-rename —
  * a rename would replace the symlink with a real file and silently fork the
  * config — so those (plus skills, plugins, MCP servers) belong to
  * agent-setup's ledger-based profile provisioning, not to this module.
- * Identity (`.claude.json`, credential stores) and runtime dirs (daemon/,
- * cache/, telemetry/, backups/) always stay per-profile.
+ * Identity (`.claude.json`, `auth.json`, credential stores) and runtime dirs
+ * (daemon/, cache/, telemetry/, backups/) always stay per-profile.
  *
  * Existing real state is merged, not clobbered. Session trees are renamed
- * aside, the symlink lands immediately, and files then move into `~/.claude`
- * one by one: renames preserve inodes, so a live session's open transcripts
- * stay valid and its paths resolve through the new link. The prompt history
- * is appended. Anything that cannot merge safely is left where it is.
+ * aside, the symlink lands immediately, and files then move into the main
+ * home one by one: renames preserve inodes, so a live session's open
+ * transcripts stay valid and its paths resolve through the new link. The
+ * prompt history is appended. A history file the CLI later replaces outright
+ * (rename-over-symlink) is re-merged and re-linked on the next provision, so
+ * the share is self-healing. Anything that cannot merge safely is left where
+ * it is.
  */
 
 import {
@@ -39,21 +42,50 @@ import {
 import { homedir, platform } from "node:os";
 import { join, resolve } from "node:path";
 
-/** Session-scoped state keyed by session UUID or cwd slug: safe to merge
- * file-by-file, since two profiles' sessions collide no more than two
- * concurrent sessions in one dir already do. */
-const SESSION_DIRS = [
-	"projects",
-	"sessions",
-	"session-env",
-	"file-history",
-	"shell-snapshots",
-	"todos",
-	"paste-cache",
-	"tasks",
-	"plans",
-	"transcripts",
-];
+/**
+ * What one provider keeps that is safe to share. `dirs` are session-scoped
+ * state keyed by session UUID or cwd slug: safe to merge file-by-file, since
+ * two profiles' sessions collide no more than two concurrent sessions in one
+ * dir already do. `historyFiles` are line-delimited logs the CLI appends to
+ * in place. `providerHomes` are that provider's own default homes, which are
+ * the share's source and so can never be its target.
+ */
+interface SessionShareSpec {
+	dirs: readonly string[];
+	historyFiles: readonly string[];
+	providerHomes: readonly string[];
+}
+
+const CLAUDE_SHARE: SessionShareSpec = {
+	dirs: [
+		"projects",
+		"sessions",
+		"session-env",
+		"file-history",
+		"shell-snapshots",
+		"todos",
+		"paste-cache",
+		"tasks",
+		"plans",
+		"transcripts",
+	],
+	historyFiles: ["history.jsonl"],
+	providerHomes: [".claude", ".config/claude"],
+};
+
+/**
+ * Codex keys rollouts by date under `sessions/`, so two accounts' sessions
+ * interleave in one tree exactly as two same-day sessions already do, and
+ * `codex resume` sees every one of them. `auth.json` stays per-account, and
+ * `config.toml` / `AGENTS.md` / `prompts/` belong to agent-setup's ledger
+ * (they are rewritten with tmp-then-rename). `shell_snapshots` uses an
+ * underscore here; Claude's spells the same dir with a hyphen.
+ */
+const CODEX_SHARE: SessionShareSpec = {
+	dirs: ["sessions", "archived_sessions", "shell_snapshots"],
+	historyFiles: ["history.jsonl"],
+	providerHomes: [".codex", ".config/codex"],
+};
 
 const MERGE_SUFFIX = ".superset-merge";
 
@@ -74,15 +106,15 @@ function canonical(path: string): string {
 export function shareableProfileDir(
 	configDir: string,
 	mainHome: string,
+	providerHomes: readonly string[] = CLAUDE_SHARE.providerHomes,
 ): string | null {
 	const resolved = canonical(configDir);
 	const home = homedir();
 	const excluded = new Set(
 		[
 			home,
-			join(home, ".claude"),
 			join(home, ".config"),
-			join(home, ".config", "claude"),
+			...providerHomes.map((relative) => join(home, relative)),
 			mainHome,
 		].map(canonical),
 	);
@@ -187,9 +219,13 @@ function appendHistoryRecords(dst: string, content: Buffer): void {
 	);
 }
 
-function mergeAndLinkHistory(profile: string, main: string): void {
-	const src = join(profile, "history.jsonl");
-	const dst = join(main, "history.jsonl");
+function mergeAndLinkHistory(
+	profile: string,
+	main: string,
+	name: string,
+): void {
+	const src = join(profile, name);
+	const dst = join(main, name);
 	const pending = `${src}${MERGE_SUFFIX}`;
 	if (lstatOrNull(pending)?.isFile()) {
 		appendHistoryRecords(dst, readFileSync(pending));
@@ -218,20 +254,23 @@ function mergeAndLinkHistory(profile: string, main: string): void {
  * Best-effort per entry: one unmergeable path must not stop the rest, and a
  * partially shared profile is strictly better than an unshared one.
  */
-export function shareClaudeSessionState(
+function shareSessionState(
 	configDir: string,
-	mainHome: string = join(homedir(), ".claude"),
+	mainHome: string,
+	spec: SessionShareSpec,
 ): void {
 	// Windows symlinks need elevation; profiles are a macOS/Linux feature.
 	if (platform() === "win32") return;
-	const profile = shareableProfileDir(configDir, mainHome);
+	const profile = shareableProfileDir(configDir, mainHome, spec.providerHomes);
 	if (!profile) return;
 	const main = resolve(mainHome);
 	const steps: Array<() => void> = [
-		...SESSION_DIRS.map(
+		...spec.dirs.map(
 			(name) => () => mergeAndLinkSessionDir(profile, main, name),
 		),
-		() => mergeAndLinkHistory(profile, main),
+		...spec.historyFiles.map(
+			(name) => () => mergeAndLinkHistory(profile, main, name),
+		),
 	];
 	for (const step of steps) {
 		try {
@@ -240,4 +279,23 @@ export function shareClaudeSessionState(
 			// Skipped entry; retried on the next switch to this profile.
 		}
 	}
+}
+
+export function shareClaudeSessionState(
+	configDir: string,
+	mainHome: string = join(homedir(), ".claude"),
+): void {
+	shareSessionState(configDir, mainHome, CLAUDE_SHARE);
+}
+
+/**
+ * The Codex twin of shareClaudeSessionState, so `codex resume` keeps working
+ * across an account switch. Without it a switch stranded every rollout in the
+ * home the previous account used.
+ */
+export function shareCodexSessionState(
+	codexHome: string,
+	mainHome: string = join(homedir(), ".codex"),
+): void {
+	shareSessionState(codexHome, mainHome, CODEX_SHARE);
 }

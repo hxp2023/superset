@@ -7,11 +7,16 @@ import {
 	readFileSync,
 	readlinkSync,
 	symlinkSync,
+	unlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { shareableProfileDir, shareClaudeSessionState } from "./session-share";
+import {
+	shareableProfileDir,
+	shareClaudeSessionState,
+	shareCodexSessionState,
+} from "./session-share";
 
 function makeDirs(): { profile: string; main: string } {
 	const root = mkdtempSync(join(tmpdir(), "claude-session-share-"));
@@ -195,5 +200,105 @@ describe("shareClaudeSessionState", () => {
 		expect(lstatSync(join(profile, "daemon")).isSymbolicLink()).toBe(false);
 		expect(readdirSync(main)).not.toContain(".claude.json");
 		expect(readdirSync(main)).not.toContain(".credentials.json");
+	});
+});
+
+describe("shareCodexSessionState", () => {
+	it("links a fresh Codex home's rollout dirs and history into main", () => {
+		const { profile, main } = makeDirs();
+		shareCodexSessionState(profile, main);
+		for (const name of ["sessions", "archived_sessions", "shell_snapshots"]) {
+			expect(isLinkTo(join(profile, name), join(main, name))).toBe(true);
+			expect(lstatSync(join(main, name)).isDirectory()).toBe(true);
+		}
+		expect(
+			isLinkTo(join(profile, "history.jsonl"), join(main, "history.jsonl")),
+		).toBe(true);
+	});
+
+	it("merges both accounts' rollouts into one resumable tree", () => {
+		const { profile, main } = makeDirs();
+		// Codex keys rollouts by date, so the two accounts land side by side in
+		// the same day directory — the case `codex resume` has to see whole.
+		mkdirSync(join(profile, "sessions", "2026", "08", "31"), {
+			recursive: true,
+		});
+		writeFileSync(
+			join(profile, "sessions", "2026", "08", "31", "rollout-work.jsonl"),
+			"work",
+		);
+		mkdirSync(join(main, "sessions", "2026", "08", "31"), { recursive: true });
+		writeFileSync(
+			join(main, "sessions", "2026", "08", "31", "rollout-personal.jsonl"),
+			"personal",
+		);
+		shareCodexSessionState(profile, main);
+
+		expect(isLinkTo(join(profile, "sessions"), join(main, "sessions"))).toBe(
+			true,
+		);
+		const day = join(main, "sessions", "2026", "08", "31");
+		expect(readdirSync(day).sort()).toEqual([
+			"rollout-personal.jsonl",
+			"rollout-work.jsonl",
+		]);
+		// Both are reachable through the profile's own path, which is what the
+		// CLI will be pointed at by CODEX_HOME.
+		expect(
+			readdirSync(join(profile, "sessions", "2026", "08", "31")).sort(),
+		).toEqual(["rollout-personal.jsonl", "rollout-work.jsonl"]);
+	});
+
+	it("appends an existing Codex prompt history instead of dropping it", () => {
+		const { profile, main } = makeDirs();
+		writeFileSync(join(profile, "history.jsonl"), '{"t":"from-profile"}\n');
+		writeFileSync(join(main, "history.jsonl"), '{"t":"from-main"}\n');
+		shareCodexSessionState(profile, main);
+		const merged = readFileSync(join(main, "history.jsonl"), "utf-8");
+		expect(merged).toContain("from-main");
+		expect(merged).toContain("from-profile");
+		expect(
+			isLinkTo(join(profile, "history.jsonl"), join(main, "history.jsonl")),
+		).toBe(true);
+	});
+
+	it("re-links a history file the CLI replaced with a real file", () => {
+		const { profile, main } = makeDirs();
+		shareCodexSessionState(profile, main);
+		// A rename-over-symlink forks the log; the next provision must heal it
+		// rather than leave the two accounts writing separate histories.
+		unlinkSync(join(profile, "history.jsonl"));
+		writeFileSync(join(profile, "history.jsonl"), '{"t":"forked"}\n');
+		shareCodexSessionState(profile, main);
+		expect(
+			isLinkTo(join(profile, "history.jsonl"), join(main, "history.jsonl")),
+		).toBe(true);
+		expect(readFileSync(join(main, "history.jsonl"), "utf-8")).toContain(
+			"forked",
+		);
+	});
+
+	it("refuses to share the default Codex home into itself", () => {
+		const home = homedir();
+		const main = join(home, ".codex");
+		expect(shareableProfileDir(home, main, [".codex"])).toBeNull();
+		expect(shareableProfileDir(main, main, [".codex"])).toBeNull();
+		expect(
+			shareableProfileDir(join(home, ".codex-work"), main, [".codex"]),
+		).toBe(join(home, ".codex-work"));
+	});
+
+	it("never touches auth.json, so accounts keep separate credentials", () => {
+		const { profile, main } = makeDirs();
+		writeFileSync(join(profile, "auth.json"), '{"account":"work"}');
+		writeFileSync(join(main, "auth.json"), '{"account":"personal"}');
+		shareCodexSessionState(profile, main);
+		expect(lstatSync(join(profile, "auth.json")).isSymbolicLink()).toBe(false);
+		expect(readFileSync(join(profile, "auth.json"), "utf-8")).toBe(
+			'{"account":"work"}',
+		);
+		expect(readFileSync(join(main, "auth.json"), "utf-8")).toBe(
+			'{"account":"personal"}',
+		);
 	});
 });
