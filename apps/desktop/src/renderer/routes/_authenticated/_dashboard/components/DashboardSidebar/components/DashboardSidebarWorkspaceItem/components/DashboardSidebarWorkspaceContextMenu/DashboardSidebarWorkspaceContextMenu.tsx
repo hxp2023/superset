@@ -36,7 +36,7 @@ import { useDashboardSidebarWorkspacePorts } from "../../../../providers/Dashboa
 
 interface DashboardSidebarWorkspaceContextMenuProps {
 	workspaceId: string;
-	/** Null for project-less "session" workspaces (no group actions yet). */
+	/** Null for project-less session workspaces. */
 	projectId: string | null;
 	isInSection?: boolean;
 	isLocalWorkspace: boolean;
@@ -186,7 +186,7 @@ export function DashboardSidebarWorkspaceContextMenu({
 				)}
 				{/* Group actions mutate placement (sectionId/tabOrder), which a pinned
 				    row doesn't display — the change would only surface on unpin. */}
-				{!isPinned && !isLocalMainWorkspace && projectId !== null && (
+				{!isPinned && !isLocalMainWorkspace && (
 					<>
 						<ContextMenuSeparator />
 						<ContextMenuItem onSelect={onCreateSection}>
