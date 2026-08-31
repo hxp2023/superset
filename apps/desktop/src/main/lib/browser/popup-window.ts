@@ -14,6 +14,49 @@ export function isPopupDisposition(
 }
 
 /**
+ * An OAuth 2.0 / OpenID Connect authorization request (RFC 6749 section 4.1.1).
+ *
+ * Needed because Chromium cannot tell us the thing we actually want to know.
+ * Measured in Electron 41: a scripted `window.open(url)` with no name and no
+ * features, and a plain `<a target="_blank">` click, arrive *identically* —
+ * disposition `foreground-tab`, empty `frameName`, empty `features`. Sites that
+ * open sign-in that way (Deel does) would otherwise land in a split pane, lose
+ * `window.opener`, and never complete the handshake.
+ *
+ * Keyed on the parameters every authorization endpoint carries rather than a
+ * list of provider hostnames, so it covers any identity provider without a
+ * vendor allowlist to maintain. A `target="_blank"` link to an ordinary page
+ * has none of these, so the split-pane path keeps that traffic.
+ */
+export function isOAuthAuthorizationUrl(url: string): boolean {
+	let params: URLSearchParams;
+	try {
+		params = new URL(url).searchParams;
+	} catch {
+		return false;
+	}
+	return (
+		params.has("client_id") &&
+		params.has("redirect_uri") &&
+		params.has("response_type")
+	);
+}
+
+/**
+ * Whether a guest's `window.open` should become a real popup window rather than
+ * a split pane: either Chromium already called it a popup, or it is a sign-in
+ * handshake that cannot survive losing its opener.
+ */
+export function shouldOpenAsPopup(
+	details: Pick<Electron.HandlerDetails, "disposition" | "url">,
+): boolean {
+	return (
+		isPopupDisposition(details.disposition) ||
+		isOAuthAuthorizationUrl(details.url)
+	);
+}
+
+/**
  * Popups opened from a browser pane.
  *
  * The app-wide `web-contents-created` guard sends any http(s) `will-navigate`

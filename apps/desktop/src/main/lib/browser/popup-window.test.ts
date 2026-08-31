@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
 	isBrowserPanePopup,
+	isOAuthAuthorizationUrl,
 	isPopupDisposition,
 	markBrowserPanePopup,
+	shouldOpenAsPopup,
 } from "./popup-window";
 
 describe("isPopupDisposition", () => {
@@ -41,5 +43,70 @@ describe("browser pane popup registry", () => {
 		markBrowserPanePopup(a);
 		expect(isBrowserPanePopup(a)).toBe(true);
 		expect(isBrowserPanePopup(b)).toBe(false);
+	});
+});
+
+describe("isOAuthAuthorizationUrl", () => {
+	// The exact parameter set Deel's "Sign in with Google" opens with, captured
+	// from the running app. It arrives as `foreground-tab` with an empty
+	// frameName and empty features, indistinguishable from a `_blank` link, so
+	// the URL is the only signal left.
+	const DEEL_GOOGLE =
+		"https://accounts.google.com/o/oauth2/v2/auth?scope=email+profile&response_type=code&redirect_uri=https%3A%2F%2Fapp.deel.com%2Flogin%2Fgoogle&response_mode=query&prompt=select_account&client_id=x&state=y";
+
+	test("recognises a real provider authorization request", () => {
+		expect(isOAuthAuthorizationUrl(DEEL_GOOGLE)).toBe(true);
+	});
+
+	test("is provider-agnostic rather than a hostname allowlist", () => {
+		expect(
+			isOAuthAuthorizationUrl(
+				"https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=a&redirect_uri=b&response_type=code",
+			),
+		).toBe(true);
+		expect(
+			isOAuthAuthorizationUrl(
+				"https://example.okta.com/oauth2/v1/authorize?client_id=a&redirect_uri=b&response_type=token",
+			),
+		).toBe(true);
+	});
+
+	test("an ordinary link is not an authorization request", () => {
+		expect(isOAuthAuthorizationUrl("https://example.com/docs")).toBe(false);
+		expect(isOAuthAuthorizationUrl("https://example.com/?client_id=a")).toBe(
+			false,
+		);
+		expect(isOAuthAuthorizationUrl("not a url")).toBe(false);
+		expect(isOAuthAuthorizationUrl("about:blank")).toBe(false);
+	});
+});
+
+describe("shouldOpenAsPopup", () => {
+	test("a Chromium popup disposition is enough on its own", () => {
+		expect(
+			shouldOpenAsPopup({
+				disposition: "new-window",
+				url: "https://example.com/anything",
+			}),
+		).toBe(true);
+	});
+
+	test("a bare window.open of a sign-in URL still becomes a popup", () => {
+		// Deel's shape: no name, no features, so Chromium reports a tab.
+		expect(
+			shouldOpenAsPopup({
+				disposition: "foreground-tab",
+				url: "https://accounts.google.com/o/oauth2/v2/auth?client_id=a&redirect_uri=b&response_type=code",
+			}),
+		).toBe(true);
+	});
+
+	test("an ordinary target=_blank link still opens as a split pane", () => {
+		expect(
+			shouldOpenAsPopup({
+				disposition: "foreground-tab",
+				url: "https://example.com/docs",
+			}),
+		).toBe(false);
 	});
 });

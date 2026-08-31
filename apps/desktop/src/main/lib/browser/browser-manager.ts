@@ -17,7 +17,7 @@ import {
 import { DesignModeController } from "./design-mode-controller";
 import { captureDesignModeScreenshot } from "./design-mode-screenshot";
 import { buildDesignModeScript } from "./design-mode-script";
-import { isPopupDisposition, markBrowserPanePopup } from "./popup-window";
+import { markBrowserPanePopup, shouldOpenAsPopup } from "./popup-window";
 
 interface ConsoleEntry {
 	level: "log" | "warn" | "error" | "info" | "debug";
@@ -875,7 +875,10 @@ class BrowserManager extends EventEmitter {
 	 * Decide what a guest's `window.open` should do.
 	 *
 	 * A `target="_blank"` link (a tab disposition) keeps the pane behaviour: deny
-	 * the native window and let the renderer open the URL as a split.
+	 * the native window and let the renderer open the URL as a split. The one
+	 * exception is an OAuth authorization URL, which arrives with the same
+	 * disposition when a site opens sign-in via a bare `window.open(url)` but
+	 * cannot survive losing its opener — see `shouldOpenAsPopup`.
 	 *
 	 * A real popup has to stay a real popup. `window.open(url, name, "width=…")`
 	 * is how "Sign in with Google" flows work (Firebase `signInWithPopup`, Google
@@ -891,7 +894,7 @@ class BrowserManager extends EventEmitter {
 		details: Electron.HandlerDetails,
 	): Electron.WindowOpenHandlerResponse {
 		if (!isAllowedGuestUrl(details.url)) return { action: "deny" };
-		if (isPopupDisposition(details.disposition)) {
+		if (shouldOpenAsPopup(details)) {
 			return {
 				action: "allow",
 				// The default, but worth stating: a sign-in popup must not
