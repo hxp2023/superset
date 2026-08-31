@@ -1,6 +1,9 @@
 import * as Sentry from "@sentry/cloudflare";
 import { PAGE_COMMENTS_RUNTIME_SOURCE } from "@superset/shared/page-comments-runtime";
 import {
+	FILE_CONTENT_SECURITY_POLICY,
+	fileOriginalKey,
+	fileResponsePolicy,
 	injectScriptTag,
 	type PageManifest,
 	type PageTicketClaims,
