@@ -24,25 +24,41 @@ export async function joinSlackTriggerChannels(
 	}
 	if (channelIds.size === 0) return;
 
-	const connection = await activeConnection(organizationId, "slack", {
-		accessToken: true,
-	});
-	if (!connection) return;
-	const client = new WebClient(connection.accessToken, {
-		timeout: 5_000,
-		retryConfig: { retries: 0 },
-	});
+	// The callers await this bare, right after their transaction commits — a
+	// throw here would reject a mutation whose write already landed.
+	let client: WebClient;
+	try {
+		const connection = await activeConnection(organizationId, "slack", {
+			accessToken: true,
+		});
+		if (!connection) return;
+		client = new WebClient(connection.accessToken, {
+			timeout: 5_000,
+			retryConfig: { retries: 0 },
+		});
+	} catch (error) {
+		console.warn(
+			"[slack/joinChannels] could not load the Slack connection:",
+			error instanceof Error ? error.message : error,
+		);
+		return;
+	}
 
-	await Promise.all(
-		[...channelIds].map(async (channel) => {
-			try {
-				await client.conversations.join({ channel });
-			} catch (error) {
-				console.warn(
-					`[slack/joinChannels] could not join ${channel}:`,
-					error instanceof Error ? error.message : error,
-				);
-			}
-		}),
-	);
+	// Chunked, not all at once: Slack rate-limits conversations.join, and a
+	// pasted-in channel list can be long.
+	const ids = [...channelIds];
+	for (let i = 0; i < ids.length; i += 5) {
+		await Promise.all(
+			ids.slice(i, i + 5).map(async (channel) => {
+				try {
+					await client.conversations.join({ channel });
+				} catch (error) {
+					console.warn(
+						`[slack/joinChannels] could not join ${channel}:`,
+						error instanceof Error ? error.message : error,
+					);
+				}
+			}),
+		);
+	}
 }
