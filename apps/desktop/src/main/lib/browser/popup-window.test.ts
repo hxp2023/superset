@@ -110,3 +110,48 @@ describe("shouldOpenAsPopup", () => {
 		).toBe(false);
 	});
 });
+
+describe("blank popups (open-then-navigate auth libraries)", () => {
+	test('a bare window.open("about:blank") is a popup, not a denied tab', () => {
+		// No features, so Chromium reports a tab. Denying it would hand the
+		// caller null, which reads as a blocked popup.
+		expect(
+			shouldOpenAsPopup({ disposition: "foreground-tab", url: "about:blank" }),
+		).toBe(true);
+	});
+
+	test("still a popup when Chromium already calls it one", () => {
+		expect(
+			shouldOpenAsPopup({ disposition: "new-window", url: "about:blank" }),
+		).toBe(true);
+	});
+});
+
+describe("isOAuthAuthorizationUrl: response_type value space", () => {
+	const url = (rt: string) =>
+		`https://idp.example.com/authorize?client_id=a&redirect_uri=b&response_type=${rt}`;
+
+	test("accepts the defined single and hybrid response types", () => {
+		for (const rt of ["code", "token", "id_token", "none", "code%20id_token"]) {
+			expect(isOAuthAuthorizationUrl(url(rt))).toBe(true);
+		}
+	});
+
+	test("an unrelated URL carrying the same parameter names is not a sign-in", () => {
+		// The false positive a presence-only check would have accepted.
+		expect(isOAuthAuthorizationUrl(url("json"))).toBe(false);
+		expect(
+			isOAuthAuthorizationUrl(
+				"https://example.com/report?client_id=a&redirect_uri=b&response_type=csv",
+			),
+		).toBe(false);
+	});
+
+	test("only http(s) URLs qualify", () => {
+		expect(
+			isOAuthAuthorizationUrl(
+				"file:///tmp/x?client_id=a&redirect_uri=b&response_type=code",
+			),
+		).toBe(false);
+	});
+});

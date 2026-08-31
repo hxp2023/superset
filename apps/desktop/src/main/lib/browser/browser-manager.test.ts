@@ -415,12 +415,17 @@ describe("window.open handling", () => {
 		expect(opts).not.toHaveProperty("height");
 	});
 
-	test("a popup does not pin a partition, so it inherits the pane session", () => {
+	test("a popup pins no webPreferences, so it inherits the opener's", () => {
 		const wc = register("pane-partition");
 		const result = wc.windowOpen?.(openDetails({ disposition: "new-window" }));
-		const prefs = result?.overrideBrowserWindowOptions?.webPreferences;
-		expect(prefs).not.toHaveProperty("partition");
-		expect(prefs).toMatchObject({ nodeIntegration: false, sandbox: true });
+		// Inheritance already guarantees no-Node and context isolation. Pinning
+		// a value that later diverges from the guest (sandbox especially) makes
+		// Electron isolate the child in its own process, which nulls
+		// window.opener and silently breaks the sign-in handshake. Not setting
+		// a partition is part of the same rule: the popup shares the pane's jar.
+		expect(
+			result?.overrideBrowserWindowOptions?.webPreferences,
+		).toBeUndefined();
 	});
 
 	test("an about:blank popup is allowed — auth flows open one then navigate it", () => {
@@ -449,14 +454,17 @@ describe("window.open handling", () => {
 		expect(emitted).toEqual(["https://example.com/docs"]);
 	});
 
-	test("about:blank tabs are dropped rather than opening an empty pane", () => {
+	test("a bare about:blank open is allowed, not denied as an empty tab", () => {
+		// window.open("about:blank") passes no features, so Chromium reports a
+		// tab. Denying it returns null to the caller, which auth libraries that
+		// open-then-navigate read as a blocked popup.
 		const wc = register("pane-blank-tab");
 		const emitted: string[] = [];
 		browserManager.on("new-window:pane-blank-tab", (url: string) => {
 			emitted.push(url);
 		});
 		expect(wc.windowOpen?.(openDetails({ url: "about:blank" }))?.action).toBe(
-			"deny",
+			"allow",
 		);
 		expect(emitted).toEqual([]);
 	});

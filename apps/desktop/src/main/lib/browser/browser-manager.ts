@@ -131,13 +131,13 @@ function popupWindowOptions(): Electron.BrowserWindowConstructorOptions {
 		autoHideMenuBar: true,
 		// A sign-in window has no business going fullscreen.
 		fullscreenable: false,
-		webPreferences: {
-			// Arbitrary remote content: no app preload, no Node.
-			nodeIntegration: false,
-			contextIsolation: true,
-			sandbox: true,
-			webviewTag: false,
-		},
+		// `webPreferences` is deliberately not set. Electron inherits the
+		// opener's security preferences and refuses to relax them, so the popup
+		// is already no-Node and context-isolated. Restating them here would be
+		// worse than redundant: if a value we pin ever diverges from the guest's
+		// (`sandbox` especially), Electron isolates the child in its own process
+		// and `window.opener` comes back null, silently breaking the one thing
+		// this popup exists to preserve.
 	};
 }
 
@@ -903,11 +903,7 @@ class BrowserManager extends EventEmitter {
 				overrideBrowserWindowOptions: popupWindowOptions(),
 			};
 		}
-		// `about:blank` carries nothing worth a split pane. An auth flow that
-		// opens one before navigating it is a popup, handled above.
-		if (details.url !== "about:blank") {
-			this.emit(`new-window:${paneId}`, details.url);
-		}
+		this.emit(`new-window:${paneId}`, details.url);
 		return { action: "deny" };
 	}
 

@@ -29,17 +29,53 @@ export function isPopupDisposition(
  * has none of these, so the split-pane path keeps that traffic.
  */
 export function isOAuthAuthorizationUrl(url: string): boolean {
-	let params: URLSearchParams;
+	let parsed: URL;
 	try {
-		params = new URL(url).searchParams;
+		parsed = new URL(url);
 	} catch {
 		return false;
 	}
+	if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+	const params = parsed.searchParams;
 	return (
 		params.has("client_id") &&
 		params.has("redirect_uri") &&
-		params.has("response_type")
+		hasAuthorizationResponseType(params)
 	);
+}
+
+/**
+ * `response_type` restricted to the values the specs actually define (RFC 6749
+ * section 3.1.1, plus the OIDC hybrid combinations, which are space-delimited
+ * and order-independent). Checking the value space rather than merely the
+ * parameter's presence keeps an unrelated URL that happens to carry these three
+ * parameter names on the split-pane path, without resorting to a list of
+ * provider hostnames that would go stale and would miss self-hosted identity
+ * providers.
+ */
+const AUTHORIZATION_RESPONSE_TYPES = new Set([
+	"code",
+	"token",
+	"id_token",
+	"none",
+]);
+
+function hasAuthorizationResponseType(params: URLSearchParams): boolean {
+	const raw = params.get("response_type")?.trim();
+	if (!raw) return false;
+	const values = raw.split(/\s+/);
+	return values.every((value) => AUTHORIZATION_RESPONSE_TYPES.has(value));
+}
+
+/**
+ * `window.open("about:blank")`, then assigning `location` once the request is
+ * ready, is how several auth libraries dodge popup blockers. Chromium reports
+ * it as a tab when no features are passed, so without this it would be denied
+ * and `window.open` would hand the page `null` — indistinguishable, to the
+ * caller, from a blocked popup.
+ */
+function isBlankPopupUrl(url: string): boolean {
+	return url === "about:blank";
 }
 
 /**
@@ -52,6 +88,7 @@ export function shouldOpenAsPopup(
 ): boolean {
 	return (
 		isPopupDisposition(details.disposition) ||
+		isBlankPopupUrl(details.url) ||
 		isOAuthAuthorizationUrl(details.url)
 	);
 }
