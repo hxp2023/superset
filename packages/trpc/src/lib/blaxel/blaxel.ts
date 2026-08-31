@@ -140,6 +140,19 @@ export async function provisionSandbox(args: {
 	// sandbox, and it is not awaited. The script needs a second or two; the
 	// client discovers the result by polling the health endpoint it already
 	// polls, so there is nothing to wait for here.
+	//
+	// Deliberately no `keepAlive`: it suppresses the provider's automatic
+	// standby, so the sandbox would bill continuously and never sleep. A sandbox
+	// is meant to wake on inbound traffic.
+	//
+	// And deliberately no `restartOnFailure`. Nothing supervises this process —
+	// the platform supervises its own agent, not ours — so a restart is the
+	// obvious reflex, but we have never observed host-service exit. Restarting
+	// an unexplained exit converts a bug we would investigate into a wobble
+	// nobody sees, and it does nothing for the failure we have actually hit: a
+	// missing environment variable throws identically five times and dies
+	// anyway. Worth revisiting once startup errors reach Sentry, which today
+	// they do not — until then a restart loop would be silent.
 	await sandbox.process.exec({
 		name: "host-service",
 		command: "/app/start.sh",

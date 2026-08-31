@@ -35,22 +35,39 @@ fi
 # Getting this wrong is silent rather than loud: fetching the requested branch
 # from the wrong origin leaves a sandbox serving somebody else's code, so the
 # URLs are compared rather than assumed to match.
-if [ -n "$REPO_URL" ]; then
+# Exactly once per sandbox, and never again.
+#
+# Both branches below are destructive to work in progress: the clone path wipes
+# the directory, and the fetch path moves the branch onto the remote's head,
+# which orphans commits an agent made and hadn't pushed. That was survivable
+# only because nothing ever ran this script twice. It now restarts — the
+# provider restarts it on failure, and updating host-service re-runs it — so
+# the repository bootstrap is fenced behind a marker and every later run falls
+# straight through to serving.
+#
+# The marker is written only after the bootstrap succeeds, so a run interrupted
+# midway retries on the next start rather than leaving a half-checked-out
+# workspace nothing will ever repair.
+BOOTSTRAP_MARKER=/data/.workspace-bootstrapped
+
+if [ -n "$REPO_URL" ] && [ ! -f "$BOOTSTRAP_MARKER" ]; then
   BAKED_URL=$(git -C "$WORKSPACE" remote get-url origin 2>/dev/null || echo "")
   if [ -n "${SUPERSET_SANDBOX_GIT_TOKEN:-}" ]; then
     export GIT_ASKPASS=/app/git-askpass.sh
   fi
   if [ "$BAKED_URL" = "$REPO_URL" ] && [ -d "$WORKSPACE/.git" ]; then
     (
-      cd "$WORKSPACE" || exit 0
+      cd "$WORKSPACE" || exit 1
       git fetch --depth 1 origin "$BRANCH" >/dev/null 2>&1 &&
         git checkout -q -B "$BRANCH" FETCH_HEAD >/dev/null 2>&1
-    )
+    ) && touch "$BOOTSTRAP_MARKER"
   else
     rm -rf "$WORKSPACE"
-    git clone --depth 1 --single-branch --branch "$BRANCH" "$REPO_URL" "$WORKSPACE" \
+    if git clone --depth 1 --single-branch --branch "$BRANCH" "$REPO_URL" "$WORKSPACE" \
       >/dev/null 2>&1 ||
-      git clone --depth 1 "$REPO_URL" "$WORKSPACE" >/dev/null 2>&1
+      git clone --depth 1 "$REPO_URL" "$WORKSPACE" >/dev/null 2>&1; then
+      touch "$BOOTSTRAP_MARKER"
+    fi
   fi
   unset GIT_ASKPASS
 fi
