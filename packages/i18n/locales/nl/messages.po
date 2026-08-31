@@ -12466,12 +12466,12 @@ msgstr "Ster geven op GitHub"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.allReleases"
-msgstr ""
+msgstr "Alle releases op GitHub"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.autoBodyShort"
-msgstr ""
+msgstr "Je download start automatisch. Gebeurt dat niet, download dan hier."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
@@ -12481,7 +12481,7 @@ msgstr "Je krijgt zo Superset"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.availability"
-msgstr ""
+msgstr "De Superset-desktopapp is beschikbaar voor macOS en Linux."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12491,27 +12491,27 @@ msgstr "Check je inbox"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.cliDocs"
-msgstr ""
+msgstr "CLI-referentie"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.comingSoon"
-msgstr ""
+msgstr "Binnenkort beschikbaar"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
 msgid "marketing.download.copied"
-msgstr ""
+msgstr "Gekopieerd"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
 msgid "marketing.download.copy"
-msgstr ""
+msgstr "Commando kopiëren"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
 msgid "marketing.download.downloadFor"
-msgstr ""
+msgstr "Downloaden voor {platformName}"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12557,7 +12557,7 @@ msgstr "Op de wachtlijst"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.latestTag"
-msgstr ""
+msgstr "Nieuwste"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12582,12 +12582,12 @@ msgstr "Te veel verzoeken. Probeer het later opnieuw."
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.releaseNotes"
-msgstr ""
+msgstr "Releasenotes bekijken"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
 msgid "marketing.download.seeAllDownloads"
-msgstr ""
+msgstr "Alle downloads bekijken"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12602,57 +12602,57 @@ msgstr "Download"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specPublished"
-msgstr ""
+msgstr "Gepubliceerd"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specSize"
-msgstr ""
+msgstr "Grootte"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specVersion"
-msgstr ""
+msgstr "Versie"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliBody"
-msgstr ""
+msgstr "Maak werkruimtes aan, start agents en lees hun output vanuit elke terminal of elk script. macOS en Linux."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliTitle"
-msgstr ""
+msgstr "CLI"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceDesktopBody"
-msgstr ""
+msgstr "De volledige werkruimte. Draai agents parallel, houd elke agent in zijn eigen worktree en review elke wijziging voordat die wordt doorgevoerd."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceDesktopTitle"
-msgstr ""
+msgstr "Desktop"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceMobileBody"
-msgstr ""
+msgstr "Bekijk lopende agents en lees vanaf je telefoon wat ze hebben gewijzigd."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceMobileTitle"
-msgstr ""
+msgstr "Mobiel"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfacesEyebrow"
-msgstr ""
+msgstr "Op elk platform"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfacesTitle"
-msgstr ""
+msgstr "Draai je agents vanaf de desktop, elke terminal of je telefoon."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx

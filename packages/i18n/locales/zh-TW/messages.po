@@ -12466,12 +12466,12 @@ msgstr "在GitHub上加星"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.allReleases"
-msgstr ""
+msgstr "GitHub 上的所有版本"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.autoBodyShort"
-msgstr ""
+msgstr "下載將自動開始。若未開始，請由此取得。"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
@@ -12481,7 +12481,7 @@ msgstr "馬上就能用上Superset"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.availability"
-msgstr ""
+msgstr "Superset 桌面應用程式支援 macOS 與 Linux。"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12491,27 +12491,27 @@ msgstr "查收你的信箱"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.cliDocs"
-msgstr ""
+msgstr "CLI 參考文件"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.comingSoon"
-msgstr ""
+msgstr "即將推出"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
 msgid "marketing.download.copied"
-msgstr ""
+msgstr "已複製"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
 msgid "marketing.download.copy"
-msgstr ""
+msgstr "複製指令"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
 msgid "marketing.download.downloadFor"
-msgstr ""
+msgstr "下載 {platformName} 版"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12557,7 +12557,7 @@ msgstr "加入等待名單"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.latestTag"
-msgstr ""
+msgstr "最新"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12582,12 +12582,12 @@ msgstr "請求過於頻繁。請稍後重試。"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.releaseNotes"
-msgstr ""
+msgstr "查看版本說明"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
 msgid "marketing.download.seeAllDownloads"
-msgstr ""
+msgstr "查看所有下載選項"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12602,57 +12602,57 @@ msgstr "下載"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specPublished"
-msgstr ""
+msgstr "發布時間"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specSize"
-msgstr ""
+msgstr "大小"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specVersion"
-msgstr ""
+msgstr "版本"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliBody"
-msgstr ""
+msgstr "在任何終端機或指令碼中建立工作區、啟動 agent 並讀取其輸出。支援 macOS 與 Linux。"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliTitle"
-msgstr ""
+msgstr "CLI"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceDesktopBody"
-msgstr ""
+msgstr "完整的工作區。平行執行多個 agent，讓每個 agent 各自使用獨立的 worktree，並在變更合併前逐一審查。"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceDesktopTitle"
-msgstr ""
+msgstr "桌面"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceMobileBody"
-msgstr ""
+msgstr "在手機上查看執行中的 agent，並閱讀它們變更了哪些內容。"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceMobileTitle"
-msgstr ""
+msgstr "行動裝置"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfacesEyebrow"
-msgstr ""
+msgstr "全平台"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfacesTitle"
-msgstr ""
+msgstr "在桌面、任何終端機或手機上執行你的 agent。"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx

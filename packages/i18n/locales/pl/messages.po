@@ -12466,12 +12466,12 @@ msgstr "Oznacz gwiazdką na GitHub"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.allReleases"
-msgstr ""
+msgstr "Wszystkie wydania na GitHubie"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.autoBodyShort"
-msgstr ""
+msgstr "Pobieranie rozpocznie się automatycznie. Jeśli nie ruszyło, pobierz tutaj."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
@@ -12481,7 +12481,7 @@ msgstr "Za chwilę pobierzesz Superset"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.availability"
-msgstr ""
+msgstr "Aplikacja desktopowa Superset jest dostępna dla macOS i Linux."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12491,27 +12491,27 @@ msgstr "Sprawdź skrzynkę"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.cliDocs"
-msgstr ""
+msgstr "Dokumentacja CLI"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.comingSoon"
-msgstr ""
+msgstr "Wkrótce"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
 msgid "marketing.download.copied"
-msgstr ""
+msgstr "Skopiowano"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
 msgid "marketing.download.copy"
-msgstr ""
+msgstr "Kopiuj polecenie"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
 msgid "marketing.download.downloadFor"
-msgstr ""
+msgstr "Pobierz na {platformName}"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12557,7 +12557,7 @@ msgstr "Dołącz do listy oczekujących"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.latestTag"
-msgstr ""
+msgstr "Najnowsza"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12582,12 +12582,12 @@ msgstr "Zbyt wiele żądań. Spróbuj ponownie później."
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
 msgid "marketing.download.releaseNotes"
-msgstr ""
+msgstr "Zobacz informacje o wydaniu"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
 msgid "marketing.download.seeAllDownloads"
-msgstr ""
+msgstr "Zobacz wszystkie pliki do pobrania"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -12602,57 +12602,57 @@ msgstr "Pobierz"
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specPublished"
-msgstr ""
+msgstr "Opublikowano"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specSize"
-msgstr ""
+msgstr "Rozmiar"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
 msgid "marketing.download.specVersion"
-msgstr ""
+msgstr "Wersja"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliBody"
-msgstr ""
+msgstr "Twórz obszary robocze, uruchamiaj agentów i czytaj ich wyniki z dowolnego terminala lub skryptu. macOS i Linux."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliTitle"
-msgstr ""
+msgstr "CLI"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceDesktopBody"
-msgstr ""
+msgstr "Pełny obszar roboczy. Uruchamiaj agentów równolegle, każdego w osobnym worktree, i przeglądaj każdą zmianę, zanim trafi do kodu."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceDesktopTitle"
-msgstr ""
+msgstr "Desktop"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceMobileBody"
-msgstr ""
+msgstr "Sprawdzaj działających agentów i czytaj ich zmiany z telefonu."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceMobileTitle"
-msgstr ""
+msgstr "Mobile"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfacesEyebrow"
-msgstr ""
+msgstr "Wszystkie platformy"
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfacesTitle"
-msgstr ""
+msgstr "Uruchamiaj agentów z komputera, dowolnego terminala lub telefonu."
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
