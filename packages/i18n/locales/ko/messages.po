@@ -13087,6 +13087,21 @@ msgid "marketing.download.short"
 msgstr "다운로드"
 
 #. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
+msgid "marketing.download.specPublished"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
+msgid "marketing.download.specSize"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
+msgid "marketing.download.specVersion"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliBody"
 msgstr ""

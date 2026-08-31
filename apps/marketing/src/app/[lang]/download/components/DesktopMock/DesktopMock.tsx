@@ -26,7 +26,7 @@ export function DesktopMock() {
 		<div
 			ref={bandRef}
 			aria-hidden="true"
-			className="pointer-events-none h-full w-full select-none overflow-hidden"
+			className="pointer-events-none h-full w-full select-none overflow-hidden [&_.rounded-xl]:rounded-none"
 		>
 			<div
 				className="origin-top-left"

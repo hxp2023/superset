@@ -42,7 +42,7 @@ export function CopyCommand({ command, source }: CopyCommandProps) {
 	}
 
 	return (
-		<div className="flex items-center gap-2 border border-border bg-muted/30 py-2 pr-2 pl-3">
+		<div className="flex w-full min-w-0 items-center gap-2 border border-border bg-muted/30 py-2 pr-2 pl-3">
 			<code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-foreground scrollbar-hide">
 				{command}
 			</code>

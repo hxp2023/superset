@@ -1,8 +1,9 @@
 export {
+	classifyAsset,
 	type DownloadOs,
 	type ReleaseAsset,
 	type ReleaseAssetInput,
+	type ReleaseAssetKey,
 	type ReleasePlatform,
-	classifyAsset,
 	toReleasePlatforms,
 } from "./toReleasePlatforms";

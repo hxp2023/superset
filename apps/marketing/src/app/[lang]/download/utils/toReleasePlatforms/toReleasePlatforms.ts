@@ -2,7 +2,19 @@ export type DownloadOs = "macOS" | "Windows" | "Linux";
 
 const OS_ORDER: readonly DownloadOs[] = ["macOS", "Windows", "Linux"];
 
+/** Stable id for an artifact, so callers match on this and not on prose */
+export type ReleaseAssetKey =
+	| "mac-arm64"
+	| "mac-x64"
+	| "linux-appimage-arm64"
+	| "linux-appimage-x64"
+	| "linux-deb"
+	| "linux-rpm"
+	| "windows-x64"
+	| "windows-arm64";
+
 export interface ReleaseAsset {
+	key: ReleaseAssetKey;
 	/** Human label for the artifact, e.g. "Mac (Apple Silicon)" */
 	label: string;
 	url: string;
@@ -22,6 +34,7 @@ export interface ReleaseAssetInput {
 
 interface Classified {
 	os: DownloadOs;
+	key: ReleaseAssetKey;
 	label: string;
 	/** Sort key within a platform column; installers before archives */
 	order: number;
@@ -49,6 +62,7 @@ export function classifyAsset(
 	if (name.endsWith(".dmg")) {
 		return {
 			os: "macOS",
+			key: isArm ? "mac-arm64" : "mac-x64",
 			label: isArm ? "Mac (Apple Silicon)" : "Mac (Intel)",
 			order: isArm ? 0 : 1,
 		};
@@ -56,18 +70,34 @@ export function classifyAsset(
 	if (name.endsWith(".AppImage")) {
 		return {
 			os: "Linux",
+			key: isArm ? "linux-appimage-arm64" : "linux-appimage-x64",
 			label: `Linux AppImage (${archLabel(name)})`,
 			order: 0,
 		};
 	}
 	if (name.endsWith(".deb")) {
-		return { os: "Linux", label: `Linux .deb (${archLabel(name)})`, order: 1 };
+		return {
+			os: "Linux",
+			key: "linux-deb",
+			label: `Linux .deb (${archLabel(name)})`,
+			order: 1,
+		};
 	}
 	if (name.endsWith(".rpm")) {
-		return { os: "Linux", label: `Linux RPM (${archLabel(name)})`, order: 2 };
+		return {
+			os: "Linux",
+			key: "linux-rpm",
+			label: `Linux RPM (${archLabel(name)})`,
+			order: 2,
+		};
 	}
 	if (name.endsWith(".exe")) {
-		return { os: "Windows", label: `Windows (${archLabel(name)})`, order: 0 };
+		return {
+			os: "Windows",
+			key: isArm ? "windows-arm64" : "windows-x64",
+			label: `Windows (${archLabel(name)})`,
+			order: 0,
+		};
 	}
 
 	return null;
@@ -84,6 +114,7 @@ export function toReleasePlatforms(
 		if (!classified) continue;
 		const bucket = byOs.get(classified.os) ?? [];
 		bucket.push({
+			key: classified.key,
 			label: classified.label,
 			url: asset.browser_download_url,
 			sizeBytes: asset.size,

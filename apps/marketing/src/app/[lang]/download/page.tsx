@@ -29,7 +29,7 @@ export default async function DownloadPage() {
 
 	return (
 		<main className="mx-auto w-full max-w-6xl px-6 py-12 sm:px-8 sm:py-16">
-			<DownloadInterstitial />
+			<DownloadInterstitial latestRelease={releases[0] ?? null} />
 			<SurfaceCards />
 			<div className="mt-12 sm:mt-16">
 				<ReleaseList releases={releases} />

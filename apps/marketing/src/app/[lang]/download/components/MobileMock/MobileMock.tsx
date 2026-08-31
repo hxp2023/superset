@@ -10,7 +10,7 @@ export function MobileMock() {
 	return (
 		<div
 			aria-hidden="true"
-			className="pointer-events-none flex h-full w-full select-none items-end justify-center overflow-hidden"
+			className="pointer-events-none flex h-full w-full select-none items-end justify-center overflow-hidden pt-2"
 		>
 			{/* Phone body, cropped by the card band so it reads as a device sitting
 			    in frame rather than a floating rectangle */}

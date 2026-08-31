@@ -13087,6 +13087,21 @@ msgid "marketing.download.short"
 msgstr "Download"
 
 #. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
+msgid "marketing.download.specPublished"
+msgstr "Published"
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
+msgid "marketing.download.specSize"
+msgstr "Size"
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
+msgid "marketing.download.specVersion"
+msgstr "Version"
+
+#. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
 msgid "marketing.download.surfaceCliBody"
 msgstr "Create workspaces, launch agents, and read their output from any terminal or script. macOS and Linux."

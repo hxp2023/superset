@@ -25,10 +25,12 @@ describe("classifyAsset", () => {
 	test("labels the mac disk images by architecture", () => {
 		expect(classifyAsset("Superset-1.25.1-arm64.dmg", "1.25.1")).toMatchObject({
 			os: "macOS",
+			key: "mac-arm64",
 			label: "Mac (Apple Silicon)",
 		});
 		expect(classifyAsset("Superset-1.25.1.dmg", "1.25.1")).toMatchObject({
 			os: "macOS",
+			key: "mac-x64",
 			label: "Mac (Intel)",
 		});
 	});
@@ -36,7 +38,11 @@ describe("classifyAsset", () => {
 	test("labels the linux AppImage", () => {
 		expect(
 			classifyAsset("superset-1.25.1-x86_64.AppImage", "1.25.1"),
-		).toMatchObject({ os: "Linux", label: "Linux AppImage (x64)" });
+		).toMatchObject({
+			os: "Linux",
+			key: "linux-appimage-x64",
+			label: "Linux AppImage (x64)",
+		});
 	});
 
 	test("drops update manifests", () => {
@@ -71,6 +77,17 @@ describe("toReleasePlatforms", () => {
 		]);
 		expect(platforms[1]?.assets.map((asset) => asset.label)).toEqual([
 			"Linux AppImage (x64)",
+		]);
+	});
+
+	// The spec block and download button look assets up by key, so the keys are
+	// contract, not decoration.
+	test("gives every asset a stable key", () => {
+		const platforms = toReleasePlatforms(REAL_ASSETS, "1.25.1");
+		expect(platforms.flatMap((p) => p.assets.map((a) => a.key))).toEqual([
+			"mac-arm64",
+			"mac-x64",
+			"linux-appimage-x64",
 		]);
 	});
 

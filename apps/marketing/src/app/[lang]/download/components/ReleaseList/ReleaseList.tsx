@@ -76,13 +76,13 @@ export function ReleaseList({ releases }: ReleaseListProps) {
 						open={index === 0}
 						className="group border-border border-t last:border-b"
 					>
-						<summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 [&::-webkit-details-marker]:hidden">
+						<summary className="-mx-3 flex cursor-pointer list-none items-center justify-between gap-4 rounded-[2px] px-3 py-5 transition-colors hover:bg-muted/20 [&::-webkit-details-marker]:hidden">
 							<span className="flex items-baseline gap-3">
 								<span className="font-medium text-foreground text-lg">
 									{release.version}
 								</span>
 								{index === 0 ? (
-									<span className="rounded-[2px] border border-border px-2 py-0.5 font-mono text-muted-foreground text-xs">
+									<span className="rounded-[2px] border border-brand/40 bg-brand/10 px-2 py-0.5 font-mono text-brand text-xs">
 										<Trans id="marketing.download.latestTag">Latest</Trans>
 									</span>
 								) : null}
@@ -104,7 +104,7 @@ export function ReleaseList({ releases }: ReleaseListProps) {
 									const Icon = OS_ICONS[platform.os];
 									return (
 										<div key={platform.os} className="bg-background p-5">
-											<h3 className="flex items-center gap-2 font-medium text-foreground text-sm">
+											<h3 className="flex items-center gap-2 font-mono text-foreground text-xs uppercase tracking-wider">
 												<Icon className="size-4" />
 												{platform.os}
 											</h3>
@@ -122,14 +122,14 @@ export function ReleaseList({ releases }: ReleaseListProps) {
 																	asset: asset.label,
 																})
 															}
-															className="group/asset flex items-center justify-between gap-3 py-3 text-muted-foreground text-sm transition-colors hover:text-foreground"
+															className="group/asset -mx-2 flex items-center justify-between gap-3 rounded-[2px] px-2 py-3 text-muted-foreground text-sm transition-colors hover:bg-muted/20 hover:text-foreground"
 														>
 															<span>{asset.label}</span>
 															<span className="flex shrink-0 items-center gap-2">
 																<span className="font-mono text-muted-foreground text-xs">
 																	{formatSize(asset.sizeBytes)}
 																</span>
-																<HiMiniArrowDownTray className="size-4" />
+																<HiMiniArrowDownTray className="size-4 transition-colors group-hover/asset:text-brand" />
 															</span>
 														</a>
 													</li>

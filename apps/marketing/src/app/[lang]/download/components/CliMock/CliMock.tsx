@@ -18,7 +18,7 @@ export function CliMock() {
 	return (
 		<div
 			aria-hidden="true"
-			className="pointer-events-none h-full w-full select-none overflow-hidden bg-[#0b0b0b] p-4 font-mono text-[7px] leading-[1.5] sm:text-[8px]"
+			className="pointer-events-none h-full w-full select-none overflow-hidden font-mono text-[7px] leading-[1.5] sm:text-[8px]"
 		>
 			<div className="whitespace-nowrap">
 				<span className="text-muted-foreground">~/w/demo-app </span>
