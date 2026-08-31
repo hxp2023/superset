@@ -75,7 +75,16 @@ function hasAuthorizationResponseType(params: URLSearchParams): boolean {
  * caller, from a blocked popup.
  */
 function isBlankPopupUrl(url: string): boolean {
-	return url === "about:blank";
+	try {
+		// Any `about:` URL, not just the bare string: `about:blank#state` is a
+		// real pattern (libraries stash handshake state in the fragment), and
+		// matching exactly missed it, which both returned null to the caller and
+		// left an empty split pane behind. Nothing under `about:` is worth a
+		// pane, so routing the whole scheme here fixes both halves.
+		return new URL(url).protocol === "about:";
+	} catch {
+		return false;
+	}
 }
 
 /**

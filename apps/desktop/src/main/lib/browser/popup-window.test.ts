@@ -125,6 +125,20 @@ describe("blank popups (open-then-navigate auth libraries)", () => {
 			shouldOpenAsPopup({ disposition: "new-window", url: "about:blank" }),
 		).toBe(true);
 	});
+
+	test("a fragment or query on about:blank does not lose the popup", () => {
+		// Measured: matching the bare string exactly returned null to the caller
+		// AND left an empty split pane behind.
+		for (const url of [
+			"about:blank#state=abc",
+			"about:blank?x=1",
+			"about:srcdoc",
+		]) {
+			expect(shouldOpenAsPopup({ disposition: "foreground-tab", url })).toBe(
+				true,
+			);
+		}
+	});
 });
 
 describe("isOAuthAuthorizationUrl: response_type value space", () => {
