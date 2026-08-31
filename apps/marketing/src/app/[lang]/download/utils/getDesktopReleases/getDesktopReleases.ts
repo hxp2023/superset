@@ -13,6 +13,10 @@ const DESKTOP_TAG_PREFIX = "desktop-v";
 const MAX_RELEASES = 12;
 const REVALIDATE_SECONDS = 60 * 30;
 const PER_PAGE = 30;
+// The page's first job is to start a download. The catalog is secondary, so a
+// slow GitHub must not hold the whole render: past this we give up and fall
+// back to the platform-aware button plus a link to the releases page.
+const FETCH_TIMEOUT_MS = 5000;
 
 export interface DesktopRelease {
 	/** Semver without the tag prefix, e.g. "1.25.1" */
@@ -46,7 +50,11 @@ export async function getDesktopReleases(): Promise<DesktopRelease[]> {
 	try {
 		const response = await fetch(
 			`https://api.github.com/repos/${slug}/releases?per_page=${PER_PAGE}`,
-			{ headers, next: { revalidate: REVALIDATE_SECONDS } },
+			{
+				headers,
+				next: { revalidate: REVALIDATE_SECONDS },
+				signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+			},
 		);
 		if (!response.ok) {
 			console.error(

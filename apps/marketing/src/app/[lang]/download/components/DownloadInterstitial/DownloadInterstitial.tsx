@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { WaitlistForm } from "@/app/[lang]/components/WaitlistForm";
 import { Platform, usePlatform } from "@/app/[lang]/hooks/useOS";
 import { track } from "@/lib/analytics";
-import { desktopUrlFor, hasDesktopBuild } from "../../utils/desktopUrlFor";
+import { desktopUrlFor, shouldAutoDownload } from "../../utils/desktopUrlFor";
 import { formatReleaseDate } from "../../utils/formatReleaseDate";
 import type { DesktopRelease } from "../../utils/getDesktopReleases";
 import type { ReleaseAssetKey } from "../../utils/toReleasePlatforms";
@@ -52,20 +52,24 @@ export function DownloadInterstitial({
 	// A phone can't run the app, so mobile visitors get a link to open on their
 	// desktop. Windows has no published build and falls through to the waitlist.
 	const showEmailLink = platform === Platform.Mobile;
-	const canAutoDownload = !showEmailLink && hasDesktopBuild(platform);
+	const canAutoDownload = !showEmailLink && shouldAutoDownload(platform);
 	const showWaitlist = platform === Platform.Windows;
 
 	useEffect(() => {
 		if (firedRef.current) return;
 		if (!canAutoDownload) return;
 
-		firedRef.current = true;
 		const url = desktopUrlFor(platform);
 		track("download_started", { platform });
 
-		window.setTimeout(() => {
+		// Latched in the callback, not here: if `platform` resolved again before
+		// the timer fired, latching early would strand the pending redirect on
+		// the stale URL. Cleanup cancels it so the newest platform wins.
+		const timer = window.setTimeout(() => {
+			firedRef.current = true;
 			window.location.href = url;
 		}, AUTO_DOWNLOAD_DELAY_MS);
+		return () => window.clearTimeout(timer);
 	}, [canAutoDownload, platform]);
 
 	const assetKey = PLATFORM_ASSET_KEY[platform];

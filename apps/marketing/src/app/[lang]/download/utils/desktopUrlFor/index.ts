@@ -1,1 +1,5 @@
-export { desktopUrlFor, hasDesktopBuild } from "./desktopUrlFor";
+export {
+	desktopUrlFor,
+	hasDesktopBuild,
+	shouldAutoDownload,
+} from "./desktopUrlFor";
