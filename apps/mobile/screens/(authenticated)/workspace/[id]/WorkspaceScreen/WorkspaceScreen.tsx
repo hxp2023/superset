@@ -1,9 +1,10 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ComposerHandle } from "@superset/composer";
+import type { ComposerHandle, ComposerSessionTab } from "@superset/composer";
 import { i18n } from "@superset/i18n";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
 	CloudOff,
@@ -14,6 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
+	Alert,
 	Keyboard,
 	LayoutAnimation,
 	Pressable,
@@ -34,6 +36,7 @@ import {
 	useHostTerminals,
 } from "@/screens/(authenticated)/(home)/home/hooks/useHostTerminals";
 import { PressableScale } from "@/screens/(authenticated)/components/PressableScale";
+import { useAgentIconUris } from "@/screens/(authenticated)/hooks/useAgentIconUris";
 import { useAppReviewPrompt } from "@/screens/(authenticated)/hooks/useAppReviewPrompt";
 import { useCreateTerminalWorkspace } from "@/screens/(authenticated)/hooks/useCreateTerminalWorkspace";
 import { useSlashCommands } from "@/screens/(authenticated)/hooks/useSlashCommands";
@@ -49,7 +52,6 @@ import {
 	TerminalComposer,
 	type TerminalQuickKey,
 } from "../components/TerminalComposer";
-import { TerminalTabs } from "../components/TerminalTabs";
 import {
 	type TerminalConnectionState,
 	type TerminalControlMessage,
@@ -100,6 +102,14 @@ const STATE_BANNERS: Partial<
  * the active tab is the one live attached stream, and the + menu launches a
  * new session from the host's agent presets (or a plain shell). Chrome: the
  * compact header (name → action sheet, Review pill) and the terminal composer.
+ *
+ * The tab strip is drawn by the composer rather than here. It sits directly
+ * above the quick keys, inside the composer's own view tree, because its
+ * position depends on the composer's height — as a sibling it would have to
+ * guess a number that only exists on the other side of the bridge, which is the
+ * drift `ComposerQuickKeys` was moved native to fix. This screen still owns
+ * every decision: which session is attached, what closing one costs, the order
+ * they sit in.
  */
 export function WorkspaceScreen() {
 	const { t } = useLingui();
@@ -322,6 +332,22 @@ export function WorkspaceScreen() {
 		requestAppReview("session_completed");
 	}, [activeRow, markTerminalSeen, requestAppReview]);
 
+	// Brand marks as file URIs: the composer draws them, and neither SwiftUI nor
+	// the bridge can read a Metro asset reference.
+	const agentIds = useMemo(() => rows.map((row) => row.agentId), [rows]);
+	const agentIconUris = useAgentIconUris(agentIds);
+	const sessionTabs = useMemo<ComposerSessionTab[]>(
+		() =>
+			rows.map((row) => ({
+				id: row.terminalId,
+				label: row.title,
+				iconUri: row.agentId ? agentIconUris[row.agentId] : undefined,
+				selected: row.terminalId === activeTerminalId,
+				attention: row.attention ?? undefined,
+			})),
+		[rows, activeTerminalId, agentIconUris],
+	);
+
 	const invalidateTerminals = useCallback(() => {
 		if (!host) return;
 		void queryClient.invalidateQueries({
@@ -360,6 +386,34 @@ export function WorkspaceScreen() {
 		[workspace, hostUrl, invalidateTerminals],
 	);
 
+	// The composer reports the intent and stops there: it has no idea that
+	// closing a tab kills an agent mid-task, so the confirm lives here. Reached
+	// from the selected tab's close disc and from its press-and-hold menu.
+	const confirmCloseTerminal = useCallback(
+		(terminalId: string) => {
+			const row = rows.find((candidate) => candidate.terminalId === terminalId);
+			Alert.alert(
+				t({
+					id: "mobile.terminalTabs.closeSession",
+					message: "Close session",
+				}),
+				row?.title,
+				[
+					{
+						text: t({ id: "common.cancel", message: "Cancel" }),
+						style: "cancel",
+					},
+					{
+						text: t({ id: "mobile.common.close", message: "Close" }),
+						style: "destructive",
+						onPress: () => killTerminal(terminalId),
+					},
+				],
+			);
+		},
+		[rows, killTerminal, t],
+	);
+
 	// --- active terminal connection (one live stream; tabs switch it) ---
 	const terminalRef = useRef<TerminalWebViewHandle>(null);
 	const [connectionState, setConnectionState] =
@@ -395,6 +449,17 @@ export function WorkspaceScreen() {
 				seq: (prev?.seq ?? 0) + 1,
 			})),
 		[t],
+	);
+
+	// Press and hold a tab → Copy session ID. The pasteboard write lands here
+	// rather than natively so it shares the header notice every other copy on
+	// this screen already uses.
+	const copyTerminalId = useCallback(
+		(terminalId: string) => {
+			void Clipboard.setStringAsync(terminalId).then(handleCopied);
+			posthog.capture("session_id_copied", { workspace_id: id ?? null });
+		},
+		[handleCopied, id],
 	);
 
 	useEffect(() => {
@@ -563,19 +628,6 @@ export function WorkspaceScreen() {
 					</Stack.Title>
 				)}
 			</Stack.Screen>
-
-			{/* A cloud workspace exists on screen before anything serves it; the
-			    tab strip would only offer sessions on a sandbox that isn't up. */}
-			{cloud && !workspace ? null : (
-				<TerminalTabs
-					rows={rows}
-					activeTerminalId={activeTerminalId}
-					onSelect={pickTerminal}
-					onAdd={openAddMenu}
-					onManage={openSessions}
-					onClose={killTerminal}
-				/>
-			)}
 
 			{banner && activeTerminalId ? (
 				<View className="bg-muted px-3 py-1.5">
@@ -767,6 +819,15 @@ export function WorkspaceScreen() {
 							workspaceId={id}
 							allowAttachments={activeRow?.agentId != null}
 							slashCommands={slashCommands}
+							// A cloud workspace exists on screen before anything serves
+							// it; the strip would offer sessions on a sandbox that is not
+							// up yet.
+							sessionTabs={cloud && !workspace ? [] : sessionTabs}
+							onSessionTabPress={pickTerminal}
+							onSessionTabClose={confirmCloseTerminal}
+							onSessionTabCopyId={copyTerminalId}
+							onNewSessionPress={openAddMenu}
+							onAllSessionsPress={openSessions}
 							attachmentTarget={attachmentTarget}
 							onActiveChange={setComposerActive}
 							onHeightChange={setComposerHeight}
