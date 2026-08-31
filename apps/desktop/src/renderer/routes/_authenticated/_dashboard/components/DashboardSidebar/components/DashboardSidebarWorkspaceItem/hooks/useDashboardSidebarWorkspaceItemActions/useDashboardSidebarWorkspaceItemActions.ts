@@ -33,6 +33,11 @@ interface UseDashboardSidebarWorkspaceItemActionsOptions {
 	workspaceId: string;
 	/** Null for project-less "session" workspaces. */
 	projectId: string | null;
+	/**
+	 * Cloud rows are also project-less, so a null `projectId` alone does not
+	 * mean "session". Only sessions may be grouped by tag.
+	 */
+	isSessionWorkspace?: boolean;
 	workspaceName: string;
 	branch: string;
 	isMainWorkspace?: boolean;
@@ -42,6 +47,7 @@ interface UseDashboardSidebarWorkspaceItemActionsOptions {
 export function useDashboardSidebarWorkspaceItemActions({
 	workspaceId,
 	projectId,
+	isSessionWorkspace = false,
 	workspaceName,
 	branch,
 	isMainWorkspace = false,
@@ -150,6 +156,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 
 	const handleCreateSection = () => {
 		if (projectId === null) {
+			if (!isSessionWorkspace) return;
 			const tag = mintFolderTag("New group", sessionGroupTags);
 			void workspaceActions.updateWorkspace(workspaceId, {
 				tags: applyFolderTagChange(currentWorkspaceTags, sessionGroupTags, tag),
@@ -167,6 +174,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 			moveWorkspaceToSection(workspaceId, projectId, sectionId);
 			return;
 		}
+		if (!isSessionWorkspace) return;
 		void workspaceActions.updateWorkspace(workspaceId, {
 			tags: applyFolderTagChange(
 				currentWorkspaceTags,

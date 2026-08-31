@@ -70,6 +70,7 @@ export function DashboardSidebarWorkspaceItem({
 		pullRequest,
 	} = workspace;
 	const isMainWorkspace = workspace.type === "main";
+	const isSessionWorkspace = workspace.type === "session";
 	const { status: workspaceStatus, diffStats } = useSidebarWorkspaceStatus(id);
 	const {
 		cancelRename,
@@ -96,6 +97,7 @@ export function DashboardSidebarWorkspaceItem({
 	} = useDashboardSidebarWorkspaceItemActions({
 		workspaceId: id,
 		projectId,
+		isSessionWorkspace,
 		workspaceName: name,
 		branch,
 		isMainWorkspace,
@@ -257,6 +259,7 @@ export function DashboardSidebarWorkspaceItem({
 						<DashboardSidebarWorkspaceContextMenu
 							workspaceId={id}
 							projectId={projectId}
+							isSessionWorkspace={isSessionWorkspace}
 							isInSection={isInSection}
 							isUnread={isUnread}
 							hasStatus={!!workspaceStatus}
@@ -348,6 +351,7 @@ export function DashboardSidebarWorkspaceItem({
 					<DashboardSidebarWorkspaceContextMenu
 						workspaceId={id}
 						projectId={projectId}
+						isSessionWorkspace={isSessionWorkspace}
 						isInSection={isInSection}
 						isUnread={isUnread}
 						hasStatus={!!workspaceStatus}
