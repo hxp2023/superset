@@ -5494,7 +5494,7 @@ msgstr "無法建立雲端工作區"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
 msgid "dashboard.newWorkspaceModal.submit.cloudRequiresEnvironment"
-msgstr ""
+msgstr "建立雲端工作區前，請先在設定中新增環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
@@ -21892,133 +21892,133 @@ msgstr "重置"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.addSecret"
-msgstr ""
+msgstr "新增"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.archive"
-msgstr ""
+msgstr "封存"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.cancel"
-msgstr ""
+msgstr "取消"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.create"
-msgstr ""
+msgstr "建立"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.created"
-msgstr ""
+msgstr "環境已建立"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.createTitle"
-msgstr ""
+msgstr "新增環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.description"
-msgstr ""
+msgstr "雲端工作區啟動的起點 — 一個基礎映像檔，或你已設定好、想要分叉的沙箱。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.empty"
-msgstr ""
+msgstr "尚無環境。建立一個，即可從中啟動雲端工作區。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.import"
-msgstr ""
+msgstr "匯入"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.imported"
-msgstr ""
+msgstr "已新增 {added} 個變數"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: skipped.join(", ")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.importSkipped"
-msgstr ""
+msgstr "已略過保留或無效的名稱：{0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.keyLabel"
-msgstr ""
+msgstr "名稱"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.kindFork"
+msgstr "分叉 — 複製你已設定好的沙箱"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindImage"
-msgstr ""
+msgstr "映像檔 — 從容器映像檔建立沙箱"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindLabel"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindSnapshot"
-msgstr ""
+msgstr "來源"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.nameLabel"
-msgstr ""
+msgstr "名稱"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.namePlaceholder"
-msgstr ""
+msgstr "monorepo-warm"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.new"
-msgstr ""
+msgstr "新增環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.noSecrets"
-msgstr ""
+msgstr "尚無變數。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.pasteLabel"
-msgstr ""
+msgstr "貼上 .env 檔案"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.refFork"
+msgstr "要分叉的沙箱"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.refImage"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refSnapshot"
-msgstr ""
+msgstr "映像檔參照"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsDescription"
-msgstr ""
+msgstr "會套用到從此環境啟動的每個沙箱。Superset 自身使用的名稱會被拒絕，因此這裡的變數永遠不會改變工作區的身分。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsTitle"
-msgstr ""
+msgstr "環境變數"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.title"
-msgstr ""
+msgstr "環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.valueLabel"
-msgstr ""
+msgstr "值"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/experimental/components/ExperimentalSettings/ExperimentalSettings.tsx

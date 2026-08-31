@@ -5494,7 +5494,7 @@ msgstr "クラウドワークスペースを作成できませんでした"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
 msgid "dashboard.newWorkspaceModal.submit.cloudRequiresEnvironment"
-msgstr ""
+msgstr "クラウドワークスペースを作成する前に、設定で環境を追加してください"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
@@ -21891,133 +21891,133 @@ msgstr "リセット"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.addSecret"
-msgstr ""
+msgstr "追加"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.archive"
-msgstr ""
+msgstr "アーカイブ"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.cancel"
-msgstr ""
+msgstr "キャンセル"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.create"
-msgstr ""
+msgstr "作成"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.created"
-msgstr ""
+msgstr "環境を作成しました"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.createTitle"
-msgstr ""
+msgstr "新しい環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.description"
-msgstr ""
+msgstr "クラウドワークスペースの起動元となる出発点 — ベースイメージ、または設定済みでフォークしたいサンドボックス。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.empty"
-msgstr ""
+msgstr "環境はまだありません。作成すると、そこからクラウドワークスペースを起動できます。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.import"
-msgstr ""
+msgstr "インポート"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.imported"
-msgstr ""
+msgstr "{added}件の変数を追加しました"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: skipped.join(", ")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.importSkipped"
-msgstr ""
+msgstr "予約済みまたは無効なキーをスキップしました: {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.keyLabel"
-msgstr ""
+msgstr "名前"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.kindFork"
+msgstr "フォーク — 設定済みのサンドボックスをコピー"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindImage"
-msgstr ""
+msgstr "イメージ — コンテナイメージからサンドボックスを構築"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindLabel"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindSnapshot"
-msgstr ""
+msgstr "ソース"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.nameLabel"
-msgstr ""
+msgstr "名前"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.namePlaceholder"
-msgstr ""
+msgstr "monorepo-warm"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.new"
-msgstr ""
+msgstr "新しい環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.noSecrets"
-msgstr ""
+msgstr "変数はまだありません。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.pasteLabel"
-msgstr ""
+msgstr ".envファイルを貼り付け"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.refFork"
+msgstr "フォークするサンドボックス"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.refImage"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refSnapshot"
-msgstr ""
+msgstr "イメージ参照"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsDescription"
-msgstr ""
+msgstr "この環境から起動するすべてのサンドボックスに設定されます。Superset自身が使用する名前は拒否されるため、ここでの変数がワークスペースのアイデンティティを変えることはありません。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsTitle"
-msgstr ""
+msgstr "環境変数"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.title"
-msgstr ""
+msgstr "環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.valueLabel"
-msgstr ""
+msgstr "値"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/experimental/components/ExperimentalSettings/ExperimentalSettings.tsx

@@ -21952,6 +21952,11 @@ msgstr "Name"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.kindFork"
+msgstr "Fork — copy a sandbox you already configured"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindImage"
 msgstr "Image — build a sandbox from a container image"
 
@@ -21959,11 +21964,6 @@ msgstr "Image — build a sandbox from a container image"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindLabel"
 msgstr "Source"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindSnapshot"
-msgstr "Fork — copy a sandbox you already configured"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
@@ -21992,13 +21992,13 @@ msgstr "Paste a .env file"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refImage"
-msgstr "Image reference"
+msgid "settings.environments.refFork"
+msgstr "Sandbox to fork"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refSnapshot"
-msgstr "Sandbox to fork"
+msgid "settings.environments.refImage"
+msgstr "Image reference"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx

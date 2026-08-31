@@ -5494,7 +5494,7 @@ msgstr "Impossibile creare il workspace cloud"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
 msgid "dashboard.newWorkspaceModal.submit.cloudRequiresEnvironment"
-msgstr ""
+msgstr "Aggiungi un ambiente nelle Impostazioni prima di creare un workspace cloud"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
@@ -21892,133 +21892,133 @@ msgstr "Reimposta"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.addSecret"
-msgstr ""
+msgstr "Aggiungi"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.archive"
-msgstr ""
+msgstr "Archivia"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.cancel"
-msgstr ""
+msgstr "Annulla"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.create"
-msgstr ""
+msgstr "Crea"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.created"
-msgstr ""
+msgstr "Ambiente creato"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.createTitle"
-msgstr ""
+msgstr "Nuovo ambiente"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.description"
-msgstr ""
+msgstr "Il punto di partenza da cui si avvia un workspace cloud — un'immagine base, o una sandbox che hai configurato e vuoi forkare."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.empty"
-msgstr ""
+msgstr "Nessun ambiente. Creane uno per avviare da lì un workspace cloud."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.import"
-msgstr ""
+msgstr "Importa"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.imported"
-msgstr ""
+msgstr "Aggiunte {added} variabili"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: skipped.join(", ")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.importSkipped"
-msgstr ""
+msgstr "Chiavi riservate o non valide ignorate: {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.keyLabel"
-msgstr ""
+msgstr "Nome"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.kindFork"
+msgstr "Fork — copia una sandbox che hai già configurato"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindImage"
-msgstr ""
+msgstr "Immagine — crea una sandbox da un'immagine container"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.kindLabel"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindSnapshot"
-msgstr ""
+msgstr "Origine"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.nameLabel"
-msgstr ""
+msgstr "Nome"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.namePlaceholder"
-msgstr ""
+msgstr "monorepo-warm"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.new"
-msgstr ""
+msgstr "Nuovo ambiente"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.noSecrets"
-msgstr ""
+msgstr "Nessuna variabile."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.pasteLabel"
-msgstr ""
+msgstr "Incolla un file .env"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.refFork"
+msgstr "Sandbox da forkare"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.refImage"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refSnapshot"
-msgstr ""
+msgstr "Riferimento immagine"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsDescription"
-msgstr ""
+msgstr "Impostate su ogni sandbox avviata da questo ambiente. I nomi usati da Superset stesso vengono rifiutati, quindi una variabile qui non può mai modificare l'identità di un workspace."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsTitle"
-msgstr ""
+msgstr "Variabili d'ambiente"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.title"
-msgstr ""
+msgstr "Ambienti"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.valueLabel"
-msgstr ""
+msgstr "Valore"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/experimental/components/ExperimentalSettings/ExperimentalSettings.tsx
