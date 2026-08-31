@@ -1,5 +1,6 @@
 import { i18n } from "@superset/i18n";
 import type { TriggerConfigInput } from "@superset/shared/automation-triggers";
+import { Badge } from "@superset/ui/badge";
 import {
 	DropdownMenuItem,
 	DropdownMenuPortal,
@@ -25,14 +26,29 @@ import { providerLabelText } from "../triggerMenu";
 export function TriggerMenuItems({
 	providers,
 	onPick,
+	lockedLabel,
 }: {
 	providers: TriggerProvider[];
 	onPick: (config: TriggerConfigInput) => void;
+	/** Tier badge ("Pro", "Enterprise") for a provider the plan can't add. */
+	lockedLabel?: (provider: TriggerProvider) => string | null;
 }) {
 	return (
 		<>
 			{providers.map((provider) => {
 				const Icon = provider.icon;
+				const badge = lockedLabel?.(provider);
+				if (badge) {
+					return (
+						<DropdownMenuItem key={provider.kind} disabled>
+							<Icon className="size-3.5 text-current" />
+							{provider.label}
+							<Badge variant="box" className="ml-auto">
+								{badge}
+							</Badge>
+						</DropdownMenuItem>
+					);
+				}
 				const only = provider.menu.length === 1 ? provider.menu[0] : undefined;
 
 				if (only && "create" in only) {
