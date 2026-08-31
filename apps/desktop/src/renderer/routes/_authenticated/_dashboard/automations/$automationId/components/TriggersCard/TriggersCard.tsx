@@ -9,6 +9,10 @@ import { useRecentProjects } from "renderer/hooks/host-projects/useRecentProject
 import type { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
 import { ProjectPicker } from "../../../components/ProjectPicker";
+import type {
+	OptionGroupState,
+	ProviderOptions,
+} from "../../../components/providers/types";
 import { RelayOfflineNotice } from "../../../components/RelayOfflineNotice";
 import { TriggersEditor } from "../../../components/TriggersEditor";
 import { WorkspacePicker } from "../../../components/WorkspacePicker";
@@ -20,7 +24,6 @@ export type AutomationUpdatePatch = Partial<
 
 type AutomationDetail = RouterOutputs["automation"]["get"];
 
-/** The scope fields, as the page currently holds them — saved or not. */
 export interface ScopeDraft {
 	v2ProjectId: string | null;
 	targetHostId: string | null;
@@ -32,19 +35,15 @@ interface TriggersCardProps {
 	automation: AutomationDetail;
 	hostId: string | null;
 	readOnly?: boolean;
-	/** The scope chips edit the page's draft; nothing here writes on its own. */
 	scope: ScopeDraft;
 	onScopeChange: (patch: Partial<ScopeDraft>) => void;
 	drafts: DraftTrigger[];
 	onEditTriggers: (next: DraftTrigger[]) => void;
 	problems: TriggerProblem[];
-	savedAt?: number;
+	options: ProviderOptions;
+	optionState: Record<string, OptionGroupState>;
 }
 
-/**
- * Sentence-shaped trigger: "[Daily at 8:00 AM] [America/LA]" with an
- * indented scope line "in [project] on [device] · [workspace]".
- */
 export function TriggersCard({
 	automation,
 	hostId,
@@ -54,24 +53,18 @@ export function TriggersCard({
 	drafts,
 	onEditTriggers,
 	problems,
-	savedAt,
+	options,
+	optionState,
 }: TriggersCardProps) {
 	const recentProjects = useRecentProjects();
 	const selectedProject = recentProjects.find(
 		(p) => p.id === scope.v2ProjectId,
 	);
 
-	// The scope line is the same grammar as a trigger sentence — "in X on Y using
-	// Z" — so it uses the same chips. Left alone, the three pickers render at
-	// 36px/12px, 22px/11px and 36px/12px, none of which match the 24px/13px chips
-	// directly above them. Passed per call site, so the pickers keep their own
-	// look everywhere else they are used.
+	// Sized to match the sentence chips above, which the pickers don't match by default.
 	const SCOPE_CHIP =
 		"h-6 gap-1 rounded-[6px] bg-foreground/[0.06] px-2 text-[13px] font-normal hover:bg-foreground/10";
 
-	// Computed from the rule on screen, never the dispatcher's persisted
-	// nextRunAt: that value lags behind edits, goes stale while paused, and
-	// doesn't exist for a row that hasn't been saved yet.
 	const renderNextRun = (
 		config: Extract<DraftTrigger["config"], { kind: "schedule" }>,
 	) => {
@@ -108,7 +101,8 @@ export function TriggersCard({
 				drafts={drafts}
 				onEdit={onEditTriggers}
 				problems={problems}
-				savedAt={savedAt}
+				options={options}
+				optionState={optionState}
 				organizationId={automation.organizationId}
 				renderNextRun={renderNextRun}
 				readOnly={readOnly}
@@ -143,10 +137,7 @@ export function TriggersCard({
 						onChange={(v2WorkspaceId) =>
 							onScopeChange({
 								v2WorkspaceId,
-								// Denormalized pin: the picker is scoped to this host/project,
-								// so send both — the cloud stores them without a
-								// workspace-registry lookup. A null project means the pin is a
-								// session workspace.
+								// Denormalized pin: the cloud stores both without a registry lookup.
 								...(v2WorkspaceId && hostId
 									? {
 											targetHostId: hostId,
