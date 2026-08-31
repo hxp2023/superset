@@ -47,7 +47,6 @@ export function AutomationBody({
 }) {
 	const { t } = useLingui();
 	const [tab, setTab] = useState<DetailTab>("settings");
-	const [name, setName] = useState(automation.name);
 	const [prompt, setPrompt] = useState(automation.prompt);
 	const lastSyncedPromptRef = useRef(automation.prompt);
 	const queryClient = useQueryClient();
@@ -169,7 +168,6 @@ export function AutomationBody({
 		discardTriggers();
 		setSettings(savedSettings);
 		setSettingsDirty(false);
-		setName(automation.name);
 	};
 
 	const setPromptMutation = useMutation({
@@ -220,14 +218,17 @@ export function AutomationBody({
 			    every time one renders. */}
 			<div className="flex w-full flex-col">
 				<EmojiTextInput
-					value={name}
-					onChange={setName}
+					value={settings.name}
+					// Into the draft on every keystroke, not on blur: the draft is what
+					// Save commits, and a blur that races the click on Save would drop
+					// the rename silently.
+					onChange={(next) => editSettings({ name: next })}
 					editable={!readOnly}
 					onBlur={(next) => {
 						if (readOnly) return;
-						const trimmed = next.trim();
-						if (trimmed && trimmed !== settings.name)
-							editSettings({ name: trimmed });
+						// Trim on the way out; an empty title falls back to the saved one
+						// rather than saving a nameless automation.
+						editSettings({ name: next.trim() || automation.name });
 					}}
 					placeholder={t({
 						id: "dashboard.automations.body.titlePlaceholder",
