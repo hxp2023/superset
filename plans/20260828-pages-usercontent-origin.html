@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usercontent Architecture</title>
+<style>
+  :root {
+    --ground: #F3F5F7;
+    --surface: #FFFFFF;
+    --ink: #161B22;
+    --muted: #5C6773;
+    --line: #D5DBE2;
+    --accent: #0F6A7A;
+    --accent-ink: #0B535F;
+    --accent-soft: #DDEFF2;
+    --signal: #B4590A;
+    --signal-soft: #FBEEDC;
+    --neutral-soft: #E3E8ED;
+    --code-bg: #E9EDF1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1317;
+      --surface: #161B21;
+      --ink: #E6EAEE;
+      --muted: #93A0AC;
+      --line: #273039;
+      --accent: #4FB3C4;
+      --accent-ink: #7CCBD8;
+      --accent-soft: #14333A;
+      --signal: #E39A4F;
+      --signal-soft: #2E2116;
+      --neutral-soft: #222A32;
+      --code-bg: #1C232B;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0F1317;
+    --surface: #161B21;
+    --ink: #E6EAEE;
+    --muted: #93A0AC;
+    --line: #273039;
+    --accent: #4FB3C4;
+    --accent-ink: #7CCBD8;
+    --accent-soft: #14333A;
+    --signal: #E39A4F;
+    --signal-soft: #2E2116;
+    --neutral-soft: #222A32;
+    --code-bg: #1C232B;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 24px 96px;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1, h2, h3, h4 {
+    font-family: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 { font-size: 42px; line-height: 1.08; font-weight: 700; }
+  h2 { font-size: 27px; line-height: 1.2; font-weight: 600; }
+  h3 { font-size: 19px; line-height: 1.3; font-weight: 600; }
+  h4 { font-size: 16px; font-weight: 600; }
+  p { margin: 0; max-width: 72ch; }
+  p + p { margin-top: 14px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, pre {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13.5px;
+  }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; line-height: 1.55; margin: 0; }
+  pre code { background: none; padding: 0; }
+  ul, ol { margin: 0; padding-left: 22px; max-width: 72ch; display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow {
+    font-family: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }
+
+  header { padding: 60px 0 28px; display: flex; flex-direction: column; gap: 18px; border-bottom: 1px solid var(--line); }
+  .lede { font-size: 20px; color: var(--muted); max-width: 64ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; }
+  .meta span { background: var(--neutral-soft); border-radius: 4px; padding: 3px 10px; }
+  .meta a { color: inherit; }
+
+  .tag { display: inline-block; font-family: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; vertical-align: 2px; white-space: nowrap; }
+  .tag.decided { background: var(--accent-soft); color: var(--accent-ink); }
+  .tag.built { background: var(--accent); color: var(--surface); }
+  .tag.proposed { background: var(--signal-soft); color: var(--signal); }
+  .tag.open { background: var(--neutral-soft); color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--muted); align-items: center; }
+
+  .thesis { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 8px; }
+  .thesis div, .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .thesis p, .card p { font-size: 15.5px; color: var(--muted); }
+
+  section { display: flex; flex-direction: column; gap: 14px; padding-top: 52px; }
+  section > .eyebrow { margin-bottom: -8px; }
+  .sub { display: flex; flex-direction: column; gap: 10px; padding-top: 18px; }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-family: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  .callout { border-left: 3px solid var(--signal); background: var(--signal-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; max-width: 72ch; }
+  .callout strong { color: var(--signal); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  figure .scroll { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  figure svg { width: 100%; min-width: 760px; height: auto; display: block; color: var(--ink); }
+  figcaption { font-size: 14px; color: var(--muted); max-width: 72ch; }
+  .st { fill: currentColor; font-size: 12.5px; font-family: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif; }
+  .st.small { font-size: 11px; fill: var(--muted); }
+  .st.mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 10.5px; fill: var(--muted); }
+  .box { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+  .box.hi { stroke: var(--accent); stroke-width: 1.5; fill: var(--accent-soft); }
+  .box.pub { stroke: var(--signal); stroke-width: 1.5; fill: var(--signal-soft); }
+  .arrow { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+  .arrow.hi { stroke: var(--accent); }
+  mark { background: var(--accent-soft); color: inherit; padding: 0 3px; border-radius: 2px; }
+
+  footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  @media (prefers-reduced-motion: no-preference) { a { transition: color 120ms ease; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Design · Pages, files, chat media · August 28, 2026</span>
+  <h1>Usercontent Architecture</h1>
+  <p class="lede">How every byte a person or agent uploads to Superset — a published page, a screenshot on an issue, a recording in a chat, an avatar — is stored, protected, and served, for the product we're building: issues and docs, pages, and a federated chat harness.</p>
+  <div class="meta">
+    <span>Spike PR <a href="https://github.com/superset-sh/superset/pull/6954">#6954</a></span>
+    <span>Ticket <a href="https://linear.app/superset-sh/issue/SUPER-1973">SUPER-1973</a></span>
+    <span>Spec: Superset Artifacts §03–04, §06</span>
+    <span>Companion: <a href="https://app.superset.sh/page/device-content-cache-tc6594">Device Content Cache</a></span>
+  </div>
+  <div class="legend">
+    <span><span class="tag decided">decided</span> agreed on</span>
+    <span><span class="tag built">built</span> in #6954, verified locally</span>
+    <span><span class="tag proposed">proposed</span> recommended, awaiting a go</span>
+    <span><span class="tag open">open</span> genuinely undecided</span>
+  </div>
+  <div class="thesis">
+    <div><h4>One rule</h4><p>Bytes never pass through the API — with one exception, a page's entry HTML, one text file under 3 MB that rides the publish call. The API on Vercel decides <em>who may</em>; Cloudflare stores and serves. Clients upload straight to storage and read straight from the edge.</p></div>
+    <div><h4>One domain for untrusted content</h4><p><code>supersetusercontent.com</code>, cookieless by design. Pages get one origin each under <code>pages.</code>; uploads are served from <code>media.</code>; public assets from <code>static.</code>. Nothing user-authored ever runs on <code>superset.sh</code>.</p></div>
+    <div><h4>One way to prove access</h4><p>A ticket: a short signed statement from the API — "this page (or file) may be read until <em>exp</em>" — that the edge verifies with a shared secret. No cookies, no database at the edge, no API call per view.</p></div>
+    <div><h4>One media model, two doors</h4><p>A <code>files</code> table is the library; an <code>attachments</code> row places a file on an issue, a doc, a chat session, or a page. Access always derives from the parent. The app reads files through <code>media.</code> with a ticket; a page reads its own files through its own origin — same object, two doors.</p></div>
+  </div>
+</header>
+
+<section>
+  <span class="eyebrow">Scope</span>
+  <h2>What v1 ships</h2>
+  <p>Video inside pages: a directory publish with <code>&lt;video src="demo.mp4"&gt;</code> plays from the page's own origin, streamed by byte range. The files and attachments layer ships with it <em>as architecture</em> — the <code>files</code> and <code>attachments</code> tables, presigned direct-to-R2 upload with verification on completion, the <code>/files/&lt;fileId&gt;</code> media route, the serve-time content policy — while the issue and chat attachment UI follows later. What that makes non-negotiable for v1: <code>Range</code> on every media path, size and type verified before a file is <code>ready</code>, an upload path that works from the desktop's <code>file://</code> renderer, <code>media-src</code> for <code>media.</code> in the desktop renderer's CSP, <code>expo-video</code> on mobile, and a codec policy — browsers play H.264 MP4 and WebM reliably, and iPhone recordings are HEVC, so v1 accepts originals, the publish warns on a non-web-playable video, and the mobile composer transcodes (boilerplate <code>AVAssetExportSession</code>) when it moves to the files layer. <span class="tag decided">decided</span> August 30.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Vocabulary</span>
+  <h2>Three things to understand first</h2>
+
+  <div class="sub">
+    <h3>The Worker</h3>
+    <p>A Cloudflare Worker is a small function that runs at Cloudflare's edge on every request to the hostnames routed to it. There is no server to operate, it scales horizontally, and it reads R2 through a <em>binding</em> — an in-network call with no credentials to manage. Ours handles one request like this: hostname → page id (or the media host); look up what to serve; check the ticket if the content isn't public; read the bytes from R2; add our headers; respond. It holds no state and knows nothing about users.</p>
+  </div>
+
+  <div class="sub">
+    <h3>The manifest</h3>
+    <p>A small JSON file the API writes into R2 beside a page's bytes, at <code>pages/&lt;pageId&gt;/manifest.json</code>: the page's slug (for the sign-in redirect), its visibility, which version is shared or latest, the storage key of every version, and for each version the assets published with it and their relative paths. It is an index card. The Worker reads it to answer "what does this hostname serve, and who may see it?" without owning a database or calling the API. The API rewrites it whenever one of those facts changes — publish, visibility change, shared-version change, delete — so <mark>flipping a page's visibility is the kill switch</mark>, and an API outage never takes a page down.</p>
+<pre><code>{
+  "v": 1,
+  "pageId": "d28d7b35-813f-43a0-b3f9-9d8988dd1d58",
+  "slug": "pages-on-their-own-origin-vjz0yb",
+  "visibility": "org",
+  "sharedVersion": null,
+  "latestVersion": 2,
+  "versions": {
+    "1": { "key": "pages/d28d7b35-…/versions/1/index.html", "contentType": "text/html" },
+    "2": {
+      "key": "pages/d28d7b35-…/versions/2/index.html", "contentType": "text/html",
+      "assets": {
+        "img/chart.png": { "key": "files/8f1c…/original", "contentType": "image/png" },
+        "app.js":        { "key": "files/2a9d…/original", "contentType": "text/javascript" }
+      }
+    }
+  }
+}</code></pre>
+  </div>
+
+  <div class="sub">
+    <h3>The ticket, and why the Worker has to check it</h3>
+    <p><code>supersetusercontent.com</code> is cookieless <em>on purpose</em>: that is what stops a page's script from ever touching a session. It also means the Worker has no session — no idea who is asking. So a request for anything that isn't public has to carry proof that the API already decided this reader may see it. That proof is the ticket: an HMAC-SHA256 signature over a few readable claims, signed by the API with a secret it shares with the Worker.</p>
+<pre><code>{ "kind": "page", "pageId": "d28d7b35-…", "version": 2, "exp": 1787954814 }   → base64url(claims).base64url(signature)
+{ "kind": "file", "fileId": "8f1c…",                  "exp": 1787954814 }</code></pre>
+    <p>The API mints one after its normal access check (session, org membership, visibility) whenever it returns a page or a file — with an expiry rounded to a window — an hour for the served alias <code>/</code>, a day for a pinned version or a file — so identical claims give an identical URL within the window and caches can hold what they fetched; re-minted on every listing, but the same ticket until the window turns. The Worker verifies the signature and the expiry, and that the kind and id match what's being asked for. That's all it needs: the box office checks your ID and hands you a wristband; the door only checks the wristband is real. A ticket carries no identity and grants nothing beyond the one page or file it names. Public content skips the check entirely.</p>
+    <p>Why not something off the shelf? An R2 presigned URL is the same idea signed by AWS's algorithm — but it points at Cloudflare's S3 host instead of ours, can't carry our headers or serve a page's origin, and every URL is unique so nothing caches. A JWT verified against the auth JWKS (what relay2 does) works, but puts a key fetch on the read path and makes URLs four times longer. A cookie on the media domain needs a redirect handshake. The ticket is sixty lines of WebCrypto and lets a forty-line Worker verify with zero dependencies. Two secrets are accepted during rotation so nothing in flight breaks.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Topology</span>
+  <h2>Hosts, buckets, and who talks to what</h2>
+  <figure>
+  <div class="scroll">
+  <svg viewBox="0 0 920 560" role="img" aria-label="Control plane, storage, and edge">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="currentColor" opacity=".55"/>
+      </marker>
+    </defs>
+
+    <text class="st small" x="20" y="28">CONTROL PLANE · Vercel + Neon</text>
+    <rect class="box" x="20" y="40" width="200" height="70" rx="6"/>
+    <text class="st" x="120" y="66" text-anchor="middle" font-weight="600">Clients</text>
+    <text class="st small" x="120" y="86" text-anchor="middle">web · desktop · mobile · CLI · MCP</text>
+
+    <rect class="box hi" x="300" y="40" width="240" height="70" rx="6"/>
+    <text class="st" x="420" y="66" text-anchor="middle" font-weight="600">API (tRPC on Vercel)</text>
+    <text class="st small" x="420" y="86" text-anchor="middle">decides access · mints tickets · writes rows</text>
+
+    <rect class="box" x="620" y="40" width="130" height="70" rx="6"/>
+    <text class="st" x="685" y="66" text-anchor="middle" font-weight="600">Neon</text>
+    <text class="st small" x="685" y="86" text-anchor="middle">pages · files · attachments</text>
+
+    <path class="arrow" d="M220 75 H295" marker-end="url(#a)"/>
+    <path class="arrow" d="M540 75 H615" marker-end="url(#a)"/>
+
+    <text class="st small" x="20" y="176">STORAGE · R2</text>
+    <rect class="box hi" x="300" y="188" width="330" height="96" rx="6"/>
+    <text class="st" x="465" y="212" text-anchor="middle" font-weight="600">superset-private</text>
+    <text class="st mono" x="465" y="232" text-anchor="middle">pages/&lt;id&gt;/manifest.json · pages/&lt;id&gt;/versions/&lt;n&gt;/index.html</text>
+    <text class="st mono" x="465" y="250" text-anchor="middle">pages/&lt;id&gt;/versions/&lt;n&gt;/thumbnail.jpg  · files/&lt;fileId&gt;/original</text>
+    <text class="st small" x="465" y="272" text-anchor="middle">CORS: presigned PUT from app origins</text>
+
+    <rect class="box pub" x="680" y="188" width="220" height="96" rx="6"/>
+    <text class="st" x="790" y="212" text-anchor="middle" font-weight="600">superset-public</text>
+    <text class="st mono" x="790" y="232" text-anchor="middle">&lt;fileId&gt;</text>
+    <text class="st small" x="790" y="252" text-anchor="middle">avatars · org logos · project icons</text>
+    <text class="st small" x="790" y="272" text-anchor="middle">custom domain, CDN, immutable</text>
+
+    <path class="arrow hi" d="M420 110 V183" marker-end="url(#a)"/>
+    <text class="st small" x="430" y="150" text-anchor="start">page bytes + manifest</text>
+    <path class="arrow" d="M120 110 V236 H295" marker-end="url(#a)"/>
+    <text class="st small" x="130" y="225" text-anchor="start">presigned PUT (files)</text>
+    <path class="arrow" d="M540 100 H790 V183" marker-end="url(#a)"/>
+    <text class="st small" x="700" y="130" text-anchor="start">presigned PUT (public)</text>
+
+    <text class="st small" x="20" y="344">EDGE · Cloudflare</text>
+    <rect class="box hi" x="300" y="356" width="330" height="120" rx="6"/>
+    <text class="st" x="465" y="380" text-anchor="middle" font-weight="600">Worker · apps/usercontent</text>
+    <text class="st mono" x="465" y="400" text-anchor="middle">&lt;pageId&gt;.pages.supersetusercontent.com</text>
+    <text class="st mono" x="465" y="416" text-anchor="middle">media.supersetusercontent.com/files/&lt;id&gt;</text>
+    <text class="st small" x="465" y="438" text-anchor="middle">manifest → version → ticket → bytes</text>
+    <text class="st small" x="465" y="456" text-anchor="middle">one CSP · nosniff · Range · disposition policy</text>
+    <path class="arrow hi" d="M465 284 V351" marker-end="url(#a)"/>
+    <text class="st small" x="475" y="322" text-anchor="start">binding</text>
+
+    <rect class="box pub" x="680" y="356" width="220" height="120" rx="6"/>
+    <text class="st" x="790" y="380" text-anchor="middle" font-weight="600">Cloudflare CDN</text>
+    <text class="st mono" x="790" y="400" text-anchor="middle">static.supersetusercontent.com</text>
+    <text class="st small" x="790" y="422" text-anchor="middle">no Worker in the path</text>
+    <text class="st small" x="790" y="440" text-anchor="middle">/cdn-cgi/image/ transforms</text>
+    <path class="arrow" d="M790 284 V351" marker-end="url(#a)"/>
+
+    <rect class="box" x="20" y="356" width="200" height="120" rx="6"/>
+    <text class="st" x="120" y="380" text-anchor="middle" font-weight="600">Viewers</text>
+    <text class="st small" x="120" y="400" text-anchor="middle">iframe · &lt;img&gt; · &lt;video&gt;</text>
+    <text class="st small" x="120" y="420" text-anchor="middle">?ticket=… for private content</text>
+    <text class="st small" x="120" y="440" text-anchor="middle">bare URLs for public</text>
+    <path class="arrow" d="M220 416 H295" marker-end="url(#a)"/>
+    <path class="arrow" d="M220 450 H260 V500 H790 V481" marker-end="url(#a)"/>
+
+    <rect class="box" x="20" y="188" width="200" height="60" rx="6" opacity=".001"/>
+    <rect class="box" x="20" y="510" width="330" height="40" rx="6"/>
+    <text class="st small" x="185" y="535" text-anchor="middle">Browser Rendering captures thumbnails through the Worker, like any reader</text>
+  </svg>
+  </div>
+  <figcaption>The API writes rows and mints tickets; it never carries bytes. Private content is read through the Worker with a ticket; public content is a plain CDN URL.</figcaption>
+  </figure>
+
+  <div class="sub">
+    <h3>Hosts</h3>
+    <div class="scroll"><table>
+    <tr><th>Host</th><th>Serves</th><th>Access</th><th>Status</th></tr>
+    <tr><td><code>app.superset.sh</code> · <code>api.superset.sh</code></td><td>the app and the control plane</td><td>session cookies</td><td><span class="tag decided">decided</span></td></tr>
+    <tr><td><code>&lt;pageId&gt;.pages.supersetusercontent.com</code></td><td>one published page: its versions, its assets, its thumbnail</td><td>page ticket; public pages bare</td><td><span class="tag decided">decided</span> <span class="tag built">built</span></td></tr>
+    <tr><td><code>media.supersetusercontent.com</code></td><td>every uploaded file the <em>app</em> renders — issues, docs, chat, comments</td><td>file ticket, <code>Range</code></td><td><span class="tag proposed">proposed</span></td></tr>
+    <tr><td><code>static.supersetusercontent.com</code></td><td>avatars, org logos, project icons</td><td>bare, immutable, CDN — no Worker</td><td><span class="tag proposed">proposed</span></td></tr>
+    </table></div>
+    <p>Same registrable domain for all user content — the <code>githubusercontent.com</code> pattern (<code>raw.</code>, <code>avatars.</code>, <code>user-images.</code>). Pages sit under <code>pages.</code> so the top level stays free of identifiers (a second-level wildcard needs Cloudflare's Advanced Certificate Manager, $10/mo), and the label is the page's <em>id</em>, not its slug: the origin is never user-facing (people see <code>app.superset.sh/page/&lt;slug&gt;</code>), an id can never be renamed out from under the storage scoped to it, and it keys every other object of the page already. Never on <code>superset.sh</code>: <code>Domain=.superset.sh</code> cookies would ride along.</p>
+  </div>
+
+  <div class="sub">
+    <h3>The path registry — every URL</h3>
+    <p>Locked in, host by host. Readable names throughout: <code>/versions/</code>, <code>/files/</code>, <code>?ticket=</code>. The page origin rows are what #6954 serves today; the file and static hosts are next. <span class="tag decided">decided</span> <span class="tag built">built</span> (page origin)</p>
+    <div class="scroll"><table>
+    <tr><th>URL</th><th>Serves</th><th>Access</th><th>Cache</th></tr>
+    <tr><td colspan="4"><span class="eyebrow">page origin · <code>https://&lt;pageId&gt;.pages.supersetusercontent.com</code></span></td></tr>
+    <tr><td><code>/</code></td><td>the shared version, else latest</td><td>page ticket (public: none)</td><td><code>no-cache</code> — the served version can change</td></tr>
+    <tr><td><code>/versions/&lt;n&gt;/</code></td><td>one pinned version. Private pages open it at <code>/versions/&lt;n&gt;/~&lt;ticket&gt;/</code>; everything below is relative to that prefix, so references inherit the ticket</td><td>page ticket, in the path (or <code>?ticket=</code>)</td><td>public: <code>immutable</code> · private: <code>no-store</code></td></tr>
+    <tr><td><code>/&lt;path&gt;</code></td><td>an asset of the served version at its relative path (<code>chart.png</code>, <code>app.js</code>)</td><td>inherited from the document's path (<code>/~&lt;ticket&gt;/&lt;path&gt;</code>)</td><td>as the document</td></tr>
+    <tr><td><code>/versions/&lt;n&gt;/&lt;path&gt;</code></td><td>an asset of a pinned version — what a relative reference inside <code>/versions/&lt;n&gt;/</code> resolves to; <code>Range</code> honoured</td><td>inherited from the document's path</td><td>public: <code>immutable</code> · private: <code>private, max-age=86400, immutable</code></td></tr>
+    <tr><td><code>/versions/&lt;n&gt;/thumbnail.jpg</code></td><td>the version's capture</td><td>page ticket</td><td>public: <code>immutable</code> · private: <code>private, max-age=86400</code></td></tr>
+    <tr><td><code>/versions/&lt;n&gt;/files/&lt;fileId&gt;</code></td><td>a file attached to the page by id, any version — the reserved <code>files/</code> segment under a version, so a relative <code>files/&lt;id&gt;</code> reference inherits the ticket</td><td>inherited from the document's path</td><td>as an asset</td></tr>
+    <tr><td><code>/_superset/runtime.js</code></td><td>the injected comment runtime</td><td>none</td><td>5 min</td></tr>
+    <tr><td colspan="4"><span class="eyebrow">media host · <code>https://media.supersetusercontent.com</code></span></td></tr>
+    <tr><td><code>/files/&lt;fileId&gt;</code></td><td>a file the app renders (issues, docs, chat, comments); optional <code>/&lt;filename&gt;</code> suffix for nicer downloads</td><td><code>?ticket=</code> file ticket</td><td><code>private, max-age=86400</code> · <code>Range</code></td></tr>
+    <tr><td><code>/files/&lt;fileId&gt;?width=640&amp;format=webp</code></td><td>an image transform (later)</td><td>file ticket</td><td>edge cache keyed without the ticket</td></tr>
+    <tr><td><code>/files/&lt;fileId&gt;/poster.jpg</code></td><td>a derived asset, e.g. a video poster (later)</td><td>file ticket</td><td>24 h</td></tr>
+    <tr><td><code>/health</code></td><td>liveness</td><td>none</td><td>—</td></tr>
+    <tr><td colspan="4"><span class="eyebrow">static host · <code>https://static.supersetusercontent.com</code> · public bucket, CDN, no Worker</span></td></tr>
+    <tr><td><code>/&lt;fileId&gt;</code></td><td>a public file: avatar, org logo, project icon</td><td>none</td><td><code>public, immutable</code> — a replacement is a new id</td></tr>
+    <tr><td><code>/cdn-cgi/image/width=128/&lt;fileId&gt;</code></td><td>a transform (later, Cloudflare Images on the zone)</td><td>none</td><td>CDN</td></tr>
+    <tr><td colspan="4"><span class="eyebrow">app · <code>https://app.superset.sh</code></span></td></tr>
+    <tr><td><code>/page/&lt;slug&gt;</code></td><td>the page viewer; the only page URL people see or share</td><td>session</td><td>—</td></tr>
+    </table></div>
+    <p><strong>Reserved on the page origin:</strong> a published asset path may not begin with <code>versions/</code>, <code>files/</code> or <code>_superset/</code>, and may not be <code>thumbnail.jpg</code>; the CLI refuses such a directory before uploading anything.</p>
+  </div>
+
+  <div class="sub">
+    <h3>The path registry — every storage key</h3>
+    <div class="scroll"><table>
+    <tr><th>Asset</th><th>Bucket</th><th>Key</th><th>Written by</th><th>Lifecycle</th></tr>
+    <tr><td>Page manifest</td><td><code>superset-private</code></td><td><code>pages/&lt;pageId&gt;/manifest.json</code></td><td>API, on publish · visibility · shared version · delete</td><td>rewritten in place; removed on delete</td></tr>
+    <tr><td>Page version HTML</td><td><code>superset-private</code></td><td><code>pages/&lt;pageId&gt;/versions/&lt;n&gt;/index.html</code></td><td>API, at the version number reserved before the row commits (a conflict retries under the next number)</td><td>immutable; removed with the page</td></tr>
+    <tr><td>Page thumbnail</td><td><code>superset-private</code></td><td><code>pages/&lt;pageId&gt;/versions/&lt;n&gt;/thumbnail.jpg</code></td><td>the thumbnail job</td><td>immutable per version; removed with the page</td></tr>
+    <tr><td>Page asset</td><td><code>superset-private</code></td><td><code>files/&lt;fileId&gt;/original</code> — it is a file, placed on the version with a <code>path</code></td><td>client, presigned PUT</td><td>as any file</td></tr>
+    <tr><td>File on an issue, doc, chat, comment</td><td><code>superset-private</code></td><td><code>files/&lt;fileId&gt;/original</code> — the bytes exactly as uploaded</td><td>client, presigned PUT</td><td>dies with its last attachment; pending &gt; 24 h swept</td></tr>
+    <tr><td>Derived from a file (later)</td><td><code>superset-private</code></td><td><code>files/&lt;fileId&gt;/poster.jpg</code> — a video's still frame shown before playback (<code>&lt;video poster&gt;</code>); an audio waveform or a PDF first page would sit beside it the same way. Image resizes are never stored: they are transformed on the fly and cached at the edge</td><td>a job, after upload</td><td>with the file</td></tr>
+    <tr><td>Public file (avatar, logo, icon)</td><td><code>superset-public</code></td><td><code>&lt;fileId&gt;</code></td><td>client, presigned PUT</td><td>immutable; a replacement is a new id; old one swept when unreferenced</td></tr>
+    </table></div>
+    <p>Under a page, <strong>the storage key is the URL path</strong>: what <code>/versions/3/</code> serves is <code>pages/&lt;pageId&gt;/versions/3/index.html</code>, and anyone can read either and know the other. A file is a folder — <code>original</code> plus any derived siblings — so a derived poster never turns the file's own key into a folder-that-is-also-an-object. No extensions on file objects: the content type lives in object metadata (signed into the presigned PUT so the client can't change it) and the filename in the <code>files</code> row. Everything for a page sits under <code>pages/&lt;pageId&gt;/</code>, so deleting a page is one prefix plus its exclusively-owned files. Column names follow: <code>page_versions.blob_pathname</code> becomes <code>storage_key</code> in the files migration, matching <code>files.storage_key</code>. <span class="tag proposed">proposed</span></p>
+  </div>
+
+  <div class="sub">
+    <h3>Why files have two doors</h3>
+    <p>The rule is <em>who renders the reference</em>. When the app renders an image on an issue or in a chat, it builds the tag, so it can attach a fresh ticket to the URL — those files are served from <code>media.</code>. When a <em>page</em> renders an image, the reference lives in immutable, agent-authored HTML and a ticket expires in an hour, so a ticketed <code>media.</code> URL baked into the page would be dead by tomorrow. Files referenced from inside a page are therefore served from the page's own origin — at their relative paths, or at <code>/files/&lt;id&gt;</code> when attached by id — authorized by the ticket in the document's own path: a private version is opened at <code>/versions/&lt;n&gt;/~&lt;ticket&gt;/</code>, so every relative reference resolves under that prefix and carries the ticket by construction — no cookie, and <code>base-uri 'none'</code> keeps a page from escaping the prefix. It works identically in Chrome, Safari, Electron's <code>file://</code> top level and a WKWebView; a partitioned cookie would not, because Safari blocks third-party cookies and our web viewer is a third-party iframe. (A live check of Claude's artifacts on August 30 found the same conclusion shipped: their frame documents are capability paths with inherited relative references, served with no cookies at all — our ticketed prefix is that model plus a signature and an expiry.) Same <code>files/&lt;id&gt;/original</code> object in R2, two doors in the Worker. This is the mechanism measured in Claude's artifacts — relative <code>_blob/{id}</code> under the version's base path, riding <code>__Host-</code> ticket cookies the document set. Publishing is a directory, not a file: <code>superset pages publish ./site/</code> uploads the assets straight to R2 with presigned PUTs, then publishes <code>index.html</code> with the manifest mapping each relative path, so <code>&lt;img src="img/chart.png"&gt;</code> and <code>&lt;script src="app.js"&gt;</code> work unchanged. A single file still publishes exactly as today. This lands in the same step as the media route. <span class="tag proposed">proposed</span></p>
+  </div>
+
+  <div class="sub">
+    <h3>Buckets</h3>
+    <p>Two, split by <em>how content is served</em>, not by product. <span class="tag decided">decided</span></p>
+    <div class="scroll"><table>
+    <tr><th>Bucket</th><th>Holds</th><th>Why its own bucket</th></tr>
+    <tr><td><code>superset-private</code></td><td><code>pages/…</code>, <code>files/…</code></td><td>Everything read through the Worker with a ticket. One CORS rule (presigned PUT from app origins), one binding.</td></tr>
+    <tr><td><code>superset-public</code></td><td>avatars, logos, icons</td><td>A public bucket can carry a custom domain and be served by Cloudflare's CDN with no Worker — the hottest, smallest, most-requested assets we'll have. Only possible as its own bucket.</td></tr>
+    </table></div>
+    <p>Three buckets (pages separate from files) was considered and dropped: per-bucket metrics and jurisdiction hints are the only extras, and both can come later without moving anything. Each bucket has a <code>-dev</code> twin.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Flows</span>
+  <h2>What happens, step by step</h2>
+  <div class="cards">
+    <div class="card"><h4>Publish a page <span class="tag built">built</span> <span class="tag proposed">assets, key layout</span></h4>
+      <ol>
+        <li>Client uploads the page's assets straight to R2 (presigned PUTs), then sends the entry HTML (≤3 MB) and the asset paths to <code>page.publish</code>. A single file skips the first half.</li>
+        <li>API reserves the next version number, writes the bytes to <code>pages/&lt;pageId&gt;/versions/&lt;n&gt;/index.html</code>, records the version and its assets in Neon, then rewrites the manifest.</li>
+        <li>API queues a thumbnail job; Browser Rendering loads the page through the Worker with a five-minute ticket and stores a JPEG.</li>
+      </ol></div>
+    <div class="card"><h4>View a page <span class="tag built">built</span></h4>
+      <ol>
+        <li>Viewer asks the API for the page; the API checks visibility and returns <code>viewUrl</code> with a one-hour ticket (none if public).</li>
+        <li>The app frames that URL in a sandboxed iframe with <code>allow-same-origin</code>.</li>
+        <li>The Worker reads the manifest, verifies the ticket, streams the version with one CSP, and injects the comment runtime.</li>
+      </ol></div>
+    <div class="card"><h4>Upload a file <span class="tag proposed">proposed</span></h4>
+      <ol>
+        <li><code>files.createUpload({parent, filename, contentType, sizeBytes})</code> — API checks the parent and the per-type size cap, inserts a pending row, returns a presigned PUT (15 min, content type signed in).</li>
+        <li>Client PUTs straight to R2 with progress. The API never sees the bytes.</li>
+        <li><code>files.complete(id)</code> — API HEADs the object, confirms size and type, marks it ready. Pending rows older than 24 h are swept with their objects.</li>
+      </ol></div>
+    <div class="card"><h4>View a file <span class="tag proposed">proposed</span></h4>
+      <ol>
+        <li>Whatever returns the parent (an issue, a chat, a doc) returns each file's URL with a ticket already attached.</li>
+        <li>The Worker verifies it, reads <code>files/&lt;id&gt;/original</code> with <code>Range</code>, and serves with <code>nosniff</code>; inline only for image, video and audio, download for everything else.</li>
+        <li>Public assets skip all of this: a bare, immutable URL on the CDN.</li>
+      </ol></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Thumbnails</span>
+  <h2>How a page gets its picture</h2>
+  <p>A thumbnail is a capture of exactly what a reader sees — same bytes, same headers, same policy — taken by Cloudflare Browser Rendering through the page's own origin, so there is no second rendering path to keep honest. <span class="tag built">built</span> — assets follow with the media route.</p>
+  <ol>
+    <li><strong>Trigger.</strong> <code>page.publish</code>, after the version row commits and the manifest is written, queues <code>{pageId, version}</code> to QStash: <code>POST /api/pages/jobs/thumbnail</code>, dedup id <code>page-thumbnail-&lt;pageId&gt;-&lt;n&gt;</code>, three retries. <code>page.setSharedVersion</code> queues the same job for the newly pinned version, since it may have been superseded before it was ever captured. In development the route is called directly.</li>
+    <li><strong>Guard.</strong> The job verifies the QStash signature, loads the page, and skips unless the version is the one the grid shows (<code>sharedVersion ?? latest</code>) — an agent that republished five times since the job was queued gets one capture. It rewrites the manifest first, so the capture never 404s on a page that exists.</li>
+    <li><strong>Capture.</strong> A five-minute, version-bound page ticket; <code>POST /accounts/&lt;id&gt;/browser-rendering/screenshot</code> with the URL <code>https://&lt;pageId&gt;.pages.supersetusercontent.com/versions/&lt;n&gt;/?ticket=…</code>, viewport 1280×880, JPEG quality 75, <code>waitUntil: load</code> with a 15 s navigation cap, 500 ms settle, <code>bestAttempt</code> so a slow page yields whatever rendered rather than nothing, script network requests rejected, no Cloudflare-side cache. The document response sets the same partitioned cookie a reader's would, so a page's assets load in the capture too — the thumbnail is the real page.</li>
+    <li><strong>Store.</strong> The JPEG goes to <code>pages/&lt;pageId&gt;/versions/&lt;n&gt;/thumbnail.jpg</code> — the same path it is served at — immutable for that version. No database column: existence is the state.</li>
+    <li><strong>Serve.</strong> <code>/versions/&lt;n&gt;/thumbnail.jpg</code> on the page origin, page ticket for private pages, bare and <code>immutable</code> for public. <code>page.list</code> returns each page's <code>thumbnailUrl</code> for the served version with a ticket attached; the grid's <code>&lt;img&gt;</code> shows a placeholder on 404 and picks the image up on the next refetch — typically 2–6 s after publish.</li>
+    <li><strong>Failure.</strong> A failed capture throws, QStash retries with backoff; a page that never captures shows the placeholder until its next publish. Cost is browser time only, ~3 s per capture, inside Workers Paid's included hours at our volume.</li>
+  </ol>
+  <p>Previews of uploaded files (an image in a chat, a video on an issue) are a different thing and not stored: image sizes come from an on-the-fly transform (<code>?width=</code>) cached at the edge, and video posters land as a derived key next to the file — both later, each a contained addition. <span class="tag proposed">proposed</span></p>
+</section>
+
+<section>
+  <span class="eyebrow">Devices</span>
+  <h2>Caching on devices</h2>
+  <p>Cache entries are keyed by the <em>storage key</em> the Worker names in a <code>Superset-Storage-Key</code> header — never by the URL, which carries a ticket that rotates — and what may be kept is the Worker's <code>Cache-Control</code>. Tickets are rounded to a window so URLs hold still (an hour for <code>/</code>, a day for a pinned version and its assets); each platform's built-in cache is sized to hold video; and desktop, where Electron can stand in front of its own session's requests, keeps everything from the user-content hosts in a store of its own with byte ranges served from disk. iOS cannot intercept a WKWebView's requests, so page media there is WebKit's cache alone, and app-rendered images go through expo-image keyed the same way. The full plan — contract, per-platform mechanism, the desktop store's schema and request flow, the spike it needs, and the alternatives set aside — is the companion document <a href="https://app.superset.sh/page/device-content-cache-tc6594">Device Content Cache</a> (<a href="https://claude.ai/code/artifact/f61de0a1-5dde-4efd-8284-794c115c16ee">artifact</a>). The contract and the sized built-in caches are <span class="tag decided">decided</span>; the desktop store is deferred to <a href="https://linear.app/superset-sh/issue/SUPER-2076">SUPER-2076</a>.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Data</span>
+  <h2>Model</h2>
+  <p>Pages keep their existing tables (<code>pages</code>, <code>page_versions</code>, comments); <code>blob_pathname</code> already holds a storage key, so no migration was needed. <span class="tag built">built</span></p>
+  <p>Files get two new tables. A file is the bytes; an attachment places it on something; access always derives from the parent, so the media layer never grows an ACL of its own. <span class="tag proposed">proposed</span></p>
+<pre><code>files          id · organization_id · created_by_user_id · storage_key · filename · content_type
+               size_bytes (bigint) · sha256? · width? · height? · duration_ms?
+               status: pending | ready · provider: r2 | stream · public boolean (decides the bucket) · created_at
+
+attachments    id · file_id · parent_kind · parent_id · position? · path? · created_by_user_id · created_at
+               path: the asset's relative path inside a page version (img/chart.png)
+               unique (file_id, parent_kind, parent_id) · index (parent_kind, parent_id)
+
+parent_kind    task | task_comment | document | chat_session | page | page_version | user_avatar | organization_logo | project_icon</code></pre>
+  <p>Any type may be uploaded; what a browser may <em>do</em> with it is decided at serve time (see <em>Content policy</em>). The existing <code>chatAttachments</code> table folds in — it is unused, so this is a code change, not a data migration. A file dies with its last attachment (app-level cascade on each parent's delete, plus a nightly orphan sweep). Polymorphic <code>parent_kind + parent_id</code> rather than typed foreign-key columns, because the parent list will keep growing with the product. <span class="tag proposed">proposed</span></p>
+</section>
+
+<section>
+  <span class="eyebrow">Security</span>
+  <h2>The boundary, in order of importance</h2>
+  <ol>
+    <li><strong>Origin isolation.</strong> User content lives on a separate registrable domain with no cookies. A page's script has the full authority of <em>its</em> origin and none of ours. This is the wall.</li>
+    <li><strong>One content policy for pages</strong>, identical in every viewer: <code>default-src 'none'</code>; inline scripts and styles allowed, plus same-origin assets published with the page; remote images, media and font files allowed; no <code>fetch</code>, no remote scripts or stylesheets; <code>frame-ancestors</code> limited to the app (and <code>file:</code> for the packaged desktop renderer). A second layer, never the boundary.</li>
+    <li><strong>Nothing on the media host executes.</strong> Every response carries <code>nosniff</code> and <code>Content-Security-Policy: sandbox; default-src 'none'</code>; documents that could run script (HTML, XML, SVG opened directly) are downloads. So the media host cannot execute anything even if origin isolation somehow failed.</li>
+    <li><strong>Tickets</strong> carry no identity, expire in an hour, name exactly one page or file, and can't be swapped between kinds.</li>
+    <li><strong>Referrer and robots.</strong> <code>Referrer-Policy: no-referrer</code> so a tokened URL never leaks through a subresource; <code>X-Robots-Tag: noindex</code> so nothing on the usercontent domain is crawled.</li>
+  </ol>
+</section>
+
+<section>
+  <span class="eyebrow">Content policy</span>
+  <h2>Every type uploads; the response decides what a browser may do</h2>
+  <p>Issues, docs, chat and pages will all carry arbitrary files, so there is no allowlist at write time — only per-type caps (images 25 MB · video 2 GB · audio 200 MB · other 100 MB · page entry HTML 3 MB). Safety is a property of the <em>response</em>: what is served inline, what is a download, and the headers every response carries. <span class="tag decided">decided</span></p>
+  <div class="scroll"><table>
+  <tr><th>Type</th><th>Served as</th><th>Why</th></tr>
+  <tr><td>Images (PNG, JPEG, GIF, WebP, AVIF)</td><td>inline</td><td>—</td></tr>
+  <tr><td>SVG</td><td>renders in <code>&lt;img&gt;</code> and CSS; <strong>download when opened directly</strong> (<code>Content-Disposition: attachment</code>)</td><td>SVG can carry script. Browsers never run it inside <code>&lt;img&gt;</code>, only when the file is navigated to — and a download can't run. No sanitizer to maintain.</td></tr>
+  <tr><td>Video, audio (MP4, WebM, MOV, MP3, M4A, WAV, OGG)</td><td>inline, <code>Range</code></td><td>Seeking; Safari refuses to play without 206s</td></tr>
+  <tr><td>PDF</td><td>inline</td><td>Browser preview is worth keeping; the viewer's script is isolated from the page, and the domain has nothing to reach</td></tr>
+  <tr><td>Plain text, JSON, CSV, Markdown, source files</td><td>inline as text</td><td>Readable in a tab; <code>nosniff</code> stops anything being sniffed to HTML</td></tr>
+  <tr><td>HTML, XHTML, XML</td><td><strong>always a download</strong></td><td>Documents that execute (XML via XSLT). Pages are the product for viewable HTML.</td></tr>
+  <tr><td>JavaScript, CSS</td><td>inline only as a page's own assets on the page origin; download from <code>media.</code></td><td>Static sites need them; nothing else should execute them</td></tr>
+  <tr><td>Fonts</td><td>inline</td><td>Loaded by CSS only</td></tr>
+  <tr><td>Archives, executables, Office documents, anything unknown</td><td>download</td><td>Nothing to render</td></tr>
+  </table></div>
+  <p>Every response from <code>media.</code> carries <code>X-Content-Type-Options: nosniff</code>, <code>Content-Security-Policy: sandbox; default-src 'none'</code>, <code>Referrer-Policy: no-referrer</code>, <code>X-Robots-Tag: noindex</code> and <code>Accept-Ranges: bytes</code>. The <code>sandbox</code> directive means anything navigated to directly runs in an opaque origin — belt and braces under the type rules above. Assets on a page's origin are governed by the page's own policy as subresources and get the same <code>sandbox</code> if opened directly, so an uploaded SVG or HTML file can never act with the page's authority.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Decisions</span>
+  <h2>What was chosen, what it beat, and where it stands</h2>
+  <div class="scroll"><table>
+  <tr><th>Decision</th><th>Chosen</th><th>Instead of</th><th>Why</th><th>Status</th></tr>
+  <tr><td>Serving layer</td><td>Cloudflare Worker</td><td>Vercel wildcard project</td><td>The spec already ruled it; DNS, wrangler and Sentry are on Cloudflare via relay2; wildcard routes are one line; an R2 binding needs no credentials and no per-request function cost</td><td><span class="tag decided">decided</span> <span class="tag built">built</span></td></tr>
+  <tr><td>Storage</td><td>R2</td><td>Vercel Blob</td><td>Storage follows serving. Blob is R2 plus Cloudflare's edge underneath, so "their CDN" was never a differentiator; egress is the one line that scales with readers and R2's is zero</td><td><span class="tag decided">decided</span> <span class="tag built">built</span></td></tr>
+  <tr><td>Page host</td><td><code>&lt;pageId&gt;.pages.…</code></td><td><code>&lt;slug&gt;.…</code> at the top level · slug under <code>pages.</code></td><td>Keeps the top level free of identifiers (one certificate setting, ACM); the id is what storage is scoped to and the only thing guaranteed never to be renamed; the origin is never user-facing</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Control plane</td><td>API on Vercel mints tickets and upload URLs</td><td>Moving auth to the edge</td><td>Session, membership and row access already live there; reads and writes of bytes are direct, so nothing heavy stays on Vercel</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Page lookup at the edge</td><td>Manifest in R2</td><td>Worker asks the API per request</td><td>No API dependency when serving; four write sites in one file keep it current; idempotent, so the thumbnail job repairs a failed write. Escape hatch: <code>loadManifest</code> becomes "ask the API, cache 30 s" in ~30 lines if the write sites ever feel fiddly</td><td><span class="tag built">built</span></td></tr>
+  <tr><td>Proof of access</td><td>HMAC ticket, readable claims</td><td>Presigned R2 URLs · JWT via JWKS · cookies</td><td>See <em>The ticket</em> above</td><td><span class="tag decided">decided</span> <span class="tag built">built</span></td></tr>
+  <tr><td>Buckets</td><td>Two: private + public</td><td>One with prefixes · three by class</td><td>The public bucket earns its custom domain and CDN; a third bucket added nothing that can't come later</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Uploads</td><td>Single presigned PUT (to 5 GB)</td><td>Multipart in v1 · bytes through the API</td><td>Vercel's 4.5 MB body limit makes the API path a wall; multipart adds resumability, which nobody has needed yet</td><td><span class="tag proposed">proposed</span></td></tr>
+  <tr><td>Attachments shape</td><td>Polymorphic <code>parent_kind + parent_id</code></td><td>Typed FK columns per parent</td><td>New parent kinds are an enum value, not a table change</td><td><span class="tag proposed">proposed</span></td></tr>
+  <tr><td>Video</td><td>Raw MP4/WebM in R2 with <code>Range</code></td><td>Cloudflare Stream from day one</td><td>Screen recordings play fine and cost ~10× less to keep (1,000 h ≈ $34/mo vs $300+); <code>provider</code> column lets Stream arrive without a migration when transcoding or adaptive playback is wanted</td><td><span class="tag proposed">proposed</span></td></tr>
+  <tr><td>Thumbnails</td><td>Server-side, eager on publish, via Browser Rendering</td><td>Lazy on view · desktop capture (#6932) · puppeteer on Vercel</td><td>Only the served version is ever shown, so eager is one render per publish; no binary to ship. Puppeteer on Vercel is a legitimate plan B and the job is one function. First thing to cut if prerequisites bite</td><td><span class="tag built">built</span></td></tr>
+  <tr><td>Image transforms</td><td>Serve originals in v1</td><td>Images binding from the start</td><td>A 20-line addition later; not worth a dependency now</td><td><span class="tag proposed">proposed</span></td></tr>
+  <tr><td>Limits</td><td>Per-type caps only (images 25 MB · video 2 GB · audio 200 MB · other 100 MB)</td><td>Org quotas now</td><td>Quotas belong with billing</td><td><span class="tag proposed">proposed</span></td></tr>
+  <tr><td>Avatars and logos</td><td>Move to the public bucket now</td><td>Leave on Vercel Blob</td><td>Kills the last <code>@vercel/blob</code> use and <code>BLOB_READ_WRITE_TOKEN</code>; existing URLs keep working until backfilled</td><td><span class="tag proposed">proposed</span></td></tr>
+  <tr><td>File types</td><td>Everything uploads; serve-time policy decides</td><td>An allowlist at write time</td><td>Issues and chat will carry arbitrary files; the risk is only in what a browser <em>does</em> with a type, and headers settle that per response</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Page assets</td><td>Directory publish; paths in the manifest; the ticket in the document's path, inherited by subresources</td><td>Stay single-file with <code>data:</code> URIs · ticketed <code>media.</code> URLs in page HTML · a partitioned cookie set by the document</td><td>Pages need images, JSON and video today; a page can't hold a fresh ticket, so its assets ride its own origin under the document's ticketed prefix. A cookie door was set aside on August 30: Safari blocks third-party cookies in the web viewer — and a live check that day found Claude's shipping artifacts use no cookies either. Their frame document is served on a capability path (<code>/_f/&lt;stamp&gt;-&lt;code&gt;/</code>) whose relative references inherit it — the same shape as our ticketed prefix, unsigned — with opaque session-bound tokens on app-referenced thumbnails</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Storage keys</td><td>Mirror the URL: <code>pages/&lt;pageId&gt;/versions/&lt;n&gt;/index.html</code>; a file is a folder, <code>files/&lt;fileId&gt;/original</code></td><td>The Blob-era <code>pages/&lt;org&gt;/&lt;sha&gt;/&lt;uuid&gt;/&lt;file&gt;</code> · content-addressed <code>blobs/&lt;sha256&gt;</code></td><td>Read a key, know the URL, and back; a page is one prefix to list, copy or delete; content-addressing saved bytes nobody will miss at a 3 MB cap and cost a folder nobody could read</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Org scoping of keys</td><td>None — ids root every key; the database carries the org</td><td><code>orgs/&lt;orgId&gt;/…</code> tenant prefixes</td><td>The edge resolves by id from the hostname or path with no lookup; R2 has no prefix-scoped tokens or metrics, so the S3-style prefix buys nothing; org-wide delete and export must go through rows and attachments anyway; residency is a bucket, not a prefix; cross-org isolation is the ticket, not the key</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Worker app name</td><td><code>apps/usercontent</code></td><td><code>apps/usercontent</code> · <code>apps/media</code></td><td>Says what it serves. Built as <code>content</code> in the registry pass, swapped back August 30 on Satya's call: <code>usercontent</code> is clearer, and it matches the domain and every env name</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Product word</td><td>"Attachments" wherever people see it — an issue's attachments, a chat's attachments</td><td>"Files" · "Assets"</td><td>"Chat files" and "task files" read wrong; <code>files</code> stays the name of the bytes table only</td><td><span class="tag decided">decided</span></td></tr>
+  <tr><td>Desktop embedding</td><td><code>&lt;iframe&gt;</code> + <code>frame-ancestors file:</code></td><td><code>&lt;webview&gt;</code> with an IPC bridge</td><td>The packaged renderer loads via <code>file://</code>; a frame still needs a ticket. Unverified in a packaged build</td><td><span class="tag built">built</span> <span class="tag open">open</span></td></tr>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Alternatives</span>
+  <h2>Simpler paths we looked at, and what they cost</h2>
+  <div class="cards">
+    <div class="card"><h4>Vercel Private Blob for files</h4><p>Client uploads with multipart and progress out of the box, signed URLs, <code>Range</code> — and no media route to write. Costs egress ($0.05/GB, the one line that scales with readers), URLs on Vercel's host, and a second storage vendor next to pages on R2. The <code>files</code>/<code>attachments</code> model is identical either way, so this remains a swap if "fewest moving parts this quarter" wins.</p></div>
+    <div class="card"><h4>Keep pages as <code>srcdoc</code></h4><p>No Worker, no domain. Keeps every storage API throwing inside pages, keeps two viewers on two policies, and keeps all page blobs on one shared public origin. The spec rejected it; so did we.</p></div>
+    <div class="card"><h4>Worker asks the API instead of reading a manifest</h4><p>Fewer write sites, one more network hop per view, and serving depends on the API. Kept as the documented escape hatch.</p></div>
+    <div class="card"><h4>Puppeteer on Vercel for thumbnails</h4><p>Works; heavier to operate (~50 MB binary, runtime pinning). Our OG images use <code>next/og</code>, which is Satori — no Chromium, no JavaScript — so there's no existing headless path to reuse. Plan B, contained in one function.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Roadmap</span>
+  <h2>Where every kind of media lands</h2>
+  <div class="scroll"><table>
+  <tr><th>Media</th><th>Today</th><th>Target</th><th>When</th></tr>
+  <tr><td>Page versions</td><td>Vercel Blob, served three different ways</td><td><code>superset-private</code>, page origin</td><td><span class="tag built">built</span> · P0 to deploy</td></tr>
+  <tr><td>Page thumbnails</td><td>twenty live iframes in the grid</td><td>captured on publish, served by the page origin</td><td><span class="tag built">built</span></td></tr>
+  <tr><td>Chat attachments</td><td>base64 through the API, proxied through a Vercel function, ≤3.5 MB, no <code>Range</code></td><td><code>files</code> row, presigned PUT, <code>media.</code> with a ticket</td><td>files layer, step 3</td></tr>
+  <tr><td>Issue and doc attachments</td><td>none in the cloud (worktree files only)</td><td>any file type, same as chat, <code>parent_kind = task | document</code></td><td>API in step 2; issue UI in step 4</td></tr>
+  <tr><td>Avatars · org logos · project icons</td><td>Vercel Blob public URLs</td><td><code>superset-public</code> on <code>static.</code></td><td>files layer, step 3</td></tr>
+  <tr><td>Page assets</td><td>inline <code>data:</code> URIs (single-file pages)</td><td>directory publish; assets at their relative paths on the page's origin, authorized by the ticket in the document's path</td><td>files layer, step 3</td></tr>
+  <tr><td>Video</td><td>—</td><td>R2 raw with <code>Range</code>; Stream behind <code>provider</code> when needed</td><td>with files; Stream when triggered</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Rollout</span>
+  <h2>Before any of it can ship</h2>
+  <div class="callout"><strong>Prerequisites only an account owner can do.</strong> The pages spike is code-complete; none of the infrastructure is provisioned.</div>
+  <ol>
+    <li><strong>DNS.</strong> <code>supersetusercontent.com</code> sits on Vercel nameservers. Move the zone to the Superset Cloudflare account, switch nameservers at Name.com, add proxied records for <code>*.pages</code>, <code>pages</code>, <code>media</code>, <code>static</code> and <code>@</code>, and enable Advanced Certificate Manager for the <code>*.pages</code> wildcard.</li>
+    <li><strong>R2.</strong> <code>superset-private</code> and <code>superset-public</code> (+ <code>-dev</code> twins); an S3 API token; a custom domain on the public bucket.</li>
+    <li><strong>Browser Rendering.</strong> An API token; Workers Paid for its rate limits.</li>
+    <li><strong>Env.</strong> <code>CLOUDFLARE_ACCOUNT_ID</code>, <code>R2_ACCESS_KEY_ID</code>, <code>R2_SECRET_ACCESS_KEY</code>, bucket names, <code>USERCONTENT_URL</code>, <code>USERCONTENT_TOKEN_SECRET</code> (API and <code>wrangler secret</code>), <code>CLOUDFLARE_BROWSER_RENDERING_TOKEN</code>.</li>
+    <li><strong>Site isolation.</strong> A Public Suffix List request for <code>pages.supersetusercontent.com</code> (a <code>_psl</code> TXT record plus a pull request to the list; months to reach shipped browsers, so filed now), and <code>Origin-Agent-Cluster: ?1</code> from the Worker in the meantime. <span class="tag decided">decided</span></li>
+    <li><strong>Previews.</strong> Preview deploys get <code>R2_PRIVATE_BUCKET=superset-private-dev</code> and the dev secret; a 30-day object lifecycle rule on that bucket is the cleanup. No per-PR buckets; <code>USERCONTENT_URL</code> points at the dev Worker once one is deployed. <span class="tag decided">decided</span></li>
+    <li><strong>Backfill.</strong> <code>packages/trpc/scripts/migrate-pages-to-r2.ts</code> once, before cutover.</li>
+  </ol>
+  <div class="sub">
+    <h3>Order of work</h3>
+    <ol>
+      <li>Bring the spike to the registry: <code>apps/usercontent</code>, page id as the host label, <code>pages/&lt;pageId&gt;/versions/&lt;n&gt;/</code> key layout, <code>/versions/</code>, <code>?ticket=</code>, readable claims, the private bucket as the Worker's one binding (<code>PRIVATE</code>; the public bucket is CDN-only), thumbnail on <code>setSharedVersion</code>; re-verify locally; push to #6954. <span class="tag built">done</span></li>
+      <li><code>files</code> + <code>attachments</code> schema on a Neon branch; <code>files</code> router (createUpload, complete, sign, list, delete); 1 GiB per file, one presigned PUT (multipart when the cap is hit in practice); <code>complete</code> verifies — HEAD for size, ranged sniff for type, stored on the row — before <code>ready</code>, else deletes; the desktop uploads by streaming the file from the main process over <code>net.fetch</code>, so bucket CORS lists only real origins; 24 h sweep of pending rows.</li>
+      <li>Media route on the Worker and the page door (assets at manifest paths under the ticketed prefix, <code>Range</code>, <code>style-src 'self'</code>); directory publish in the CLI and MCP — each asset hashed and the previous version's file id reused on a match, and a warning for video that isn't H.264 MP4 or WebM; public bucket + custom domain; chat composer and avatars switched over; <code>@vercel/blob</code> removed.</li>
+      <li>Device caching, per <a href="https://app.superset.sh/page/device-content-cache-tc6594">Device Content Cache</a>: the server knobs (path tickets, windowed expiry, <code>Superset-Storage-Key</code>, <code>Origin-Agent-Cluster</code>, preview isolation, the desktop cache switch) are <span class="tag built">built</span> in #6954; the mobile page viewer with <code>ContentImage</code> follows; the desktop store is deferred to <a href="https://linear.app/superset-sh/issue/SUPER-2076">SUPER-2076</a> until video attachments exist.</li>
+      <li>Issue and doc attachment UI. Later, each contained: multipart, transforms, quotas, Stream, page-attached files, mobile viewer.</li>
+    </ol>
+  </div>
+  <div class="sub">
+    <h3>Cost</h3>
+    <div class="scroll"><table>
+    <tr><th>Line</th><th>Price</th><th>At our scale</th></tr>
+    <tr><td>R2 storage</td><td class="num">$0.015/GB-month, 10 GB free</td><td class="num">1,000 h of 1080p recordings ≈ 2.25 TB ≈ $34/mo</td></tr>
+    <tr><td>R2 egress</td><td class="num">$0</td><td>the only line that scaled with readers on Blob ($0.05/GB)</td></tr>
+    <tr><td>R2 operations</td><td class="num">Class A $4.50/M · Class B $0.36/M</td><td>a few per upload and per view</td></tr>
+    <tr><td>Workers</td><td class="num">10 M requests/mo included, then $0.30/M</td><td>page and file views; public assets bypass it</td></tr>
+    <tr><td>Browser Rendering</td><td class="num">10 h/mo included, then $0.09/h</td><td class="num">~12,000 captures inside the included hours</td></tr>
+    <tr><td>Certificates</td><td class="num">ACM $10/mo</td><td>the <code>*.pages</code> wildcard</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Not user content</span>
+  <h2>Plugins and runtimes live elsewhere</h2>
+  <p>Superset plugins follow Claude's plugin model: a plugin is a directory in git — <code>plugin.json</code>, <code>skills/</code>, <code>commands/</code>, <code>agents/</code>, <code>hooks/</code>, <code>.mcp.json</code> — listed by a marketplace repo, installed by a git fetch, with MCP servers launched by a declared command. Nothing in that needs a bucket, and nothing in this document applies to it: plugins are <em>our</em> code executing on people's machines, so the concern is integrity, the opposite of the isolation the usercontent origin exists for. <span class="tag proposed">proposed</span></p>
+  <ul>
+    <li><strong>Plugin directories:</strong> git, tagged versions, never bundled into the desktop app — they update on their own cadence and Claude/Codex users without the app need them from the marketplace.</li>
+    <li><strong>A binary runtime:</strong> a release. Start on GitHub Releases, where desktop, host-service and the CLI already ship in lockstep: CI publishes per-platform assets with checksums on the tag, and a small launcher named in <code>.mcp.json</code> fetches and verifies the runtime into <code>~/.superset/runtimes/&lt;name&gt;/&lt;version&gt;/</code> on first use. If it is one shared runtime, ship one binary per platform in total and let plugins stay scripts.</li>
+    <li><strong>When a marketplace carries many or private binaries:</strong> a public R2 bucket on <code>releases.superset.sh</code> reusing the patterns here — immutable versioned keys, a CI-written manifest, CDN, zero egress — and the ticket Worker as-is for private ones. Never the <code>files</code> model, never the usercontent domain.</li>
+  </ul>
+</section>
+
+<section>
+  <span class="eyebrow">Open</span>
+  <h2>Still undecided</h2>
+  <ul>
+    <li><span class="tag open">open</span> The trigger for Cloudflare Stream: first user-facing complaint about playback, or a format we can't serve raw?</li>
+    <li><span class="tag open">open</span> Org quotas — defaults and plan tiers, decided with billing.</li>
+    <li><span class="tag open">open</span> Whether the packaged desktop app can frame the page origin via <code>frame-ancestors file:</code>; verify in a build before release.</li>
+    <li><span class="tag open">open</span> Data residency: if EU jurisdiction is ever required, buckets are the unit and the private bucket splits by region.</li>
+    <li><span class="tag decided">decided</span> Page assets carry the ticket in the document's path (August 30). The partitioned-cookie door was set aside: Safari blocks third-party cookies for the web viewer, and Electron's <code>file://</code> top level was unverified.</li>
+    <li><span class="tag open">open</span> PDF inline: keep unless a viewer-level concern surfaces; flipping it to a download is a one-line policy change.</li>
+  </ul>
+</section>
+
+<footer>Written August 28, 2026 from the spike branch. Tags reflect where each item stood that day; the spike (#6954) is the pages half, built and verified locally, awaiting the renames above and the infrastructure prerequisites.</footer>
+</div>
+
+</body>
+</html>

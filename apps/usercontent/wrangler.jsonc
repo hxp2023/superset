@@ -3,16 +3,16 @@
 	"name": "superset-usercontent",
 	"main": "src/index.ts",
 	"workers_dev": false,
-	// One origin per page under `pages.`; files get their own first-level host
-	// later. Needs proxied DNS records for `*.pages`, `pages` and `@`, and
+	// One origin per page under `frame.`; files get their own first-level host
+	// later. Needs proxied DNS records for `*.frame`, `frame` and `@`, and
 	// Advanced Certificate Manager for the second-level wildcard certificate.
 	"routes": [
 		{
-			"pattern": "*.pages.supersetusercontent.com/*",
+			"pattern": "*.frame.supersetusercontent.com/*",
 			"zone_name": "supersetusercontent.com"
 		},
 		{
-			"pattern": "pages.supersetusercontent.com/*",
+			"pattern": "frame.supersetusercontent.com/*",
 			"zone_name": "supersetusercontent.com"
 		},
 		{
@@ -23,7 +23,7 @@
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": ["nodejs_als"],
 	"vars": {
-		"USERCONTENT_URL": "https://pages.supersetusercontent.com",
+		"USERCONTENT_URL": "https://frame.supersetusercontent.com",
 		"APP_URL": "https://app.superset.sh",
 		// Who may frame a page. `file:` is the packaged desktop renderer; a
 		// frame still needs a valid ticket, so this admits embedding, not reading.

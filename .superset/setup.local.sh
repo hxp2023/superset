@@ -239,7 +239,7 @@ local_write_env() {
     write_env_var "RELAY_URL" "http://localhost:$RELAY_PORT"
     write_env_var "NEXT_PUBLIC_RELAY_URL" "http://localhost:$RELAY_PORT"
     write_env_var "SUPERSET_WEB_URL" "http://localhost:$WEB_PORT"
-    write_env_var "USERCONTENT_URL" "http://pages.usercontent.localhost:$USERCONTENT_DEV_PORT"
+    write_env_var "USERCONTENT_URL" "http://frame.usercontent.localhost:$USERCONTENT_DEV_PORT"
     echo ""
     echo "# Streams URLs"
     write_env_var "PORT" "$STREAMS_PORT"

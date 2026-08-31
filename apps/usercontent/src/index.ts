@@ -166,7 +166,7 @@ async function serveThumbnail(c: Context<AppContext>): Promise<Response> {
 	});
 }
 
-// Pages hang off `pages.<zone>`; the zone apex and `pages.` itself have
+// Pages hang off `frame.<zone>`; the zone apex and `frame.` itself have
 // nothing to serve, so readers arriving there belong in the app.
 app.use("*", async (c, next) => {
 	assertEnv(c.env);

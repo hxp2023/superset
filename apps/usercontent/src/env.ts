@@ -8,7 +8,7 @@ import { z } from "zod";
  * first request instead of serving with a broken secret or URL.
  */
 const envSchema = z.object({
-	/** Base URL pages hang off, e.g. https://pages.supersetusercontent.com */
+	/** Base URL framed content hangs off, e.g. https://frame.supersetusercontent.com */
 	USERCONTENT_URL: z.string().url(),
 	/** Where a reader without a ticket is sent to sign in and come back. */
 	APP_URL: z.string().url(),
