@@ -3,6 +3,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { ComposerHandle, ComposerSessionTab } from "@superset/composer";
 import { i18n } from "@superset/i18n";
+import { errorMessage } from "@superset/i18n/errors";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -381,9 +382,22 @@ export function WorkspaceScreen() {
 			if (!workspace || !hostUrl) return;
 			void getHostServiceClientByUrl(hostUrl)
 				.terminal.killSession.mutate({ terminalId, workspaceId: workspace.id })
+				// A kill that fails leaves the tab exactly where it was, which reads
+				// as the tap having missed. Cheap to ignore while closing was a
+				// long-press only; the strip now offers it on every selected tab and
+				// in the press-and-hold menu, so silence is no longer affordable.
+				.catch((cause: unknown) =>
+					Alert.alert(
+						t({
+							id: "mobile.terminal.closeFailed",
+							message: "Could not close the session",
+						}),
+						errorMessage(cause),
+					),
+				)
 				.finally(invalidateTerminals);
 		},
-		[workspace, hostUrl, invalidateTerminals],
+		[workspace, hostUrl, invalidateTerminals, t],
 	);
 
 	// The composer reports the intent and stops there: it has no idea that

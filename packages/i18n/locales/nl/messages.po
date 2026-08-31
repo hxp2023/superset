@@ -19020,6 +19020,11 @@ msgstr "Bijlagen vereisen een online host"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
+msgid "mobile.terminal.closeFailed"
+msgstr "Kan de sessie niet sluiten"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
 msgid "mobile.terminal.connecting"
 msgstr "Verbinden…"
 

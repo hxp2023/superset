@@ -19020,6 +19020,11 @@ msgstr "附件需要主機線上"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
+msgid "mobile.terminal.closeFailed"
+msgstr "無法關閉會話"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
 msgid "mobile.terminal.connecting"
 msgstr "正在連線…"
 

@@ -19020,6 +19020,11 @@ msgstr "Gli allegati richiedono un host online"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
+msgid "mobile.terminal.closeFailed"
+msgstr "Impossibile chiudere la sessione"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
 msgid "mobile.terminal.connecting"
 msgstr "Connessione…"
 

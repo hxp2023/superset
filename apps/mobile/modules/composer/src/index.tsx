@@ -201,7 +201,25 @@ export interface ComposerHandle {
 	blur: () => void;
 }
 
-export interface ComposerProps {
+/**
+ * The strip and its strings arrive together or not at all.
+ *
+ * Split out of the props rather than left as two optional fields: the composer
+ * cannot translate, so tabs without labels render a context menu and
+ * accessibility labels that are empty strings — a caller can reach that state
+ * without any type error, and nothing about it looks wrong until VoiceOver
+ * reaches it.
+ */
+type ComposerSessionTabsProps =
+	| {
+			sessionTabs: ComposerSessionTab[];
+			sessionTabLabels: ComposerSessionTabLabels;
+	  }
+	| { sessionTabs?: undefined; sessionTabLabels?: undefined };
+
+export type ComposerProps = ComposerBaseProps & ComposerSessionTabsProps;
+
+interface ComposerBaseProps {
 	placeholder?: string;
 	/**
 	 * Whatever this surface had typed when it was last open, put back as the
@@ -227,17 +245,6 @@ export interface ComposerProps {
 	 * card grew.
 	 */
 	quickKeys?: ComposerQuickKey[];
-	/**
-	 * The workspace's sessions, above the quick keys. Empty or omitted hides
-	 * the strip, which is how every other surface stays without one.
-	 *
-	 * Native for the same reason the quick keys are: the strip's position
-	 * depends on the composer's own height, so as a sibling it would have to
-	 * guess a number that only exists on the other side of the bridge.
-	 */
-	sessionTabs?: ComposerSessionTab[];
-	/** Translated strings for the strip. Required once `sessionTabs` is set. */
-	sessionTabLabels?: ComposerSessionTabLabels;
 	/**
 	 * What the active agent can run behind `/` (or `$`). Empty or omitted
 	 * hides the suggestion panel — a plain shell, an agent without command

@@ -19020,6 +19020,11 @@ msgstr "Los adjuntos requieren un host en línea"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
+msgid "mobile.terminal.closeFailed"
+msgstr "No se pudo cerrar la sesión"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
 msgid "mobile.terminal.connecting"
 msgstr "Conectando…"
 

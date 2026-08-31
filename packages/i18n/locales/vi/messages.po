@@ -19020,6 +19020,11 @@ msgstr "Đính kèm cần một host đang trực tuyến"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
+msgid "mobile.terminal.closeFailed"
+msgstr "Không thể đóng phiên"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
 msgid "mobile.terminal.connecting"
 msgstr "Đang kết nối…"
 
