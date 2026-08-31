@@ -263,12 +263,35 @@ const CODEX_SHARED_DIRS = ["prompts"] as const;
  */
 const CODEX_SHARED_FILES = ["config.toml", "AGENTS.md"] as const;
 
+/**
+ * The Codex home the CLI uses with no Superset involvement.
+ *
+ * `CODEX_HOME` is honoured only when the user set it themselves. Superset
+ * injects that same variable into every terminal and agent launch from the
+ * Usage tab's account pointer, and any process started from such a terminal
+ * inherits it — a host-service restarted from a Superset terminal included.
+ * Trusting it there is circular: the selected profile would masquerade as the
+ * system default, so provisioning would share config *out of* the profile and
+ * `discoverCodexHomes` would label it `selection: null`. The
+ * `SUPERSET_DEFAULT_CODEX_HOME` twin exists precisely to mark our own
+ * injection, so an inherited value is recognisable and ignored.
+ */
+export function resolveAmbientCodexHome(
+	homeDir: string = os.homedir(),
+): string {
+	const fromEnv = process.env.CODEX_HOME?.trim();
+	const supersetInjected = process.env.SUPERSET_DEFAULT_CODEX_HOME?.trim();
+	if (!fromEnv || fromEnv === supersetInjected) {
+		return path.join(homeDir, ".codex");
+	}
+	return path.resolve(fromEnv);
+}
+
 function defaultCodexHome(homeDir: string, homeDirOverridden: boolean): string {
 	// An overridden homeDir (tests) must win over the ambient CODEX_HOME, or
 	// the provision would share from the real machine's Codex home.
 	if (homeDirOverridden) return path.join(homeDir, ".codex");
-	const fromEnv = process.env.CODEX_HOME?.trim();
-	return fromEnv ? path.resolve(fromEnv) : path.join(homeDir, ".codex");
+	return resolveAmbientCodexHome(homeDir);
 }
 
 /** Brings one Codex home up to date with the default one. */
