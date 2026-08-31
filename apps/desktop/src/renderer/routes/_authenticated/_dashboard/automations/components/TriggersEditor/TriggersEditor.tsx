@@ -1,6 +1,7 @@
 import {
 	type DraftTrigger,
 	enabledTriggerKinds,
+	type TriggerProblem,
 } from "@superset/shared/automation-triggers";
 import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
@@ -13,23 +14,14 @@ import {
 import { Input } from "@superset/ui/input";
 import { Separator } from "@superset/ui/separator";
 import { useFeatureFlagPayload } from "posthog-js/react";
-import {
-	type ReactNode,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import { LuPlus, LuTriangleAlert } from "react-icons/lu";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { LuPlus } from "react-icons/lu";
 import { useCurrentPlan } from "renderer/hooks/useCurrentPlan";
 import { providerFor, TRIGGER_PROVIDERS } from "../providers";
-import type { OptionGroupState } from "../providers/types";
 import { useProviderConnections } from "../providers/useProviderConnections";
 import { useProviderOptions } from "../providers/useProviderOptions";
 import { TriggerSentence } from "../TriggerSentence";
 import { RuntimeWarnings } from "./components/RuntimeWarnings";
-import { useTriggerDrafts } from "./hooks/useTriggerDrafts";
 import { collectRuntimeWarnings, lockedTierFor } from "./runtimeWarnings";
 import { TriggerMenuItems } from "./TriggerMenuItems";
 import { flattenTriggerMenu, matchesQuery } from "./triggerMenu";
@@ -40,9 +32,22 @@ type ScheduleTriggerConfig = Extract<
 >;
 
 interface TriggersEditorProps {
-	triggers: DraftTrigger[];
-	/** Resolves once the set is written; rejects if it was refused. */
-	onChange: (next: DraftTrigger[]) => undefined | Promise<unknown>;
+	/**
+	 * The set being edited. Held by the page, not here: the scope chips, the
+	 * title and the agent share one save state with the triggers, so the drafts
+	 * and the Save that commits them have to live above all of them.
+	 */
+	drafts: DraftTrigger[];
+	onEdit: (next: DraftTrigger[]) => void;
+	/** This set's problems, already gated on a save having been attempted. */
+	problems: TriggerProblem[];
+	/**
+	 * Bumped by the page each time a save lands. Saving joins the bot to the
+	 * public channels a Slack trigger watches, which flips `botMember` on the
+	 * cached channel list — without a refetch the membership warning outlives
+	 * the save that fixed it.
+	 */
+	savedAt?: number;
 	/** Whose integrations the pickable lists come from. */
 	organizationId: string;
 	/**
@@ -68,53 +73,36 @@ interface TriggersEditorProps {
  * `@superset/shared` rather than being restated here.
  */
 export function TriggersEditor({
-	triggers,
-	onChange,
+	drafts,
+	onEdit,
+	problems,
+	savedAt,
 	organizationId,
 	renderNextRun,
 	readOnly,
 	children,
 }: TriggersEditorProps) {
-	// Edited locally and saved on request, unlike the rest of this page.
-	//
-	// A trigger is invalid the moment it is added — "Comment added" with no
-	// repository chosen yet — and the API rejects the whole set, so autosaving
-	// meant a new row was saved, refused, and dropped on the next render. Saving
-	// silently once it happened to become valid is no better: nothing tells you
-	// which edit crossed the line, or that anything was written at all.
-	const optionStateRef = useRef<Record<string, OptionGroupState>>({});
-	// Saving joins the bot to the public channels a Slack trigger watches, which
-	// flips `botMember` on the cached channel list. Without a refetch the
-	// membership warning outlives the save that fixed it.
-	const saveTriggers = useCallback(
-		async (next: DraftTrigger[]) => {
-			const result = await onChange(next);
-			optionStateRef.current.slack?.refetch();
-			return result;
-		},
-		[onChange],
-	);
-
-	const {
-		drafts,
-		dirty,
-		saving,
-		shownProblems,
-		banner,
-		edit,
-		add,
-		save,
-		discard,
-	} = useTriggerDrafts(triggers, saveTriggers);
 	const { options, state: optionState } = useProviderOptions(
 		organizationId,
 		drafts,
 	);
-	// Read through a ref: the save handler is defined before this hook runs, and
-	// it only needs whichever refetch exists by the time a save resolves.
+	const edit = onEdit;
+	const add = (config: DraftTrigger["config"]) =>
+		onEdit([...drafts, { config }]);
+
+	// Refetch Slack's lists once a save lands, not on every option change: the
+	// save is what may have joined a channel, and `optionState` is a new object
+	// on each render.
+	const refetchSlack = optionState.slack?.refetch;
+	const firstSave = useRef(true);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed on savedAt
 	useEffect(() => {
-		optionStateRef.current = optionState;
-	}, [optionState]);
+		if (firstSave.current) {
+			firstSave.current = false;
+			return;
+		}
+		refetchSlack?.();
+	}, [savedAt]);
 
 	// Unlike problems, these show without waiting for a save attempt: they
 	// describe the world (a channel the bot is not in), not an unfinished edit,
@@ -162,43 +150,11 @@ export function TriggersEditor({
 
 	return (
 		<div className="flex flex-col gap-1">
-			{/* The section label lives here rather than in the page, so the actions
-			    for the set can sit on its line. Above the surface, not below it: a
-			    Save that trails the rows drifts down the page as triggers are added,
-			    and takes the reason it was refused with it. */}
+			{/* Label only. The Save that commits this set also commits the scope
+			    chips, the title and the agent, so it belongs to the page rather than
+			    to this section. */}
 			<div className="mb-2 flex min-h-7 items-center gap-3">
 				<span className="shrink-0 text-muted-foreground text-sm">Triggers</span>
-
-				{banner && (
-					<p className="flex min-w-0 items-center gap-1.5 text-[13px] text-amber-600 dark:text-amber-400">
-						<LuTriangleAlert className="size-3.5 shrink-0" />
-						<span className="truncate">{banner}</span>
-					</p>
-				)}
-
-				{dirty && (
-					<div className="ml-auto flex shrink-0 items-center gap-1.5">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={discard}
-							disabled={saving}
-							className="h-7 text-[13px]"
-						>
-							Discard
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							onClick={save}
-							disabled={saving}
-							className="h-7 text-[13px]"
-						>
-							{saving ? "Saving..." : "Save triggers"}
-						</Button>
-					</div>
-				)}
 			</div>
 
 			{/* A filled surface, not an outlined box: the rows are the structure, and
@@ -214,7 +170,7 @@ export function TriggersEditor({
 						onRemove={() => edit(drafts.filter((_, i) => i !== index))}
 						options={options}
 						optionState={optionState}
-						problems={shownProblems.filter((p) => p.index === index)}
+						problems={problems.filter((p) => p.index === index)}
 						nextRun={
 							trigger.config.kind === "schedule"
 								? renderNextRun?.(trigger.config)

@@ -1,5 +1,8 @@
 import { formatDateTime } from "@superset/i18n/format";
-import type { DraftTrigger } from "@superset/shared/automation-triggers";
+import type {
+	DraftTrigger,
+	TriggerProblem,
+} from "@superset/shared/automation-triggers";
 import { nextOccurrenceAfter } from "@superset/shared/rrule";
 import type { RouterOutputs } from "@superset/trpc";
 import { useRecentProjects } from "renderer/hooks/host-projects/useRecentProjects";
@@ -17,13 +20,25 @@ export type AutomationUpdatePatch = Partial<
 
 type AutomationDetail = RouterOutputs["automation"]["get"];
 
+/** The scope fields, as the page currently holds them — saved or not. */
+export interface ScopeDraft {
+	v2ProjectId: string | null;
+	targetHostId: string | null;
+	v2WorkspaceId: string | null;
+	tags: string[];
+}
+
 interface TriggersCardProps {
 	automation: AutomationDetail;
 	hostId: string | null;
 	readOnly?: boolean;
-	onUpdate: (patch: AutomationUpdatePatch) => void;
-	/** Resolves once the write lands, so the editor knows the set is saved. */
-	onSaveTriggers: (triggers: DraftTrigger[]) => Promise<unknown>;
+	/** The scope chips edit the page's draft; nothing here writes on its own. */
+	scope: ScopeDraft;
+	onScopeChange: (patch: Partial<ScopeDraft>) => void;
+	drafts: DraftTrigger[];
+	onEditTriggers: (next: DraftTrigger[]) => void;
+	problems: TriggerProblem[];
+	savedAt?: number;
 }
 
 /**
@@ -34,12 +49,16 @@ export function TriggersCard({
 	automation,
 	hostId,
 	readOnly,
-	onUpdate,
-	onSaveTriggers,
+	scope,
+	onScopeChange,
+	drafts,
+	onEditTriggers,
+	problems,
+	savedAt,
 }: TriggersCardProps) {
 	const recentProjects = useRecentProjects();
 	const selectedProject = recentProjects.find(
-		(p) => p.id === automation.v2ProjectId,
+		(p) => p.id === scope.v2ProjectId,
 	);
 
 	// The scope line is the same grammar as a trigger sentence — "in X on Y using
@@ -86,11 +105,10 @@ export function TriggersCard({
 	return (
 		<div className="flex flex-col gap-1">
 			<TriggersEditor
-				triggers={automation.triggers.map((t) => ({
-					id: t.id,
-					config: t.config as DraftTrigger["config"],
-				}))}
-				onChange={onSaveTriggers}
+				drafts={drafts}
+				onEdit={onEditTriggers}
+				problems={problems}
+				savedAt={savedAt}
 				organizationId={automation.organizationId}
 				renderNextRun={renderNextRun}
 				readOnly={readOnly}
@@ -100,10 +118,10 @@ export function TriggersCard({
 					<ProjectPicker
 						className={SCOPE_CHIP}
 						selectedProject={selectedProject}
-						sessionSelected={automation.v2ProjectId === null}
+						sessionSelected={scope.v2ProjectId === null}
 						recentProjects={recentProjects}
 						disabled={readOnly}
-						onSelectProject={(v2ProjectId) => onUpdate({ v2ProjectId })}
+						onSelectProject={(v2ProjectId) => onScopeChange({ v2ProjectId })}
 					/>
 					<span>on</span>
 					<DevicePicker
@@ -112,18 +130,18 @@ export function TriggersCard({
 						showLocalOnlineState
 						disabled={readOnly}
 						onSelectHostId={(nextHostId) =>
-							onUpdate({ targetHostId: nextHostId })
+							onScopeChange({ targetHostId: nextHostId })
 						}
 					/>
 					<span>using</span>
 					<WorkspacePicker
 						className={SCOPE_CHIP}
 						hostId={hostId}
-						projectId={automation.v2ProjectId}
-						value={automation.v2WorkspaceId}
+						projectId={scope.v2ProjectId}
+						value={scope.v2WorkspaceId}
 						disabled={readOnly}
 						onChange={(v2WorkspaceId) =>
-							onUpdate({
+							onScopeChange({
 								v2WorkspaceId,
 								// Denormalized pin: the picker is scoped to this host/project,
 								// so send both — the cloud stores them without a
@@ -141,10 +159,10 @@ export function TriggersCard({
 					<span>tagged</span>
 					<AutomationTagsPicker
 						className={SCOPE_CHIP}
-						tags={automation.tags}
-						projectId={automation.v2ProjectId}
+						tags={scope.tags}
+						projectId={scope.v2ProjectId}
 						disabled={readOnly}
-						onChange={(tags) => onUpdate({ tags })}
+						onChange={(tags) => onScopeChange({ tags })}
 					/>
 				</div>
 			</TriggersEditor>

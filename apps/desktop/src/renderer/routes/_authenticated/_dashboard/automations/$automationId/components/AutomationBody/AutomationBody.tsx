@@ -1,12 +1,15 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { SelectAutomationRun } from "@superset/db/schema";
 import { errorMessage } from "@superset/i18n/errors";
+import type { DraftTrigger } from "@superset/shared/automation-triggers";
 import type { RouterOutputs } from "@superset/trpc";
+import { Button } from "@superset/ui/button";
 import { toast } from "@superset/ui/sonner";
 import { Switch } from "@superset/ui/switch";
 import { cn } from "@superset/ui/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LuTriangleAlert } from "react-icons/lu";
 import { EmojiTextInput } from "renderer/components/EmojiTextInput";
 import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
@@ -14,10 +17,15 @@ import { useV2AgentChoices } from "renderer/hooks/useV2AgentChoices";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { useWorkspaceHostOptions } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker/hooks/useWorkspaceHostOptions/useWorkspaceHostOptions";
 import { AgentPicker } from "../../../components/AgentPicker";
+import { useTriggerDrafts } from "../../../components/TriggersEditor/hooks/useTriggerDrafts";
 import { useProjectFileSearch } from "../../../hooks/useProjectFileSearch";
 import { matchAgentChoice } from "../../../utils/agentIdentity";
 import { PreviousRunsList } from "../PreviousRunsList";
-import { type AutomationUpdatePatch, TriggersCard } from "../TriggersCard";
+import {
+	type AutomationUpdatePatch,
+	type ScopeDraft,
+	TriggersCard,
+} from "../TriggersCard";
 
 type DetailTab = "settings" | "runs";
 
@@ -51,6 +59,48 @@ export function AutomationBody({
 		}
 	}, [automation.prompt]);
 
+	// One save state for the page.
+	//
+	// The scope chips, the title and the agent used to write the moment they
+	// changed while the trigger set waited for a Save — two habits on one page,
+	// and the trigger set is the one that cannot autosave (a half-built row is
+	// invalid by construction). So everything edited here is a draft now, and
+	// one Save commits them together in a single patch. The Active switch is
+	// deliberately excluded: it is the kill switch, and a pause that waits for
+	// a second click is a pause that did not happen.
+	const savedSettings = useMemo(
+		() => ({
+			name: automation.name,
+			v2ProjectId: automation.v2ProjectId,
+			targetHostId: automation.targetHostId,
+			v2WorkspaceId: automation.v2WorkspaceId,
+			tags: automation.tags,
+			agent: automation.agent,
+		}),
+		[
+			automation.name,
+			automation.v2ProjectId,
+			automation.targetHostId,
+			automation.v2WorkspaceId,
+			automation.tags,
+			automation.agent,
+		],
+	);
+	const [settings, setSettings] = useState(savedSettings);
+	const [settingsDirty, setSettingsDirty] = useState(false);
+	// Adopt what the server has whenever it moves under us, unless there are
+	// edits here — those were never sent, so nothing upstream can supersede them.
+	const savedKey = JSON.stringify(savedSettings);
+	const [prevSavedKey, setPrevSavedKey] = useState(savedKey);
+	if (savedKey !== prevSavedKey) {
+		setPrevSavedKey(savedKey);
+		if (!settingsDirty) setSettings(savedSettings);
+	}
+	const editSettings = (patch: Partial<typeof savedSettings>) => {
+		setSettings((current) => ({ ...current, ...patch }));
+		setSettingsDirty(true);
+	};
+
 	const updateMutation = useMutation({
 		mutationFn: (patch: AutomationUpdatePatch) =>
 			apiTrpcClient.automation.update.mutate({ id: automation.id, ...patch }),
@@ -79,6 +129,48 @@ export function AutomationBody({
 				),
 			),
 	});
+
+	const [savedAt, setSavedAt] = useState(0);
+	// The trigger set's own rules still apply — it is the part that can be
+	// invalid — so the page saves through the same hook, which validates first
+	// and only clears its dirty state once the write actually lands.
+	const commit = useCallback(
+		async (triggers: DraftTrigger[]) => {
+			await updateMutation.mutateAsync({ ...settings, triggers });
+			setSettingsDirty(false);
+			setSavedAt(Date.now());
+		},
+		[updateMutation, settings],
+	);
+
+	const {
+		drafts,
+		dirty: triggersDirty,
+		saving,
+		shownProblems,
+		banner,
+		edit: editTriggers,
+		save,
+		discard: discardTriggers,
+	} = useTriggerDrafts(
+		useMemo(
+			() =>
+				automation.triggers.map((trigger) => ({
+					id: trigger.id,
+					config: trigger.config as DraftTrigger["config"],
+				})),
+			[automation.triggers],
+		),
+		commit,
+	);
+
+	const dirty = triggersDirty || settingsDirty;
+	const discard = () => {
+		discardTriggers();
+		setSettings(savedSettings);
+		setSettingsDirty(false);
+		setName(automation.name);
+	};
 
 	const setPromptMutation = useMutation({
 		mutationFn: (next: string) =>
@@ -134,9 +226,8 @@ export function AutomationBody({
 					onBlur={(next) => {
 						if (readOnly) return;
 						const trimmed = next.trim();
-						if (trimmed && trimmed !== automation.name) {
-							updateMutation.mutate({ name: trimmed });
-						}
+						if (trimmed && trimmed !== settings.name)
+							editSettings({ name: trimmed });
 					}}
 					placeholder={t({
 						id: "dashboard.automations.body.titlePlaceholder",
@@ -173,6 +264,47 @@ export function AutomationBody({
 							<span className="text-border">|</span>
 							<span className="text-muted-foreground">{ownerName}</span>
 						</>
+					)}
+
+					{/* The page's one save. Up here rather than on the Triggers row
+					    because it now commits the title, the scope and the agent too —
+					    and because a Save that sits above the rows cannot drift down
+					    the page as triggers are added, taking the reason it was
+					    refused with it. */}
+					{banner && (
+						<p className="flex min-w-0 items-center gap-1.5 text-[13px] text-amber-600 dark:text-amber-400">
+							<LuTriangleAlert className="size-3.5 shrink-0" />
+							<span className="truncate">{banner}</span>
+						</p>
+					)}
+					{dirty && !readOnly && (
+						<div className="ml-auto flex shrink-0 items-center gap-1.5">
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={discard}
+								disabled={saving}
+								className="h-7 text-[13px]"
+							>
+								<Trans id="dashboard.automations.body.discard">Discard</Trans>
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								onClick={save}
+								disabled={saving}
+								className="h-7 text-[13px]"
+							>
+								{saving ? (
+									<Trans id="dashboard.automations.body.saving">
+										Saving...
+									</Trans>
+								) : (
+									<Trans id="dashboard.automations.body.save">Save</Trans>
+								)}
+							</Button>
+						</div>
 					)}
 				</div>
 				{readOnly && (
@@ -230,13 +362,19 @@ export function AutomationBody({
 							automation={automation}
 							hostId={hostId}
 							readOnly={readOnly}
-							onUpdate={(patch) => updateMutation.mutate(patch)}
-							// Awaited, unlike the pickers: the editor holds the only copy
-							// of an unsaved set, so it must not clear its dirty state until
-							// the write actually lands.
-							onSaveTriggers={(triggers) =>
-								updateMutation.mutateAsync({ triggers })
+							scope={{
+								v2ProjectId: settings.v2ProjectId,
+								targetHostId: settings.targetHostId,
+								v2WorkspaceId: settings.v2WorkspaceId,
+								tags: settings.tags,
+							}}
+							onScopeChange={(patch: Partial<ScopeDraft>) =>
+								editSettings(patch)
 							}
+							drafts={drafts}
+							onEditTriggers={editTriggers}
+							problems={shownProblems}
+							savedAt={savedAt}
 						/>
 
 						<span className="mt-8 mb-2 text-sm text-muted-foreground">
@@ -267,7 +405,7 @@ export function AutomationBody({
 								<AgentPicker
 									hostId={hostId}
 									disabled={readOnly}
-									value={automation.agent}
+									value={settings.agent}
 									onChange={(id) => {
 										// The picker is scoped to `hostId` and emits a preset slug
 										// when unambiguous, falling back to the instance UUID. If
@@ -276,10 +414,10 @@ export function AutomationBody({
 										// UUID-shaped agent can't be dispatched to a host that's
 										// never seen it.
 										const patch: AutomationUpdatePatch = { agent: id };
-										if (!automation.targetHostId && hostId) {
+										if (!settings.targetHostId && hostId) {
 											patch.targetHostId = hostId;
 										}
-										updateMutation.mutate(patch);
+										editSettings(patch);
 									}}
 								/>
 							</div>
