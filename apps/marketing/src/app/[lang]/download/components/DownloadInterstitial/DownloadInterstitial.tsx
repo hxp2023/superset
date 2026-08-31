@@ -1,12 +1,13 @@
 "use client";
 
 import { Trans } from "@lingui/react/macro";
-import { formatDate, formatNumber } from "@superset/i18n/format";
+import { formatNumber } from "@superset/i18n/format";
 import { useEffect, useRef } from "react";
 import { WaitlistForm } from "@/app/[lang]/components/WaitlistForm";
 import { Platform, usePlatform } from "@/app/[lang]/hooks/useOS";
 import { track } from "@/lib/analytics";
 import { desktopUrlFor, hasDesktopBuild } from "../../utils/desktopUrlFor";
+import { formatReleaseDate } from "../../utils/formatReleaseDate";
 import type { DesktopRelease } from "../../utils/getDesktopReleases";
 import type { ReleaseAssetKey } from "../../utils/toReleasePlatforms";
 import { DesktopDownloadButton } from "../DesktopDownloadButton";
@@ -161,7 +162,7 @@ export function DownloadInterstitial({
 							<Trans id="marketing.download.specPublished">Published</Trans>
 						</dt>
 						<dd className="text-foreground">
-							{formatDate(new Date(latestRelease.publishedAt))}
+							{formatReleaseDate(latestRelease.publishedAt)}
 						</dd>
 					</div>
 				</dl>

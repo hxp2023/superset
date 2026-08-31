@@ -1,7 +1,7 @@
 "use client";
 
 import { Trans } from "@lingui/react/macro";
-import { formatDate, formatNumber } from "@superset/i18n/format";
+import { formatNumber } from "@superset/i18n/format";
 import { COMPANY } from "@superset/shared/constants";
 import { FaApple, FaLinux, FaWindows } from "react-icons/fa";
 import {
@@ -10,6 +10,7 @@ import {
 	HiMiniChevronDown,
 } from "react-icons/hi2";
 import { track } from "@/lib/analytics";
+import { formatReleaseDate } from "../../utils/formatReleaseDate";
 import type { DesktopRelease } from "../../utils/getDesktopReleases";
 import type { DownloadOs } from "../../utils/toReleasePlatforms";
 
@@ -87,7 +88,7 @@ export function ReleaseList({ releases }: ReleaseListProps) {
 									</span>
 								) : null}
 								<span className="font-mono text-muted-foreground text-xs">
-									{formatDate(new Date(release.publishedAt))}
+									{formatReleaseDate(release.publishedAt)}
 								</span>
 							</span>
 							<HiMiniChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
