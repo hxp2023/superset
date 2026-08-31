@@ -16,7 +16,7 @@ keywords:
   - agent development environment
 ---
 
-Orca and Conductor solve the same problem from opposite ends. Both run multiple AI coding agents at once, each in its own Git worktree, with review and merge in the app. Orca is open source, cross-platform, and covers 25+ agents. Conductor is a proprietary macOS app focused on Claude Code, Codex, Cursor, and OpenCode, with a paid tier for cloud and team features.
+Orca and Conductor solve the same problem from opposite ends. Both run multiple AI coding agents at once, each in its own Git worktree, with review and merge in the app. Orca is open source under MIT, cross-platform, and covers 25+ agents. Conductor is a proprietary macOS app focused on Claude Code, Codex, Cursor, and OpenCode, with a paid tier for cloud and team features.
 
 If you want the same worktree-per-task model without committing to either vendor's agent list, [Superset](/compare/superset-vs-conductor) is the agent-agnostic option.
 
@@ -32,16 +32,16 @@ If you want the same worktree-per-task model without committing to either vendor
 | **Isolation** | Git worktree per task | Git worktree per workspace | Git worktree per workspace |
 | **Remote work** | SSH remote worktrees | Cloud workspaces on paid tiers | Remote hosts and cloud workspaces |
 | **Task intake** | GitHub, Linear, GitHub Projects | GitHub, Linear | GitHub, Linear, Slack |
-| **Mobile** | Expo companion app in beta | Announced, not released | iOS app |
+| **Mobile** | iOS and Android | Announced, not released | iOS |
 | **Pricing** | Free, open source | Free tier, Pro $50/mo, Teams $60/user/mo | Free tier, paid plans |
 
 ---
 
 ## What Is Orca?
 
-Orca calls itself an Agent Development Environment: an open-source desktop app for macOS, Windows, and Linux that runs parallel agents in isolated worktrees, with terminals, editors, task workflows, and browser previews in one window.
+Orca calls itself an Agent Development Environment: an MIT-licensed desktop app for macOS, Windows, and Linux that runs parallel agents in isolated worktrees, with terminals, editors, task workflows, and browser previews in one window.
 
-Its differentiator is breadth of agent support. Orca ships prebuilt configurations for more than 25 agents, including Claude Code, Codex, OpenCode, Cursor CLI, GitHub Copilot, Gemini, Grok, Pi, Goose, Cline, Continue, Kilocode, and Qwen Code. Recent releases added SSH remote worktrees, a design mode, inline agent status in the sidebar, GitHub Projects in Tasks, and an account switcher that shows Claude and Codex quota with reset times.
+Its differentiator is breadth of agent support. Orca ships prebuilt configurations for more than 25 agents, including Claude Code, Codex, OpenCode, Cursor CLI, GitHub Copilot, Gemini, Grok, Pi, Goose, Cline, Continue, Kilocode, and Qwen Code. It also ships SSH remote worktrees, a design mode that opens a real Chromium window per worktree, GitHub PR, issue and Project boards alongside Linear, an account switcher showing Claude and Codex quota with reset times, and companion mobile apps for iOS and Android.
 
 ## What Is Conductor?
 
@@ -73,17 +73,17 @@ Orca is free and open source. Conductor has a free individual tier, with Pro at 
 
 ## Where Superset Fits
 
-Both tools tie you to their agent list: Orca's is long, Conductor's is short, but both are lists. Superset takes any CLI agent, including ones that shipped last week, and runs the same worktree-per-task model on macOS, Windows, and Linux.
+Orca covers much of this ground already. It runs cross-platform and ships a design mode, SSH remote worktrees, PR and issue browsing, and mobile apps, so the honest gap is narrower than a feature list would suggest.
 
-It adds the surfaces around orchestration: pull request review, an in-app browser with design mode, an MCP server so your agents can drive it, remote hosts, cloud workspaces, and an iOS app. See [Superset vs Orca](/compare/superset-vs-orca) and [Superset vs Conductor](/compare/superset-vs-conductor) for the head-to-heads.
+Two things separate Superset from both. It takes any CLI agent rather than a prebuilt list, including one that shipped last week. And other software can drive it: Superset exposes an MCP server and a TypeScript SDK, so agents and your own scripts can create workspaces, launch agents, and read results, where Orca consumes MCP servers without exposing one and otherwise takes direction through its CLI. Superset also dispatches work from Slack and has an enterprise track with SSO, SCIM, and audit logs. See [Superset vs Orca](/compare/superset-vs-orca) and [Superset vs Conductor](/compare/superset-vs-conductor) for the head-to-heads.
 
 ---
 
 ## Which Should You Choose?
 
-- **Choose Orca** if you want open source, cross-platform, and the widest agent list, and you are comfortable supervising agents yourself.
+- **Choose Orca** if you want open source, cross-platform, the widest prebuilt agent list, and mobile on both iOS and Android.
 - **Choose Conductor** if you are on macOS, work primarily in Claude Code or Codex, and want structured multi-agent coordination with managed context.
-- **Choose Superset** if you want agent-agnostic orchestration across any CLI agent, on any platform, with review, remote hosts, and mobile.
+- **Choose Superset** if you want orchestration that other software can drive: any CLI agent, an MCP server and TypeScript SDK, Slack dispatch, and an enterprise track.
 
 ---
 
