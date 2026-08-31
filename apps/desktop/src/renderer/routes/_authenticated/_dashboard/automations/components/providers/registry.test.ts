@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { labelText } from "./eventLabel";
 import { TRIGGER_PROVIDERS } from "./index";
 import type { TriggerMenuEntry } from "./types";
 
@@ -39,7 +40,7 @@ describe("the Add Trigger menu", () => {
 	// so this list is the entire vocabulary of a scheduled row.
 	test("offers exactly four cadences", () => {
 		const schedule = TRIGGER_PROVIDERS.find((p) => p.kind === "schedule");
-		expect(schedule?.menu.map((entry) => entry.label)).toEqual([
+		expect(schedule?.menu.map((entry) => labelText(entry.label))).toEqual([
 			"Hourly",
 			"Daily",
 			"Weekly",

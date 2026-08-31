@@ -67,8 +67,8 @@ export type TriggerProvider<
 export type TriggerMenuEntry<
 	Config extends TriggerConfigInput = TriggerConfigInput,
 > =
-	| { label: MessageDescriptor; create: () => Config }
-	| { label: MessageDescriptor; children: TriggerMenuEntry<Config>[] };
+	| { label: string | MessageDescriptor; create: () => Config }
+	| { label: string | MessageDescriptor; children: TriggerMenuEntry<Config>[] };
 
 /**
  * What a sentence renderer is handed. It never touches row state directly:

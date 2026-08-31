@@ -1,5 +1,12 @@
+import { i18n } from "@superset/i18n";
 import type { TriggerConfigInput } from "@superset/shared/automation-triggers";
 import type { TriggerMenuEntry, TriggerProvider } from "./types";
+
+// Labels are plain strings in this branch's grammars and msg() descriptors in
+// the converted ones; `i18n._` renders a descriptor and echoes a bare string.
+export function labelText(label: string | { id: string }): string {
+	return typeof label === "string" ? label : i18n._(label);
+}
 
 /**
  * The short name of the trigger this config is — "Issue created", "Channel
@@ -18,7 +25,7 @@ export function triggerEventLabel(
 	config: TriggerConfigInput,
 ): string {
 	const event = (config as { event?: unknown }).event;
-	if (typeof event !== "string") return provider.label;
+	if (typeof event !== "string") return labelText(provider.label);
 
 	const walk = (
 		entries: TriggerMenuEntry[],
@@ -26,7 +33,7 @@ export function triggerEventLabel(
 	): string | null => {
 		for (const entry of entries) {
 			// The ellipsis is a menu affordance ("Issue…"), not part of a name.
-			const path = [...trail, entry.label.replace(/…$/, "")];
+			const path = [...trail, labelText(entry.label).replace(/…$/, "")];
 			if ("children" in entry) {
 				const found = walk(entry.children, path);
 				if (found) return found;
@@ -39,5 +46,7 @@ export function triggerEventLabel(
 		return null;
 	};
 
-	return walk(provider.menu as TriggerMenuEntry[], []) ?? provider.label;
+	return (
+		walk(provider.menu as TriggerMenuEntry[], []) ?? labelText(provider.label)
+	);
 }

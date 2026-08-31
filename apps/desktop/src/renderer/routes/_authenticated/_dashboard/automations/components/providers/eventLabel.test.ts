@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { triggerEventLabel } from "./eventLabel";
+import { labelText, triggerEventLabel } from "./eventLabel";
 import { githubProvider } from "./github/github";
 import { slackProvider } from "./slack/slack";
 
@@ -21,7 +21,7 @@ describe("triggerEventLabel", () => {
 			} as never,
 		);
 		expect(label.length).toBeGreaterThan(0);
-		expect(label).not.toBe(githubProvider.label);
+		expect(label).not.toBe(labelText(githubProvider.label));
 	});
 
 	test("falls back to the provider for an event the menu no longer names", () => {
@@ -33,12 +33,12 @@ describe("triggerEventLabel", () => {
 					event: "an_event_that_was_removed",
 				} as never,
 			),
-		).toBe(githubProvider.label);
+		).toBe(labelText(githubProvider.label));
 	});
 
 	test("falls back to the provider for a config with no event at all", () => {
 		expect(
 			triggerEventLabel(slackProvider as never, { kind: "slack" } as never),
-		).toBe(slackProvider.label);
+		).toBe(labelText(slackProvider.label));
 	});
 });
