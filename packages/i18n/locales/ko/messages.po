@@ -12951,9 +12951,14 @@ msgid "marketing.cta.starOnGithub"
 msgstr "GitHub에서 스타"
 
 #. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
+msgid "marketing.download.allReleases"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
-msgid "marketing.download.autoBody"
-msgstr "다운로드가 자동으로 시작됩니다. 시작되지 않으면 <0>지금 다운로드</0>할 수 있습니다."
+msgid "marketing.download.autoBodyShort"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
@@ -12961,9 +12966,39 @@ msgid "marketing.download.autoTitle"
 msgstr "곧 Superset을 받게 됩니다"
 
 #. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
+msgid "marketing.download.availability"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
 msgid "marketing.download.checkInbox"
 msgstr "받은편지함을 확인하세요"
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.cliDocs"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.comingSoon"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
+msgid "marketing.download.copied"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/CopyCommand/CopyCommand.tsx
+msgid "marketing.download.copy"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
+msgid "marketing.download.downloadFor"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
@@ -13007,6 +13042,11 @@ msgid "marketing.download.joinWaitlist"
 msgstr "대기자 명단 등록"
 
 #. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
+msgid "marketing.download.latestTag"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
 msgid "marketing.download.linkSentTo"
 msgstr "{submittedEmail}으로 다운로드 링크를 보냈습니다."
@@ -13027,6 +13067,16 @@ msgid "marketing.download.rateLimited"
 msgstr "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
 
 #. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/ReleaseList/ReleaseList.tsx
+msgid "marketing.download.releaseNotes"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/DesktopDownloadButton/DesktopDownloadButton.tsx
+msgid "marketing.download.seeAllDownloads"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadLinkForm/DownloadLinkForm.tsx
 msgid "marketing.download.sending"
 msgstr "보내는 중…"
@@ -13035,6 +13085,46 @@ msgstr "보내는 중…"
 #: ../../apps/marketing/src/app/[lang]/components/DownloadButton/DownloadButton.tsx
 msgid "marketing.download.short"
 msgstr "다운로드"
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfaceCliBody"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfaceCliTitle"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfaceDesktopBody"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfaceDesktopTitle"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfaceMobileBody"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfaceMobileTitle"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfacesEyebrow"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/marketing/src/app/[lang]/download/components/SurfaceCards/SurfaceCards.tsx
+msgid "marketing.download.surfacesTitle"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: ../../apps/marketing/src/app/[lang]/download/components/DownloadInterstitial/DownloadInterstitial.tsx
