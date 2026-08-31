@@ -99,7 +99,8 @@ export function ScheduleSentence({
 	// separately, or the row sits blank under the previous rule's next run.
 	const draftCleared = customDraft === "" && rrule !== "";
 	const showsProblem =
-		state.kind === "custom" && (draftCleared || (draftEdited && !!customProblem));
+		state.kind === "custom" &&
+		(draftCleared || (draftEdited && !!customProblem));
 
 	const showsTime = state.kind === "daily" || state.kind === "weekly";
 
