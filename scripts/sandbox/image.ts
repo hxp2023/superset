@@ -154,6 +154,17 @@ export const sandboxImage = ImageInstance.fromRegistry("node:24-bookworm-slim")
 		"/app/drizzle",
 		"hostsvc-drizzle",
 	)
+	// Agent lifecycle hook templates. host-service resolves these as
+	// `agent-templates` beside its own bundle, which from /app/host-service.js
+	// is /app/agent-templates; the CLI tarball does the same into lib/. Without
+	// them every hook writer soft-fails and a sandbox gets wrappers with no
+	// hooks — agents run but never report starting, finishing, or asking a
+	// question, which is how this shipped unnoticed since the image was built.
+	.addLocalDir(
+		"packages/agent-setup/templates",
+		"/app/agent-templates",
+		"agent-templates",
+	)
 	// The supervisor resolves the daemon as ../../../pty-daemon/dist relative
 	// to its own source path, which from /app/host-service.js lands at /.
 	.addLocalDir("packages/pty-daemon/dist", "/pty-daemon/dist", "ptyd-dist")

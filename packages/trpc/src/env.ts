@@ -51,6 +51,16 @@ export const env = createEnv({
 		BLAXEL_WORKSPACE: z.string().min(1),
 		BLAXEL_REGION: z.string().min(1),
 		BLAXEL_SANDBOX_IMAGE: z.string().min(1),
+		// Sandboxes report to their own Sentry project, not the host-service one:
+		// that project means the host service on people's desktops, and `release`
+		// means opposite things on the two surfaces — a version users happen to
+		// have installed versus one we deploy and converge. Optional so that a
+		// deployment without it still provisions, just blindly.
+		//
+		// It has to live here rather than travel with the desktop bundle the way
+		// SENTRY_DSN_HOST_SERVICE does: a sandbox is started by the API and never
+		// sees a desktop build, which is why sandbox crashes have been invisible.
+		SENTRY_DSN_SANDBOX: z.string().optional(),
 		// GitHub App credentials
 		GH_APP_ID: z.string().min(1),
 		GH_APP_PRIVATE_KEY: z.string().min(1),

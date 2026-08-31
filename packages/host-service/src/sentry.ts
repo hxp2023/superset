@@ -2,6 +2,31 @@ import * as Sentry from "@sentry/node";
 
 let initialized = false;
 
+/**
+ * A cloud sandbox reports to its own Sentry project, and its failures split
+ * across two of them: provisioning fails in the API, the runtime fails in
+ * here, and a user sees one broken workspace either way. `cloud_workspace_id`
+ * is what stitches the two halves back together, so it is the tag that makes
+ * the separate projects safe rather than a nicety.
+ *
+ * Read from the environment rather than passed in: these are the same values
+ * the sandbox already configures itself from on boot, and threading them
+ * through `initSentry`'s signature would make every local host carry sandbox
+ * parameters it has no use for.
+ */
+function sandboxTags(): Record<string, string> {
+	if (process.env.SUPERSET_HOST_RUN_MODE !== "sandbox") return {};
+	const workspaceId = process.env.SUPERSET_SANDBOX_WORKSPACE_ID;
+	const imageTag = process.env.SUPERSET_SANDBOX_IMAGE_TAG;
+	const provider = process.env.SUPERSET_SANDBOX_PROVIDER;
+	return {
+		run_mode: "sandbox",
+		...(workspaceId ? { cloud_workspace_id: workspaceId } : {}),
+		...(imageTag ? { image_tag: imageTag } : {}),
+		...(provider ? { provider } : {}),
+	};
+}
+
 export function initSentry(options: { organizationId?: string }): void {
 	if (initialized) return;
 	const dsn = process.env.HOST_SERVICE_SENTRY_DSN;
@@ -24,6 +49,7 @@ export function initSentry(options: { organizationId?: string }): void {
 				...(options.organizationId
 					? { organization_id: options.organizationId }
 					: {}),
+				...sandboxTags(),
 			},
 		},
 	});

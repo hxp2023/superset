@@ -119,6 +119,20 @@ export async function provisionCloudWorkspace(
 					// silently serving the baked repo's code.
 					SUPERSET_SANDBOX_REPO_URL: clone.cloneUrl,
 					...(clone.token ? { SUPERSET_SANDBOX_GIT_TOKEN: clone.token } : {}),
+					// Telemetry. Without a DSN in here `captureFatalStartupError`
+					// is a no-op and a sandbox that dies on boot tells us nothing
+					// — the failure mode that made the last investigation manual.
+					// The tags let one Sentry issue name the workspace and the
+					// image it came from, and correlate with a provisioning
+					// failure recorded against the same id on the API side.
+					...(env.SENTRY_DSN_SANDBOX
+						? {
+								HOST_SERVICE_SENTRY_DSN: env.SENTRY_DSN_SANDBOX,
+								HOST_SERVICE_SENTRY_ENVIRONMENT: "sandbox",
+							}
+						: {}),
+					SUPERSET_SANDBOX_IMAGE_TAG: env.BLAXEL_SANDBOX_IMAGE,
+					SUPERSET_SANDBOX_PROVIDER: row.provider,
 				},
 			}),
 			nameWrite,
