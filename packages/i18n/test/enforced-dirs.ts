@@ -27,6 +27,7 @@ export const ENFORCED_DIRS: readonly string[] = [
 	"apps/desktop/src/renderer/routes/_authenticated/settings/billing",
 	"apps/desktop/src/renderer/routes/_authenticated/settings/browser",
 	"apps/desktop/src/renderer/routes/_authenticated/settings/components",
+	"apps/desktop/src/renderer/routes/_authenticated/settings/environments",
 	"apps/desktop/src/renderer/routes/_authenticated/settings/experimental",
 	"apps/desktop/src/renderer/routes/_authenticated/settings/git",
 	"apps/desktop/src/renderer/routes/_authenticated/settings/hooks",

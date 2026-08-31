@@ -13,6 +13,7 @@ import {
 	HiOutlineComputerDesktop,
 	HiOutlineCpuChip,
 	HiOutlineCreditCard,
+	HiOutlineCube,
 	HiOutlineFolder,
 	HiOutlineGlobeAlt,
 	HiOutlineKey,
@@ -58,7 +59,8 @@ type SettingsRoute =
 	| "/settings/security"
 	| "/settings/permissions"
 	| "/settings/projects"
-	| "/settings/hosts";
+	| "/settings/hosts"
+	| "/settings/environments";
 
 interface SectionItem {
 	id: SettingsRoute;
@@ -244,6 +246,16 @@ const SECTION_GROUPS: SectionGroup[] = [
 					message: "Hosts",
 				}),
 				icon: <HiOutlineComputerDesktop className="h-4 w-4" />,
+				fullWidth: true,
+			},
+			{
+				id: "/settings/environments",
+				section: "environments",
+				label: msg({
+					id: "settings.components.generalSettings.environments",
+					message: "Environments",
+				}),
+				icon: <HiOutlineCube className="h-4 w-4" />,
 				fullWidth: true,
 			},
 			{
