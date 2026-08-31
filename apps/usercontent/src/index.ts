@@ -3,6 +3,7 @@ import { PAGE_COMMENTS_RUNTIME_SOURCE } from "@superset/shared/page-comments-run
 import {
 	injectScriptTag,
 	type PageManifest,
+	type PageTicketClaims,
 	pageContentSecurityPolicy,
 	pageIdFromHost,
 	pageManifestKey,
@@ -70,10 +71,10 @@ async function authorized(
 	c: Context<AppContext>,
 	manifest: PageManifest,
 	version: number,
-): Promise<boolean> {
-	if (manifest.visibility === "everyone") return true;
+): Promise<PageTicketClaims | "public" | null> {
+	if (manifest.visibility === "everyone") return "public";
 	const ticket = requestTicket(c);
-	if (!ticket) return false;
+	if (!ticket) return null;
 	const claims = await verifyPageTicket(
 		[
 			c.env.USERCONTENT_TOKEN_SECRET,
@@ -81,8 +82,10 @@ async function authorized(
 		],
 		ticket,
 	);
-	if (!claims || claims.pageId !== manifest.pageId) return false;
-	return claims.version === undefined || claims.version === version;
+	if (!claims || claims.pageId !== manifest.pageId) return null;
+	return claims.version === undefined || claims.version === version
+		? claims
+		: null;
 }
 
 function signInRedirect(c: Context<AppContext>, slug: string): Response {
@@ -148,20 +151,26 @@ async function serveThumbnail(c: Context<AppContext>): Promise<Response> {
 	if (!manifest) return notFound();
 	const version = requestedVersion(c);
 	if (!version) return notFound();
-	if (!(await authorized(c, manifest, version))) return notFound();
+	const auth = await authorized(c, manifest, version);
+	if (!auth) return notFound();
 
 	const key = pageThumbnailKey(manifest.pageId, version);
 	const object = await c.env.PRIVATE.get(key);
 	if (!object) return notFound();
+	// A restricted thumbnail may live in the browser cache only as long as
+	// the ticket that fetched it: after a visibility flip, stale copies age
+	// out with the ticket instead of surviving another day.
+	const remaining =
+		auth === "public"
+			? null
+			: Math.max(0, Math.min(auth.exp - Math.floor(Date.now() / 1000), 86400));
 	return new Response(object.body, {
 		headers: {
 			"Content-Type": "image/jpeg",
 			"Superset-Storage-Key": key,
 			"X-Content-Type-Options": "nosniff",
 			"Cache-Control":
-				manifest.visibility === "everyone"
-					? IMMUTABLE
-					: "private, max-age=86400",
+				remaining === null ? IMMUTABLE : `private, max-age=${remaining}`,
 		},
 	});
 }

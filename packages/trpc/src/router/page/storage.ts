@@ -70,11 +70,24 @@ export async function writePageManifest(pageId: string): Promise<void> {
 		),
 	};
 
-	await putObject({
-		key: pageManifestKey(pageId),
-		body: JSON.stringify(manifest),
-		contentType: "application/json",
-	});
+	// The manifest is the Worker's authorization source, so its write gets a
+	// short retry before the caller's error surfaces; a crash between the
+	// database commit and this write is repaired by the next caller (durable
+	// reconciliation is a recorded follow-up).
+	let lastError: unknown;
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		try {
+			await putObject({
+				key: pageManifestKey(pageId),
+				body: JSON.stringify(manifest),
+				contentType: "application/json",
+			});
+			return;
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError;
 }
 
 export async function deletePageObjects({

@@ -530,6 +530,8 @@ jobs:
     name: Deploy Usercontent Worker to Cloudflare
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
