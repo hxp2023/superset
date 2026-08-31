@@ -8,6 +8,7 @@ import { and, eq } from "drizzle-orm";
 import { env } from "../../env";
 import { deleteSandbox, provisionSandbox } from "../../lib/blaxel";
 import { resolveCloneTarget } from "../../lib/blaxel/clone-token";
+import { resolveEnvironment } from "../environment/resolve-environment";
 import { generateCloudWorkspaceName } from "./generate-name";
 
 export const FALLBACK_NAME = "Cloud workspace";
@@ -73,14 +74,18 @@ export async function provisionCloudWorkspace(
 		// about that long, so it is the longest thing here. Run it alongside the
 		// clone lookup rather than ahead of it; it can't overlap the provision
 		// call itself, which bakes the name into the sandbox's environment.
-		const [resolvedName, clone] = await Promise.all([
+		const [resolvedName, clone, environment] = await Promise.all([
 			input.namingPrompt === undefined
 				? Promise.resolve(row.name)
 				: generateCloudWorkspaceName(input.namingPrompt).then(
 						(generated) => generated ?? row.name,
 					),
 			resolveCloneTarget(row.projectId),
+			resolveEnvironment(row.environmentId),
 		]);
+		if (!environment) {
+			throw new Error("Environment not found");
+		}
 		if (!clone) {
 			throw new Error("Project has no repository to clone");
 		}
@@ -101,8 +106,9 @@ export async function provisionCloudWorkspace(
 		const [sandbox] = await Promise.all([
 			provisionSandbox({
 				name: providerSandboxId,
-				image: env.BLAXEL_SANDBOX_IMAGE,
+				environment,
 				workspaceEnv: {
+					...environment.envs,
 					ORGANIZATION_ID: row.organizationId,
 					HOST_DB_PATH: SANDBOX_HOST_DB_PATH,
 					HOST_MIGRATIONS_FOLDER: "/app/drizzle",
@@ -131,7 +137,7 @@ export async function provisionCloudWorkspace(
 								HOST_SERVICE_SENTRY_ENVIRONMENT: "sandbox",
 							}
 						: {}),
-					SUPERSET_SANDBOX_IMAGE_TAG: env.BLAXEL_SANDBOX_IMAGE,
+					SUPERSET_SANDBOX_IMAGE_TAG: environment.sourceRef,
 					SUPERSET_SANDBOX_PROVIDER: row.provider,
 				},
 			}),

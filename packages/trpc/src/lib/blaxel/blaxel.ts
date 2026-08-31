@@ -69,9 +69,66 @@ export interface ProvisionedSandbox {
  * Creates the sandbox and its private preview. Returns once the preview URL
  * exists — not once anything is listening on it, which is the caller's job.
  */
+export interface SandboxEnvironment {
+	sourceKind: "image" | "fork";
+	/** Image reference for `image`; the source sandbox name to fork for `fork`. */
+	sourceRef: string;
+}
+
+/**
+ * A forked sandbox inherits the source's environment variables and the fork
+ * request cannot override them, so identity is written in a second call. The
+ * update only reaches processes started afterwards — which is why the source
+ * must be snapshotted with host-service stopped, and why `start.sh` is exec'd
+ * only after this returns.
+ */
+async function forkSandbox(
+	name: string,
+	sourceSandbox: string,
+	envs: Array<{ name: string; value: string }>,
+): Promise<SandboxInstance> {
+	const headers = {
+		"X-Blaxel-Api-Key": env.BLAXEL_API_KEY,
+		"X-Blaxel-Workspace": env.BLAXEL_WORKSPACE,
+		"Content-Type": "application/json",
+	};
+	const forked = await fetch(
+		`https://api.blaxel.ai/v0/sandboxes/${sourceSandbox}/fork`,
+		{
+			method: "POST",
+			headers,
+			body: JSON.stringify({ targetType: "sandbox", targetName: name }),
+		},
+	);
+	if (!forked.ok && forked.status !== 409) {
+		throw userError({
+			code: "INTERNAL_SERVER_ERROR",
+			message: `Could not fork ${sourceSandbox}: ${await forked.text()}`,
+			i18nKey: "serverError.blaxel.couldNotForkSandbox",
+		});
+	}
+
+	const instance = await SandboxInstance.get(name);
+	const spec = (instance as { spec?: Record<string, unknown> }).spec ?? {};
+	const runtime = (spec.runtime as Record<string, unknown>) ?? {};
+	const updated = await fetch(`https://api.blaxel.ai/v0/sandboxes/${name}`, {
+		method: "PUT",
+		headers,
+		body: JSON.stringify({ spec: { ...spec, runtime: { ...runtime, envs } } }),
+	});
+	if (!updated.ok) {
+		throw userError({
+			code: "INTERNAL_SERVER_ERROR",
+			message: `Could not set environment on ${name}: ${await updated.text()}`,
+			i18nKey: "serverError.blaxel.couldNotSetSandboxEnvironment",
+		});
+	}
+	return SandboxInstance.get(name);
+}
+
 export async function provisionSandbox(args: {
 	name: string;
-	image: string;
+	environment: SandboxEnvironment;
 	/**
 	 * Everything the sandbox needs to configure itself. It reads these on boot
 	 * and seeds its own project and workspace rows, which is why provisioning
@@ -93,20 +150,24 @@ export async function provisionSandbox(args: {
 		})),
 	];
 
-	const sandbox = await SandboxInstance.createIfNotExists({
-		name: args.name,
-		image: args.image,
-		memory: memoryMb,
-		// Without disk-backed root the writable layer is tmpfs in RAM, and a
-		// checkout plus node_modules is write-heavy enough to exhaust it.
-		storageMb: 20480,
-		ports: [{ target: HOST_SERVICE_PORT, protocol: "HTTP" }],
-		region,
-		envs,
-		// Routing is fixed at creation, so a sandbox can never be re-pointed at
-		// a different secret later in its life.
-		network: { proxy: { routing } },
-	} as never);
+	const sandbox =
+		args.environment.sourceKind === "fork"
+			? await forkSandbox(args.name, args.environment.sourceRef, envs)
+			: await SandboxInstance.createIfNotExists({
+					name: args.name,
+					image: args.environment.sourceRef,
+					memory: memoryMb,
+					// Without disk-backed root the writable layer is tmpfs in RAM,
+					// and a checkout plus node_modules is write-heavy enough to
+					// exhaust it.
+					storageMb: 20480,
+					ports: [{ target: HOST_SERVICE_PORT, protocol: "HTTP" }],
+					region,
+					envs,
+					// Routing is fixed at creation, so a sandbox can never be
+					// re-pointed at a different secret later in its life.
+					network: { proxy: { routing } },
+				} as never);
 
 	// The desktop renderer is a browser: without CORS on the provider's edge
 	// every request to the sandbox fails preflight. The wildcard origin grants

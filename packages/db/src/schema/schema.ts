@@ -28,6 +28,7 @@ import {
 	desktopNoticeCtaActionValues,
 	desktopNoticeSeverityValues,
 	desktopNoticeTriggerValues,
+	environmentSourceKindValues,
 	integrationProviderValues,
 	pageCommentAnchorKindValues,
 	pageCommentAuthorKindValues,
@@ -58,6 +59,10 @@ export const commandStatus = pgEnum("command_status", commandStatusValues);
 export const cloudWorkspaceStatus = pgEnum(
 	"cloud_workspace_status",
 	cloudWorkspaceStatusValues,
+);
+export const environmentSourceKind = pgEnum(
+	"environment_source_kind",
+	environmentSourceKindValues,
 );
 export const v2ClientType = pgEnum("v2_client_type", v2ClientTypeValues);
 export const v2UsersHostRole = pgEnum(
@@ -538,6 +543,69 @@ export type SelectV2Project = typeof v2Projects.$inferSelect;
  * provider's wake-on-inbound sleep. Clients reach it directly at `sandbox_url`
  * with a token brokered by the cloud.
  */
+export const environments = pgTable(
+	"environments",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		name: text().notNull(),
+		provider: text().notNull().default("blaxel"),
+		sourceKind: environmentSourceKind("source_kind").notNull(),
+		sourceRef: text("source_ref").notNull(),
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("environments_organization_id_idx").on(table.organizationId),
+		unique("environments_organization_id_name_unique").on(
+			table.organizationId,
+			table.name,
+		),
+	],
+);
+
+export const environmentSecrets = pgTable(
+	"environment_secrets",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		environmentId: uuid("environment_id")
+			.notNull()
+			.references(() => environments.id, { onDelete: "cascade" }),
+		key: text().notNull(),
+		encryptedValue: text("encrypted_value").notNull(),
+		sensitive: boolean().notNull().default(false),
+		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		unique("environment_secrets_environment_id_key_unique").on(
+			table.environmentId,
+			table.key,
+		),
+		index("environment_secrets_environment_id_idx").on(table.environmentId),
+		index("environment_secrets_organization_id_idx").on(table.organizationId),
+	],
+);
+
 export const cloudWorkspaces = pgTable(
 	"cloud_workspaces",
 	{
@@ -559,6 +627,11 @@ export const cloudWorkspaces = pgTable(
 		providerSandboxId: text("provider_sandbox_id").notNull(),
 		sandboxUrl: text("sandbox_url"),
 		status: cloudWorkspaceStatus().notNull().default("provisioning"),
+		environmentId: uuid("environment_id")
+			.notNull()
+			.references(() => environments.id),
+		hostVersion: text("host_version"),
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
 			onDelete: "set null",
 		}),

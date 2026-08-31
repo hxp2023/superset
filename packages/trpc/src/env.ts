@@ -61,6 +61,7 @@ export const env = createEnv({
 		// SENTRY_DSN_HOST_SERVICE does: a sandbox is started by the API and never
 		// sees a desktop build, which is why sandbox crashes have been invisible.
 		SENTRY_DSN_SANDBOX: z.string().optional(),
+		SECRETS_ENCRYPTION_KEY: z.string().optional(),
 		// GitHub App credentials
 		GH_APP_ID: z.string().min(1),
 		GH_APP_PRIVATE_KEY: z.string().min(1),

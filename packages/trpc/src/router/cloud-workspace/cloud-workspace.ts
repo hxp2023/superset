@@ -1,9 +1,9 @@
 import { db, dbWs } from "@superset/db/client";
-import { cloudWorkspaces, v2Projects } from "@superset/db/schema";
+import { cloudWorkspaces, environments, v2Projects } from "@superset/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { Client } from "@upstash/qstash";
-import { and, desc, eq, isNotNull, ne, or } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import {
@@ -12,6 +12,7 @@ import {
 	mintPreviewAccess,
 	repoForProject,
 } from "../../lib/blaxel";
+import { assertInternal, assertMember } from "../../lib/cloud-guards";
 import { jwtProcedure, userError } from "../../trpc";
 import {
 	FALLBACK_NAME,
@@ -31,31 +32,6 @@ const PROVISION_JOB_URL = `${env.NEXT_PUBLIC_API_URL}/api/cloud-workspaces/provi
 const isLocalApi = /^https?:\/\/(localhost|127\.0\.0\.1)/.test(
 	env.NEXT_PUBLIC_API_URL,
 );
-
-/**
- * Cloud workspaces are internal-only while the sandbox path is unproven: a
- * failure here provisions real infrastructure and clones a customer's code
- * into it, so exposure is limited to us until it has run for a while.
- */
-function assertInternal(email: string): void {
-	if (!email.toLowerCase().endsWith("@superset.sh")) {
-		throw userError({
-			code: "FORBIDDEN",
-			message: "Cloud workspaces are not available yet",
-			i18nKey: "serverError.cloudWorkspace.cloudWorkspacesAreNotAvailableYet",
-		});
-	}
-}
-
-function assertMember(organizationIds: string[], organizationId: string): void {
-	if (!organizationIds.includes(organizationId)) {
-		throw userError({
-			code: "FORBIDDEN",
-			message: "Not a member of this organization",
-			i18nKey: "serverError.cloudWorkspace.notAMemberOfThisOrganization",
-		});
-	}
-}
 
 export const cloudWorkspaceRouter = {
 	list: jwtProcedure
@@ -185,6 +161,7 @@ export const cloudWorkspaceRouter = {
 				/** Omitted = the repo's default branch, resolved here — a client
 				 * whose branch query hadn't answered must not guess "main". */
 				branch: z.string().min(1).max(300).optional(),
+				environmentId: z.string().uuid(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -203,6 +180,21 @@ export const cloudWorkspaceRouter = {
 					message: "Project not found in this organization",
 					i18nKey:
 						"serverError.cloudWorkspace.projectNotFoundInThisOrganization",
+				});
+			}
+
+			const environment = await db.query.environments.findFirst({
+				where: and(
+					eq(environments.id, input.environmentId),
+					eq(environments.organizationId, input.organizationId),
+					isNull(environments.archivedAt),
+				),
+			});
+			if (!environment) {
+				throw userError({
+					code: "NOT_FOUND",
+					message: "Environment not found in this organization",
+					i18nKey: "serverError.cloudWorkspace.environmentNotFound",
 				});
 			}
 
@@ -228,6 +220,7 @@ export const cloudWorkspaceRouter = {
 					provider: "blaxel",
 					providerSandboxId,
 					status: "provisioning",
+					environmentId: environment.id,
 					createdByUserId: ctx.userId,
 				})
 				.returning();

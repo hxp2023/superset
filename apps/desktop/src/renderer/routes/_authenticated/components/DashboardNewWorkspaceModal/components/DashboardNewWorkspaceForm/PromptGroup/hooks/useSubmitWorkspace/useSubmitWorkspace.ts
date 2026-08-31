@@ -3,7 +3,7 @@ import { toast } from "@superset/ui/sonner";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { useActiveOrganizationId } from "renderer/hooks/useActiveOrganizationId";
-import { cloudTrpc } from "renderer/lib/cloud-trpc";
+import { cloudTrpc, cloudTrpcClient } from "renderer/lib/cloud-trpc";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import type { NewWorkspacePromptContextApi } from "renderer/stores/new-workspace-prompt-context";
 import { usePromptHistoryStore } from "renderer/stores/prompt-history";
@@ -113,6 +113,23 @@ export function useSubmitWorkspace(
 				);
 				return;
 			}
+			// A cloud workspace starts from an environment, and there is no
+			// implicit default: an organization with none configured cannot
+			// create one until somebody adds it in settings.
+			const environments = await cloudTrpcClient.environment.list.query({
+				organizationId: activeOrganizationId,
+			});
+			const environment = environments[0];
+			if (!environment) {
+				toast.error(
+					t({
+						id: "dashboard.newWorkspaceModal.submit.cloudRequiresEnvironment",
+						message:
+							"Add an environment in Settings before creating a cloud workspace",
+					}),
+				);
+				return;
+			}
 			try {
 				// A typed name wins; otherwise the API names it from the prompt,
 				// since nothing about a cloud workspace runs on this device.
@@ -121,6 +138,7 @@ export function useSubmitWorkspace(
 				const created = await createCloudWorkspace.mutateAsync({
 					organizationId: activeOrganizationId,
 					projectId,
+					environmentId: environment.id,
 					name: workspaceName ?? undefined,
 					prompt: draft.prompt.trim() || undefined,
 					branch: branchName ?? "main",
