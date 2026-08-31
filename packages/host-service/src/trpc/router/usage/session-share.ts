@@ -106,7 +106,7 @@ function canonical(path: string): string {
 export function shareableProfileDir(
 	configDir: string,
 	mainHome: string,
-	providerHomes: readonly string[] = CLAUDE_SHARE.providerHomes,
+	providerHomes: readonly string[],
 ): string | null {
 	const resolved = canonical(configDir);
 	const home = homedir();
@@ -281,21 +281,30 @@ function shareSessionState(
 	}
 }
 
+/**
+ * `mainHome` is required on both of these, with no default aimed at the real
+ * `~/.claude` / `~/.codex`. A defaulted one-argument call reads as harmless
+ * and is not: it renames the caller's live session trees into their actual
+ * home. account-provisioning.ts is the single place that decides what "main"
+ * is, and for Codex that answer has to be resolveAmbientCodexHome() rather
+ * than a hardcoded `~/.codex`, so the share targets the same home
+ * discoverCodexHomes calls the system default.
+ */
 export function shareClaudeSessionState(
 	configDir: string,
-	mainHome: string = join(homedir(), ".claude"),
+	mainHome: string,
 ): void {
 	shareSessionState(configDir, mainHome, CLAUDE_SHARE);
 }
 
 /**
- * The Codex twin of shareClaudeSessionState, so `codex resume` keeps working
- * across an account switch. Without it a switch stranded every rollout in the
- * home the previous account used.
+ * The Codex twin, so `codex resume` keeps working across an account switch.
+ * Without it a switch stranded every rollout in the home the previous account
+ * used.
  */
 export function shareCodexSessionState(
 	codexHome: string,
-	mainHome: string = join(homedir(), ".codex"),
+	mainHome: string,
 ): void {
 	shareSessionState(codexHome, mainHome, CODEX_SHARE);
 }

@@ -6,6 +6,8 @@
  */
 
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import {
 	provisionClaudeProfile,
 	provisionCodexProfile,
@@ -27,7 +29,7 @@ import {
  * config surfaces agent-setup owns (skills, plugins, settings, MCP servers).
  */
 export async function provisionClaudeAccount(configDir: string): Promise<void> {
-	shareClaudeSessionState(configDir);
+	shareClaudeSessionState(configDir, join(homedir(), ".claude"));
 	await provisionClaudeProfile(configDir);
 }
 

@@ -18,6 +18,8 @@ import {
 	shareCodexSessionState,
 } from "./session-share";
 
+const CLAUDE_HOMES = [".claude", ".config/claude"];
+
 function makeDirs(): { profile: string; main: string } {
 	const root = mkdtempSync(join(tmpdir(), "claude-session-share-"));
 	const profile = join(root, "profile");
@@ -43,20 +45,26 @@ describe("shareableProfileDir", () => {
 	it("refuses the default homes and the main home itself", () => {
 		const home = homedir();
 		const main = join(home, ".claude");
-		expect(shareableProfileDir(home, main)).toBeNull();
-		expect(shareableProfileDir(join(home, ".claude"), main)).toBeNull();
+		expect(shareableProfileDir(home, main, CLAUDE_HOMES)).toBeNull();
 		expect(
-			shareableProfileDir(join(home, ".config", "claude"), main),
+			shareableProfileDir(join(home, ".claude"), main, CLAUDE_HOMES),
 		).toBeNull();
 		expect(
-			shareableProfileDir("/tmp/custom-main", "/tmp/custom-main"),
+			shareableProfileDir(join(home, ".config", "claude"), main, CLAUDE_HOMES),
+		).toBeNull();
+		expect(
+			shareableProfileDir("/tmp/custom-main", "/tmp/custom-main", CLAUDE_HOMES),
 		).toBeNull();
 	});
 
 	it("accepts an ordinary profile dir", () => {
 		const home = homedir();
 		expect(
-			shareableProfileDir(join(home, ".claude-work"), join(home, ".claude")),
+			shareableProfileDir(
+				join(home, ".claude-work"),
+				join(home, ".claude"),
+				CLAUDE_HOMES,
+			),
 		).toBe(join(home, ".claude-work"));
 	});
 });
@@ -149,7 +157,7 @@ describe("shareClaudeSessionState", () => {
 		const { profile, main } = makeDirs();
 		const alias = join(profile, "..", "main-alias");
 		symlinkSync(main, alias);
-		expect(shareableProfileDir(alias, main)).toBeNull();
+		expect(shareableProfileDir(alias, main, CLAUDE_HOMES)).toBeNull();
 	});
 
 	it("appends the profile's prompt history to main's", () => {
