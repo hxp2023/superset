@@ -4,6 +4,7 @@ import {
 	pages,
 	pageVersions,
 	type SelectPage,
+	type SelectPageVersion,
 	workspacePages,
 } from "@superset/db/schema";
 import { mintPageSlug } from "@superset/shared/page-slug";
@@ -27,19 +28,14 @@ import { assertWorkspaceAccess } from "./workspace-access";
 
 const MAX_PUBLISH_ATTEMPTS = 5;
 
-interface PublishedVersion {
-	id: string;
-	slug: string;
-	url: string;
-	title: string;
-	description: string | null;
-	visibility: SelectPage["visibility"];
-	version: number;
-	label: string | null;
-	contentType: string;
-	sizeBytes: number;
-	createdAt: Date;
-}
+type PublishedVersion = Pick<
+	SelectPage,
+	"id" | "slug" | "title" | "description" | "visibility"
+> &
+	Pick<
+		SelectPageVersion,
+		"version" | "label" | "contentType" | "sizeBytes" | "createdAt"
+	> & { url: string };
 
 /**
  * The page this publish reserved its version under was created or removed
