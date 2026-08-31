@@ -8,7 +8,7 @@
  * token — no relay hop, so websockets work and the sandbox can still sleep.
  */
 
-import { SandboxInstance, settings } from "@blaxel/core";
+import { SandboxInstance, settings, updateSandbox } from "@blaxel/core";
 import { SANDBOX_CREDENTIAL_PLACEHOLDER } from "@superset/shared/constants";
 import { env } from "../../env";
 import { userError } from "../../i18n-error";
@@ -77,53 +77,30 @@ export interface SandboxEnvironment {
 
 /**
  * A forked sandbox inherits the source's environment variables and the fork
- * request cannot override them, so identity is written in a second call. The
+ * request cannot override them, so identity is written in a second call. That
  * update only reaches processes started afterwards — which is why the source
- * must be snapshotted with host-service stopped, and why `start.sh` is exec'd
- * only after this returns.
+ * must be snapshotted with host-service stopped, and `start.sh` exec'd only
+ * once this has returned.
  */
 async function forkSandbox(
 	name: string,
 	sourceSandbox: string,
 	envs: Array<{ name: string; value: string }>,
 ): Promise<SandboxInstance> {
-	const headers = {
-		"X-Blaxel-Api-Key": env.BLAXEL_API_KEY,
-		"X-Blaxel-Workspace": env.BLAXEL_WORKSPACE,
-		"Content-Type": "application/json",
-	};
-	const forked = await fetch(
-		`https://api.blaxel.ai/v0/sandboxes/${sourceSandbox}/fork`,
-		{
-			method: "POST",
-			headers,
-			body: JSON.stringify({ targetType: "sandbox", targetName: name }),
-		},
-	);
-	if (!forked.ok && forked.status !== 409) {
-		throw userError({
-			code: "INTERNAL_SERVER_ERROR",
-			message: `Could not fork ${sourceSandbox}: ${await forked.text()}`,
-			i18nKey: "serverError.blaxel.couldNotForkSandbox",
-		});
-	}
+	const source = await SandboxInstance.get(sourceSandbox);
+	await source.fork(name);
 
-	const instance = await SandboxInstance.get(name);
-	const spec = (instance as { spec?: Record<string, unknown> }).spec ?? {};
-	const runtime = (spec.runtime as Record<string, unknown>) ?? {};
-	const updated = await fetch(`https://api.blaxel.ai/v0/sandboxes/${name}`, {
-		method: "PUT",
-		headers,
-		body: JSON.stringify({ spec: { ...spec, runtime: { ...runtime, envs } } }),
-	});
-	if (!updated.ok) {
-		throw userError({
-			code: "INTERNAL_SERVER_ERROR",
-			message: `Could not set environment on ${name}: ${await updated.text()}`,
-			i18nKey: "serverError.blaxel.couldNotSetSandboxEnvironment",
-		});
-	}
-	return SandboxInstance.get(name);
+	const forked = await SandboxInstance.get(name);
+	const body = {
+		...(forked as unknown as { sandbox: Record<string, unknown> }).sandbox,
+		spec: { ...forked.spec, runtime: { ...forked.spec?.runtime, envs } },
+	};
+	const { data } = await updateSandbox({
+		path: { sandboxName: name },
+		body,
+		throwOnError: true,
+	} as never);
+	return new SandboxInstance(data as never);
 }
 
 export async function provisionSandbox(args: {
