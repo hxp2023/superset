@@ -290,29 +290,7 @@ function formatObservations(values: Array<boolean | string | null>): string {
 	return values.length ? values.map((value) => value ?? "?").join(",") : "-";
 }
 
-async function closeFocusedPane(renderer: Cdp): Promise<void> {
-	// The split action focuses the new pane. Drive the host's real CLOSE_PANE
-	// hotkey rather than Page.close on the guest target: the latter destroys a
-	// WebContents without updating the renderer's pane layout.
-	const isMac = process.platform === "darwin";
-	const modifiers = isMac ? 4 : 2 | 8; // Meta, or Control + Shift.
-	await renderer.send("Input.dispatchKeyEvent", {
-		type: "rawKeyDown",
-		key: isMac ? "w" : "W",
-		code: "KeyW",
-		windowsVirtualKeyCode: 87,
-		modifiers,
-	});
-	await renderer.send("Input.dispatchKeyEvent", {
-		type: "keyUp",
-		key: isMac ? "w" : "W",
-		code: "KeyW",
-		windowsVirtualKeyCode: 87,
-		modifiers,
-	});
-}
-
-async function focusPaneTarget(
+async function closePaneTarget(
 	renderer: Cdp,
 	target: CdpTarget,
 ): Promise<void> {
@@ -323,23 +301,24 @@ async function focusPaneTarget(
 		);
 		if (!element) return null;
 		const rect = element.getBoundingClientRect();
-		// Click the host-rendered pane header just above the fixed webview. A
-		// click inside the guest does not bubble to the pane's focus handler.
+		// The host-rendered pane header sits just above the fixed webview.
 		return { x: rect.left + rect.width / 2, y: Math.max(0, rect.top - 10) };
 	})()`);
 	if (!point) throw new Error(`could not locate pane target ${target.id}`);
+	// PaneHeader scopes a middle click to this pane's context.actions.close.
+	// Unlike the global close hotkey, a miss cannot close some other active pane.
 	await renderer.send("Input.dispatchMouseEvent", {
 		type: "mousePressed",
 		x: point.x,
 		y: point.y,
-		button: "left",
+		button: "middle",
 		clickCount: 1,
 	});
 	await renderer.send("Input.dispatchMouseEvent", {
 		type: "mouseReleased",
 		x: point.x,
 		y: point.y,
-		button: "left",
+		button: "middle",
 		clickCount: 1,
 	});
 	await sleep(200);
@@ -616,8 +595,7 @@ async function main() {
 							});
 					let liveCreatedPanes = await listLiveCreatedPanes();
 					while (liveCreatedPanes?.length) {
-						const closed = await focusPaneTarget(host, liveCreatedPanes[0])
-							.then(() => closeFocusedPane(host))
+						const closed = await closePaneTarget(host, liveCreatedPanes[0])
 							.then(() => true)
 							.catch((error) => {
 								failures.push(
