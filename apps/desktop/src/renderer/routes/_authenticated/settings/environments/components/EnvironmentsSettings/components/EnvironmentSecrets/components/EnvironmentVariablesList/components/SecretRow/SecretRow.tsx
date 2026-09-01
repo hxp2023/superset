@@ -89,7 +89,7 @@ export function SecretRow({
 			</div>
 
 			<div className="flex items-center gap-2 min-w-0 flex-1 basis-0 ml-3">
-				<span className="font-mono font-semibold text-sm truncate">
+				<span className="font-mono font-medium text-sm truncate">
 					{secret.key}
 				</span>
 				{secret.sensitive && (
@@ -116,30 +116,35 @@ export function SecretRow({
 									<HiEye className="h-4 w-4" />
 								)}
 							</button>
-							{isRevealed ? (
-								<Tooltip open={valueHovered}>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											onClick={handleCopy}
-											onMouseEnter={() => setValueHovered(true)}
-											onMouseLeave={() => setValueHovered(false)}
-											className="font-mono text-sm text-muted-foreground w-[200px] text-left truncate rounded px-1 py-0.5 hover:bg-accent transition-colors cursor-pointer"
-										>
-											{secret.value}
-										</button>
-									</TooltipTrigger>
-									<TooltipContent>
-										{copied ? "Copied!" : "Click to copy"}
-									</TooltipContent>
-								</Tooltip>
-							) : (
-								<span className="font-mono text-sm text-muted-foreground w-[200px] truncate">
-									{
-										"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-									}
-								</span>
-							)}
+							{/* The reserved width lives here so revealing cannot resize the
+							    row, while the value itself stays intrinsic — a hover target
+							    that covers empty space reads as a bigger control than it is. */}
+							<div className="flex w-[200px] items-center">
+								{isRevealed ? (
+									<Tooltip open={valueHovered}>
+										<TooltipTrigger asChild>
+											<button
+												type="button"
+												onClick={handleCopy}
+												onMouseEnter={() => setValueHovered(true)}
+												onMouseLeave={() => setValueHovered(false)}
+												className="font-mono text-sm text-muted-foreground max-w-full text-left truncate rounded px-1 py-0.5 hover:bg-accent transition-colors cursor-pointer"
+											>
+												{secret.value}
+											</button>
+										</TooltipTrigger>
+										<TooltipContent>
+											{copied ? "Copied!" : "Click to copy"}
+										</TooltipContent>
+									</Tooltip>
+								) : (
+									<span className="font-mono text-sm text-muted-foreground max-w-full truncate">
+										{
+											"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+										}
+									</span>
+								)}
+							</div>
 						</>
 					))}
 			</div>
