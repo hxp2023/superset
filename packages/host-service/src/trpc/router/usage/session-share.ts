@@ -225,8 +225,15 @@ function historyPendingPaths(profile: string, name: string): string[] {
 			if (!entry.name.startsWith(`${prefix}-`)) return false;
 			return /^\d+$/.test(entry.name.slice(prefix.length + 1));
 		})
-		.map((entry) => join(profile, entry.name))
-		.sort();
+		.map((entry) => entry.name)
+		.sort((left, right) => {
+			const leftGeneration =
+				left === prefix ? 0 : Number(left.slice(prefix.length + 1));
+			const rightGeneration =
+				right === prefix ? 0 : Number(right.slice(prefix.length + 1));
+			return leftGeneration - rightGeneration;
+		})
+		.map((entry) => join(profile, entry));
 }
 
 function nextHistoryPendingPath(src: string): string {

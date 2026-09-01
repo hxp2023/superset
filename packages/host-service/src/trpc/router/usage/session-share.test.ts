@@ -342,6 +342,23 @@ describe("shareCodexSessionState", () => {
 		);
 	});
 
+	it("drains numbered history captures in generation order", () => {
+		const { profile, main } = makeDirs();
+		for (let generation = 0; generation <= 10; generation += 1) {
+			const suffix = generation === 0 ? "" : `-${generation}`;
+			writeFileSync(
+				join(profile, `history.jsonl.superset-merge${suffix}`),
+				`${generation}\n`,
+			);
+		}
+
+		shareCodexSessionState(profile, main);
+
+		expect(
+			readFileSync(join(main, "history.jsonl"), "utf-8").trim().split("\n"),
+		).toEqual(Array.from({ length: 11 }, (_, generation) => `${generation}`));
+	});
+
 	it("re-links a history file the CLI replaced with a real file", () => {
 		const { profile, main } = makeDirs();
 		shareCodexSessionState(profile, main);
