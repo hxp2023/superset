@@ -19,6 +19,7 @@ type EventType =
 	| "workspace:changed"
 	| "workspace:create-settled"
 	| "project:changed"
+	| "tag-folders:changed"
 	| "page-watch:changed";
 
 interface FsEventsPayload {
@@ -104,6 +105,18 @@ export interface PageWatchChangedPayload {
 	occurredAt: number;
 }
 
+export interface TagFoldersChangedPayload {
+	/** The scope's full set after the change — empty when all were removed. */
+	settings: Array<{
+		scope: string;
+		tag: string;
+		displayName: string | null;
+		color: string | null;
+		tabOrder: number | null;
+	}>;
+	occurredAt: number;
+}
+
 type EventListener<T extends EventType> = T extends "fs:events"
 	? (workspaceId: string, payload: FsEventsPayload) => void
 	: T extends "git:changed"
@@ -123,12 +136,14 @@ type EventListener<T extends EventType> = T extends "fs:events"
 								) => void
 							: T extends "project:changed"
 								? (projectId: string, payload: ProjectChangedPayload) => void
-								: T extends "page-watch:changed"
-									? (
-											workspaceId: string,
-											payload: PageWatchChangedPayload,
-										) => void
-									: never;
+								: T extends "tag-folders:changed"
+									? (scope: string, payload: TagFoldersChangedPayload) => void
+									: T extends "page-watch:changed"
+										? (
+												workspaceId: string,
+												payload: PageWatchChangedPayload,
+											) => void
+										: never;
 
 interface ListenerEntry {
 	type: EventType;
@@ -236,7 +251,9 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 				? message.workspaceId
 				: message.type === "project:changed"
 					? message.projectId
-					: null;
+					: message.type === "tag-folders:changed"
+						? message.scope
+						: null;
 
 		if (
 			workspaceId &&
@@ -306,6 +323,11 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 			(entry.callback as EventListener<"project:changed">)(message.projectId, {
 				eventType: message.eventType,
 				project: message.project,
+				occurredAt: message.occurredAt,
+			});
+		} else if (message.type === "tag-folders:changed") {
+			(entry.callback as EventListener<"tag-folders:changed">)(message.scope, {
+				settings: message.settings,
 				occurredAt: message.occurredAt,
 			});
 		}

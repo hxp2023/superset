@@ -2,6 +2,7 @@ import type { Pane } from "@superset/panes";
 import {
 	normalizeWorkspaceTag,
 	normalizeWorkspaceTags,
+	SESSIONS_TAG_SCOPE,
 } from "@superset/shared/workspace-tags";
 import { useCallback } from "react";
 import { useHostProjects } from "renderer/hooks/host-projects/useHostProjects";
@@ -295,7 +296,7 @@ export function useDashboardSidebarState() {
 	const collections = useCollections();
 	const { workspaces: hostWorkspaces, cache: hostWorkspacesCache } =
 		useHostWorkspaces();
-	const { machineId } = useLocalHostService();
+	const { machineId, activeHostUrl } = useLocalHostService();
 	const { v2Workspaces } = useOptimisticActions();
 	const tagFolderContext = useTagFolderContext();
 
@@ -317,52 +318,59 @@ export function useDashboardSidebarState() {
 	// replicas stay aligned. The project:changed broadcast re-renders every
 	// window and device.
 	const { projects: hostProjects } = useHostProjects();
+	/**
+	 * Hosts to write a folder's presentation to. A project's folders go to
+	 * every host serving that project; the Sessions lane has no project, so
+	 * its folders live on the active host alongside the sessions themselves.
+	 */
+	const resolveTagFolderHostUrls = useCallback(
+		(scope: string): string[] => {
+			if (scope === SESSIONS_TAG_SCOPE) {
+				return activeHostUrl ? [activeHostUrl] : [];
+			}
+			const project = hostProjects.find((item) => item.projectKey === scope);
+			return (project?.hostIds ?? [])
+				.map((hostId) => hostWorkspacesCache.resolveHostUrl(hostId))
+				.filter((url): url is string => url != null);
+		},
+		[activeHostUrl, hostProjects, hostWorkspacesCache],
+	);
 	const writeTagSetting = useCallback(
 		(
-			projectId: string,
+			scope: string,
 			tag: string,
 			patch: {
 				displayName?: string | null;
 				color?: string | null;
 			},
 		) => {
-			const project = hostProjects.find(
-				(item) => item.projectKey === projectId,
-			);
-			for (const hostId of project?.hostIds ?? []) {
-				const url = hostWorkspacesCache.resolveHostUrl(hostId);
-				if (!url) continue;
+			for (const url of resolveTagFolderHostUrls(scope)) {
 				void getHostServiceClientByUrl(url)
-					.project.setTagSetting.mutate({ projectId, tag, ...patch })
-					.catch((error) => {
+					.tagFolders.upsert.mutate({ scope, tag, ...patch })
+					.catch((error: unknown) => {
 						console.warn(
-							`[sidebar] tag setting write failed on host ${hostId}:`,
+							`[sidebar] tag setting write failed on host ${url}:`,
 							error,
 						);
 					});
 			}
 		},
-		[hostProjects, hostWorkspacesCache],
+		[resolveTagFolderHostUrls],
 	);
 	const removeTagSetting = useCallback(
-		(projectId: string, tag: string) => {
-			const project = hostProjects.find(
-				(item) => item.projectKey === projectId,
-			);
-			for (const hostId of project?.hostIds ?? []) {
-				const url = hostWorkspacesCache.resolveHostUrl(hostId);
-				if (!url) continue;
+		(scope: string, tag: string) => {
+			for (const url of resolveTagFolderHostUrls(scope)) {
 				void getHostServiceClientByUrl(url)
-					.project.deleteTagSetting.mutate({ projectId, tag })
-					.catch((error) => {
+					.tagFolders.delete.mutate({ scope, tag })
+					.catch((error: unknown) => {
 						console.warn(
-							`[sidebar] tag setting delete failed on host ${hostId}:`,
+							`[sidebar] tag setting delete failed on host ${url}:`,
 							error,
 						);
 					});
 			}
 		},
-		[hostProjects, hostWorkspacesCache],
+		[resolveTagFolderHostUrls],
 	);
 
 	/**

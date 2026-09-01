@@ -83,12 +83,31 @@ export interface WorkspaceChangedMessage {
 	occurredAt: number;
 }
 
-/** One tag folder's host-side presentation (see workspace_tag_settings). */
+/** One tag folder's host-side presentation (see tag_folder_settings). */
 export interface TagSettingSnapshot {
 	tag: string;
 	displayName: string | null;
 	color: string | null;
 	tabOrder: number | null;
+}
+
+/**
+ * A tag folder's presentation plus the scope it lives under — a project id,
+ * or `SESSIONS_TAG_SCOPE` for the project-less Sessions lane. Folders travel
+ * on their own channel rather than riding project snapshots, because the
+ * Sessions lane has no project to ride on.
+ */
+export interface TagFolderSettingSnapshot extends TagSettingSnapshot {
+	scope: string;
+}
+
+export interface TagFoldersChangedMessage {
+	type: "tag-folders:changed";
+	/** The scope whose folders changed. */
+	scope: string;
+	/** The scope's full set after the change — empty when all were removed. */
+	settings: TagFolderSettingSnapshot[];
+	occurredAt: number;
 }
 
 /**
@@ -110,12 +129,6 @@ export interface ProjectSnapshot {
 	color: string | null;
 	createdAt: number;
 	updatedAt: number;
-	/**
-	 * Tag-folder presentation rows. Optional: absent on snapshots built where
-	 * the emitter had no settings at hand (and from older hosts) — consumers
-	 * keep their last known set rather than clearing.
-	 */
-	tagSettings?: TagSettingSnapshot[];
 }
 
 export interface ProjectChangedMessage {
@@ -177,6 +190,7 @@ export type ServerMessage =
 	| WorkspaceChangedMessage
 	| WorkspaceCreateSettledMessage
 	| ProjectChangedMessage
+	| TagFoldersChangedMessage
 	| PageWatchChangedMessage
 	| EventBusErrorMessage;
 

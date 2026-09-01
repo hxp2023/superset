@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useHostProjects } from "renderer/hooks/host-projects/useHostProjects";
+import { useHostTagFolders } from "renderer/hooks/host-projects/useHostTagFolders";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { isSidebarWorkspaceVisible } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
@@ -27,6 +28,7 @@ export function useMigrateLegacySidebarFolders(): void {
 	const collections = useCollections();
 	const { workspaces: hostWorkspaces, cache, isReady } = useHostWorkspaces();
 	const { projects: hostProjects } = useHostProjects();
+	const tagFolders = useHostTagFolders();
 	const runningRef = useRef(false);
 
 	// One-time presentation push: rows customised before settings moved
@@ -48,9 +50,15 @@ export function useMigrateLegacySidebarFolders(): void {
 				(item) => item.projectKey === section.projectId,
 			);
 			if (!project) continue;
-			// Older hosts don't serve settings at all — never push to them.
-			if (project.tagSettings === undefined) continue;
-			if (project.tagSettings.some((setting) => setting.tag === tag)) {
+			// Already customised host-side: the host's value is authoritative.
+			// A host too old to serve tagFolders contributes nothing here, so
+			// the push below is attempted once and logs if it is unsupported.
+			if (
+				tagFolders.some(
+					(setting) =>
+						setting.scope === section.projectId && setting.tag === tag,
+				)
+			) {
 				sessionPushedSettings.add(pushKey);
 				continue;
 			}
@@ -59,13 +67,13 @@ export function useMigrateLegacySidebarFolders(): void {
 				const url = cache.resolveHostUrl(hostId);
 				if (!url) continue;
 				void getHostServiceClientByUrl(url)
-					.project.setTagSetting.mutate({
-						projectId: section.projectId,
+					.tagFolders.upsert.mutate({
+						scope: section.projectId,
 						tag,
 						...(hasCustomName ? { displayName: section.name } : {}),
 						...(hasCustomColor ? { color: section.color } : {}),
 					})
-					.catch((error) => {
+					.catch((error: unknown) => {
 						console.warn(
 							"[sidebar-tag-migration] presentation push failed:",
 							error,
@@ -73,7 +81,7 @@ export function useMigrateLegacySidebarFolders(): void {
 					});
 			}
 		}
-	}, [collections, hostProjects, cache, isReady]);
+	}, [collections, hostProjects, tagFolders, cache, isReady]);
 
 	useEffect(() => {
 		if (!isReady || runningRef.current) return;

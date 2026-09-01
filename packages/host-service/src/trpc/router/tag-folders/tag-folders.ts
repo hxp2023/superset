@@ -1,0 +1,57 @@
+import { z } from "zod";
+import {
+	deleteTagFolderSetting,
+	getAllTagFolderSettings,
+	upsertTagFolderSetting,
+} from "../../../tag-folders";
+import { protectedProcedure, router } from "../../index";
+
+/**
+ * Tag-folder presentation, keyed by scope: a project id, or the Sessions
+ * lane's sentinel. Its own router rather than procedures on `project`,
+ * because the Sessions lane has no project to scope them to.
+ */
+export const tagFoldersRouter = router({
+	list: protectedProcedure.query(({ ctx }) => getAllTagFolderSettings(ctx.db)),
+
+	/** Merge-upsert one folder's presentation. Creates the row on first use. */
+	upsert: protectedProcedure
+		.input(
+			z.object({
+				scope: z.string().min(1),
+				tag: z.string().min(1),
+				displayName: z.string().min(1).max(200).nullish(),
+				color: z.string().max(50).nullish(),
+				tabOrder: z.number().int().nullish(),
+			}),
+		)
+		.mutation(({ ctx, input }) => {
+			const settings = upsertTagFolderSetting(
+				{ db: ctx.db, eventBus: ctx.eventBus },
+				input.scope,
+				input.tag,
+				{
+					...(input.displayName !== undefined
+						? { displayName: input.displayName }
+						: {}),
+					...(input.color !== undefined ? { color: input.color } : {}),
+					...(input.tabOrder !== undefined ? { tabOrder: input.tabOrder } : {}),
+				},
+			);
+			// Only an unnormalizable tag returns undefined; zod already rejects
+			// empty input, so this is a whitespace-only or over-length tag.
+			return { tagSettings: settings ?? [] };
+		}),
+
+	/** Drop one folder's presentation row (folder deletion). Idempotent. */
+	delete: protectedProcedure
+		.input(z.object({ scope: z.string().min(1), tag: z.string().min(1) }))
+		.mutation(({ ctx, input }) => {
+			const settings = deleteTagFolderSetting(
+				{ db: ctx.db, eventBus: ctx.eventBus },
+				input.scope,
+				input.tag,
+			);
+			return { tagSettings: settings ?? [] };
+		}),
+});

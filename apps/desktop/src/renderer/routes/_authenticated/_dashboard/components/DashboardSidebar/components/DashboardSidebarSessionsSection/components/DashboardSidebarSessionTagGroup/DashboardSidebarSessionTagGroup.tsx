@@ -1,8 +1,15 @@
-import { normalizeWorkspaceTag } from "@superset/shared/workspace-tags";
+import {
+	normalizeWorkspaceTag,
+	SESSIONS_TAG_SCOPE,
+} from "@superset/shared/workspace-tags";
 import { type ReactNode, useEffect, useState } from "react";
+import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useOptimisticActions } from "renderer/routes/_authenticated/hooks/useOptimisticActions";
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
-import { applyFolderTagChange } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
+import {
+	applyFolderTagChange,
+	useTagFolderContext,
+} from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
 import { DashboardSidebarGroupHeader } from "../../../DashboardSidebarGroupHeader";
 import { DashboardSidebarSectionContextMenu } from "../../../DashboardSidebarSection/components/DashboardSidebarSectionContextMenu";
@@ -29,7 +36,9 @@ export function DashboardSidebarSessionTagGroup({
 	const { v2Workspaces } = useOptimisticActions();
 	const { pendingRenameSectionId, clearPendingSectionRename } =
 		useDashboardSidebarSectionRename();
-	const renameKey = `session:${tag}`;
+	const { setSectionColor } = useDashboardSidebarState();
+	const { tagSettings } = useTagFolderContext();
+	const renameKey = `${SESSIONS_TAG_SCOPE}:${tag}`;
 	useEffect(() => {
 		if (pendingRenameSectionId !== renameKey) return;
 		setRenameValue(tag);
@@ -64,20 +73,33 @@ export function DashboardSidebarSessionTagGroup({
 		setRenameValue(tag);
 		setIsRenaming(false);
 	};
+	// Presentation for this lane lives under the Sessions scope, keyed by tag
+	// exactly like a project folder is keyed under its project id.
+	const color =
+		tagSettings.find(
+			(setting) =>
+				setting.projectId === SESSIONS_TAG_SCOPE && setting.tag === tag,
+		)?.color ?? null;
+	const setColor = (next: string | null) => setSectionColor(renameKey, next);
 	const actions = (
 		<DashboardSidebarSectionActionsDropdown
-			color={null}
+			color={color}
 			onRename={startRename}
+			onSetColor={setColor}
 			onDelete={() => retagMembers(null)}
 		/>
 	);
 
 	return (
 		<div>
-			<div className="border-l-2 border-border">
+			<div
+				className="border-l-2"
+				style={{ borderColor: color ?? "var(--color-border)" }}
+			>
 				<DashboardSidebarSectionContextMenu
-					color={null}
+					color={color}
 					onRename={startRename}
+					onSetColor={setColor}
 					onDelete={() => retagMembers(null)}
 				>
 					<DashboardSidebarGroupHeader

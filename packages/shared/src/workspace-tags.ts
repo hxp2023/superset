@@ -8,6 +8,18 @@ export const WORKSPACE_TAG_MAX_LENGTH = 64;
 export const WORKSPACE_TAGS_MAX_PER_WORKSPACE = 32;
 
 /**
+ * Scope for tag folders that belong to no project — the Sessions lane. A
+ * folder is a (scope, tag) pair, where scope is normally a project id;
+ * those are UUIDs, so this sentinel can never collide with one.
+ */
+export const SESSIONS_TAG_SCOPE = "sessions";
+
+/** The scope a tag folder lives under: a project id, or the Sessions lane. */
+export function tagFolderScope(projectId: string | null): string {
+	return projectId ?? SESSIONS_TAG_SCOPE;
+}
+
+/**
  * Trim + lowercase. Returns null for empty, over-length, or missing input.
  * Accepts null/undefined because persisted rows written before a field
  * existed carry undefined — callers must not need their own guard.

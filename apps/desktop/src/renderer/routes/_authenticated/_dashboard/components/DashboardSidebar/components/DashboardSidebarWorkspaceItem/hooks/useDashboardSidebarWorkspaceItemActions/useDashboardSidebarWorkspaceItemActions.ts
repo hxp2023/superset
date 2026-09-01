@@ -1,6 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
 import { errorMessage } from "@superset/i18n/errors";
-import { normalizeWorkspaceTags } from "@superset/shared/workspace-tags";
+import {
+	normalizeWorkspaceTags,
+	SESSIONS_TAG_SCOPE,
+} from "@superset/shared/workspace-tags";
 import { toast } from "@superset/ui/sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
@@ -161,7 +164,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 			void workspaceActions.updateWorkspace(workspaceId, {
 				tags: applyFolderTagChange(currentWorkspaceTags, sessionGroupTags, tag),
 			});
-			requestSectionRename(`session:${tag}`);
+			requestSectionRename(`${SESSIONS_TAG_SCOPE}:${tag}`);
 			return;
 		}
 		const sectionId = createSection(projectId);
