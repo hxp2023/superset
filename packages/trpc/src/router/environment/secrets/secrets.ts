@@ -1,24 +1,31 @@
 import { db, dbWs } from "@superset/db/client";
 import { environmentSecrets, users } from "@superset/db/schema";
-import type { TRPCRouterRecord } from "@trpc/server";
-import { and, asc, eq } from "drizzle-orm";
-import { z } from "zod";
-import { assertInternal } from "../../../lib/cloud-guards";
-import { jwtProcedure, userError } from "../../../trpc";
-import { loadEnvironment } from "../environment";
-import { decryptSecret, encryptSecret } from "./utils/crypto";
 import {
-	MAX_SECRETS_PER_ENVIRONMENT,
+	MAX_TOTAL_SIZE,
 	validateSecretKey,
 	validateSecretValue,
 } from "@superset/shared/environment-secrets";
+import type { TRPCRouterRecord } from "@trpc/server";
+import { and, asc, eq, ne, sql, sum } from "drizzle-orm";
+import { z } from "zod";
+import { assertInternal } from "../../../lib/cloud-guards";
+import { jwtProcedure, userError } from "../../../trpc";
+import { loadEnvironment, secretOwnerOrganizationId } from "../environment";
+import { decryptSecret, encryptSecret } from "./utils/crypto";
 
 export const secretsRouter = {
 	list: jwtProcedure
 		.input(z.object({ environmentId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
-			await loadEnvironment(input.environmentId, ctx.organizationIds);
+			const environment = await loadEnvironment(
+				input.environmentId,
+				ctx.organizationIds,
+			);
+			const organizationId = secretOwnerOrganizationId(
+				environment,
+				ctx.activeOrganizationId,
+			);
 			const rows = await db
 				.select({
 					id: environmentSecrets.id,
@@ -27,7 +34,12 @@ export const secretsRouter = {
 					updatedAt: environmentSecrets.updatedAt,
 				})
 				.from(environmentSecrets)
-				.where(eq(environmentSecrets.environmentId, input.environmentId))
+				.where(
+					and(
+						eq(environmentSecrets.environmentId, input.environmentId),
+						eq(environmentSecrets.organizationId, organizationId),
+					),
+				)
 				.orderBy(asc(environmentSecrets.key));
 			return rows;
 		}),
@@ -41,7 +53,14 @@ export const secretsRouter = {
 		.input(z.object({ environmentId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
-			await loadEnvironment(input.environmentId, ctx.organizationIds);
+			const environment = await loadEnvironment(
+				input.environmentId,
+				ctx.organizationIds,
+			);
+			const organizationId = secretOwnerOrganizationId(
+				environment,
+				ctx.activeOrganizationId,
+			);
 			const rows = await db
 				.select({
 					id: environmentSecrets.id,
@@ -56,7 +75,12 @@ export const secretsRouter = {
 				})
 				.from(environmentSecrets)
 				.leftJoin(users, eq(users.id, environmentSecrets.createdByUserId))
-				.where(eq(environmentSecrets.environmentId, input.environmentId))
+				.where(
+					and(
+						eq(environmentSecrets.environmentId, input.environmentId),
+						eq(environmentSecrets.organizationId, organizationId),
+					),
+				)
 				.orderBy(asc(environmentSecrets.key));
 			return rows.map((row) => ({
 				id: row.id,
@@ -108,23 +132,45 @@ export const secretsRouter = {
 				});
 			}
 
-			const existing = await db
-				.select({ key: environmentSecrets.key })
+			const organizationId = secretOwnerOrganizationId(
+				environment,
+				ctx.activeOrganizationId,
+			);
+
+			// The aggregate limit, enforced rather than merely declared. Every
+			// value travels to the provider in one `spec.runtime.envs` payload, so
+			// total bytes are the cost — and the per-value check above bounds one
+			// entry, not a thousand of them.
+			//
+			// Measured on ciphertext because that is what a single SQL sum can see
+			// without decrypting every row. Ciphertext is never smaller than its
+			// plaintext, so this rejects slightly earlier than the stated limit,
+			// which is the safe direction.
+			const [stored] = await db
+				.select({
+					bytes: sum(sql`length(${environmentSecrets.encryptedValue})`),
+				})
 				.from(environmentSecrets)
-				.where(eq(environmentSecrets.environmentId, input.environmentId));
-			const isNew = !existing.some((row) => row.key === input.key);
-			if (isNew && existing.length >= MAX_SECRETS_PER_ENVIRONMENT) {
+				.where(
+					and(
+						eq(environmentSecrets.environmentId, input.environmentId),
+						eq(environmentSecrets.organizationId, organizationId),
+						ne(environmentSecrets.key, input.key),
+					),
+				);
+			const used = Number(stored?.bytes ?? 0);
+			if (used + Buffer.byteLength(input.value) > MAX_TOTAL_SIZE) {
 				throw userError({
 					code: "BAD_REQUEST",
-					message: `An environment holds at most ${MAX_SECRETS_PER_ENVIRONMENT} variables`,
-					i18nKey: "serverError.environment.tooManySecrets",
+					message: `Variables for this environment must total under ${MAX_TOTAL_SIZE / 1024}KB`,
+					i18nKey: "serverError.environment.secretsTooLarge",
 				});
 			}
 
 			await dbWs
 				.insert(environmentSecrets)
 				.values({
-					organizationId: environment.organizationId,
+					organizationId,
 					environmentId: input.environmentId,
 					key: input.key,
 					encryptedValue: encryptSecret(input.value),
@@ -132,7 +178,11 @@ export const secretsRouter = {
 					createdByUserId: ctx.userId,
 				})
 				.onConflictDoUpdate({
-					target: [environmentSecrets.environmentId, environmentSecrets.key],
+					target: [
+						environmentSecrets.environmentId,
+						environmentSecrets.organizationId,
+						environmentSecrets.key,
+					],
 					set: {
 						encryptedValue: encryptSecret(input.value),
 						sensitive: input.sensitive,
@@ -147,12 +197,20 @@ export const secretsRouter = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
-			await loadEnvironment(input.environmentId, ctx.organizationIds);
+			const environment = await loadEnvironment(
+				input.environmentId,
+				ctx.organizationIds,
+			);
+			const organizationId = secretOwnerOrganizationId(
+				environment,
+				ctx.activeOrganizationId,
+			);
 			await dbWs
 				.delete(environmentSecrets)
 				.where(
 					and(
 						eq(environmentSecrets.environmentId, input.environmentId),
+						eq(environmentSecrets.organizationId, organizationId),
 						eq(environmentSecrets.key, input.key),
 					),
 				);

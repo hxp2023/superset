@@ -1,8 +1,13 @@
 const KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const MAX_KEY_LENGTH = 256;
 const MAX_VALUE_SIZE = 16 * 1024;
+// Size rather than count is the limit that means anything: the values are
+// handed to the provider in one `spec.runtime.envs` payload, so bytes are what
+// cost. A count cap would be a worse proxy for the same thing — five 16 KB
+// values exceed this while satisfying any sane count. The provider itself
+// imposes no count worth mirroring; 250 variables were accepted and visible
+// inside a sandbox when measured.
 const MAX_TOTAL_SIZE = 64 * 1024;
-const MAX_SECRETS_PER_ENVIRONMENT = 50;
 
 /**
  * These reach a sandbox through the same `spec.runtime.envs` payload that
@@ -90,7 +95,6 @@ export {
 	MAX_KEY_LENGTH,
 	MAX_VALUE_SIZE,
 	MAX_TOTAL_SIZE,
-	MAX_SECRETS_PER_ENVIRONMENT,
 	RESERVED_KEYS,
 	RESERVED_PREFIXES,
 };

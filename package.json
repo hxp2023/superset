@@ -52,7 +52,8 @@
 		"db:push": "bun run --cwd packages/db push",
 		"db:migrate": "bun run --cwd packages/db migrate",
 		"db:seed-dev": "NODE_ENV=development bun run packages/auth/src/seed-dev.ts",
-		"db:generate:desktop": "bun run --cwd packages/local-db generate"
+		"db:generate:desktop": "bun run --cwd packages/local-db generate",
+		"db:seed-shared-environments": "bun run packages/db/src/seed-shared-environments.ts"
 	},
 	"type": "module",
 	"workspaces": [

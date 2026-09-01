@@ -597,8 +597,13 @@ export const environmentSecrets = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
-		unique("environment_secrets_environment_id_key_unique").on(
+		// Scoped by organization as well as environment: a shared environment
+		// (one the platform ships, owned by no customer) carries each
+		// organization's own values, so two organizations must be able to hold
+		// the same key on it without overwriting one another.
+		unique("environment_secrets_environment_id_organization_id_key_unique").on(
 			table.environmentId,
+			table.organizationId,
 			table.key,
 		),
 		index("environment_secrets_environment_id_idx").on(table.environmentId),

@@ -261,6 +261,22 @@ export const SANDBOX_WORKSPACE_PATH = "/workspace";
  */
 export const SANDBOX_HOST_DB_PATH = "/data/host.db";
 
+/**
+ * Owner of the environments the platform ships, which belong to no customer.
+ *
+ * A sentinel organization rather than a nullable column so the foreign key and
+ * every `organizationId` code path stay uniform, and rather than a copy per
+ * organization so that rebuilding an image updates one row instead of needing
+ * a backfill across every organization that existed when it changed.
+ *
+ * Nobody is a member of it. That is what makes it read-only in practice:
+ * `assertMember` fails for every real caller, so the only access is the
+ * explicit shared-environment allowance in the environment router, and every
+ * mutation path refuses a row owned by this organization.
+ */
+export const SHARED_ENVIRONMENT_ORGANIZATION_ID =
+	"00000000-0000-0000-0000-000000000000";
+
 // Terminal identity presented to shell programs via TERM_PROGRAM. kitty:
 // agent TUIs (claude-code especially) tune wheel-scroll compensation per
 // TERM_PROGRAM, and our terminals install the full-fidelity wheel handler

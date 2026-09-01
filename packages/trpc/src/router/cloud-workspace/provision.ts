@@ -81,7 +81,7 @@ export async function provisionCloudWorkspace(
 						(generated) => generated ?? row.name,
 					),
 			resolveCloneTarget(row.projectId),
-			resolveEnvironment(row.environmentId),
+			resolveEnvironment(row.environmentId, row.organizationId),
 		]);
 		if (!environment) {
 			throw new Error("Environment not found");
@@ -134,7 +134,12 @@ export async function provisionCloudWorkspace(
 					...(env.SENTRY_DSN_SANDBOX
 						? {
 								HOST_SERVICE_SENTRY_DSN: env.SENTRY_DSN_SANDBOX,
-								HOST_SERVICE_SENTRY_ENVIRONMENT: "sandbox",
+								// Which deploy this sandbox came from, not what it is — the Sentry
+								// project already means "sandbox", so tagging every event with that
+								// again says nothing. Preview and production sandboxes report to the
+								// same project, and this is the only thing telling them apart.
+								HOST_SERVICE_SENTRY_ENVIRONMENT:
+									env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "development",
 							}
 						: {}),
 					SUPERSET_SANDBOX_IMAGE_TAG: environment.sourceRef,

@@ -1,7 +1,8 @@
 import { db, dbWs } from "@superset/db/client";
 import { cloudWorkspaces, environments } from "@superset/db/schema";
+import { SHARED_ENVIRONMENT_ORGANIZATION_ID } from "@superset/shared/constants";
 import type { TRPCRouterRecord } from "@trpc/server";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import { promoteSandboxToEnvironment } from "../../lib/blaxel";
@@ -20,8 +21,56 @@ export async function loadEnvironment(id: string, organizationIds: string[]) {
 			i18nKey: "serverError.environment.environmentNotFound",
 		});
 	}
-	assertMember(organizationIds, row.organizationId);
+	// A shared environment belongs to no customer, so membership cannot be the
+	// test — nobody is a member of the sentinel organization. It is readable by
+	// everyone and writable by no one; `assertOwned` below is what enforces the
+	// second half at each mutation.
+	if (row.organizationId !== SHARED_ENVIRONMENT_ORGANIZATION_ID) {
+		assertMember(organizationIds, row.organizationId);
+	}
 	return row;
+}
+
+/** True for the environments the platform ships, which no caller may modify. */
+export function isSharedEnvironment(row: { organizationId: string }): boolean {
+	return row.organizationId === SHARED_ENVIRONMENT_ORGANIZATION_ID;
+}
+
+/**
+ * Which organization's values apply to this environment.
+ *
+ * A shared environment holds a separate set per organization, so the answer is
+ * the caller's own; an owned one can only hold its owner's. Getting this wrong
+ * in the shared case would resolve one customer's secrets into another's
+ * sandbox, which is why every secret query goes through it.
+ */
+export function secretOwnerOrganizationId(
+	row: { organizationId: string },
+	activeOrganizationId: string | null,
+): string {
+	if (!isSharedEnvironment(row)) return row.organizationId;
+	if (!activeOrganizationId) {
+		throw userError({
+			code: "BAD_REQUEST",
+			message: "No active organization",
+			i18nKey: "serverError.environment.noActiveOrganization",
+		});
+	}
+	return activeOrganizationId;
+}
+
+/**
+ * Guards every write. Without it any member of any organization could rename,
+ * re-point or archive a shipped environment for every other customer at once.
+ */
+function assertOwned(row: { organizationId: string }): void {
+	if (isSharedEnvironment(row)) {
+		throw userError({
+			code: "FORBIDDEN",
+			message: "This environment is managed by Superset and cannot be changed",
+			i18nKey: "serverError.environment.sharedEnvironmentIsReadOnly",
+		});
+	}
 }
 
 export const environmentRouter = {
@@ -32,12 +81,17 @@ export const environmentRouter = {
 		.query(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
 			assertMember(ctx.organizationIds, input.organizationId);
+			// The organization's own environments plus the ones we ship, which
+			// are what a customer with no environments of their own starts from.
 			return db
 				.select()
 				.from(environments)
 				.where(
 					and(
-						eq(environments.organizationId, input.organizationId),
+						inArray(environments.organizationId, [
+							input.organizationId,
+							SHARED_ENVIRONMENT_ORGANIZATION_ID,
+						]),
 						isNull(environments.archivedAt),
 					),
 				)
@@ -148,7 +202,7 @@ export const environmentRouter = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
-			await loadEnvironment(input.id, ctx.organizationIds);
+			assertOwned(await loadEnvironment(input.id, ctx.organizationIds));
 			const [row] = await dbWs
 				.update(environments)
 				.set({
@@ -164,7 +218,7 @@ export const environmentRouter = {
 		.input(z.object({ id: z.string().uuid() }))
 		.mutation(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
-			await loadEnvironment(input.id, ctx.organizationIds);
+			assertOwned(await loadEnvironment(input.id, ctx.organizationIds));
 			await dbWs
 				.update(environments)
 				.set({ archivedAt: new Date() })
