@@ -8,7 +8,7 @@
  * token — no relay hop, so websockets work and the sandbox can still sleep.
  */
 
-import { SandboxInstance, settings, updateSandbox } from "@blaxel/core";
+import { SandboxInstance, settings } from "@blaxel/core";
 import { SANDBOX_CREDENTIAL_PLACEHOLDER } from "@superset/shared/constants";
 import { env } from "../../env";
 import { userError } from "../../i18n-error";
@@ -76,31 +76,40 @@ export interface SandboxEnvironment {
 }
 
 /**
- * A forked sandbox inherits the source's environment variables and the fork
- * request cannot override them, so identity is written in a second call. That
- * update only reaches processes started afterwards — which is why the source
- * must be snapshotted with host-service stopped, and `start.sh` exec'd only
- * once this has returned.
+ * TODO(2026-09-01): remove once a fork can be given its own environment
+ * variables.
+ *
+ * A fork inherits the source's env vars and the fork request cannot override
+ * them. The documented way to fix that afterwards, `PUT /sandboxes/{name}` with
+ * changed `spec.runtime.envs`, cannot be used: on sandbox-api 2026-08-27 it
+ * re-materialises the sandbox from its image and discards the whole writable
+ * layer. Verified on a plain sandbox — files under /data, /root, /opt,
+ * /workspace and /tmp all vanished and a git repo baked into the image came
+ * back clean, because the root filesystem is a `volatile` overlay. That would
+ * throw away exactly the configured state a fork exists to carry. Reported
+ * upstream; Blaxel are integrating env updates into fork directly.
+ *
+ * Until then identity is handed over as a file the fork reads on boot, which
+ * touches no spec and survives restarts. Delete this and pass the values
+ * normally once fork accepts them.
  */
+const IDENTITY_FILE = "/data/identity.env";
+
 async function forkSandbox(
 	name: string,
 	sourceSandbox: string,
-	envs: Array<{ name: string; value: string }>,
+	workspaceEnv: Record<string, string>,
 ): Promise<SandboxInstance> {
 	const source = await SandboxInstance.get(sourceSandbox);
 	await source.fork(name);
-
 	const forked = await SandboxInstance.get(name);
-	const body = {
-		...(forked as unknown as { sandbox: Record<string, unknown> }).sandbox,
-		spec: { ...forked.spec, runtime: { ...forked.spec?.runtime, envs } },
-	};
-	const { data } = await updateSandbox({
-		path: { sandboxName: name },
-		body,
-		throwOnError: true,
-	} as never);
-	return new SandboxInstance(data as never);
+
+	// Single-quoted with embedded quotes escaped: values carry URLs and tokens.
+	const contents = Object.entries(workspaceEnv)
+		.map(([key, value]) => `export ${key}='${value.replaceAll("'", "'\\''")}'`)
+		.join("\n");
+	await forked.fs.write(IDENTITY_FILE, `${contents}\n`);
+	return forked;
 }
 
 export async function provisionSandbox(args: {
@@ -129,7 +138,11 @@ export async function provisionSandbox(args: {
 
 	const sandbox =
 		args.environment.sourceKind === "fork"
-			? await forkSandbox(args.name, args.environment.sourceRef, envs)
+			? await forkSandbox(
+					args.name,
+					args.environment.sourceRef,
+					args.workspaceEnv,
+				)
 			: await SandboxInstance.createIfNotExists({
 					name: args.name,
 					image: args.environment.sourceRef,

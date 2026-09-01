@@ -10,6 +10,17 @@
 # sandbox nothing can talk to.
 set -uo pipefail
 
+# TODO(2026-09-01): delete once a fork can be created with its own environment
+# variables. A fork inherits the source sandbox's env and the fork request
+# cannot override it; the update endpoint that would fix it afterwards resets
+# the sandbox to its image (see forkSandbox in
+# packages/trpc/src/lib/blaxel/blaxel.ts). Provisioning writes this file
+# instead. Absent on a created sandbox, which already has its identity.
+if [ -f /data/identity.env ]; then
+  # shellcheck disable=SC1091
+  . /data/identity.env
+fi
+
 WORKSPACE="${SUPERSET_SANDBOX_WORKSPACE_PATH:-/workspace}"
 BRANCH="${SUPERSET_SANDBOX_BRANCH:-}"
 REPO_URL="${SUPERSET_SANDBOX_REPO_URL:-}"
