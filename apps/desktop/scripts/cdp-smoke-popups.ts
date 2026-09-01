@@ -18,8 +18,13 @@
  * Dependency-free (Bun WebSocket + fetch).
  */
 
-const PORT = process.env.RENDERER_REMOTE_DEBUG_PORT ?? "9222";
+const PORT = process.env.RENDERER_REMOTE_DEBUG_PORT;
+const VITE_PORT = process.env.DESKTOP_VITE_PORT;
 const FIXTURE_PORT = Number(process.env.POPUP_FIXTURE_PORT ?? "8797");
+const ONLY_CASE = process.env.POPUP_CASE;
+const OBSERVE_MS = process.env.POPUP_OBSERVE_MS
+	? Number(process.env.POPUP_OBSERVE_MS)
+	: null;
 const ORIGIN = `http://localhost:${FIXTURE_PORT}`;
 
 const OAUTH = `${ORIGIN}/popup?client_id=a&redirect_uri=${encodeURIComponent(
@@ -58,6 +63,10 @@ interface Expectation {
 	panes: number;
 	/** Whether the popup must still see its opener. */
 	opener?: boolean;
+	/** Whether every live popup must share the opener's cookie jar. */
+	jar?: boolean;
+	/** Exact live window names, sorted because CDP target order is unspecified. */
+	names?: string[];
 	/** Whether `window.open` must hand the page a usable handle. */
 	handle?: boolean;
 	note: string;
@@ -68,6 +77,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: [""],
 		handle: true,
 		note: "window.open() with no arguments",
 	},
@@ -75,6 +86,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: [""],
 		handle: true,
 		note: "about:blank with a fragment",
 	},
@@ -82,6 +95,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: [""],
 		handle: true,
 		note: "bare window.open of a sign-in URL (Deel's shape)",
 	},
@@ -89,6 +104,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: [""],
 		handle: true,
 		note: "sign-in URL with a _blank name",
 	},
@@ -96,6 +113,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: ["authwin"],
 		handle: true,
 		note: "sign-in URL, named, no features",
 	},
@@ -103,6 +122,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: ["authpopup"],
 		handle: true,
 		note: "window.open with features (Firebase's shape)",
 	},
@@ -110,6 +131,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: [""],
 		handle: true,
 		note: "OIDC hybrid response_type",
 	},
@@ -117,6 +140,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 1,
 		panes: 0,
 		opener: false,
+		jar: true,
+		names: ["n"],
 		handle: false,
 		note: "noopener severs the opener and nulls the handle, per spec",
 	},
@@ -124,6 +149,8 @@ const EXPECT: Record<string, Expectation> = {
 		popups: 2,
 		panes: 0,
 		opener: true,
+		jar: true,
+		names: ["inner", "outer"],
 		handle: true,
 		note: "a popup opening its own popup (Google's consent step)",
 	},
@@ -178,6 +205,7 @@ const POPUP = (q: URLSearchParams) => `<!doctype html><meta charset="utf-8">
 </script>`;
 
 interface CdpTarget {
+	id: string;
 	type: string;
 	url: string;
 	webSocketDebuggerUrl?: string;
@@ -249,14 +277,48 @@ const targets = async (): Promise<CdpTarget[]> =>
 	(await (
 		await fetch(`http://127.0.0.1:${PORT}/json/list`)
 	).json()) as CdpTarget[];
-const popupsNow = async () =>
-	(await targets()).filter(
-		(t) => t.type === "page" && !/^https?:\/\/localhost:\d+\/#/.test(t.url),
-	);
-const panesNow = async () =>
-	(await targets()).filter((t) => t.type === "webview");
+function formatObservations(values: Array<boolean | string | null>): string {
+	return values.length ? values.map((value) => value ?? "?").join(",") : "-";
+}
+
+async function closeFocusedPane(renderer: Cdp): Promise<void> {
+	// The split action focuses the new pane. Drive the host's real CLOSE_PANE
+	// hotkey rather than Page.close on the guest target: the latter destroys a
+	// WebContents without updating the renderer's pane layout.
+	const isMac = process.platform === "darwin";
+	const modifiers = isMac ? 4 : 2 | 8; // Meta, or Control + Shift.
+	await renderer.send("Input.dispatchKeyEvent", {
+		type: "rawKeyDown",
+		key: isMac ? "w" : "W",
+		code: "KeyW",
+		windowsVirtualKeyCode: 87,
+		modifiers,
+	});
+	await renderer.send("Input.dispatchKeyEvent", {
+		type: "keyUp",
+		key: isMac ? "w" : "W",
+		code: "KeyW",
+		windowsVirtualKeyCode: 87,
+		modifiers,
+	});
+}
 
 async function main() {
+	if (!PORT || !VITE_PORT) {
+		console.error(
+			"FAIL: set RENDERER_REMOTE_DEBUG_PORT explicitly and load this workspace's DESKTOP_VITE_PORT from .env.",
+		);
+		return 1;
+	}
+	if (ONLY_CASE && !(ONLY_CASE in CASES)) {
+		console.error(`FAIL: unknown POPUP_CASE ${ONLY_CASE}`);
+		return 1;
+	}
+	if (OBSERVE_MS !== null && (!Number.isFinite(OBSERVE_MS) || OBSERVE_MS < 0)) {
+		console.error("FAIL: POPUP_OBSERVE_MS must be a non-negative number.");
+		return 1;
+	}
+
 	const server = Bun.serve({
 		port: FIXTURE_PORT,
 		fetch(req) {
@@ -271,7 +333,24 @@ async function main() {
 	});
 
 	try {
-		const pane = (await panesNow())[0];
+		const allTargets = await targets();
+		const rendererOrigin = new URL(`http://localhost:${VITE_PORT}`).origin;
+		const renderer = allTargets.find(
+			(target) =>
+				target.type === "page" &&
+				target.webSocketDebuggerUrl &&
+				target.url.startsWith(`${rendererOrigin}/`),
+		);
+		if (!renderer) {
+			console.error(
+				`FAIL: no renderer for ${rendererOrigin} on CDP port ${PORT}.`,
+			);
+			return 1;
+		}
+
+		const pane = allTargets.find(
+			(target) => target.type === "webview" && target.webSocketDebuggerUrl,
+		);
 		if (!pane?.webSocketDebuggerUrl) {
 			console.error(
 				`FAIL: no browser pane found on port ${PORT}.\n` +
@@ -279,89 +358,218 @@ async function main() {
 			);
 			return 1;
 		}
-
-		const g = await Cdp.connect(pane.webSocketDebuggerUrl);
-		await g.send("Page.enable");
-		await g.send("Runtime.enable");
-		await g.send("Page.navigate", { url: `${ORIGIN}/` });
-		await sleep(2500);
-
-		const failures: string[] = [];
+		const originalPaneUrl = pane.url;
 		console.log(
-			`${"case".padEnd(19)}${"popups".padEnd(8)}${"opener".padEnd(8)}${"jar".padEnd(6)}${"handle".padEnd(8)}panes  verdict`,
+			`Renderer ${renderer.url}; pane ${pane.id} initially ${originalPaneUrl}`,
 		);
 
-		for (const [name, script] of Object.entries(CASES)) {
-			const want = EXPECT[name];
-			if (!want) continue;
-			const panesBefore = (await panesNow()).length;
-			await g.eval(`window.__handle = null; ${script}; 1`).catch(() => {});
-			await sleep(name === "nested" || name === "selfClosing" ? 3000 : 2000);
-
-			const live = await popupsNow();
-			const panesAfter = (await panesNow()).length;
-			let opener: boolean | null = null;
-			let jar: boolean | null = null;
-			for (const p of live) {
-				if (!p.webSocketDebuggerUrl) continue;
-				const c = await Cdp.connect(p.webSocketDebuggerUrl);
-				await c.send("Runtime.enable");
-				// Read the opener off the popup itself rather than the fixture's
-				// snapshot: an `about:blank` popup never loads the fixture, and
-				// relying on that snapshot silently skipped the assertion for the
-				// two blank cases.
-				const has = await c.eval<boolean>("!!window.opener").catch(() => null);
-				if (has !== null) opener = opener === false ? false : has;
-				const info = await c
-					.eval<{ sharesCookieJar: boolean } | null>("window.__info ?? null")
-					.catch(() => null);
-				if (info) jar = info.sharesCookieJar;
-				c.close();
-			}
-			const handle = await g
-				.eval<string>("String(window.__handle)")
-				.catch(() => "?");
-
-			const bad: string[] = [];
-			if (live.length !== want.popups)
-				bad.push(`popups ${live.length}!=${want.popups}`);
-			if (panesAfter - panesBefore !== want.panes)
-				bad.push(`panes +${panesAfter - panesBefore}!=+${want.panes}`);
-			if (
-				want.opener !== undefined &&
-				opener !== null &&
-				opener !== want.opener
-			)
-				bad.push(`opener ${opener}!=${want.opener}`);
-			// Every popup that keeps its opener must also keep the pane's jar.
-			if (want.opener === true && jar === false)
-				bad.push("cookie jar not shared");
-			if (want.handle !== undefined) {
-				const got = handle === "HANDLE";
-				if (got !== want.handle) bad.push(`handle ${handle}`);
-			}
-			if (bad.length)
-				failures.push(`${name}: ${bad.join(", ")} (${want.note})`);
+		const g = await Cdp.connect(pane.webSocketDebuggerUrl);
+		const host = await Cdp.connect(renderer.webSocketDebuggerUrl as string);
+		const failures: string[] = [];
+		try {
+			await g.send("Page.enable");
+			await g.send("Runtime.enable");
+			await g.send("Page.navigate", { url: `${ORIGIN}/` });
+			await sleep(2500);
 
 			console.log(
-				`${name.padEnd(19)}${String(live.length).padEnd(8)}${String(opener ?? "-").padEnd(8)}${String(jar ?? "-").padEnd(6)}${handle.padEnd(8)}+${panesAfter - panesBefore}     ${bad.length ? `FAIL ${bad.join(", ")}` : "ok"}`,
+				`${"case".padEnd(19)}${"popups".padEnd(8)}${"opener".padEnd(12)}${"jar".padEnd(10)}${"name".padEnd(20)}${"handle".padEnd(8)}panes  verdict`,
 			);
 
-			for (const p of live) {
-				if (!p.webSocketDebuggerUrl) continue;
-				const c = await Cdp.connect(p.webSocketDebuggerUrl).catch(() => null);
-				await c?.send("Page.close").catch(() => {});
-				c?.close();
-			}
-			await sleep(800);
-		}
+			for (const [name, script] of Object.entries(CASES)) {
+				if (ONLY_CASE && name !== ONLY_CASE) continue;
+				const want = EXPECT[name];
+				if (!want) continue;
+				const before = await targets();
+				const pageIdsBefore = new Set(
+					before
+						.filter((target) => target.type === "page")
+						.map((target) => target.id),
+				);
+				const paneIdsBefore = new Set(
+					before
+						.filter((target) => target.type === "webview")
+						.map((target) => target.id),
+				);
+				let actionError: string | null = null;
+				await g.eval(`window.__handle = null; ${script}; 1`).catch((error) => {
+					actionError = error instanceof Error ? error.message : String(error);
+				});
+				await sleep(
+					OBSERVE_MS ??
+						(name === "nested" || name === "selfClosing" ? 3000 : 2000),
+				);
 
-		const msgs = await g.eval<string[]>("window.__msgs ?? []").catch(() => []);
-		if (!msgs.some((m) => m.startsWith("ok:"))) {
-			failures.push("no postMessage reached the opener");
+				const after = await targets();
+				const live = after.filter(
+					(target) => target.type === "page" && !pageIdsBefore.has(target.id),
+				);
+				const createdPanes = after.filter(
+					(target) =>
+						target.type === "webview" && !paneIdsBefore.has(target.id),
+				);
+				const opener: Array<boolean | null> = [];
+				const jar: Array<boolean | null> = [];
+				const windowNames: Array<string | null> = [];
+				const observationErrors: string[] = [];
+				for (const p of live) {
+					if (!p.webSocketDebuggerUrl) {
+						observationErrors.push(`popup ${p.id} has no debugger URL`);
+						continue;
+					}
+					const c = await Cdp.connect(p.webSocketDebuggerUrl).catch((error) => {
+						observationErrors.push(`popup ${p.id}: ${String(error)}`);
+						return null;
+					});
+					if (!c) continue;
+					try {
+						await c.send("Runtime.enable");
+						// Probe the popup directly. This also covers about:blank, which never
+						// loads the fixture's window.__info snapshot.
+						opener.push(
+							await c.eval<boolean>("!!window.opener").catch(() => null),
+						);
+						jar.push(
+							await c
+								.eval<boolean>('document.cookie.includes("paneprobe=1")')
+								.catch(() => null),
+						);
+						windowNames.push(
+							await c.eval<string>("window.name").catch(() => null),
+						);
+					} finally {
+						c.close();
+					}
+				}
+				const handle = await g
+					.eval<string>("String(window.__handle)")
+					.catch(() => "?");
+
+				const bad: string[] = [];
+				if (actionError) bad.push(`action failed: ${actionError}`);
+				bad.push(...observationErrors);
+				if (live.length !== want.popups)
+					bad.push(`popups ${live.length}!=${want.popups}`);
+				if (createdPanes.length !== want.panes)
+					bad.push(`panes +${createdPanes.length}!=+${want.panes}`);
+				if (want.opener !== undefined) {
+					if (
+						opener.length !== live.length ||
+						opener.some((value) => value !== want.opener)
+					) {
+						bad.push(`opener ${formatObservations(opener)}!=${want.opener}`);
+					}
+				}
+				if (want.jar !== undefined) {
+					if (
+						jar.length !== live.length ||
+						jar.some((value) => value !== want.jar)
+					) {
+						bad.push(`jar ${formatObservations(jar)}!=${want.jar}`);
+					}
+				}
+				if (want.names) {
+					const gotNames = windowNames
+						.filter((value): value is string => value != null)
+						.sort();
+					const wantedNames = [...want.names].sort();
+					if (
+						gotNames.length !== live.length ||
+						JSON.stringify(gotNames) !== JSON.stringify(wantedNames)
+					) {
+						bad.push(
+							`names ${JSON.stringify(windowNames)}!=${JSON.stringify(want.names)}`,
+						);
+					}
+				}
+				if (want.handle !== undefined) {
+					const got = handle === "HANDLE";
+					if (got !== want.handle) bad.push(`handle ${handle}`);
+				}
+				if (bad.length)
+					failures.push(`${name}: ${bad.join(", ")} (${want.note})`);
+
+				console.log(
+					`${name.padEnd(19)}${String(live.length).padEnd(8)}${formatObservations(opener).padEnd(12)}${formatObservations(jar).padEnd(10)}${formatObservations(windowNames).padEnd(20)}${handle.padEnd(8)}+${createdPanes.length}     ${bad.length ? `FAIL ${bad.join(", ")}` : "ok"}`,
+				);
+
+				for (const p of live) {
+					if (!p.webSocketDebuggerUrl) {
+						failures.push(
+							`${name}: could not close popup ${p.id}: no debugger URL`,
+						);
+						continue;
+					}
+					const c = await Cdp.connect(p.webSocketDebuggerUrl).catch((error) => {
+						failures.push(
+							`${name}: could not connect to popup for cleanup: ${String(error)}`,
+						);
+						return null;
+					});
+					await c?.send("Page.close").catch((error) => {
+						failures.push(
+							`${name}: could not close popup ${p.id}: ${String(error)}`,
+						);
+					});
+					c?.close();
+				}
+				for (let index = 0; index < createdPanes.length; index += 1) {
+					await closeFocusedPane(host).catch((error) => {
+						failures.push(
+							`${name}: could not close created pane: ${String(error)}`,
+						);
+					});
+				}
+				await sleep(800);
+				const remainingIds = new Set(
+					(await targets()).map((target) => target.id),
+				);
+				for (const createdPane of createdPanes) {
+					if (remainingIds.has(createdPane.id)) {
+						failures.push(
+							`${name}: created pane ${createdPane.id} remained after cleanup`,
+						);
+					}
+				}
+				for (const popup of live) {
+					if (remainingIds.has(popup.id)) {
+						failures.push(`${name}: popup ${popup.id} remained after cleanup`);
+					}
+				}
+			}
+
+			const msgs = await g
+				.eval<string[]>("window.__msgs ?? []")
+				.catch(() => []);
+			const expectsCallback = Object.entries(EXPECT).some(
+				([name, expectation]) =>
+					(!ONLY_CASE || name === ONLY_CASE) &&
+					expectation.opener === true &&
+					name !== "noArgs" &&
+					name !== "blankFragment",
+			);
+			if (expectsCallback && !msgs.some((m) => m.startsWith("ok:"))) {
+				failures.push("no postMessage reached the opener");
+			}
+			console.log(
+				`\npostMessage callbacks delivered to opener: ${msgs.length}`,
+			);
+		} finally {
+			await g.send("Page.navigate", { url: originalPaneUrl }).catch((error) => {
+				failures.push(`could not restore pane URL: ${String(error)}`);
+			});
+			await sleep(1500);
+			const restored = (await targets()).find(
+				(target) => target.id === pane.id,
+			);
+			if (restored?.url !== originalPaneUrl) {
+				failures.push(
+					`pane URL not restored: ${restored?.url ?? "missing"} != ${originalPaneUrl}`,
+				);
+			}
+			g.close();
+			host.close();
 		}
-		console.log(`\npostMessage callbacks delivered to opener: ${msgs.length}`);
-		g.close();
 
 		if (failures.length) {
 			console.error(`\nFAIL (${failures.length}):`);

@@ -146,9 +146,33 @@ describe("isOAuthAuthorizationUrl: response_type value space", () => {
 		`https://idp.example.com/authorize?client_id=a&redirect_uri=b&response_type=${rt}`;
 
 	test("accepts the defined single and hybrid response types", () => {
-		for (const rt of ["code", "token", "id_token", "none", "code%20id_token"]) {
+		for (const rt of [
+			"code",
+			"token",
+			"id_token",
+			"none",
+			"code%20id_token",
+			"token%20id_token",
+			"token%20code%20id_token",
+		]) {
 			expect(isOAuthAuthorizationUrl(url(rt))).toBe(true);
 		}
+	});
+
+	test("rejects invalid combinations and empty required values", () => {
+		for (const rt of ["none%20code", "code%20code", "code%20unknown"]) {
+			expect(isOAuthAuthorizationUrl(url(rt))).toBe(false);
+		}
+		expect(
+			isOAuthAuthorizationUrl(
+				"https://idp.example.com/authorize?client_id=&redirect_uri=b&response_type=code",
+			),
+		).toBe(false);
+		expect(
+			isOAuthAuthorizationUrl(
+				"https://idp.example.com/authorize?client_id=a&redirect_uri=&response_type=code",
+			),
+		).toBe(false);
 	});
 
 	test("an unrelated URL carrying the same parameter names is not a sign-in", () => {

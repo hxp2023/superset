@@ -38,8 +38,8 @@ export function isOAuthAuthorizationUrl(url: string): boolean {
 	if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
 	const params = parsed.searchParams;
 	return (
-		params.has("client_id") &&
-		params.has("redirect_uri") &&
+		Boolean(params.get("client_id")?.trim()) &&
+		Boolean(params.get("redirect_uri")?.trim()) &&
 		hasAuthorizationResponseType(params)
 	);
 }
@@ -55,16 +55,21 @@ export function isOAuthAuthorizationUrl(url: string): boolean {
  */
 const AUTHORIZATION_RESPONSE_TYPES = new Set([
 	"code",
-	"token",
 	"id_token",
 	"none",
+	"token",
+	"code id_token",
+	"code token",
+	"id_token token",
+	"code id_token token",
 ]);
 
 function hasAuthorizationResponseType(params: URLSearchParams): boolean {
 	const raw = params.get("response_type")?.trim();
 	if (!raw) return false;
 	const values = raw.split(/\s+/);
-	return values.every((value) => AUTHORIZATION_RESPONSE_TYPES.has(value));
+	if (new Set(values).size !== values.length) return false;
+	return AUTHORIZATION_RESPONSE_TYPES.has(values.sort().join(" "));
 }
 
 /**
