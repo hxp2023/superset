@@ -3,10 +3,10 @@ import { useMemo } from "react";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
 import {
+	deriveSessionTagFolders,
 	deriveTagFolders,
 	useTagFolderContext,
 } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
-import { deriveSessionTagFolderSections } from "./deriveSessionTagFolderSections";
 
 export interface ProjectTagFolderSection {
 	id: string;
@@ -46,7 +46,10 @@ export function useProjectTagFolderSections(projectId: string | null): {
 	);
 	const sections = useMemo(() => {
 		if (projectId === null) {
-			return deriveSessionTagFolderSections(hostWorkspaces, tagFolderContext);
+			return deriveSessionTagFolders(
+				hostWorkspaces,
+				tagFolderContext.tagSettings,
+			).map(({ tag, name, color }) => ({ id: tag, name, color }));
 		}
 		return deriveTagFolders(storedSections, hostWorkspaces, tagFolderContext)
 			.filter((section) => section.projectId === projectId)

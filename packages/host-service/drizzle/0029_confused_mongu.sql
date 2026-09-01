@@ -12,3 +12,5 @@ CREATE TABLE `tag_folder_settings` (
 -- The Sessions lane had no rows to migrate, since it could not have any.
 INSERT OR IGNORE INTO `tag_folder_settings` (`scope`, `tag`, `display_name`, `color`, `tab_order`, `updated_at`)
 SELECT `project_id`, `tag`, `display_name`, `color`, `tab_order`, `updated_at` FROM `workspace_tag_settings`;
+--> statement-breakpoint
+DROP TABLE `workspace_tag_settings`;

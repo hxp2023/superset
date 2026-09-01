@@ -75,10 +75,11 @@ export interface DashboardSidebarSection {
 	workspaces: DashboardSidebarWorkspace[];
 }
 
-/** A derived Sessions lane. The normalized tag is its stable identity;
- * host settings provide display name and colour at render time. */
+/** A derived Sessions lane. The normalized tag is its stable identity. */
 export interface DashboardSidebarSessionTagGroup {
 	tag: string;
+	name: string;
+	color: string | null;
 	workspaces: DashboardSidebarWorkspace[];
 }
 

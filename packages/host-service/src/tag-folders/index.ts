@@ -1,5 +1,4 @@
 export {
-	deleteTagFolderScope,
 	deleteTagFolderSetting,
 	getAllTagFolderSettings,
 	getTagFolderSettings,

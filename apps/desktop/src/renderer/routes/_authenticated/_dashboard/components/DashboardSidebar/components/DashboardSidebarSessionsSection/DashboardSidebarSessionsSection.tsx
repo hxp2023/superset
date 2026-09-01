@@ -34,6 +34,8 @@ interface DashboardSidebarSessionsSectionProps {
 	isCollapsed?: boolean;
 	workspaceShortcutLabels?: Map<string, string>;
 	onWorkspaceHover: (workspaceId: string) => void | Promise<void>;
+	onRenameTagGroup: (tag: string, name: string) => void;
+	onSetTagGroupColor: (tag: string, color: string | null) => void;
 }
 
 /**
@@ -53,6 +55,8 @@ export function DashboardSidebarSessionsSection({
 	isCollapsed = false,
 	workspaceShortcutLabels,
 	onWorkspaceHover,
+	onRenameTagGroup,
+	onSetTagGroupColor,
 }: DashboardSidebarSessionsSectionProps) {
 	const { t } = useLingui();
 	const [collapsedTagGroups, setCollapsedTagGroups] = useState<Set<string>>(
@@ -196,7 +200,11 @@ export function DashboardSidebarSessionsSection({
 							<DashboardSidebarSessionTagGroup
 								key={group.tag}
 								tag={group.tag}
+								name={group.name}
+								color={group.color}
 								isCollapsed={collapsedTagGroups.has(group.tag)}
+								onRename={(name) => onRenameTagGroup(group.tag, name)}
+								onSetColor={(color) => onSetTagGroupColor(group.tag, color)}
 								onToggleCollapse={() =>
 									setCollapsedTagGroups((current) => {
 										const next = new Set(current);

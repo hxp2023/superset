@@ -10,7 +10,6 @@ import { projects } from "../db/schema";
 import type { EventBus } from "../events";
 import type { TagFoldersChangedMessage } from "../events/types";
 import {
-	deleteTagFolderScope,
 	deleteTagFolderSetting,
 	getTagFolderSettings,
 	hasTagFolderScope,
@@ -167,21 +166,5 @@ describe("tag folder settings store", () => {
 		expect(getTagFolderSettings(h.db, SESSIONS_TAG_SCOPE)[0]?.color).toBe(
 			"#0000ff",
 		);
-	});
-
-	it("drops a whole scope, leaving other scopes intact", () => {
-		const h = createHarness();
-		upsertTagFolderSetting({ db: h.db, eventBus: h.eventBus }, PROJECT, "api", {
-			color: "#ff0000",
-		});
-		upsertTagFolderSetting(
-			{ db: h.db, eventBus: h.eventBus },
-			SESSIONS_TAG_SCOPE,
-			"api",
-			{ color: "#0000ff" },
-		);
-		deleteTagFolderScope(h.db, PROJECT);
-		expect(getTagFolderSettings(h.db, PROJECT)).toEqual([]);
-		expect(getTagFolderSettings(h.db, SESSIONS_TAG_SCOPE)).toHaveLength(1);
 	});
 });

@@ -3,13 +3,11 @@ import {
 	SESSIONS_TAG_SCOPE,
 } from "@superset/shared/workspace-tags";
 import { type ReactNode, useEffect, useState } from "react";
-import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useOptimisticActions } from "renderer/routes/_authenticated/hooks/useOptimisticActions";
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
 import {
 	applyFolderTagChange,
 	buildSidebarFolderKey,
-	useTagFolderContext,
 } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
 import { DashboardSidebarGroupHeader } from "../../../DashboardSidebarGroupHeader";
@@ -19,42 +17,39 @@ import { useDashboardSidebarSectionRename } from "../../../DashboardSidebarSecti
 
 interface DashboardSidebarSessionTagGroupProps {
 	tag: string;
+	name: string;
+	color: string | null;
 	isCollapsed: boolean;
 	onToggleCollapse: () => void;
+	onRename: (name: string) => void;
+	onSetColor: (color: string | null) => void;
 	children: ReactNode;
 }
 
 /** A derived tag lane inside Sessions, styled like project tag folders. */
 export function DashboardSidebarSessionTagGroup({
 	tag,
+	name,
+	color,
 	isCollapsed,
 	onToggleCollapse,
+	onRename,
+	onSetColor,
 	children,
 }: DashboardSidebarSessionTagGroupProps) {
 	const [isRenaming, setIsRenaming] = useState(false);
-	const [renameValue, setRenameValue] = useState(tag);
+	const [renameValue, setRenameValue] = useState(name);
 	const { workspaces } = useHostWorkspaces();
 	const { v2Workspaces } = useOptimisticActions();
 	const { pendingRenameSectionId, clearPendingSectionRename } =
 		useDashboardSidebarSectionRename();
-	const { renameSection, setSectionColor } = useDashboardSidebarState();
-	const { tagSettings } = useTagFolderContext();
 	const renameKey = buildSidebarFolderKey(SESSIONS_TAG_SCOPE, tag);
-	const setting = tagSettings.find(
-		(item) => item.projectId === SESSIONS_TAG_SCOPE && item.tag === tag,
-	);
-	const displayName = setting?.displayName ?? tag;
 	useEffect(() => {
 		if (pendingRenameSectionId !== renameKey) return;
-		setRenameValue(displayName);
+		setRenameValue(name);
 		setIsRenaming(true);
 		clearPendingSectionRename(renameKey);
-	}, [
-		pendingRenameSectionId,
-		renameKey,
-		displayName,
-		clearPendingSectionRename,
-	]);
+	}, [pendingRenameSectionId, renameKey, name, clearPendingSectionRename]);
 	const members = workspaces.filter(
 		(workspace) =>
 			workspace.projectId === null &&
@@ -70,28 +65,24 @@ export function DashboardSidebarSessionTagGroup({
 		}
 	};
 	const startRename = () => {
-		setRenameValue(displayName);
+		setRenameValue(name);
 		setIsRenaming(true);
 	};
 	const submitRename = () => {
 		const nextName = renameValue.trim();
 		setIsRenaming(false);
-		if (!nextName || nextName === displayName) return;
-		renameSection(renameKey, nextName);
+		if (!nextName || nextName === name) return;
+		onRename(nextName);
 	};
 	const cancelRename = () => {
-		setRenameValue(displayName);
+		setRenameValue(name);
 		setIsRenaming(false);
 	};
-	// Presentation for this lane lives under the Sessions scope, keyed by tag
-	// exactly like a project folder is keyed under its project id.
-	const color = setting?.color ?? null;
-	const setColor = (next: string | null) => setSectionColor(renameKey, next);
 	const actions = (
 		<DashboardSidebarSectionActionsDropdown
 			color={color}
 			onRename={startRename}
-			onSetColor={setColor}
+			onSetColor={onSetColor}
 			onDelete={() => retagMembers(null)}
 		/>
 	);
@@ -105,7 +96,7 @@ export function DashboardSidebarSessionTagGroup({
 				<DashboardSidebarSectionContextMenu
 					color={color}
 					onRename={startRename}
-					onSetColor={setColor}
+					onSetColor={onSetColor}
 					onDelete={() => retagMembers(null)}
 				>
 					<DashboardSidebarGroupHeader
@@ -119,7 +110,7 @@ export function DashboardSidebarSessionTagGroup({
 									className="-ml-1 h-5 w-full min-w-0 border-none bg-transparent px-1 py-0 text-[13px] font-medium text-muted-foreground outline-none"
 								/>
 							) : (
-								<span className="truncate">{displayName}</span>
+								<span className="truncate">{name}</span>
 							)
 						}
 						isCollapsed={isCollapsed}

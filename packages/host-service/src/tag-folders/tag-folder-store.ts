@@ -166,12 +166,3 @@ export function deleteTagFolderSetting(
 		.run();
 	return broadcast(ctx, scope);
 }
-
-/**
- * Drop every folder row for a scope. `tag_folder_settings` has no foreign key
- * to `projects` (its scope column also holds the non-project Sessions lane),
- * so project deletion calls this instead of relying on ON DELETE CASCADE.
- */
-export function deleteTagFolderScope(db: HostDb, scope: string): void {
-	db.delete(tagFolderSettings).where(eq(tagFolderSettings.scope, scope)).run();
-}
