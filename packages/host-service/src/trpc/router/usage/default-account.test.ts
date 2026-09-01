@@ -129,6 +129,7 @@ describe("host-wide default account pointers", () => {
 
 		expect(resolveDefaultAccountEnv(mockDb(undefined), "codex")).toEqual({
 			SUPERSET_AMBIENT_CODEX_HOME: customDefault,
+			CODEX_HOME: customDefault,
 		});
 	});
 });

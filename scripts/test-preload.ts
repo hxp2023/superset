@@ -33,6 +33,11 @@ import { join } from "node:path";
 
 const testSupersetHome = mkdtempSync(join(tmpdir(), "superset-test-home-"));
 process.env.SUPERSET_HOME_DIR = testSupersetHome;
+Reflect.set(
+	globalThis,
+	Symbol.for("superset.test.supersetHome"),
+	testSupersetHome,
+);
 
 // Test processes are short-lived, but a full local run creates enough state
 // here to make relying on the OS's eventual temp cleanup needlessly noisy.

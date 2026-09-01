@@ -267,11 +267,10 @@ export function resolveDefaultAccountEnv(
 		};
 	}
 	if (presetId === "codex") {
-		const ambient = {
-			SUPERSET_AMBIENT_CODEX_HOME: ambientCodexHome(),
-		};
+		const ambientCodex = ambientCodexHome();
+		const ambient = { SUPERSET_AMBIENT_CODEX_HOME: ambientCodex };
 		if (!selections.codexHome || !existsSync(selections.codexHome)) {
-			return ambient;
+			return { ...ambient, CODEX_HOME: ambientCodex };
 		}
 		return {
 			...ambient,

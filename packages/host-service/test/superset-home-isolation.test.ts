@@ -1,6 +1,15 @@
 import { describe, expect, it } from "bun:test";
+import { realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+
+function canonical(target: string): string {
+	try {
+		return realpathSync(target);
+	} catch {
+		return resolve(target);
+	}
+}
 
 /**
  * Canary for scripts/test-preload.ts. This file deliberately sets nothing up:
@@ -12,13 +21,21 @@ import { join, resolve } from "node:path";
 describe("Superset home isolation", () => {
 	function requireIsolatedHome(): string {
 		const isolated = process.env.SUPERSET_HOME_DIR;
+		const preloadHome = Reflect.get(
+			globalThis,
+			Symbol.for("superset.test.supersetHome"),
+		);
+		if (!isolated || typeof preloadHome !== "string") {
+			throw new Error("SUPERSET_HOME_DIR is not isolated for tests");
+		}
+		const canonicalHome = canonical(isolated);
 		if (
-			!isolated ||
-			resolve(isolated) === resolve(join(homedir(), ".superset"))
+			canonicalHome !== canonical(preloadHome) ||
+			canonicalHome === canonical(join(homedir(), ".superset"))
 		) {
 			throw new Error("SUPERSET_HOME_DIR is not isolated for tests");
 		}
-		return isolated;
+		return canonicalHome;
 	}
 
 	it("points SUPERSET_HOME_DIR somewhere other than the real home", () => {

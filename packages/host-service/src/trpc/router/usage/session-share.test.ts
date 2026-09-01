@@ -8,6 +8,7 @@ import {
 	readdirSync,
 	readFileSync,
 	readlinkSync,
+	realpathSync,
 	rmSync,
 	symlinkSync,
 	unlinkSync,
@@ -400,11 +401,9 @@ describe("shareCodexSessionState", () => {
 		).toBe(join(home, ".codex-work"));
 	});
 
-	it("allows ~/.codex to share into a user-defined Codex main home", () => {
-		const home = homedir();
-		expect(
-			shareableProfileDir(join(home, ".codex"), "/tmp/custom-codex-main", []),
-		).toBe(join(home, ".codex"));
+	it("allows a fixed Codex home to share into a user-defined main home", () => {
+		const { profile, main } = makeDirs();
+		expect(shareableProfileDir(profile, main, [])).toBe(realpathSync(profile));
 	});
 
 	it("never touches auth.json, so accounts keep separate credentials", () => {
