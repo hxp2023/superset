@@ -1,14 +1,6 @@
-import {
-	normalizeWorkspaceTag,
-	SESSIONS_TAG_SCOPE,
-} from "@superset/shared/workspace-tags";
+import { SESSIONS_TAG_SCOPE } from "@superset/shared/workspace-tags";
 import { type ReactNode, useEffect, useState } from "react";
-import { useOptimisticActions } from "renderer/routes/_authenticated/hooks/useOptimisticActions";
-import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
-import {
-	applyFolderTagChange,
-	buildSidebarFolderKey,
-} from "renderer/routes/_authenticated/utils/workspaceTagFolders";
+import { buildSidebarFolderKey } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
 import { DashboardSidebarGroupHeader } from "../../../DashboardSidebarGroupHeader";
 import { DashboardSidebarSectionContextMenu } from "../../../DashboardSidebarSection/components/DashboardSidebarSectionContextMenu";
@@ -21,8 +13,9 @@ interface DashboardSidebarSessionTagGroupProps {
 	color: string | null;
 	isCollapsed: boolean;
 	onToggleCollapse: () => void;
-	onRename: (name: string) => void;
-	onSetColor: (color: string | null) => void;
+	onDelete: (sectionId: string) => void;
+	onRename: (sectionId: string, name: string) => void;
+	onSetColor: (sectionId: string, color: string | null) => void;
 	children: ReactNode;
 }
 
@@ -33,14 +26,13 @@ export function DashboardSidebarSessionTagGroup({
 	color,
 	isCollapsed,
 	onToggleCollapse,
+	onDelete,
 	onRename,
 	onSetColor,
 	children,
 }: DashboardSidebarSessionTagGroupProps) {
 	const [isRenaming, setIsRenaming] = useState(false);
 	const [renameValue, setRenameValue] = useState(name);
-	const { workspaces } = useHostWorkspaces();
-	const { v2Workspaces } = useOptimisticActions();
 	const { pendingRenameSectionId, clearPendingSectionRename } =
 		useDashboardSidebarSectionRename();
 	const renameKey = buildSidebarFolderKey(SESSIONS_TAG_SCOPE, tag);
@@ -50,20 +42,6 @@ export function DashboardSidebarSessionTagGroup({
 		setIsRenaming(true);
 		clearPendingSectionRename(renameKey);
 	}, [pendingRenameSectionId, renameKey, name, clearPendingSectionRename]);
-	const members = workspaces.filter(
-		(workspace) =>
-			workspace.projectId === null &&
-			workspace.tags?.some(
-				(workspaceTag) => normalizeWorkspaceTag(workspaceTag) === tag,
-			),
-	);
-	const retagMembers = (nextTag: string | null) => {
-		for (const workspace of members) {
-			void v2Workspaces.updateWorkspace(workspace.id, {
-				tags: applyFolderTagChange(workspace.tags, [tag], nextTag),
-			});
-		}
-	};
 	const startRename = () => {
 		setRenameValue(name);
 		setIsRenaming(true);
@@ -72,7 +50,7 @@ export function DashboardSidebarSessionTagGroup({
 		const nextName = renameValue.trim();
 		setIsRenaming(false);
 		if (!nextName || nextName === name) return;
-		onRename(nextName);
+		onRename(renameKey, nextName);
 	};
 	const cancelRename = () => {
 		setRenameValue(name);
@@ -82,8 +60,8 @@ export function DashboardSidebarSessionTagGroup({
 		<DashboardSidebarSectionActionsDropdown
 			color={color}
 			onRename={startRename}
-			onSetColor={onSetColor}
-			onDelete={() => retagMembers(null)}
+			onSetColor={(color) => onSetColor(renameKey, color)}
+			onDelete={() => onDelete(renameKey)}
 		/>
 	);
 
@@ -96,8 +74,8 @@ export function DashboardSidebarSessionTagGroup({
 				<DashboardSidebarSectionContextMenu
 					color={color}
 					onRename={startRename}
-					onSetColor={onSetColor}
-					onDelete={() => retagMembers(null)}
+					onSetColor={(color) => onSetColor(renameKey, color)}
+					onDelete={() => onDelete(renameKey)}
 				>
 					<DashboardSidebarGroupHeader
 						label={

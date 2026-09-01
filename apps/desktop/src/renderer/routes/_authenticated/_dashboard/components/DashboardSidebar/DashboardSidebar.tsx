@@ -5,7 +5,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLingui } from "@lingui/react/macro";
-import { SESSIONS_TAG_SCOPE } from "@superset/shared/workspace-tags";
 import { OverflowFadeContainer } from "@superset/ui/overflow-fade-container";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
@@ -23,7 +22,6 @@ import { useHotkeyDisplay } from "renderer/hotkeys";
 import { OrganizationDropdown } from "renderer/routes/_authenticated/_dashboard/components/TopBar/components/OrganizationDropdown";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
-import { buildSidebarFolderKey } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { useSidebarSectionsCollapseStore } from "renderer/stores/sidebar-sections-collapse";
 import { DashboardSidebarBulkActions } from "./components/DashboardSidebarBulkActions";
 import { DashboardSidebarCloudSection } from "./components/DashboardSidebarCloudSection";
@@ -138,18 +136,8 @@ export function DashboardSidebar({
 		refreshWorkspacePullRequest,
 		toggleProjectCollapsed,
 	} = useDashboardSidebarData();
-	const { reorderProjects, renameSection, setSectionColor } =
+	const { deleteSection, reorderProjects, renameSection, setSectionColor } =
 		useDashboardSidebarState();
-	const renameSessionTagGroup = useCallback(
-		(tag: string, name: string) =>
-			renameSection(buildSidebarFolderKey(SESSIONS_TAG_SCOPE, tag), name),
-		[renameSection],
-	);
-	const setSessionTagGroupColor = useCallback(
-		(tag: string, color: string | null) =>
-			setSectionColor(buildSidebarFolderKey(SESSIONS_TAG_SCOPE, tag), color),
-		[setSectionColor],
-	);
 	// Converts legacy uuid-keyed folders to tag-backed folders in the
 	// background; retries whenever the workspace cache changes.
 	useMigrateLegacySidebarFolders();
@@ -324,8 +312,9 @@ export function DashboardSidebar({
 											isCollapsed={isCollapsed}
 											workspaceShortcutLabels={workspaceShortcutLabels}
 											onWorkspaceHover={refreshWorkspacePullRequest}
-											onRenameTagGroup={renameSessionTagGroup}
-											onSetTagGroupColor={setSessionTagGroupColor}
+											onDeleteTagGroup={deleteSection}
+											onRenameTagGroup={renameSection}
+											onSetTagGroupColor={setSectionColor}
 										/>
 										{!isCollapsed && (
 											<div className="mt-3 first:mt-0">

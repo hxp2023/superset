@@ -34,8 +34,9 @@ interface DashboardSidebarSessionsSectionProps {
 	isCollapsed?: boolean;
 	workspaceShortcutLabels?: Map<string, string>;
 	onWorkspaceHover: (workspaceId: string) => void | Promise<void>;
-	onRenameTagGroup: (tag: string, name: string) => void;
-	onSetTagGroupColor: (tag: string, color: string | null) => void;
+	onDeleteTagGroup: (sectionId: string) => void;
+	onRenameTagGroup: (sectionId: string, name: string) => void;
+	onSetTagGroupColor: (sectionId: string, color: string | null) => void;
 }
 
 /**
@@ -55,6 +56,7 @@ export function DashboardSidebarSessionsSection({
 	isCollapsed = false,
 	workspaceShortcutLabels,
 	onWorkspaceHover,
+	onDeleteTagGroup,
 	onRenameTagGroup,
 	onSetTagGroupColor,
 }: DashboardSidebarSessionsSectionProps) {
@@ -103,6 +105,7 @@ export function DashboardSidebarSessionsSection({
 		workspace: DashboardSidebarWorkspace,
 		indentation: DashboardSidebarWorkspaceIndentation,
 		isInSection = false,
+		accentColor?: string | null,
 	) => {
 		const sortableId = sortableIdByWorkspaceId.get(workspace.id);
 		if (!sortableId) return null;
@@ -112,6 +115,7 @@ export function DashboardSidebarSessionsSection({
 				key={workspace.id}
 				sortableId={sortableId}
 				workspace={workspace}
+				accentColor={accentColor}
 				isInSection={isInSection}
 				indentation={indentation}
 				isSelected={canBulkSelect && isWorkspaceSelected(workspace.id)}
@@ -203,8 +207,9 @@ export function DashboardSidebarSessionsSection({
 								name={group.name}
 								color={group.color}
 								isCollapsed={collapsedTagGroups.has(group.tag)}
-								onRename={(name) => onRenameTagGroup(group.tag, name)}
-								onSetColor={(color) => onSetTagGroupColor(group.tag, color)}
+								onDelete={onDeleteTagGroup}
+								onRename={onRenameTagGroup}
+								onSetColor={onSetTagGroupColor}
 								onToggleCollapse={() =>
 									setCollapsedTagGroups((current) => {
 										const next = new Set(current);
@@ -215,7 +220,7 @@ export function DashboardSidebarSessionsSection({
 								}
 							>
 								{group.workspaces.map((workspace) =>
-									renderWorkspace(workspace, "workspace", true),
+									renderWorkspace(workspace, "workspace", true, group.color),
 								)}
 							</DashboardSidebarSessionTagGroup>
 						))}

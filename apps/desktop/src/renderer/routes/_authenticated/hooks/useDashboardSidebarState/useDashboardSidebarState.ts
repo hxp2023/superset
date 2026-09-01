@@ -816,6 +816,20 @@ export function useDashboardSidebarState() {
 			if (!projectId) return;
 			const folderTag =
 				normalizeWorkspaceTag(section?.tag) ?? parsed?.tag ?? null;
+			if (projectId === SESSIONS_TAG_SCOPE) {
+				if (folderTag === null) return;
+				for (const workspace of hostWorkspaces) {
+					if (workspace.projectId !== null) continue;
+					const tags = normalizeWorkspaceTags(workspace.tags);
+					if (!tags.includes(folderTag)) continue;
+					writeWorkspaceTags(
+						workspace.id,
+						tags.filter((tag) => tag !== folderTag),
+					);
+				}
+				removeTagSetting(projectId, folderTag);
+				return;
+			}
 
 			// Groups interleave with ungrouped rows, so replace the deleted
 			// section's own slot with its members instead of dumping them
