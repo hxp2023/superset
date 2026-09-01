@@ -1,3 +1,4 @@
+import { SANDBOX_IMAGE_NAME } from "@superset/shared/constants";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
@@ -50,7 +51,8 @@ export const env = createEnv({
 		BLAXEL_API_KEY: z.string().min(1),
 		BLAXEL_WORKSPACE: z.string().min(1),
 		BLAXEL_REGION: z.string().min(1),
-		BLAXEL_SANDBOX_IMAGE: z.string().min(1),
+		// Override, not a requirement: the name lives in @superset/shared.
+		BLAXEL_SANDBOX_IMAGE: z.string().min(1).default(SANDBOX_IMAGE_NAME),
 		// Sandboxes report to their own Sentry project, not the host-service one:
 		// that project means the host service on people's desktops, and `release`
 		// means opposite things on the two surfaces — a version users happen to

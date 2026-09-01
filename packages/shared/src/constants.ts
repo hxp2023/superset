@@ -262,6 +262,21 @@ export const SANDBOX_WORKSPACE_PATH = "/workspace";
 export const SANDBOX_HOST_DB_PATH = "/data/host.db";
 
 /**
+ * The image every cloud workspace boots from.
+ *
+ * A constant rather than configuration because it was configuration three
+ * times over — the build named it, a deploy secret named it again, and a local
+ * .env named it a third time, with nothing checking the three agreed. A build
+ * that produced one name while the secret said another would have pointed
+ * provisioning at an image that does not exist.
+ *
+ * Deployments that need a different one set BLAXEL_SANDBOX_IMAGE, which is now
+ * an override with a correct default rather than a value that must be supplied.
+ * Rolling back is a tag, not a name.
+ */
+export const SANDBOX_IMAGE_NAME = "superset-hostsvc";
+
+/**
  * Owner of the environments the platform ships, which belong to no customer.
  *
  * A sentinel organization rather than a nullable column so the foreign key and

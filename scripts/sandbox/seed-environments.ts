@@ -1,7 +1,12 @@
-import { SHARED_ENVIRONMENT_ORGANIZATION_ID } from "@superset/shared/constants";
-import { and, eq } from "drizzle-orm";
-import { dbWs } from "./client";
-import { environments, organizations } from "./schema";
+import { db } from "../../packages/db/src/client.ts";
+import {
+	environments,
+	organizations,
+} from "../../packages/db/src/schema/index.ts";
+import {
+	SANDBOX_IMAGE_NAME,
+	SHARED_ENVIRONMENT_ORGANIZATION_ID,
+} from "../../packages/shared/src/constants.ts";
 
 /**
  * The environments the platform ships, owned by a sentinel organization nobody
@@ -13,8 +18,8 @@ import { environments, organizations } from "./schema";
  * existed when the image changed — the same drift this whole area exists to
  * avoid.
  *
- * Idempotent, and safe to run on every deploy: the image reference is the one
- * thing expected to change, so it is the one thing the upsert writes.
+ * Idempotent, and run on every deploy after migrations: the image reference is
+ * the one thing expected to change, so it is the one thing the upsert writes.
  */
 const SHARED_ORGANIZATION = {
 	id: SHARED_ENVIRONMENT_ORGANIZATION_ID,
@@ -28,11 +33,9 @@ const SHARED_ORGANIZATION = {
 export const SHARED_ENVIRONMENT_NAME = "Default";
 
 export async function seedSharedEnvironments(
-	imageRef = process.env.BLAXEL_SANDBOX_IMAGE,
-): Promise<{ seeded: boolean; imageRef?: string }> {
-	if (!imageRef) return { seeded: false };
-
-	await dbWs
+	imageRef = process.env.BLAXEL_SANDBOX_IMAGE ?? SANDBOX_IMAGE_NAME,
+): Promise<{ imageRef: string }> {
+	await db
 		.insert(organizations)
 		.values(SHARED_ORGANIZATION)
 		.onConflictDoNothing({ target: organizations.id });
@@ -40,7 +43,7 @@ export async function seedSharedEnvironments(
 	// The name is the conflict key, so renaming the shipped environment would
 	// create a second row rather than rename the first. That is deliberate:
 	// existing workspaces reference the old row by id and must keep resolving.
-	await dbWs
+	await db
 		.insert(environments)
 		.values({
 			organizationId: SHARED_ENVIRONMENT_ORGANIZATION_ID,
@@ -54,24 +57,11 @@ export async function seedSharedEnvironments(
 			set: { sourceRef: imageRef, archivedAt: null },
 		});
 
-	const [row] = await dbWs
-		.select({ id: environments.id, sourceRef: environments.sourceRef })
-		.from(environments)
-		.where(
-			and(
-				eq(environments.organizationId, SHARED_ENVIRONMENT_ORGANIZATION_ID),
-				eq(environments.name, SHARED_ENVIRONMENT_NAME),
-			),
-		);
-	return { seeded: true, imageRef: row?.sourceRef };
+	return { imageRef };
 }
 
 if (import.meta.main) {
-	const result = await seedSharedEnvironments();
-	console.log(
-		result.seeded
-			? `seeded shared environment -> ${result.imageRef}`
-			: "BLAXEL_SANDBOX_IMAGE unset; nothing seeded",
-	);
+	const { imageRef } = await seedSharedEnvironments();
+	console.log(`seeded shared environment -> ${imageRef}`);
 	process.exit(0);
 }

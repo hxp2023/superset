@@ -22,6 +22,7 @@ import { join } from "node:path";
 import { ImageInstance } from "@blaxel/core";
 import {
 	SANDBOX_CREDENTIAL_PLACEHOLDER,
+	SANDBOX_IMAGE_NAME,
 	SANDBOX_WORKSPACE_PATH,
 } from "../../packages/shared/src/constants.ts";
 
@@ -35,7 +36,7 @@ const HOST_SERVICE_PKG = join(
 
 /** Blaxel reserves 80, 443 and 8080; host-service's default is 4879. */
 const HOST_SERVICE_PORT = 4879;
-const IMAGE_NAME = process.env.SANDBOX_IMAGE_NAME ?? "superset-hostsvc";
+const IMAGE_NAME = process.env.SANDBOX_IMAGE_NAME ?? SANDBOX_IMAGE_NAME;
 
 /**
  * Read from host-service rather than hardcoded: a sandbox running a
