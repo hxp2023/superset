@@ -551,9 +551,8 @@ async function main() {
 						});
 						c?.close();
 					}
-					let previousCreatedPaneCount: number | null = null;
-					while (true) {
-						const liveCreatedPaneCount = await targets()
+					const countLiveCreatedPanes = () =>
+						targets()
 							.then(
 								(current) =>
 									current.filter(
@@ -568,17 +567,8 @@ async function main() {
 								);
 								return null;
 							});
-						if (!liveCreatedPaneCount) break;
-						if (
-							previousCreatedPaneCount !== null &&
-							liveCreatedPaneCount >= previousCreatedPaneCount
-						) {
-							failures.push(
-								`${name}: created pane count did not decrease during cleanup`,
-							);
-							break;
-						}
-						previousCreatedPaneCount = liveCreatedPaneCount;
+					let liveCreatedPaneCount = await countLiveCreatedPanes();
+					while (liveCreatedPaneCount) {
 						const closed = await closeFocusedPane(host)
 							.then(() => true)
 							.catch((error) => {
@@ -588,7 +578,27 @@ async function main() {
 								return false;
 							});
 						if (!closed) break;
-						await sleep(800);
+
+						const countBeforeClose = liveCreatedPaneCount;
+						let countAfterClose: number | null = countBeforeClose;
+						for (
+							let attempt = 0;
+							attempt < 10 &&
+							countAfterClose !== null &&
+							countAfterClose >= countBeforeClose;
+							attempt += 1
+						) {
+							await sleep(500);
+							countAfterClose = await countLiveCreatedPanes();
+						}
+						if (countAfterClose === null) break;
+						if (countAfterClose >= countBeforeClose) {
+							failures.push(
+								`${name}: created pane count did not decrease during cleanup`,
+							);
+							break;
+						}
+						liveCreatedPaneCount = countAfterClose;
 					}
 					await sleep(800);
 					await targets()
