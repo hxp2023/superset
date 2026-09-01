@@ -33,7 +33,7 @@ export function EnvironmentSecrets({
 
 	return (
 		<div className="p-6 max-w-4xl w-full">
-			<div className="mb-8 flex items-start gap-3">
+			<div className="mb-8 flex items-center gap-3">
 				<Button
 					className="h-8 w-8 shrink-0"
 					onClick={onBack}

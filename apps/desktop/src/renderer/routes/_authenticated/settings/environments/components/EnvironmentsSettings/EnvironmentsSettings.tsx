@@ -74,12 +74,12 @@ export function EnvironmentsSettings() {
 
 	return (
 		<div className="p-6 max-w-4xl w-full">
-			<div className="mb-8 flex items-start justify-between gap-4">
+			<div className="mb-8 flex items-center justify-between gap-6">
 				<div>
 					<h2 className="text-xl font-semibold">
 						<Trans id="settings.environments.title">Environments</Trans>
 					</h2>
-					<p className="text-sm text-muted-foreground mt-1">
+					<p className="text-sm text-muted-foreground mt-1 max-w-prose">
 						<Trans id="settings.environments.description">
 							The starting point a cloud workspace boots from. Variables set
 							here reach every sandbox started from it.
