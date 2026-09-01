@@ -6,7 +6,7 @@
  * Usage (dry-run by default, pass --apply to mutate):
  *   RESEND_API_KEY=... bun scripts/sync-automations.ts [--apply] [--force]
  *
- * Three hard-won rules this script encodes:
+ * Four hard-won rules this script encodes:
  * - ONLY `user.signed_up` is safe as a trigger: it fires once per user, from
  *   better-auth's `user.create.after` hook. `user.activated` fires on every
  *   workspace create and `app.first_opened` on every first-host/onboarding

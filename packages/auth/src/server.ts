@@ -327,12 +327,14 @@ export const auth = betterAuth({
 					// the Resend automation toggle.
 					//
 					// CAUTION: withholding this event withholds it from EVERY consumer,
-					// not just the activation drip. That is safe only because
-					// activation-drip is the sole automation triggering on
-					// `user.signed_up` (see sync-automations.ts). Before adding another
-					// one, split enrolment into its own event — emit `user.signed_up`
-					// unconditionally and gate an activation-only event instead — or the
-					// control arm silently drops out of that campaign too.
+					// not just the activation drip. Safe today because activation-drip
+					// is the only automation in sync-automations.ts triggering on
+					// `user.signed_up` — but that script is create-only and Resend can
+					// hold automations it never defined, so check the live account
+					// before trusting that. A second consumer means splitting enrolment
+					// first: emit `user.signed_up` unconditionally and gate an
+					// activation-only event instead, or the control arm silently drops
+					// out of that campaign too.
 					if ((await getActivationVariant(user.id)) === "test") {
 						try {
 							const { error } = await resend.events.send({
