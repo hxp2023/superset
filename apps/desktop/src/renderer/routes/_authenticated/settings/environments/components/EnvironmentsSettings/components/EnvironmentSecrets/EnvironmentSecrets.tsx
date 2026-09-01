@@ -43,8 +43,11 @@ export function EnvironmentSecrets({
 					<HiOutlineArrowLeft className="h-4 w-4" />
 				</Button>
 				<div className="min-w-0">
+					{/* Always exactly one line of text: an empty heading has no line
+					    box at all, so the header grew when the name resolved. A
+					    non-breaking space is the same height as the name. */}
 					<h2 className="text-xl font-semibold truncate">
-						{environment?.name}
+						{environment?.name ?? "\u00A0"}
 					</h2>
 					<p className="text-sm text-muted-foreground mt-1">
 						Variables set on every sandbox started from this environment.
