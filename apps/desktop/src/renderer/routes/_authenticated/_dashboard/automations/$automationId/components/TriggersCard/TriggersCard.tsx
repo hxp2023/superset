@@ -154,7 +154,7 @@ export function TriggersCard({
 								...(v2WorkspaceId && hostId
 									? {
 											targetHostId: hostId,
-											v2ProjectId: automation.v2ProjectId,
+											v2ProjectId: scope.v2ProjectId,
 										}
 									: {}),
 							})

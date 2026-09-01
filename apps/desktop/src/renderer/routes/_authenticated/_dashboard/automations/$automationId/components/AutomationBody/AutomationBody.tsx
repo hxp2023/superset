@@ -137,13 +137,16 @@ export function AutomationBody({
 		draft.triggers,
 	);
 
+	// Everything derived reads the draft, not the saved row: the pickers are
+	// scoped by these, so sourcing them from the server value made a switched
+	// device still list the old host's workspaces.
 	const searchFiles = useProjectFileSearch({
-		hostId: automation.targetHostId ?? null,
-		projectId: automation.v2ProjectId,
+		hostId: draft.targetHostId,
+		projectId: draft.v2ProjectId,
 	});
 
 	const { localHostId } = useWorkspaceHostOptions();
-	const hostId = automation.targetHostId ?? localHostId ?? null;
+	const hostId = draft.targetHostId ?? localHostId ?? null;
 	const hostUrl = useHostUrl(hostId);
 	const { agents: hostAgents, isFetched: hostAgentsFetched } =
 		useV2AgentChoices(hostUrl);
@@ -153,7 +156,7 @@ export function AutomationBody({
 	const agentMissing =
 		hostAgentsFetched &&
 		hostAgents.length > 0 &&
-		!matchAgentChoice(hostAgents, automation.agent);
+		!matchAgentChoice(hostAgents, draft.agent);
 
 	return (
 		<div className="flex-1 overflow-y-auto px-12 py-8">
