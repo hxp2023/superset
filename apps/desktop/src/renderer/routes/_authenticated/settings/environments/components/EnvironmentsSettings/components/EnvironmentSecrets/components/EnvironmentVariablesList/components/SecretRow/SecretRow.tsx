@@ -64,7 +64,7 @@ export function SecretRow({
 		} finally {
 			setIsDeleting(false);
 		}
-	}, [secret.id, secret.key, environmentId, onDeleted]);
+	}, [secret.key, environmentId, onDeleted]);
 
 	const { copyToClipboard, copied } = useCopyToClipboard(1500);
 	const handleCopy = useCallback(() => {

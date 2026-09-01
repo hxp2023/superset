@@ -85,6 +85,9 @@ export function EnvironmentVariablesList({
 		}
 	}, [environmentId]);
 
+	// The parent bumps refreshToken to force a refetch, so the effect re-runs on
+	// a value its body never reads.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: a trigger, not an input
 	useEffect(() => {
 		fetchSecrets();
 	}, [fetchSecrets, refreshToken]);

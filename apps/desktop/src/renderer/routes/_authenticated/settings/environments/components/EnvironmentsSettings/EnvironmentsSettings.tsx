@@ -20,15 +20,34 @@ import {
 } from "react-icons/hi2";
 import { useActiveOrganizationId } from "renderer/hooks/useActiveOrganizationId";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
+import {
+	isItemVisible,
+	SETTING_ITEM_ID,
+	type SettingItemId,
+} from "../../../utils/settings-search";
 import { EnvironmentSecrets } from "./components/EnvironmentSecrets";
 
-export function EnvironmentsSettings() {
+interface EnvironmentsSettingsProps {
+	visibleItems?: SettingItemId[] | null;
+}
+
+export function EnvironmentsSettings({
+	visibleItems,
+}: EnvironmentsSettingsProps) {
 	const { t } = useLingui();
 	const organizationId = useActiveOrganizationId();
 	const utils = cloudTrpc.useUtils();
 	const [showCreate, setShowCreate] = useState(false);
 	const [name, setName] = useState("");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const showList = isItemVisible(
+		SETTING_ITEM_ID.ENVIRONMENTS_LIST,
+		visibleItems,
+	);
+	const showSecrets = isItemVisible(
+		SETTING_ITEM_ID.ENVIRONMENTS_SECRETS,
+		visibleItems,
+	);
 
 	const {
 		data: environments,
@@ -71,6 +90,10 @@ export function EnvironmentsSettings() {
 			/>
 		);
 	}
+
+	// A search that matched neither of this section's items has nothing here to
+	// show; rendering the empty shell would read as "you have no environments".
+	if (!showList && !showSecrets) return null;
 
 	return (
 		<div className="p-6 max-w-4xl w-full">
