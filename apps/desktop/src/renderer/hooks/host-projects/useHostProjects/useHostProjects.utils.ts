@@ -66,6 +66,13 @@ export interface HostProjectsQueryTarget {
 	isLocal: boolean;
 }
 
+/** One host's unmerged project rows, retained for host-specific adapters. */
+export interface HostProjectRowsResult {
+	target: HostProjectsQueryTarget;
+	rows: HostProjectRow[] | undefined;
+	reachable: boolean;
+}
+
 export interface HostRowForTargets {
 	organizationId: string;
 	machineId: string;
@@ -281,11 +288,7 @@ export function applyProjectChangedEvent(
 export function mergeHostProjects({
 	hostResults,
 }: {
-	hostResults: Array<{
-		target: HostProjectsQueryTarget;
-		rows: HostProjectRow[] | undefined;
-		reachable: boolean;
-	}>;
+	hostResults: HostProjectRowsResult[];
 }): HostProjectItem[] {
 	const byKey = new Map<string, HostProjectItem>();
 

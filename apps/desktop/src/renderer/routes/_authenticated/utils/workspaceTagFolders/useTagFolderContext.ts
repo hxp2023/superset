@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useHostProjects } from "renderer/hooks/host-projects/useHostProjects";
-import { useHostTagFolders } from "renderer/hooks/host-projects/useHostTagFolders";
-import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import {
-	mergeTagFolderSettings,
-	type TagFolderContext,
-} from "./workspaceTagFolders";
+	mergeHostTagFoldersWithLegacy,
+	useHostTagFolders,
+} from "renderer/hooks/host-projects/useHostTagFolders";
+import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
+import type { TagFolderContext } from "./workspaceTagFolders";
 
 /**
  * The one presentation context every membership pass shares: host-side tag
@@ -14,13 +14,19 @@ import {
  * the same bug class as two membership derivations.
  */
 export function useTagFolderContext(): TagFolderContext {
-	const { tagFolders } = useHostTagFolders();
-	const { projects } = useHostProjects();
+	const { hostResults: tagFolderHostResults } = useHostTagFolders();
+	const { hostResults: projectHostResults } = useHostProjects();
 	const { preferences } = useV2UserPreferences();
 	const hiddenTagFolders = preferences.hiddenTagFolders;
 	return useMemo(
 		() => ({
-			tagSettings: mergeTagFolderSettings(tagFolders, projects),
+			tagSettings: mergeHostTagFoldersWithLegacy(
+				tagFolderHostResults,
+				projectHostResults,
+			).map(({ scope, ...setting }) => ({
+				projectId: scope,
+				...setting,
+			})),
 			hiddenTagsByProject: new Map(
 				Object.entries(hiddenTagFolders).map(([projectId, tags]) => [
 					projectId,
@@ -28,6 +34,6 @@ export function useTagFolderContext(): TagFolderContext {
 				]),
 			),
 		}),
-		[tagFolders, projects, hiddenTagFolders],
+		[tagFolderHostResults, projectHostResults, hiddenTagFolders],
 	);
 }

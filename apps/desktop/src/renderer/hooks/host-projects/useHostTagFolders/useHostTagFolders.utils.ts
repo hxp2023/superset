@@ -1,4 +1,7 @@
-import type { HostProjectsQueryTarget } from "../useHostProjects/useHostProjects.utils";
+import type {
+	HostProjectRowsResult,
+	HostProjectsQueryTarget,
+} from "../useHostProjects/useHostProjects.utils";
 
 /** One folder's host-side presentation, plus the scope it belongs to. */
 export interface HostTagFolderSetting {
@@ -46,4 +49,40 @@ export function mergeHostTagFolders(
 			left.scope.localeCompare(right.scope) ||
 			left.tag.localeCompare(right.tag),
 	);
+}
+
+function hostKey(target: HostProjectsQueryTarget): string {
+	return `${target.organizationId}\u0000${target.machineId}`;
+}
+
+/**
+ * Use project-snapshot settings only when that same host could not serve the
+ * canonical router. A successful canonical read is authoritative even when
+ * empty, so deleting the last setting cannot resurrect a cached legacy row.
+ * Keeping the fallback per host also preserves an old remote host's setting
+ * when a newer local replica has no row of its own.
+ */
+export function mergeHostTagFoldersWithLegacy(
+	canonicalResults: HostTagFoldersResult[],
+	projectResults: HostProjectRowsResult[],
+): HostTagFolderSetting[] {
+	const projectsByHost = new Map(
+		projectResults.map((result) => [hostKey(result.target), result]),
+	);
+	const effectiveResults = canonicalResults.map((canonical) => {
+		if (canonical.status === "ready" || canonical.status === "pending") {
+			return canonical;
+		}
+		const projectResult = projectsByHost.get(hostKey(canonical.target));
+		return {
+			...canonical,
+			settings: (projectResult?.rows ?? []).flatMap((project) =>
+				(project.tagSettings ?? []).map((setting) => ({
+					scope: project.id,
+					...setting,
+				})),
+			),
+		};
+	});
+	return mergeHostTagFolders(effectiveResults);
 }

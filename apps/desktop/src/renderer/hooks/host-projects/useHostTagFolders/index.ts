@@ -6,3 +6,4 @@ export type {
 	HostTagFolderSetting,
 	HostTagFoldersResult,
 } from "./useHostTagFolders.utils";
+export { mergeHostTagFoldersWithLegacy } from "./useHostTagFolders.utils";

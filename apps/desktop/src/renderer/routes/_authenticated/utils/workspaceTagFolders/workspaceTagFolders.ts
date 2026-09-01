@@ -69,46 +69,6 @@ export interface TagFolderSettingInput {
 	tabOrder?: number | null;
 }
 
-export interface ScopedTagFolderSettingInput {
-	scope: string;
-	tag: string;
-	displayName?: string | null;
-	color?: string | null;
-	tabOrder?: number | null;
-}
-
-export interface LegacyProjectTagSettingsInput {
-	projectKey: string;
-	tagSettings?: readonly Omit<TagFolderSettingInput, "projectId">[];
-}
-
-/**
- * Adapt project settings served by old hosts into the canonical scoped rows.
- * New `tagFolders` rows always win; both transports read the same host table
- * on new hosts, so this is a mixed-version bridge rather than a second owner.
- */
-export function mergeTagFolderSettings(
-	canonical: readonly ScopedTagFolderSettingInput[],
-	legacyProjects: readonly LegacyProjectTagSettingsInput[],
-): TagFolderSettingInput[] {
-	const byKey = new Map<string, TagFolderSettingInput>();
-	for (const project of legacyProjects) {
-		for (const setting of project.tagSettings ?? []) {
-			byKey.set(`${project.projectKey}\u0000${setting.tag}`, {
-				projectId: project.projectKey,
-				...setting,
-			});
-		}
-	}
-	for (const { scope, ...setting } of canonical) {
-		byKey.set(`${scope}\u0000${setting.tag}`, {
-			projectId: scope,
-			...setting,
-		});
-	}
-	return [...byKey.values()];
-}
-
 /**
  * Cross-cutting presentation context for the union: host-local settings
  * (display name, color, order) and the per-project hidden-tag list (a hidden
