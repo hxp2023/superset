@@ -10,13 +10,6 @@ import {
 } from "@superset/ui/dialog";
 import { Input } from "@superset/ui/input";
 import { Label } from "@superset/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@superset/ui/select";
 import { Skeleton } from "@superset/ui/skeleton";
 import { toast } from "@superset/ui/sonner";
 import { useState } from "react";
@@ -31,8 +24,6 @@ export function EnvironmentsSettings() {
 	const utils = cloudTrpc.useUtils();
 	const [showCreate, setShowCreate] = useState(false);
 	const [name, setName] = useState("");
-	const [sourceKind, setSourceKind] = useState<"image" | "fork">("image");
-	const [sourceRef, setSourceRef] = useState("");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
 	const { data: environments, isPending } = cloudTrpc.environment.list.useQuery(
@@ -45,7 +36,6 @@ export function EnvironmentsSettings() {
 			await utils.environment.list.invalidate();
 			setShowCreate(false);
 			setName("");
-			setSourceRef("");
 			toast.success(
 				t({
 					id: "settings.environments.created",
@@ -162,72 +152,16 @@ export function EnvironmentsSettings() {
 								value={name}
 							/>
 						</div>
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="environment-kind">
-								<Trans id="settings.environments.kindLabel">Source</Trans>
-							</Label>
-							<Select
-								onValueChange={(value) =>
-									setSourceKind(value as "image" | "fork")
-								}
-								value={sourceKind}
-							>
-								<SelectTrigger id="environment-kind">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="image">
-										<Trans id="settings.environments.kindImage">
-											Image — build a sandbox from a container image
-										</Trans>
-									</SelectItem>
-									<SelectItem value="fork">
-										<Trans id="settings.environments.kindFork">
-											Fork — copy a sandbox you already configured
-										</Trans>
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="environment-ref">
-								{sourceKind === "image" ? (
-									<Trans id="settings.environments.refImage">
-										Image reference
-									</Trans>
-								) : (
-									<Trans id="settings.environments.refFork">
-										Sandbox to fork
-									</Trans>
-								)}
-							</Label>
-							<Input
-								className="font-mono"
-								id="environment-ref"
-								onChange={(event) => setSourceRef(event.target.value)}
-								placeholder={
-									sourceKind === "image"
-										? "superset-hostsvc:hoockx6bbvtx"
-										: "ws-golden-monorepo"
-								}
-								value={sourceRef}
-							/>
-						</div>
 					</div>
 					<DialogFooter>
 						<Button onClick={() => setShowCreate(false)} variant="outline">
 							<Trans id="settings.environments.cancel">Cancel</Trans>
 						</Button>
 						<Button
-							disabled={!name.trim() || !sourceRef.trim() || !organizationId}
+							disabled={!name.trim() || !organizationId}
 							onClick={() => {
 								if (!organizationId) return;
-								create.mutate({
-									organizationId,
-									name: name.trim(),
-									sourceKind,
-									sourceRef: sourceRef.trim(),
-								});
+								create.mutate({ organizationId, name: name.trim() });
 							}}
 						>
 							<Trans id="settings.environments.create">Create</Trans>

@@ -3,11 +3,10 @@ import { environments } from "@superset/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { env } from "../../env";
 import { assertInternal, assertMember } from "../../lib/cloud-guards";
 import { jwtProcedure, userError } from "../../trpc";
 import { secretsRouter } from "./secrets";
-
-const sourceKind = z.enum(["image", "fork"]);
 
 export async function loadEnvironment(id: string, organizationIds: string[]) {
 	const row = await db.query.environments.findFirst({
@@ -51,14 +50,18 @@ export const environmentRouter = {
 			return loadEnvironment(input.id, ctx.organizationIds);
 		}),
 
+	/**
+	 * Only a name. The base a sandbox boots from is infrastructure we maintain,
+	 * not something anyone can usefully type — an image tag like
+	 * `superset-hostsvc:hoockx6bbvtx` is meaningless to whoever is filling in
+	 * the form. Forking sets these itself once an environment has a sandbox
+	 * worth copying.
+	 */
 	create: jwtProcedure
 		.input(
 			z.object({
 				organizationId: z.string().uuid(),
 				name: z.string().min(1).max(100),
-				sourceKind,
-				sourceRef: z.string().min(1),
-				provider: z.string().min(1).default("blaxel"),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -69,9 +72,9 @@ export const environmentRouter = {
 				.values({
 					organizationId: input.organizationId,
 					name: input.name,
-					provider: input.provider,
-					sourceKind: input.sourceKind,
-					sourceRef: input.sourceRef,
+					provider: "blaxel",
+					sourceKind: "image",
+					sourceRef: env.BLAXEL_SANDBOX_IMAGE,
 				})
 				.returning();
 			return row;
