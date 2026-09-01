@@ -110,16 +110,15 @@ export interface PageWatchChangedPayload {
 	occurredAt: number;
 }
 
+type TagFoldersChangedMessage = Extract<
+	ServerMessage,
+	{ type: "tag-folders:changed" }
+>;
+
 export interface TagFoldersChangedPayload {
 	/** The scope's full set after the change — empty when all were removed. */
-	settings: Array<{
-		scope: string;
-		tag: string;
-		displayName: string | null;
-		color: string | null;
-		tabOrder: number | null;
-	}>;
-	occurredAt: number;
+	settings: TagFoldersChangedMessage["settings"];
+	occurredAt: TagFoldersChangedMessage["occurredAt"];
 }
 
 type EventListener<T extends EventType> = T extends "fs:events"
