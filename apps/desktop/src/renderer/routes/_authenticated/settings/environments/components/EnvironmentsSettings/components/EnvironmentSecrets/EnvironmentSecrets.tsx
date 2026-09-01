@@ -34,17 +34,17 @@ export function EnvironmentSecrets({
 		id: environmentId,
 	});
 	const { data: secrets, isPending } =
-		cloudTrpc.environment.listSecrets.useQuery({ environmentId });
+		cloudTrpc.environment.secrets.list.useQuery({ environmentId });
 
 	const invalidate = async () => {
-		await utils.environment.listSecrets.invalidate({ environmentId });
+		await utils.environment.secrets.list.invalidate({ environmentId });
 	};
 
-	const setSecret = cloudTrpc.environment.setSecret.useMutation({
+	const setSecret = cloudTrpc.environment.secrets.set.useMutation({
 		onSuccess: invalidate,
 		onError: (error) => toast.error(errorMessage(error)),
 	});
-	const removeSecret = cloudTrpc.environment.removeSecret.useMutation({
+	const removeSecret = cloudTrpc.environment.secrets.remove.useMutation({
 		onSuccess: invalidate,
 		onError: (error) => toast.error(errorMessage(error)),
 	});
