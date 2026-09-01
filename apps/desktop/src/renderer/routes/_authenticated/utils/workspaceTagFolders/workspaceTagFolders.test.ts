@@ -8,6 +8,7 @@ import {
 	deriveTagFolders,
 	EMPTY_TAG_FOLDER_CONTEXT,
 	getProjectFolderTagIndex,
+	mergeTagFolderSettings,
 	mintFolderTag,
 	parseSidebarFolderKey,
 	resolveWorkspaceFolder,
@@ -18,6 +19,86 @@ import {
 
 const PROJECT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const PROJECT_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+describe("mergeTagFolderSettings", () => {
+	it("uses old-host project rows as a fallback and canonical rows when present", () => {
+		expect(
+			mergeTagFolderSettings(
+				[
+					{
+						scope: PROJECT_A,
+						tag: "api",
+						displayName: "Canonical API",
+						color: "#0000ff",
+						tabOrder: null,
+					},
+					{
+						scope: SESSIONS_TAG_SCOPE,
+						tag: "api",
+						displayName: "Sessions API",
+						color: "#00ff00",
+						tabOrder: null,
+					},
+				],
+				[
+					{
+						projectKey: PROJECT_A,
+						tagSettings: [
+							{
+								tag: "api",
+								displayName: "Legacy API",
+								color: "#ff0000",
+								tabOrder: null,
+							},
+						],
+					},
+				],
+			),
+		).toEqual([
+			{
+				projectId: PROJECT_A,
+				tag: "api",
+				displayName: "Canonical API",
+				color: "#0000ff",
+				tabOrder: null,
+			},
+			{
+				projectId: SESSIONS_TAG_SCOPE,
+				tag: "api",
+				displayName: "Sessions API",
+				color: "#00ff00",
+				tabOrder: null,
+			},
+		]);
+
+		expect(
+			mergeTagFolderSettings(
+				[],
+				[
+					{
+						projectKey: PROJECT_A,
+						tagSettings: [
+							{
+								tag: "api",
+								displayName: "Legacy API",
+								color: "#ff0000",
+								tabOrder: 2,
+							},
+						],
+					},
+				],
+			),
+		).toEqual([
+			{
+				projectId: PROJECT_A,
+				tag: "api",
+				displayName: "Legacy API",
+				color: "#ff0000",
+				tabOrder: 2,
+			},
+		]);
+	});
+});
 
 describe("deriveSessionTagFolders", () => {
 	it("uses Sessions presentation while keeping the normalized tag stable", () => {

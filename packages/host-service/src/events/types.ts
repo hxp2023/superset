@@ -141,6 +141,11 @@ export interface ProjectSnapshot {
 	color: string | null;
 	createdAt: number;
 	updatedAt: number;
+	/**
+	 * @deprecated Compatibility for desktops that predate the tagFolders
+	 * router. New consumers read tag-folder presentation from that router.
+	 */
+	tagSettings?: TagSettingSnapshot[];
 }
 
 export interface ProjectChangedMessage {

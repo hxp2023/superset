@@ -270,11 +270,11 @@ export const workspaces = sqliteTable(
 );
 
 /**
- * Presentation for a tag folder, host-side so it follows the user across
- * devices: a row exists only once someone customises the folder (same
- * lifecycle as the old local row). `tag` stays the stable slug agents
- * target; `display_name` is what the sidebar shows — which is what makes
- * rename a one-row update instead of retagging every member.
+ * Host-local presentation for a tag folder. A row exists only once someone
+ * customises the folder (same lifecycle as the old local row), beside the
+ * workspace tags it describes. `tag` stays the stable slug agents target;
+ * `display_name` is what the sidebar shows — which makes rename a one-row
+ * update instead of retagging every member.
  *
  * A folder is a (scope, tag) pair. `scope` is a project id, or the
  * `SESSIONS_TAG_SCOPE` sentinel for the project-less Sessions lane — project

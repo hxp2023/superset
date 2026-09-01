@@ -7,6 +7,7 @@ import {
 import { useCallback } from "react";
 import { useHostProjects } from "renderer/hooks/host-projects/useHostProjects";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { isMissingProcedureError } from "renderer/lib/isMissingProcedureError";
 import { terminalRuntimeRegistry } from "renderer/lib/terminal/terminal-runtime-registry";
 import { browserRuntimeRegistry } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/BrowserPane/browserRuntimeRegistry";
 import {
@@ -313,10 +314,9 @@ export function useDashboardSidebarState() {
 		[v2Workspaces],
 	);
 
-	// Folder presentation (label, color) lives host-side so it follows the
-	// user across devices; write to every host serving the project so
-	// replicas stay aligned. The project:changed broadcast re-renders every
-	// window and device.
+	// Folder presentation (label, color) is host-owned beside its workspaces.
+	// Projects can have a row on multiple serving hosts, so project writes fan
+	// out; the Sessions scope stays on the active host.
 	const { projects: hostProjects } = useHostProjects();
 	/**
 	 * Hosts to write a folder's presentation to. A project's folders go to
@@ -345,8 +345,22 @@ export function useDashboardSidebarState() {
 			},
 		) => {
 			for (const url of resolveTagFolderHostUrls(scope)) {
-				void getHostServiceClientByUrl(url)
-					.tagFolders.upsert.mutate({ scope, tag, ...patch })
+				const client = getHostServiceClientByUrl(url);
+				void client.tagFolders.upsert
+					.mutate({ scope, tag, ...patch })
+					.catch((error: unknown) => {
+						if (
+							scope !== SESSIONS_TAG_SCOPE &&
+							isMissingProcedureError(error)
+						) {
+							return client.project.setTagSetting.mutate({
+								projectId: scope,
+								tag,
+								...patch,
+							});
+						}
+						throw error;
+					})
 					.catch((error: unknown) => {
 						console.warn(
 							`[sidebar] tag setting write failed on host ${url}:`,
@@ -360,8 +374,21 @@ export function useDashboardSidebarState() {
 	const removeTagSetting = useCallback(
 		(scope: string, tag: string) => {
 			for (const url of resolveTagFolderHostUrls(scope)) {
-				void getHostServiceClientByUrl(url)
-					.tagFolders.delete.mutate({ scope, tag })
+				const client = getHostServiceClientByUrl(url);
+				void client.tagFolders.delete
+					.mutate({ scope, tag })
+					.catch((error: unknown) => {
+						if (
+							scope !== SESSIONS_TAG_SCOPE &&
+							isMissingProcedureError(error)
+						) {
+							return client.project.deleteTagSetting.mutate({
+								projectId: scope,
+								tag,
+							});
+						}
+						throw error;
+					})
 					.catch((error: unknown) => {
 						console.warn(
 							`[sidebar] tag setting delete failed on host ${url}:`,
@@ -622,8 +649,7 @@ export function useDashboardSidebarState() {
 				color: randomColor,
 				tag,
 			});
-			// Seed the host-side presentation so the typed casing and colour
-			// follow the user to every device.
+			// Seed presentation beside the host-owned membership tags.
 			writeTagSetting(projectId, tag, {
 				displayName: name,
 				color: randomColor,
@@ -665,8 +691,7 @@ export function useDashboardSidebarState() {
 			if (!projectId) return;
 			// One row on the host: the tag stays the stable slug agents target,
 			// the display name is what the sidebar shows — no member retagging,
-			// nothing to half-land on a flaky host, and the label follows the
-			// user to every device.
+			// nothing to half-land on a flaky host.
 			writeTagSetting(projectId, currentTag, { displayName: trimmed });
 		},
 		[collections, writeTagSetting],
@@ -679,7 +704,7 @@ export function useDashboardSidebarState() {
 			const tag = normalizeWorkspaceTag(existing?.tag) ?? parsed?.tag ?? null;
 			const projectId = existing?.projectId ?? parsed?.projectId;
 			if (tag !== null && projectId) {
-				// Host-side so the colour follows the user across devices.
+				// Host-side beside the folder's membership tags.
 				writeTagSetting(projectId, tag, { color });
 				return;
 			}

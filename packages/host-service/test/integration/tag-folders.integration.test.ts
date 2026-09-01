@@ -32,6 +32,78 @@ describe("tag folders router integration", () => {
 		expect(rows).toHaveLength(2);
 	});
 
+	test("keeps the deprecated project API on the canonical folder table", async () => {
+		host = await createTestHost();
+		const project = seedProject(host, { repoPath: "/tmp/legacy-tag-folder" });
+		const sentMessages: string[] = [];
+		host.eventBus.handleOpen({
+			readyState: 1,
+			send(data: string) {
+				sentMessages.push(data);
+			},
+			close() {},
+		});
+
+		await host.trpc.project.setTagSetting.mutate({
+			projectId: project.id,
+			tag: " API ",
+			displayName: "Legacy API",
+			color: "#ff0000",
+		});
+
+		expect(await host.trpc.tagFolders.list.query()).toEqual([
+			{
+				scope: project.id,
+				tag: "api",
+				displayName: "Legacy API",
+				color: "#ff0000",
+				tabOrder: null,
+			},
+		]);
+		expect((await host.trpc.project.list.query())[0]?.tagSettings).toEqual([
+			{
+				tag: "api",
+				displayName: "Legacy API",
+				color: "#ff0000",
+				tabOrder: null,
+			},
+		]);
+		expect(sentMessages.map((message) => JSON.parse(message))).toContainEqual({
+			type: "project:changed",
+			projectId: project.id,
+			eventType: "updated",
+			project: expect.objectContaining({
+				id: project.id,
+				tagSettings: [
+					{
+						tag: "api",
+						displayName: "Legacy API",
+						color: "#ff0000",
+						tabOrder: null,
+					},
+				],
+			}),
+			occurredAt: expect.any(Number),
+		});
+
+		sentMessages.length = 0;
+		await host.trpc.project.deleteTagSetting.mutate({
+			projectId: project.id,
+			tag: "api",
+		});
+		expect(await host.trpc.tagFolders.list.query()).toEqual([]);
+		expect(sentMessages.map((message) => JSON.parse(message))).toContainEqual({
+			type: "project:changed",
+			projectId: project.id,
+			eventType: "updated",
+			project: expect.objectContaining({
+				id: project.id,
+				tagSettings: [],
+			}),
+			occurredAt: expect.any(Number),
+		});
+	});
+
 	test("rejects arbitrary strings and nonexistent project UUIDs", async () => {
 		host = await createTestHost();
 		await expect(

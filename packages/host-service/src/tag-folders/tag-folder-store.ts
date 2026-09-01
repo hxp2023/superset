@@ -94,11 +94,10 @@ function broadcast(
 }
 
 /**
- * Merge-upsert one folder's presentation and broadcast the scope so every
- * device re-renders. Absent patch fields keep their stored value; a row is
- * created on first customisation (never up front). Making the label a row
- * here is what turns rename into ONE update — the tag stays the stable slug
- * agents target.
+ * Merge-upsert one folder's presentation and broadcast the scope to connected
+ * renderers. Absent patch fields keep their stored value; a row is created on
+ * first customisation (never up front). Making the label a row here is what
+ * turns rename into ONE update — the tag stays the stable slug agents target.
  *
  * The router validates that project scopes exist before calling this store;
  * the Sessions lane is the one valid scope with no project behind it.

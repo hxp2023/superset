@@ -24,10 +24,10 @@ export interface UseHostTagFoldersResult {
 }
 
 /**
- * The tag-folder read path: fan out `tagFolders.list` to every known host,
- * retain each host's readiness, and deterministically merge replicated rows.
- * Folders travel on their own channel rather than riding project snapshots,
- * because the Sessions lane has no project to ride on.
+ * The tag-folder read path: query each known host that can contribute sidebar
+ * workspaces, retain its readiness, and reconcile project scopes served by
+ * more than one host. Folders travel on their own channel rather than riding
+ * project snapshots, because the host-local Sessions lane has no project.
  *
  * Deliberately lighter than `useHostProjects`: no IndexedDB snapshot. These
  * rows are presentation-only, so a folder that renders with its default name

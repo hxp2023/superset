@@ -34,7 +34,7 @@ const result = (
 });
 
 describe("mergeHostTagFolders", () => {
-	test("deduplicates replicas and prefers the local host regardless of input order", () => {
+	test("deduplicates project rows and prefers the local host regardless of input order", () => {
 		const remote = result("remote", false, [setting("#ff0000")]);
 		const local = result("local", true, [setting("#0000ff")]);
 		expect(mergeHostTagFolders([remote, local])).toEqual([setting("#0000ff")]);
