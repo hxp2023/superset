@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type {
 	FileTreeDirectoryHandle,
 	FileTreeRowDecoration,
@@ -9,6 +10,7 @@ import {
 	FileTree as PierreFileTree,
 	useFileTree as usePierreFileTree,
 } from "@pierre/trees/react";
+import { errorMessage } from "@superset/i18n/errors";
 import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { workspaceTrpc } from "@superset/workspace-client";
@@ -107,6 +109,7 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 	onOpenFile,
 	onOpenInEditor,
 }: ChangesTreeViewProps) {
+	const { t } = useLingui();
 	// A changeset can contain a path that is both a file and a directory of
 	// other entries (e.g. same-named file deleted + directory added). Pierre
 	// throws on that shape, so colliding file entries get disambiguated tree
@@ -319,10 +322,17 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 		onSuccess: () => {
 			void utils.git.getStatus.invalidate({ workspaceId });
 			void utils.git.getDiff.invalidate({ workspaceId });
-			void utils.git.getDiffBulk.invalidate({ workspaceId });
 		},
 		onError: (err) => {
-			toast.error("Couldn't discard changes", { description: err.message });
+			toast.error(
+				t({
+					id: "workspace.changesTreeView.discardFailed",
+					message: "Couldn't discard changes",
+				}),
+				{
+					description: errorMessage(err),
+				},
+			);
 		},
 	});
 
@@ -376,7 +386,10 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 				<TooltipTrigger asChild>
 					<button
 						type="button"
-						aria-label="Discard changes"
+						aria-label={t({
+							id: "workspace.changesTreeView.discardChangesAria",
+							message: "Discard changes",
+						})}
 						className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-destructive"
 						onClick={(e) => {
 							e.stopPropagation();
@@ -386,7 +399,11 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 						<Undo2 className="size-3.5" />
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="top">Discard changes</TooltipContent>
+				<TooltipContent side="top">
+					<Trans id="workspace.changesTreeView.discardChangesTooltip">
+						Discard changes
+					</Trans>
+				</TooltipContent>
 			</Tooltip>
 		);
 	};
@@ -429,15 +446,39 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 					onOpenChange={(open) => !open && setDiscardTarget(null)}
 					title={
 						discardIsDelete
-							? `Delete "${discardBasename}"?`
-							: `Discard changes to "${discardBasename}"?`
+							? t({
+									id: "workspace.changesTreeView.deleteConfirmTitle",
+									message: `Delete "${discardBasename}"?`,
+								})
+							: t({
+									id: "workspace.changesTreeView.discardConfirmTitle",
+									message: `Discard changes to "${discardBasename}"?`,
+								})
 					}
 					description={
 						discardIsDelete
-							? "This will permanently delete this file. This action cannot be undone."
-							: "This will revert all changes to this file. This action cannot be undone."
+							? t({
+									id: "workspace.changesTreeView.deleteConfirmBody",
+									message:
+										"This will permanently delete this file. This action cannot be undone.",
+								})
+							: t({
+									id: "workspace.changesTreeView.discardConfirmBody",
+									message:
+										"This will revert all changes to this file. This action cannot be undone.",
+								})
 					}
-					confirmLabel={discardIsDelete ? "Delete" : "Discard"}
+					confirmLabel={
+						discardIsDelete
+							? t({
+									id: "workspace.changesTreeView.deleteConfirmAction",
+									message: "Delete",
+								})
+							: t({
+									id: "workspace.changesTreeView.discardConfirmAction",
+									message: "Discard",
+								})
+					}
 					onConfirm={() => {
 						const target = discardTarget;
 						setDiscardTarget(null);

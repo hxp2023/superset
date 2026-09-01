@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import {
@@ -37,6 +38,10 @@ interface DiffViewToolbarProps {
  * surface renders from — so a toggle made here carries across surfaces
  * instead of silently overriding the user's saved preference with a local
  * default.
+ *
+ * Message ids stay under dashboard.pullRequests.codeTab.* — this markup
+ * moved here verbatim from PullRequestCodeTab, and keeping the ids keeps
+ * every existing translation valid.
  */
 export function DiffViewToolbar({
 	fileCount,
@@ -46,6 +51,7 @@ export function DiffViewToolbar({
 	onToggleCollapseAll,
 	commentNav,
 }: DiffViewToolbarProps) {
+	const { t } = useLingui();
 	const diffStyle = useSettings((s) => s.diffStyle);
 	const updateSetting = useSettings((s) => s.update);
 
@@ -63,11 +69,23 @@ export function DiffViewToolbar({
 				<button
 					type="button"
 					onClick={onToggleTree}
-					aria-label={isTreeCollapsed ? "Show file tree" : "Hide file tree"}
+					aria-label={
+						isTreeCollapsed
+							? t({
+									id: "dashboard.pullRequests.codeTab.showFileTree",
+									message: "Show file tree",
+								})
+							: t({
+									id: "dashboard.pullRequests.codeTab.hideFileTree",
+									message: "Hide file tree",
+								})
+					}
 					className="flex items-center gap-1.5 rounded-md bg-fill-hover px-1.5 py-1 text-muted-foreground transition-colors hover:bg-fill-selected hover:text-foreground"
 				>
 					<LuFiles className="size-3.5 shrink-0" strokeWidth={1.5} />
-					<span className="text-[11px] font-medium">Files</span>
+					<span className="text-[11px] font-medium">
+						<Trans id="dashboard.pullRequests.codeTab.files">Files</Trans>
+					</span>
 					<span className="text-[11px] tabular-nums text-muted-foreground/70">
 						{fileCount}
 					</span>
@@ -78,7 +96,15 @@ export function DiffViewToolbar({
 							type="button"
 							onClick={onToggleCollapseAll}
 							aria-label={
-								areAllFilesCollapsed ? "Expand all files" : "Collapse all files"
+								areAllFilesCollapsed
+									? t({
+											id: "dashboard.pullRequests.codeTab.expandAllFiles",
+											message: "Expand all files",
+										})
+									: t({
+											id: "dashboard.pullRequests.codeTab.collapseAllFiles",
+											message: "Collapse all files",
+										})
 							}
 							className="flex items-center justify-center rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
 						>
@@ -90,7 +116,15 @@ export function DiffViewToolbar({
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="bottom">
-						{areAllFilesCollapsed ? "Expand all files" : "Collapse all files"}
+						{areAllFilesCollapsed ? (
+							<Trans id="dashboard.pullRequests.codeTab.expandAllFiles">
+								Expand all files
+							</Trans>
+						) : (
+							<Trans id="dashboard.pullRequests.codeTab.collapseAllFiles">
+								Collapse all files
+							</Trans>
+						)}
 					</TooltipContent>
 				</Tooltip>
 			</div>
@@ -103,13 +137,20 @@ export function DiffViewToolbar({
 									<button
 										type="button"
 										onClick={commentNav.onPrev}
-										aria-label="Previous comment"
+										aria-label={t({
+											id: "dashboard.pullRequests.codeTab.previousComment",
+											message: "Previous comment",
+										})}
 										className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
 									>
 										<LuChevronUp className="size-3.5" strokeWidth={1.5} />
 									</button>
 								</TooltipTrigger>
-								<TooltipContent side="bottom">Previous comment</TooltipContent>
+								<TooltipContent side="bottom">
+									<Trans id="dashboard.pullRequests.codeTab.previousComment">
+										Previous comment
+									</Trans>
+								</TooltipContent>
 							</Tooltip>
 							<span className="min-w-[3ch] text-center text-[11px] tabular-nums text-muted-foreground">
 								{commentNav.focusedIndex != null
@@ -122,13 +163,20 @@ export function DiffViewToolbar({
 									<button
 										type="button"
 										onClick={commentNav.onNext}
-										aria-label="Next comment"
+										aria-label={t({
+											id: "dashboard.pullRequests.codeTab.nextComment",
+											message: "Next comment",
+										})}
 										className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
 									>
 										<LuChevronDown className="size-3.5" strokeWidth={1.5} />
 									</button>
 								</TooltipTrigger>
-								<TooltipContent side="bottom">Next comment</TooltipContent>
+								<TooltipContent side="bottom">
+									<Trans id="dashboard.pullRequests.codeTab.nextComment">
+										Next comment
+									</Trans>
+								</TooltipContent>
 							</Tooltip>
 						</div>
 						<div className="mx-0.5 h-4 w-px bg-border" />
@@ -139,28 +187,42 @@ export function DiffViewToolbar({
 						<button
 							type="button"
 							onClick={() => updateSetting("diffStyle", "unified")}
-							aria-label="Unified view"
+							aria-label={t({
+								id: "dashboard.pullRequests.codeTab.unifiedView",
+								message: "Unified view",
+							})}
 							aria-pressed={diffStyle === "unified"}
 							className={toggleClass(diffStyle === "unified")}
 						>
 							<LuRows2 className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Unified view</TooltipContent>
+					<TooltipContent side="bottom">
+						<Trans id="dashboard.pullRequests.codeTab.unifiedView">
+							Unified view
+						</Trans>
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<button
 							type="button"
 							onClick={() => updateSetting("diffStyle", "split")}
-							aria-label="Split view"
+							aria-label={t({
+								id: "dashboard.pullRequests.codeTab.splitView",
+								message: "Split view",
+							})}
 							aria-pressed={diffStyle === "split"}
 							className={toggleClass(diffStyle === "split")}
 						>
 							<LuColumns2 className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Split view</TooltipContent>
+					<TooltipContent side="bottom">
+						<Trans id="dashboard.pullRequests.codeTab.splitView">
+							Split view
+						</Trans>
+					</TooltipContent>
 				</Tooltip>
 			</div>
 		</div>

@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { cn } from "@superset/ui/utils";
 import { LuChevronRight } from "react-icons/lu";
 
@@ -9,12 +10,15 @@ interface DiffFileCollapseButtonProps {
 /**
  * Per-file collapse chevron rendered into a card-styled diff header's prefix
  * slot (renderHeaderPrefix). stopPropagation keeps the toggle from also
- * triggering Pierre's own header click handling.
+ * triggering Pierre's own header click handling. Message ids stay under
+ * dashboard.pullRequests.codeTab.* — this button moved here verbatim from
+ * PullRequestCodeTab, and keeping the ids keeps existing translations valid.
  */
 export function DiffFileCollapseButton({
 	collapsed,
 	onToggle,
 }: DiffFileCollapseButtonProps) {
+	const { t } = useLingui();
 	return (
 		<button
 			type="button"
@@ -22,7 +26,17 @@ export function DiffFileCollapseButton({
 				e.stopPropagation();
 				onToggle();
 			}}
-			aria-label={collapsed ? "Expand file" : "Collapse file"}
+			aria-label={
+				collapsed
+					? t({
+							id: "dashboard.pullRequests.codeTab.expandFile",
+							message: "Expand file",
+						})
+					: t({
+							id: "dashboard.pullRequests.codeTab.collapseFile",
+							message: "Collapse file",
+						})
+			}
 			className="flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
 		>
 			<LuChevronRight

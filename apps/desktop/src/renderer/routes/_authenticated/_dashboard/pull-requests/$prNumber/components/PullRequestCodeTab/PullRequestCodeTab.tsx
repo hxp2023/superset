@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type {
 	CodeViewItem,
 	CodeViewOptions,
@@ -7,6 +8,7 @@ import type {
 import { parsePatchFiles } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
 import { FileTree as PierreFileTree, useFileTree } from "@pierre/trees/react";
+import { errorMessage } from "@superset/i18n/errors";
 import { sanitizePromptForPty } from "@superset/shared/agent-prompt-launch";
 import { toast } from "@superset/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -178,6 +180,7 @@ export function PullRequestCodeTab({
 	hostUrl,
 	hostId,
 }: PullRequestCodeTabProps) {
+	const { t } = useLingui();
 	// Card look (rounded header/body pairs, gap between files, PR-row
 	// additions/deletions colors, app background instead of the terminal
 	// theme's) comes from the shared card theme hook — the same one the
@@ -325,11 +328,20 @@ export function PullRequestCodeTab({
 		if (!threadsData?.fetchFailed) return;
 		if (lastWarnedThreadsFetchedAt.current === threadsUpdatedAt) return;
 		lastWarnedThreadsFetchedAt.current = threadsUpdatedAt;
-		toast.error("Couldn't load review comments", {
-			description:
-				"The diff is still up to date — only comments failed to load.",
-		});
-	}, [threadsData?.fetchFailed, threadsUpdatedAt]);
+		toast.error(
+			t({
+				id: "dashboard.pullRequests.codeTab.loadCommentsFailed",
+				message: "Couldn't load review comments",
+			}),
+			{
+				description: t({
+					id: "dashboard.pullRequests.codeTab.loadCommentsFailedHint",
+					message:
+						"The diff is still up to date — only comments failed to load.",
+				}),
+			},
+		);
+	}, [threadsData?.fetchFailed, threadsUpdatedAt, t]);
 	// A single useMutation instance is shared across every thread rendered
 	// in the diff (one component, called once), so `.isPending`/`.variables`
 	// only ever reflect the most recently *started* call — if two threads
@@ -360,9 +372,15 @@ export function PullRequestCodeTab({
 			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
 		},
 		onError: (mutationError) => {
-			toast.error("Couldn't update thread", {
-				description: mutationError.message,
-			});
+			toast.error(
+				t({
+					id: "dashboard.pullRequests.codeTab.updateThreadFailed",
+					message: "Couldn't update thread",
+				}),
+				{
+					description: errorMessage(mutationError),
+				},
+			);
 		},
 	});
 	const [pendingReplyCommentIds, setPendingReplyCommentIds] = useState<
@@ -391,9 +409,15 @@ export function PullRequestCodeTab({
 			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
 		},
 		onError: (mutationError) => {
-			toast.error("Couldn't post reply", {
-				description: mutationError.message,
-			});
+			toast.error(
+				t({
+					id: "dashboard.pullRequests.codeTab.postReplyFailed",
+					message: "Couldn't post reply",
+				}),
+				{
+					description: errorMessage(mutationError),
+				},
+			);
 		},
 	});
 	const linkedWorkspaceQueryKey = [
@@ -483,13 +507,24 @@ export function PullRequestCodeTab({
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: linkedWorkspaceQueryKey });
-			toast.success("Sent to agent");
+			toast.success(
+				t({
+					id: "dashboard.pullRequests.codeTab.sentToAgent",
+					message: "Sent to agent",
+				}),
+			);
 			closeComposer();
 		},
 		onError: (mutationError) => {
-			toast.error("Couldn't send comment", {
-				description: mutationError.message,
-			});
+			toast.error(
+				t({
+					id: "dashboard.pullRequests.codeTab.sendCommentFailed",
+					message: "Couldn't send comment",
+				}),
+				{
+					description: errorMessage(mutationError),
+				},
+			);
 		},
 	});
 
@@ -536,7 +571,7 @@ export function PullRequestCodeTab({
 		} catch (err) {
 			return {
 				files: [] as ParsedFileDiff[],
-				error: err instanceof Error ? err.message : "Failed to parse diff",
+				error: errorMessage(err, "Failed to parse diff"),
 			};
 		}
 	}, [data?.patch]);
@@ -784,7 +819,13 @@ export function PullRequestCodeTab({
 		return (
 			<div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
 				<div className="flex flex-1 items-center justify-center">
-					<WorkItemDetailState message="Loading diff…" isLoading />
+					<WorkItemDetailState
+						message={t({
+							id: "dashboard.pullRequests.codeTab.loadingDiff",
+							message: "Loading diff…",
+						})}
+						isLoading
+					/>
 				</div>
 			</div>
 		);
@@ -809,7 +850,10 @@ export function PullRequestCodeTab({
 			<div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
 				<div className="flex flex-1 items-center justify-center">
 					<WorkItemDetailState
-						message={`Couldn't parse this diff: ${patchParseError}`}
+						message={t({
+							id: "dashboard.pullRequests.codeTab.parseDiffFailed",
+							message: `Couldn't parse this diff: ${patchParseError}`,
+						})}
 						isError
 						onRetry={() => void refetch()}
 					/>
@@ -822,7 +866,9 @@ export function PullRequestCodeTab({
 		return (
 			<div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
 				<div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-muted-foreground">
-					No changes to display.
+					<Trans id="dashboard.pullRequests.codeTab.noChanges">
+						No changes to display.
+					</Trans>
 				</div>
 			</div>
 		);
@@ -902,8 +948,14 @@ export function PullRequestCodeTab({
 										key={`${metadata.path}:${metadata.startLine}-${metadata.endLine}`}
 										contextLabel={
 											metadata.startLine === metadata.endLine
-												? `Line ${metadata.startLine}`
-												: `Lines ${metadata.startLine}–${metadata.endLine}`
+												? t({
+														id: "dashboard.pullRequests.codeTab.lineContext",
+														message: `Line ${metadata.startLine}`,
+													})
+												: t({
+														id: "dashboard.pullRequests.codeTab.linesContext",
+														message: `Lines ${metadata.startLine}–${metadata.endLine}`,
+													})
 										}
 										hostUrl={hostUrl}
 										linkedWorkspaceId={linkedWorkspaceId}

@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
@@ -17,6 +18,7 @@ interface DiffPanePRLinkProps {
  * without one.
  */
 export function DiffPanePRLink({ workspaceId }: DiffPanePRLinkProps) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const { workspace } = useWorkspace();
 	// Same query key useDiffAnnotations polls at 10s from inside the pane, so
@@ -56,14 +58,21 @@ export function DiffPanePRLink({ workspaceId }: DiffPanePRLinkProps) {
 								search: { project: projectId },
 							});
 						}}
-						aria-label={`Open pull request #${pr.number}`}
+						aria-label={t({
+							id: "workspace.diffPane.openPullRequestAria",
+							message: `Open pull request #${pr.number}`,
+						})}
 						className="flex items-center gap-1 rounded p-1 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
 					>
 						<PRIcon state={state} className="size-3.5" />
 						<span className="text-[11px] tabular-nums">#{pr.number}</span>
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Open pull request</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans id="workspace.diffPane.openPullRequest">
+						Open pull request
+					</Trans>
+				</TooltipContent>
 			</Tooltip>
 			{/* Rendered here, not by the parent, so no stray divider shows when
 			    the link is hidden (no PR / session workspace). */}
