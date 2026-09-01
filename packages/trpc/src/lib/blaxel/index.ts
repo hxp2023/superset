@@ -3,6 +3,7 @@ export {
 	mintPreviewAccess,
 	type PreviewAccess,
 	type ProvisionedSandbox,
+	promoteSandboxToEnvironment,
 	provisionSandbox,
 } from "./blaxel";
 export {

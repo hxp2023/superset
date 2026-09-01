@@ -1,9 +1,10 @@
 import { db, dbWs } from "@superset/db/client";
-import { environments } from "@superset/db/schema";
+import { cloudWorkspaces, environments } from "@superset/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
+import { promoteSandboxToEnvironment } from "../../lib/blaxel";
 import { assertInternal, assertMember } from "../../lib/cloud-guards";
 import { jwtProcedure, userError } from "../../trpc";
 import { secretsRouter } from "./secrets";
@@ -75,6 +76,63 @@ export const environmentRouter = {
 					provider: "blaxel",
 					sourceKind: "image",
 					sourceRef: env.BLAXEL_SANDBOX_IMAGE,
+				})
+				.returning();
+			return row;
+		}),
+
+	/**
+	 * Turns a workspace someone configured into a reusable starting point.
+	 *
+	 * Forks the workspace's sandbox into one the environment owns rather than
+	 * pointing at the workspace itself: the workspace keeps running and can be
+	 * deleted later, and the copy stays frozen because nothing runs in it. A
+	 * live source would instead be re-copied, mid-work, on every provision.
+	 */
+	promote: jwtProcedure
+		.input(
+			z.object({
+				cloudWorkspaceId: z.string().uuid(),
+				name: z.string().min(1).max(100),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			assertInternal(ctx.email);
+			const workspace = await db.query.cloudWorkspaces.findFirst({
+				where: eq(cloudWorkspaces.id, input.cloudWorkspaceId),
+			});
+			if (!workspace) {
+				throw userError({
+					code: "NOT_FOUND",
+					message: "Cloud workspace not found",
+					i18nKey: "serverError.environment.cloudWorkspaceNotFound",
+				});
+			}
+			assertMember(ctx.organizationIds, workspace.organizationId);
+			if (workspace.status !== "ready") {
+				throw userError({
+					code: "PRECONDITION_FAILED",
+					message: "Only a ready workspace can become an environment",
+					i18nKey: "serverError.environment.workspaceNotReady",
+				});
+			}
+
+			const environmentId = crypto.randomUUID();
+			const goldenName = `env-${environmentId.replaceAll("-", "").slice(0, 24)}`;
+			await promoteSandboxToEnvironment({
+				sourceSandbox: workspace.providerSandboxId,
+				goldenName,
+			});
+
+			const [row] = await dbWs
+				.insert(environments)
+				.values({
+					id: environmentId,
+					organizationId: workspace.organizationId,
+					name: input.name,
+					provider: workspace.provider,
+					sourceKind: "fork",
+					sourceRef: goldenName,
 				})
 				.returning();
 			return row;

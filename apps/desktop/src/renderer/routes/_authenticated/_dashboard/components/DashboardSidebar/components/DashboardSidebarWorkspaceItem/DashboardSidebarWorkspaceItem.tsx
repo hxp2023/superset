@@ -1,4 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
+import { errorMessage } from "@superset/i18n/errors";
+import { toast } from "@superset/ui/sonner";
 import {
 	type KeyboardEvent,
 	type MouseEvent,
@@ -8,6 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { cloudTrpc } from "renderer/lib/cloud-trpc";
 import { useOptimisticActions } from "renderer/routes/_authenticated/hooks/useOptimisticActions";
 import { RenameBranchDialog } from "renderer/screens/main/components/WorkspaceSidebar/WorkspaceListItem/components";
 import {
@@ -58,6 +61,17 @@ export function DashboardSidebarWorkspaceItem({
 	pinnedContext,
 }: DashboardSidebarWorkspaceItemProps) {
 	const { t } = useLingui();
+	const promoteToEnvironment = cloudTrpc.environment.promote.useMutation({
+		onSuccess: (created) =>
+			toast.success(
+				t({
+					id: "dashboard.sidebar.promotedToEnvironment",
+					message: `Saved "${created?.name}" as an environment`,
+				}),
+			),
+		onError: (error) => toast.error(errorMessage(error)),
+	});
+
 	const {
 		id,
 		projectId,
@@ -267,6 +281,15 @@ export function DashboardSidebarWorkspaceItem({
 							isLocalWorkspace={hostType === "local-device"}
 							isLocalMainWorkspace={
 								isMainWorkspace && hostType === "local-device"
+							}
+							onPromoteToEnvironment={
+								hostType === "cloud"
+									? () =>
+											promoteToEnvironment.mutate({
+												cloudWorkspaceId: id,
+												name: workspace.name,
+											})
+									: undefined
 							}
 							isPinned={workspace.isPinned}
 							onTogglePin={handleTogglePin}

@@ -200,6 +200,52 @@ export async function provisionSandbox(args: {
 	return { providerSandboxId: args.name, sandboxUrl };
 }
 
+/**
+ * Copies a workspace's sandbox into a dedicated sandbox an environment owns,
+ * and strips everything that belonged to the workspace it came from.
+ *
+ * The source keeps running and can be deleted later; the copy is frozen
+ * because nothing runs in it. Each step below is a silent wrong answer if
+ * skipped — a fork inherits processes, memory and filesystem, so anything the
+ * source identified itself with would be adopted by every workspace forked
+ * from this environment.
+ */
+export async function promoteSandboxToEnvironment(args: {
+	sourceSandbox: string;
+	goldenName: string;
+}): Promise<string> {
+	configureBlaxel();
+	const source = await SandboxInstance.get(args.sourceSandbox);
+	await source.fork(args.goldenName);
+
+	const golden = await SandboxInstance.get(args.goldenName);
+
+	// `stop` rather than killing the pid: the fork inherits the process spec,
+	// restartOnFailure included, so a killed host-service would come straight
+	// back — still holding the source workspace's identity.
+	for (const name of ["host-service", "diag-start"]) {
+		await golden.process.stop(name).catch(() => {});
+	}
+
+	await golden.process.exec({
+		name: "prepare-environment",
+		command: [
+			// host.db carries the source's seeded project and workspace rows;
+			// without this every fork serves that workspace's identity.
+			"rm -f /data/host.db /data/host.db-wal /data/host.db-shm",
+			// Written by start.sh on first boot. Left in place, a fork skips its
+			// own branch checkout and serves whatever the source had checked out.
+			"rm -f /data/.workspace-bootstrapped",
+			// Per-repo installation token belonging to the source workspace.
+			"rm -rf /root/.superset/host /root/.gitconfig",
+			"pkill -f pty-daemon.js || true",
+		].join(" && "),
+		waitForCompletion: true,
+	} as never);
+
+	return args.goldenName;
+}
+
 export interface PreviewAccess {
 	url: string;
 	token: string;
