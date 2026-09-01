@@ -2,31 +2,6 @@ import * as Sentry from "@sentry/node";
 
 let initialized = false;
 
-/**
- * A cloud sandbox reports to its own Sentry project, and its failures split
- * across two of them: provisioning fails in the API, the runtime fails in
- * here, and a user sees one broken workspace either way. `cloud_workspace_id`
- * is what stitches the two halves back together, so it is the tag that makes
- * the separate projects safe rather than a nicety.
- *
- * Read from the environment rather than passed in: these are the same values
- * the sandbox already configures itself from on boot, and threading them
- * through `initSentry`'s signature would make every local host carry sandbox
- * parameters it has no use for.
- */
-function sandboxTags(): Record<string, string> {
-	if (process.env.SUPERSET_HOST_RUN_MODE !== "sandbox") return {};
-	const workspaceId = process.env.SUPERSET_SANDBOX_WORKSPACE_ID;
-	const imageTag = process.env.SUPERSET_SANDBOX_IMAGE_TAG;
-	const provider = process.env.SUPERSET_SANDBOX_PROVIDER;
-	return {
-		run_mode: "sandbox",
-		...(workspaceId ? { cloud_workspace_id: workspaceId } : {}),
-		...(imageTag ? { image_tag: imageTag } : {}),
-		...(provider ? { provider } : {}),
-	};
-}
-
 export function initSentry(options: { organizationId?: string }): void {
 	if (initialized) return;
 	const dsn = process.env.HOST_SERVICE_SENTRY_DSN;
@@ -44,12 +19,23 @@ export function initSentry(options: { organizationId?: string }): void {
 			}),
 		],
 		initialScope: {
+			// Undefined values are dropped when the event is serialised to JSON,
+			// so these need no guards: a desktop host simply carries none of the
+			// sandbox tags, and `run_mode` reports whatever mode it is actually
+			// in rather than a hardcoded one.
+			//
+			// A sandbox's failures split across two Sentry projects —
+			// provisioning fails in the API, the runtime fails in here — and a
+			// user sees one broken workspace either way. `cloud_workspace_id` is
+			// what stitches the halves back together, so it is the tag that makes
+			// the separate projects safe rather than a nicety.
 			tags: {
 				service: "host-service",
-				...(options.organizationId
-					? { organization_id: options.organizationId }
-					: {}),
-				...sandboxTags(),
+				organization_id: options.organizationId,
+				run_mode: process.env.SUPERSET_HOST_RUN_MODE,
+				cloud_workspace_id: process.env.SUPERSET_SANDBOX_WORKSPACE_ID,
+				image_tag: process.env.SUPERSET_SANDBOX_IMAGE_TAG,
+				provider: process.env.SUPERSET_SANDBOX_PROVIDER,
 			},
 		},
 	});
