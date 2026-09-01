@@ -56,9 +56,13 @@ export const tagFoldersRouter = router({
 					...(input.tabOrder !== undefined ? { tabOrder: input.tabOrder } : {}),
 				},
 			);
-			// Only an unnormalizable tag returns undefined; zod already rejects
-			// empty input, so this is a whitespace-only or over-length tag.
-			return { tagSettings: settings ?? [] };
+			if (settings === undefined) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Validated tag failed normalization",
+				});
+			}
+			return { tagSettings: settings };
 		}),
 
 	/** Drop one folder's presentation row (folder deletion). Idempotent. */
@@ -76,6 +80,12 @@ export const tagFoldersRouter = router({
 				input.scope,
 				input.tag,
 			);
-			return { tagSettings: settings ?? [] };
+			if (settings === undefined) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Validated tag failed normalization",
+				});
+			}
+			return { tagSettings: settings };
 		}),
 });
