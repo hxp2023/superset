@@ -84,7 +84,10 @@ const CLAUDE_SHARE: SessionShareSpec = {
 const CODEX_SHARE: SessionShareSpec = {
 	dirs: ["sessions", "archived_sessions", "shell_snapshots"],
 	historyFiles: ["history.jsonl"],
-	providerHomes: [".codex", ".config/codex"],
+	// A user-defined CODEX_HOME can make ~/.codex a secondary account. The
+	// actual mainHome is excluded separately, so no other fixed home belongs
+	// here.
+	providerHomes: [],
 };
 
 const MERGE_SUFFIX = ".superset-merge";
@@ -186,7 +189,13 @@ export function mergeAndLinkSessionDir(
 	// else — src may already be a symlink by now.
 	if (lstatOrNull(pending)?.isDirectory()) {
 		mkdirSync(dst, { recursive: true });
-		if (!onSameFilesystem(pending, dst)) return;
+		if (!onSameFilesystem(pending, dst)) {
+			// A prior process may have stopped after the rename but before linking.
+			// Put the tree back when cross-device recovery cannot finish, otherwise
+			// the CLI's original session path remains missing.
+			if (!lstatOrNull(src)) renameSync(pending, src);
+			return;
+		}
 		moveTreeInto(pending, dst);
 	}
 	const info = lstatOrNull(src);

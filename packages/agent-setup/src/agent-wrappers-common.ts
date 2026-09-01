@@ -125,8 +125,10 @@ export function buildDefaultAccountResolver(
   superset_default_account="$(cat ${pointer} 2>/dev/null)"
   if [ -n "$superset_default_account" ] && [ -d "$superset_default_account" ]; then
     export ${envVar}="$superset_default_account"
+    export SUPERSET_DEFAULT_${envVar}="$superset_default_account"
   else
     unset ${envVar}
+    unset SUPERSET_DEFAULT_${envVar}
   fi
 fi
 

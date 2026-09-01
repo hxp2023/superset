@@ -21,6 +21,21 @@ function resolve(env: Record<string, string | undefined>): string {
 	});
 }
 
+function resolveWithTwin(env: Record<string, string | undefined>): string {
+	const script = `${buildDefaultAccountResolver(
+		"CLAUDE_CONFIG_DIR",
+		"default-claude-config-dir",
+	)}printf "%s|%s" "\${CLAUDE_CONFIG_DIR:-<unset>}" "\${SUPERSET_DEFAULT_CLAUDE_CONFIG_DIR:-<unset>}"`;
+	const cleanEnv: Record<string, string> = { PATH: process.env.PATH ?? "" };
+	for (const [key, value] of Object.entries(env)) {
+		if (value !== undefined) cleanEnv[key] = value;
+	}
+	return execFileSync("bash", ["-c", script], {
+		env: cleanEnv,
+		encoding: "utf-8",
+	});
+}
+
 function makeHome(pointer: string | null): {
 	home: string;
 	profile: string;
@@ -57,6 +72,19 @@ describe("buildDefaultAccountResolver", () => {
 		).toBe(profile);
 	});
 
+	it("updates the injection marker when it adopts a new pointer", () => {
+		const { home, profile } = makeHome(null);
+		writeFileSync(join(home, "state", "default-claude-config-dir"), profile);
+		expect(
+			resolveWithTwin({
+				SUPERSET_TERMINAL_ID: "t1",
+				SUPERSET_HOME_DIR: home,
+				CLAUDE_CONFIG_DIR: "/tmp/old-spawn-time-default",
+				SUPERSET_DEFAULT_CLAUDE_CONFIG_DIR: "/tmp/old-spawn-time-default",
+			}),
+		).toBe(`${profile}|${profile}`);
+	});
+
 	it("clears a stale injected value when the pointer says system default", () => {
 		const { home, profile } = makeHome("");
 		expect(
@@ -67,6 +95,18 @@ describe("buildDefaultAccountResolver", () => {
 				SUPERSET_DEFAULT_CLAUDE_CONFIG_DIR: profile,
 			}),
 		).toBe("<unset>");
+	});
+
+	it("clears the injection marker with the injected value", () => {
+		const { home, profile } = makeHome("");
+		expect(
+			resolveWithTwin({
+				SUPERSET_TERMINAL_ID: "t1",
+				SUPERSET_HOME_DIR: home,
+				CLAUDE_CONFIG_DIR: profile,
+				SUPERSET_DEFAULT_CLAUDE_CONFIG_DIR: profile,
+			}),
+		).toBe("<unset>|<unset>");
 	});
 
 	it("never overrides a value the user exported by hand", () => {

@@ -105,6 +105,21 @@ describe("sameFilesystem", () => {
 		).toBe("session");
 		expect(lstatOrNull(join(profile, "sessions.superset-merge"))).toBeNull();
 	});
+
+	it("restores an interrupted session tree when recovery crosses devices", () => {
+		const { profile, main } = makeDirs();
+		const pending = join(profile, "sessions.superset-merge");
+		mkdirSync(pending);
+		writeFileSync(join(pending, "rollout.jsonl"), "session");
+
+		mergeAndLinkSessionDir(profile, main, "sessions", () => false);
+
+		expect(lstatSync(join(profile, "sessions")).isDirectory()).toBe(true);
+		expect(
+			readFileSync(join(profile, "sessions", "rollout.jsonl"), "utf8"),
+		).toBe("session");
+		expect(lstatOrNull(pending)).toBeNull();
+	});
 });
 
 describe("shareClaudeSessionState", () => {
@@ -383,6 +398,13 @@ describe("shareCodexSessionState", () => {
 		expect(
 			shareableProfileDir(join(home, ".codex-work"), main, [".codex"]),
 		).toBe(join(home, ".codex-work"));
+	});
+
+	it("allows ~/.codex to share into a user-defined Codex main home", () => {
+		const home = homedir();
+		expect(
+			shareableProfileDir(join(home, ".codex"), "/tmp/custom-codex-main", []),
+		).toBe(join(home, ".codex"));
 	});
 
 	it("never touches auth.json, so accounts keep separate credentials", () => {

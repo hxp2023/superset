@@ -56,10 +56,12 @@ describe("assertRemovableProfileDir", () => {
 describe("assertRemovableProfileDir with Codex account injection", () => {
 	let previousCodexHome: string | undefined;
 	let previousInjectedHome: string | undefined;
+	let previousAmbientHome: string | undefined;
 
 	beforeEach(() => {
 		previousCodexHome = process.env.CODEX_HOME;
 		previousInjectedHome = process.env.SUPERSET_DEFAULT_CODEX_HOME;
+		previousAmbientHome = process.env.SUPERSET_AMBIENT_CODEX_HOME;
 	});
 
 	afterEach(() => {
@@ -68,12 +70,29 @@ describe("assertRemovableProfileDir with Codex account injection", () => {
 		if (previousInjectedHome === undefined)
 			delete process.env.SUPERSET_DEFAULT_CODEX_HOME;
 		else process.env.SUPERSET_DEFAULT_CODEX_HOME = previousInjectedHome;
+		if (previousAmbientHome === undefined)
+			delete process.env.SUPERSET_AMBIENT_CODEX_HOME;
+		else process.env.SUPERSET_AMBIENT_CODEX_HOME = previousAmbientHome;
 	});
 
 	it("allows removal of a profile Superset injected into CODEX_HOME", () => {
 		const profile = join(homedir(), ".codex-injected-profile");
 		process.env.CODEX_HOME = profile;
 		process.env.SUPERSET_DEFAULT_CODEX_HOME = profile;
+		delete process.env.SUPERSET_AMBIENT_CODEX_HOME;
+		expect(assertRemovableProfileDir(profile)).toBe(profile);
+	});
+
+	it("protects a preserved custom default while allowing the injected profile", () => {
+		const profile = join(homedir(), ".codex-injected-profile");
+		const customDefault = join(homedir(), ".codex-user-default");
+		process.env.CODEX_HOME = profile;
+		process.env.SUPERSET_DEFAULT_CODEX_HOME = profile;
+		process.env.SUPERSET_AMBIENT_CODEX_HOME = customDefault;
+
+		expect(() => assertRemovableProfileDir(customDefault)).toThrow(
+			/system-default/,
+		);
 		expect(assertRemovableProfileDir(profile)).toBe(profile);
 	});
 
@@ -81,6 +100,7 @@ describe("assertRemovableProfileDir with Codex account injection", () => {
 		const customDefault = join(homedir(), ".codex-user-default");
 		process.env.CODEX_HOME = customDefault;
 		delete process.env.SUPERSET_DEFAULT_CODEX_HOME;
+		delete process.env.SUPERSET_AMBIENT_CODEX_HOME;
 		expect(() => assertRemovableProfileDir(customDefault)).toThrow(
 			/system-default/,
 		);

@@ -10,28 +10,33 @@ import { join, resolve } from "node:path";
  * clobbered before (see scripts/test-preload.ts).
  */
 describe("Superset home isolation", () => {
-	it("points SUPERSET_HOME_DIR somewhere other than the real home", () => {
+	function requireIsolatedHome(): string {
 		const isolated = process.env.SUPERSET_HOME_DIR;
-		expect(isolated).toBeTruthy();
-		expect(resolve(isolated as string)).not.toBe(
-			resolve(join(homedir(), ".superset")),
-		);
+		if (
+			!isolated ||
+			resolve(isolated) === resolve(join(homedir(), ".superset"))
+		) {
+			throw new Error("SUPERSET_HOME_DIR is not isolated for tests");
+		}
+		return isolated;
+	}
+
+	it("points SUPERSET_HOME_DIR somewhere other than the real home", () => {
+		expect(requireIsolatedHome()).toBeTruthy();
 	});
 
 	it("resolves the account pointer dir inside the isolated home", async () => {
+		// Validate before importing or calling the pointer writer. If the preload
+		// disappears, this canary must fail without reproducing the real-home
+		// clobber it exists to prevent.
+		const isolated = requireIsolatedHome();
 		const { syncDefaultAccountPointer } = await import(
 			"../src/trpc/router/usage/default-account.ts"
 		);
 		syncDefaultAccountPointer("codex", null);
 		const { existsSync } = await import("node:fs");
-		expect(
-			existsSync(
-				join(
-					process.env.SUPERSET_HOME_DIR as string,
-					"state",
-					"default-codex-home",
-				),
-			),
-		).toBe(true);
+		expect(existsSync(join(isolated, "state", "default-codex-home"))).toBe(
+			true,
+		);
 	});
 });
