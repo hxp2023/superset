@@ -315,7 +315,9 @@ export function usePaneRegistry({
 						onCreateNewAgentSession={createNewAgentSession}
 					/>
 				),
-				renderHeaderExtras: () => <DiffPaneHeaderExtras />,
+				renderHeaderExtras: () => (
+					<DiffPaneHeaderExtras workspaceId={workspaceId} />
+				),
 				contextMenuActions: (_ctx, defaults) =>
 					defaults.map((d) =>
 						d.key === "close-pane" ? { ...d, label: "Close Diff" } : d,

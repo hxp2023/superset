@@ -1,0 +1,76 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { workspaceTrpc } from "@superset/workspace-client";
+import { useNavigate } from "@tanstack/react-router";
+import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
+import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
+import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
+
+interface DiffPanePRLinkProps {
+	workspaceId: string;
+}
+
+/**
+ * Opens the in-app PR view (/pull-requests/$prNumber) for the workspace's
+ * linked pull request — unlike the sidebar's PR affordances, which link to
+ * github.com. Hidden when no PR is linked, and for session workspaces
+ * (null projectId): the PR route is project-scoped and can't resolve a repo
+ * without one.
+ */
+export function DiffPanePRLink({ workspaceId }: DiffPanePRLinkProps) {
+	const navigate = useNavigate();
+	const { workspace } = useWorkspace();
+	// Same query key useDiffAnnotations polls at 10s from inside the pane, so
+	// tanstack-query dedupes this into the existing subscription.
+	const prQuery = workspaceTrpc.git.getPullRequest.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId, staleTime: 10_000 },
+	);
+	const pr = prQuery.data;
+	const projectId = workspace.projectId;
+	if (!pr || projectId == null) return null;
+
+	// Same state derivation as PRStatusGroup's linkState.
+	const state: PRState = pr.isDraft
+		? "draft"
+		: pr.state === "merged"
+			? "merged"
+			: pr.state === "closed"
+				? "closed"
+				: pr.state === "queued"
+					? "queued"
+					: "open";
+
+	return (
+		<>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<button
+						type="button"
+						onClick={() => {
+							// Same pair the PR list's own row click performs — the detail
+							// pane may have been collapsed the last time the view was open.
+							usePullRequestsSplitViewStore.getState().expandDetail();
+							void navigate({
+								to: "/pull-requests/$prNumber",
+								params: { prNumber: String(pr.number) },
+								search: { project: projectId },
+							});
+						}}
+						aria-label={`Open pull request #${pr.number}`}
+						className="flex items-center gap-1 rounded p-1 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+					>
+						<PRIcon state={state} className="size-3.5" />
+						<span className="text-[11px] tabular-nums">#{pr.number}</span>
+					</button>
+				</TooltipTrigger>
+				<TooltipContent side="bottom">Open pull request</TooltipContent>
+			</Tooltip>
+			{/* Rendered here, not by the parent, so no stray divider shows when
+			    the link is hidden (no PR / session workspace). */}
+			<div
+				className="mx-1 h-3.5 w-px bg-muted-foreground/30"
+				aria-hidden="true"
+			/>
+		</>
+	);
+}

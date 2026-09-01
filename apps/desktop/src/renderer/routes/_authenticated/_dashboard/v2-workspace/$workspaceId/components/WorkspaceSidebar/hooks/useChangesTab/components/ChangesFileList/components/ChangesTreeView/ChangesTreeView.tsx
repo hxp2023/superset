@@ -21,8 +21,10 @@ import {
 } from "renderer/lib/clickPolicy";
 import { useFallthroughIcons } from "renderer/lib/fileIcons";
 import {
+	buildCollisionSafeTreePaths,
 	createPierreTreeStyle,
 	FILE_STATUS_TO_PIERRE,
+	formatDiffStats,
 	PIERRE_TREE_UNSAFE_CSS,
 	type PierreGitStatusEntry,
 	stripTrailingSlash,
@@ -43,7 +45,6 @@ import { FileRowContextMenuItems } from "./components/FileRowContextMenuItems";
 import { FolderContextMenuItems } from "./components/FolderContextMenuItems";
 import { ShadowRowHoverActions } from "./components/ShadowRowHoverActions";
 import { useMeasuredTreeHeight } from "./hooks/useMeasuredTreeHeight";
-import { buildCollisionSafeTreePaths } from "./utils/buildCollisionSafeTreePaths";
 import { buildTreeShape } from "./utils/buildTreeShape";
 
 const ITEM_HEIGHT = 24;
@@ -459,11 +460,4 @@ function buildPierreGitStatus(
 		path: toTreePath.get(file.path) ?? file.path,
 		status: FILE_STATUS_TO_PIERRE[file.status],
 	}));
-}
-
-function formatDiffStats(additions: number, deletions: number): string {
-	if (additions === 0 && deletions === 0) return "";
-	if (additions === 0) return `−${deletions}`;
-	if (deletions === 0) return `+${additions}`;
-	return `+${additions} −${deletions}`;
 }
