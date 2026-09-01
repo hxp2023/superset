@@ -125,7 +125,10 @@ export async function provisionSandbox(args: {
 	region?: string;
 }): Promise<ProvisionedSandbox> {
 	configureBlaxel();
-	const memoryMb = args.memoryMb ?? 4096;
+	// The root filesystem is a RAM-backed overlay, so memory is shared between
+	// running processes and everything written at runtime — a warm checkout plus
+	// node_modules plus an agent plus a dev server all come out of this number.
+	const memoryMb = args.memoryMb ?? 8192;
 	const region = args.region ?? env.BLAXEL_REGION;
 	const { envs: credentialEnvs, routing } = agentCredentialRoutes();
 	const envs = [
