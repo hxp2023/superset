@@ -26,10 +26,28 @@
  * ever loses it.
  */
 
-import { mkdtempSync } from "node:fs";
+import { afterAll } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-process.env.SUPERSET_HOME_DIR = mkdtempSync(
-	join(tmpdir(), "superset-test-home-"),
-);
+const testSupersetHome = mkdtempSync(join(tmpdir(), "superset-test-home-"));
+process.env.SUPERSET_HOME_DIR = testSupersetHome;
+
+// Test processes are short-lived, but a full local run creates enough state
+// here to make relying on the OS's eventual temp cleanup needlessly noisy.
+// The exit hook is synchronous because Node/Bun cannot await async work once
+// process shutdown has begun; best-effort cleanup must never mask test status.
+function cleanupTestSupersetHome(): void {
+	try {
+		rmSync(testSupersetHome, { recursive: true, force: true });
+	} catch {
+		// The temp directory may already have been removed by a test.
+	}
+}
+
+// Bun's test runner does not consistently emit Node's process exit event, so
+// use its lifecycle hook as the primary cleanup and retain exit as a fallback
+// for alternate runners that load the same preload.
+afterAll(cleanupTestSupersetHome);
+process.once("exit", cleanupTestSupersetHome);

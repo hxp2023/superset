@@ -1,27 +1,40 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import {
+	closeSync,
 	lstatSync,
 	mkdirSync,
 	mkdtempSync,
+	openSync,
 	readdirSync,
 	readFileSync,
 	readlinkSync,
+	rmSync,
 	symlinkSync,
 	unlinkSync,
 	writeFileSync,
+	writeSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	mergeAndLinkSessionDir,
+	sameFilesystem,
 	shareableProfileDir,
 	shareClaudeSessionState,
 	shareCodexSessionState,
 } from "./session-share";
 
 const CLAUDE_HOMES = [".claude", ".config/claude"];
+const roots = new Set<string>();
+
+afterEach(() => {
+	for (const root of roots) rmSync(root, { recursive: true, force: true });
+	roots.clear();
+});
 
 function makeDirs(): { profile: string; main: string } {
 	const root = mkdtempSync(join(tmpdir(), "claude-session-share-"));
+	roots.add(root);
 	const profile = join(root, "profile");
 	const main = join(root, "main");
 	mkdirSync(profile);
@@ -66,6 +79,31 @@ describe("shareableProfileDir", () => {
 				CLAUDE_HOMES,
 			),
 		).toBe(join(home, ".claude-work"));
+	});
+});
+
+describe("sameFilesystem", () => {
+	it("detects when a rename would cross filesystem devices", () => {
+		expect(
+			sameFilesystem("profile", "main", (path) =>
+				path === "profile" ? 41 : 42,
+			),
+		).toBe(false);
+		expect(sameFilesystem("profile", "main", () => 41)).toBe(true);
+	});
+
+	it("leaves an existing session tree visible when devices differ", () => {
+		const { profile, main } = makeDirs();
+		mkdirSync(join(profile, "sessions"));
+		writeFileSync(join(profile, "sessions", "rollout.jsonl"), "session");
+
+		mergeAndLinkSessionDir(profile, main, "sessions", () => false);
+
+		expect(lstatSync(join(profile, "sessions")).isSymbolicLink()).toBe(false);
+		expect(
+			readFileSync(join(profile, "sessions", "rollout.jsonl"), "utf8"),
+		).toBe("session");
+		expect(lstatOrNull(join(profile, "sessions.superset-merge"))).toBeNull();
 	});
 });
 
@@ -171,6 +209,11 @@ describe("shareClaudeSessionState", () => {
 		expect(readFileSync(join(main, "history.jsonl"), "utf-8")).toBe(
 			'{"m":1}\n{"p":1}\n',
 		);
+		// Re-provisioning drains only bytes written since the last cursor.
+		shareClaudeSessionState(profile, main);
+		expect(readFileSync(join(main, "history.jsonl"), "utf-8")).toBe(
+			'{"m":1}\n{"p":1}\n',
+		);
 	});
 
 	it("leaves config surfaces to agent-setup provisioning", () => {
@@ -268,6 +311,35 @@ describe("shareCodexSessionState", () => {
 		expect(
 			isLinkTo(join(profile, "history.jsonl"), join(main, "history.jsonl")),
 		).toBe(true);
+	});
+
+	it("drains a write made through an fd opened before the history swap", () => {
+		const { profile, main } = makeDirs();
+		const profileHistory = join(profile, "history.jsonl");
+		writeFileSync(profileHistory, '{"t":"before-switch"}\n');
+		const oldFd = openSync(profileHistory, "a");
+
+		shareCodexSessionState(profile, main);
+		writeSync(oldFd, '{"t":"in-flight"}\n');
+		closeSync(oldFd);
+
+		// The old inode remains durable and the next normal provision drains the
+		// late append without duplicating the bytes already imported.
+		shareCodexSessionState(profile, main);
+		const merged = readFileSync(join(main, "history.jsonl"), "utf-8");
+		expect(merged.match(/before-switch/g)).toHaveLength(1);
+		expect(merged.match(/in-flight/g)).toHaveLength(1);
+		expect(
+			readFileSync(join(profile, "history.jsonl.superset-merge"), "utf-8"),
+		).toContain("in-flight");
+		expect(
+			readFileSync(
+				join(profile, "history.jsonl.superset-merge.offset"),
+				"utf-8",
+			),
+		).toBe(
+			`${Buffer.byteLength('{"t":"before-switch"}\n{"t":"in-flight"}\n')}\n`,
+		);
 	});
 
 	it("re-links a history file the CLI replaced with a real file", () => {

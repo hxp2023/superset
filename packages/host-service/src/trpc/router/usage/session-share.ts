@@ -37,7 +37,7 @@ import {
 	rmdirSync,
 	statSync,
 	symlinkSync,
-	unlinkSync,
+	writeFileSync,
 } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join, resolve } from "node:path";
@@ -88,6 +88,7 @@ const CODEX_SHARE: SessionShareSpec = {
 };
 
 const MERGE_SUFFIX = ".superset-merge";
+const HISTORY_OFFSET_SUFFIX = ".offset";
 
 /** Real path when the dir exists (a symlink alias of a protected dir must
  * compare equal to it), plain resolution otherwise. */
@@ -129,6 +130,21 @@ function lstatOrNull(path: string) {
 	}
 }
 
+/** Renames are only atomic within one filesystem. Check before swapping the
+ * profile path for a symlink: an EXDEV after that swap would hide the real
+ * session tree in the pending directory. */
+export function sameFilesystem(
+	left: string,
+	right: string,
+	deviceOf: (path: string) => number | bigint = (path) => statSync(path).dev,
+): boolean {
+	try {
+		return deviceOf(left) === deviceOf(right);
+	} catch {
+		return false;
+	}
+}
+
 /**
  * Moves every file under `srcDir` into `dstDir`, creating dirs as needed.
  * Conflicts (a path that already exists in `dstDir`) are left behind in
@@ -157,10 +173,11 @@ function moveTreeInto(srcDir: string, dstDir: string): void {
 	}
 }
 
-function mergeAndLinkSessionDir(
+export function mergeAndLinkSessionDir(
 	profile: string,
 	main: string,
 	name: string,
+	onSameFilesystem: (left: string, right: string) => boolean = sameFilesystem,
 ): void {
 	const src = join(profile, name);
 	const dst = join(main, name);
@@ -169,6 +186,7 @@ function mergeAndLinkSessionDir(
 	// else — src may already be a symlink by now.
 	if (lstatOrNull(pending)?.isDirectory()) {
 		mkdirSync(dst, { recursive: true });
+		if (!onSameFilesystem(pending, dst)) return;
 		moveTreeInto(pending, dst);
 	}
 	const info = lstatOrNull(src);
@@ -177,6 +195,12 @@ function mergeAndLinkSessionDir(
 	mkdirSync(dst, { recursive: true });
 	if (!info) {
 		symlinkSync(dst, src);
+		return;
+	}
+	if (!onSameFilesystem(src, dst)) {
+		console.warn(
+			`[host-service] leaving ${src} unshared because ${dst} is on another filesystem`,
+		);
 		return;
 	}
 	// Swap first, merge after: the path is only ever missing for the instant
@@ -190,6 +214,61 @@ function mergeAndLinkSessionDir(
 		return;
 	}
 	moveTreeInto(pending, dst);
+}
+
+function historyPendingPaths(profile: string, name: string): string[] {
+	const prefix = `${name}${MERGE_SUFFIX}`;
+	return readdirSync(profile, { withFileTypes: true })
+		.filter((entry) => {
+			if (!entry.isFile()) return false;
+			if (entry.name === prefix) return true;
+			if (!entry.name.startsWith(`${prefix}-`)) return false;
+			return /^\d+$/.test(entry.name.slice(prefix.length + 1));
+		})
+		.map((entry) => join(profile, entry.name))
+		.sort();
+}
+
+function nextHistoryPendingPath(src: string): string {
+	const base = `${src}${MERGE_SUFFIX}`;
+	if (!lstatOrNull(base)) return base;
+	for (let generation = 1; ; generation += 1) {
+		const candidate = `${base}-${generation}`;
+		if (!lstatOrNull(candidate)) return candidate;
+	}
+}
+
+function readHistoryOffset(pending: string, length: number): number {
+	try {
+		const parsed = Number.parseInt(
+			readFileSync(`${pending}${HISTORY_OFFSET_SUFFIX}`, "utf8"),
+			10,
+		);
+		return Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= length
+			? parsed
+			: 0;
+	} catch {
+		return 0;
+	}
+}
+
+/**
+ * Copies bytes not imported on an earlier provision, but deliberately keeps
+ * the renamed inode and cursor. A CLI may have opened the old history path
+ * immediately before the symlink swap; a later append then lands on that
+ * inode. Keeping it makes the late write durable, and the next host boot or
+ * account switch drains it instead of losing it to an unlink.
+ *
+ * Cursor updates happen after the append. A crash can therefore duplicate a
+ * record on retry, but can never advance past bytes that were not attempted.
+ */
+function drainPendingHistory(pending: string, dst: string): void {
+	const content = readFileSync(pending);
+	const offset = readHistoryOffset(pending, content.length);
+	appendHistoryRecords(dst, content.subarray(offset));
+	writeFileSync(`${pending}${HISTORY_OFFSET_SUFFIX}`, `${content.length}\n`, {
+		mode: 0o600,
+	});
 }
 
 /** Appends line-delimited records, inserting a newline first when the
@@ -226,19 +305,19 @@ function mergeAndLinkHistory(
 ): void {
 	const src = join(profile, name);
 	const dst = join(main, name);
-	const pending = `${src}${MERGE_SUFFIX}`;
-	if (lstatOrNull(pending)?.isFile()) {
-		appendHistoryRecords(dst, readFileSync(pending));
-		unlinkSync(pending);
+	mkdirSync(main, { recursive: true });
+	if (!lstatOrNull(dst)) appendFileSync(dst, "");
+	for (const pending of historyPendingPaths(profile, name)) {
+		drainPendingHistory(pending, dst);
 	}
 	const info = lstatOrNull(src);
 	if (info?.isSymbolicLink()) return;
 	if (info && !info.isFile()) return;
-	if (!lstatOrNull(dst)) appendFileSync(dst, "");
 	if (!info) {
 		symlinkSync(dst, src);
 		return;
 	}
+	const pending = nextHistoryPendingPath(src);
 	renameSync(src, pending);
 	try {
 		symlinkSync(dst, src);
@@ -246,8 +325,7 @@ function mergeAndLinkHistory(
 		renameSync(pending, src);
 		return;
 	}
-	appendHistoryRecords(dst, readFileSync(pending));
-	unlinkSync(pending);
+	drainPendingHistory(pending, dst);
 }
 
 /**
