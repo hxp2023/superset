@@ -36,15 +36,24 @@ export function DashboardSidebarSessionTagGroup({
 	const { v2Workspaces } = useOptimisticActions();
 	const { pendingRenameSectionId, clearPendingSectionRename } =
 		useDashboardSidebarSectionRename();
-	const { setSectionColor } = useDashboardSidebarState();
+	const { renameSection, setSectionColor } = useDashboardSidebarState();
 	const { tagSettings } = useTagFolderContext();
 	const renameKey = `${SESSIONS_TAG_SCOPE}:${tag}`;
+	const setting = tagSettings.find(
+		(item) => item.projectId === SESSIONS_TAG_SCOPE && item.tag === tag,
+	);
+	const displayName = setting?.displayName ?? tag;
 	useEffect(() => {
 		if (pendingRenameSectionId !== renameKey) return;
-		setRenameValue(tag);
+		setRenameValue(displayName);
 		setIsRenaming(true);
 		clearPendingSectionRename(renameKey);
-	}, [pendingRenameSectionId, renameKey, tag, clearPendingSectionRename]);
+	}, [
+		pendingRenameSectionId,
+		renameKey,
+		displayName,
+		clearPendingSectionRename,
+	]);
 	const members = workspaces.filter(
 		(workspace) =>
 			workspace.projectId === null &&
@@ -60,26 +69,22 @@ export function DashboardSidebarSessionTagGroup({
 		}
 	};
 	const startRename = () => {
-		setRenameValue(tag);
+		setRenameValue(displayName);
 		setIsRenaming(true);
 	};
 	const submitRename = () => {
-		const nextTag = normalizeWorkspaceTag(renameValue);
+		const nextName = renameValue.trim();
 		setIsRenaming(false);
-		if (!nextTag || nextTag === tag) return;
-		retagMembers(nextTag);
+		if (!nextName || nextName === displayName) return;
+		renameSection(renameKey, nextName);
 	};
 	const cancelRename = () => {
-		setRenameValue(tag);
+		setRenameValue(displayName);
 		setIsRenaming(false);
 	};
 	// Presentation for this lane lives under the Sessions scope, keyed by tag
 	// exactly like a project folder is keyed under its project id.
-	const color =
-		tagSettings.find(
-			(setting) =>
-				setting.projectId === SESSIONS_TAG_SCOPE && setting.tag === tag,
-		)?.color ?? null;
+	const color = setting?.color ?? null;
 	const setColor = (next: string | null) => setSectionColor(renameKey, next);
 	const actions = (
 		<DashboardSidebarSectionActionsDropdown
@@ -113,7 +118,7 @@ export function DashboardSidebarSessionTagGroup({
 									className="-ml-1 h-5 w-full min-w-0 border-none bg-transparent px-1 py-0 text-[13px] font-medium text-muted-foreground outline-none"
 								/>
 							) : (
-								<span className="truncate">{tag}</span>
+								<span className="truncate">{displayName}</span>
 							)
 						}
 						isCollapsed={isCollapsed}

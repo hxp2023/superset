@@ -10,7 +10,7 @@ import type { TagFolderContext } from "./workspaceTagFolders";
  * the same bug class as two membership derivations.
  */
 export function useTagFolderContext(): TagFolderContext {
-	const tagFolders = useHostTagFolders();
+	const { tagFolders } = useHostTagFolders();
 	const { preferences } = useV2UserPreferences();
 	const hiddenTagFolders = preferences.hiddenTagFolders;
 	return useMemo(

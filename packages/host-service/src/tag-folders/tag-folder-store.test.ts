@@ -13,6 +13,7 @@ import {
 	deleteTagFolderScope,
 	deleteTagFolderSetting,
 	getTagFolderSettings,
+	hasTagFolderScope,
 	upsertTagFolderSetting,
 } from "./tag-folder-store";
 
@@ -42,6 +43,15 @@ function createHarness() {
 }
 
 describe("tag folder settings store", () => {
+	it("recognizes Sessions and existing projects, but not unknown UUIDs", () => {
+		const h = createHarness();
+		expect(hasTagFolderScope(h.db, SESSIONS_TAG_SCOPE)).toBe(true);
+		expect(hasTagFolderScope(h.db, PROJECT)).toBe(true);
+		expect(
+			hasTagFolderScope(h.db, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
+		).toBe(false);
+	});
+
 	it("creates on first customisation and merge-upserts after", () => {
 		const h = createHarness();
 		upsertTagFolderSetting(

@@ -8,29 +8,33 @@ import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { MOCK_ORG_ID } from "shared/constants";
 import { deriveHostProjectsQueryTargets } from "../useHostProjects/useHostProjects.utils";
+import {
+	type HostTagFolderSetting,
+	type HostTagFoldersResult,
+	mergeHostTagFolders,
+} from "./useHostTagFolders.utils";
 
 const TAG_FOLDERS_FALLBACK_REFETCH_INTERVAL_MS = 60_000;
 
-/** One folder's host-side presentation, plus the scope it belongs to. */
-export interface HostTagFolderSetting {
-	scope: string;
-	tag: string;
-	displayName: string | null;
-	color: string | null;
-	tabOrder: number | null;
+export interface UseHostTagFoldersResult {
+	tagFolders: HostTagFolderSetting[];
+	hostResults: HostTagFoldersResult[];
+	/** True once discovery settled and no reachable host read is pending. */
+	isReady: boolean;
 }
 
 /**
- * The tag-folder read path: fan out `tagFolders.list` to every known host and
- * flatten. Folders travel on their own channel rather than riding project
- * snapshots, because the Sessions lane has no project to ride on.
+ * The tag-folder read path: fan out `tagFolders.list` to every known host,
+ * retain each host's readiness, and deterministically merge replicated rows.
+ * Folders travel on their own channel rather than riding project snapshots,
+ * because the Sessions lane has no project to ride on.
  *
  * Deliberately lighter than `useHostProjects`: no IndexedDB snapshot. These
  * rows are presentation-only, so a folder that renders with its default name
  * and colour for one paint is a non-event — unlike a missing project, which
  * would empty the sidebar.
  */
-export function useHostTagFolders(): HostTagFolderSetting[] {
+export function useHostTagFolders(): UseHostTagFoldersResult {
 	const queryClient = useQueryClient();
 	const { activeHostUrl, machineId, activeOrganizationId } =
 		useLocalHostService();
@@ -38,7 +42,7 @@ export function useHostTagFolders(): HostTagFolderSetting[] {
 	const fallbackOrganizationId = env.SKIP_ENV_VALIDATION
 		? MOCK_ORG_ID
 		: (activeOrganizationId ?? null);
-	const { hosts } = useKnownHosts();
+	const { hosts, settled: knownHostsSettled } = useKnownHosts();
 
 	const targets = useMemo(
 		() =>
@@ -75,13 +79,10 @@ export function useHostTagFolders(): HostTagFolderSetting[] {
 			queryFn: async (): Promise<HostTagFolderSetting[]> => {
 				if (!target.hostUrl) return [];
 				const client = getHostServiceClientByUrl(target.hostUrl);
-				// Older hosts have no tagFolders router; they simply contribute
-				// nothing rather than failing the whole fan-out.
-				try {
-					return (await client.tagFolders.list.query()) as HostTagFolderSetting[];
-				} catch {
-					return [];
-				}
+				// Let failures remain failures. In particular, an old host with no
+				// tagFolders router must not look like a successful empty response:
+				// the migration uses per-host readiness before attempting writes.
+				return (await client.tagFolders.list.query()) as HostTagFolderSetting[];
 			},
 		})),
 	});
@@ -104,5 +105,33 @@ export function useHostTagFolders(): HostTagFolderSetting[] {
 		};
 	}, [targets, queryKeys, queryClient]);
 
-	return useMemo(() => queries.flatMap((query) => query.data ?? []), [queries]);
+	const hostResults = useMemo<HostTagFoldersResult[]>(
+		() =>
+			targets.map((target, index) => {
+				const query = queries[index];
+				return {
+					target,
+					status:
+						target.hostUrl === null
+							? "offline"
+							: query?.isSuccess
+								? "ready"
+								: query?.isError
+									? "error"
+									: "pending",
+					settings: query?.data ?? [],
+				};
+			}),
+		[targets, queries],
+	);
+	const tagFolders = useMemo(
+		() => mergeHostTagFolders(hostResults),
+		[hostResults],
+	);
+	const isReady =
+		knownHostsSettled &&
+		targets.length > 0 &&
+		hostResults.every((result) => result.status !== "pending");
+
+	return { tagFolders, hostResults, isReady };
 }

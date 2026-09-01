@@ -1,10 +1,24 @@
+import { tagFolderScopeInputSchema } from "@superset/shared/workspace-tags";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
 	deleteTagFolderSetting,
 	getAllTagFolderSettings,
+	hasTagFolderScope,
 	upsertTagFolderSetting,
 } from "../../../tag-folders";
 import { protectedProcedure, router } from "../../index";
+
+function assertScopeExists(
+	db: Parameters<typeof hasTagFolderScope>[0],
+	scope: string,
+): void {
+	if (hasTagFolderScope(db, scope)) return;
+	throw new TRPCError({
+		code: "NOT_FOUND",
+		message: `Tag folder scope not found: ${scope}`,
+	});
+}
 
 /**
  * Tag-folder presentation, keyed by scope: a project id, or the Sessions
@@ -18,7 +32,7 @@ export const tagFoldersRouter = router({
 	upsert: protectedProcedure
 		.input(
 			z.object({
-				scope: z.string().min(1),
+				scope: tagFolderScopeInputSchema,
 				tag: z.string().min(1),
 				displayName: z.string().min(1).max(200).nullish(),
 				color: z.string().max(50).nullish(),
@@ -26,6 +40,7 @@ export const tagFoldersRouter = router({
 			}),
 		)
 		.mutation(({ ctx, input }) => {
+			assertScopeExists(ctx.db, input.scope);
 			const settings = upsertTagFolderSetting(
 				{ db: ctx.db, eventBus: ctx.eventBus },
 				input.scope,
@@ -45,8 +60,11 @@ export const tagFoldersRouter = router({
 
 	/** Drop one folder's presentation row (folder deletion). Idempotent. */
 	delete: protectedProcedure
-		.input(z.object({ scope: z.string().min(1), tag: z.string().min(1) }))
+		.input(
+			z.object({ scope: tagFolderScopeInputSchema, tag: z.string().min(1) }),
+		)
 		.mutation(({ ctx, input }) => {
+			assertScopeExists(ctx.db, input.scope);
 			const settings = deleteTagFolderSetting(
 				{ db: ctx.db, eventBus: ctx.eventBus },
 				input.scope,

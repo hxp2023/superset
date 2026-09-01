@@ -1,7 +1,10 @@
-import { normalizeWorkspaceTag } from "@superset/shared/workspace-tags";
+import {
+	normalizeWorkspaceTag,
+	SESSIONS_TAG_SCOPE,
+} from "@superset/shared/workspace-tags";
 import { and, eq } from "drizzle-orm";
 import type { HostDb } from "../db";
-import { tagFolderSettings } from "../db/schema";
+import { projects, tagFolderSettings } from "../db/schema";
 import type { EventBus } from "../events";
 import type {
 	TagFolderSettingSnapshot,
@@ -17,6 +20,18 @@ export interface UpsertTagSettingPatch {
 	displayName?: string | null;
 	color?: string | null;
 	tabOrder?: number | null;
+}
+
+/** Sessions is virtual; every other accepted scope must be a local project. */
+export function hasTagFolderScope(db: HostDb, scope: string): boolean {
+	if (scope === SESSIONS_TAG_SCOPE) return true;
+	return (
+		db
+			.select({ id: projects.id })
+			.from(projects)
+			.where(eq(projects.id, scope))
+			.all()[0] !== undefined
+	);
 }
 
 /**
@@ -80,8 +95,8 @@ function broadcast(ctx: TagFolderStoreContext, scope: string): void {
  * here is what turns rename into ONE update — the tag stays the stable slug
  * agents target.
  *
- * Deliberately does not check that `scope` resolves to a project: the
- * Sessions lane is a valid scope with no project behind it.
+ * The router validates that project scopes exist before calling this store;
+ * the Sessions lane is the one valid scope with no project behind it.
  */
 export function upsertTagFolderSetting(
 	ctx: TagFolderStoreContext,

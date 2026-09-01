@@ -3,6 +3,7 @@ export {
 	deleteTagFolderSetting,
 	getAllTagFolderSettings,
 	getTagFolderSettings,
+	hasTagFolderScope,
 	type TagFolderStoreContext,
 	type UpsertTagSettingPatch,
 	upsertTagFolderSetting,

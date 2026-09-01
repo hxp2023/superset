@@ -8,15 +8,14 @@ import { BRANCH_PREFIX_MODES } from "@superset/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { projects, workspaces } from "../../../db/schema";
+import { projects, tagFolderSettings, workspaces } from "../../../db/schema";
 import {
 	emitProjectChanged,
 	toProjectSnapshot,
 	updateLocalProject,
 } from "../../../projects/local-project-store";
 import { createUserSimpleGit } from "../../../runtime/git/simple-git";
-import { deleteTagFolderScope } from "../../../tag-folders";
-import { deleteLocalWorkspace } from "../../../workspaces/local-workspace-store";
+import { emitLocalWorkspaceDeleted } from "../../../workspaces/local-workspace-store";
 import { machineOnlyProcedure, protectedProcedure, router } from "../../index";
 import {
 	normalizeSparseCheckoutPaths,
@@ -798,14 +797,17 @@ export const projectRouter = router({
 			}
 
 			try {
-				// Per-row so each deletion broadcasts.
-				for (const ws of localWorkspaces) {
-					deleteLocalWorkspace(ctx, ws.id);
-				}
-				ctx.db.delete(projects).where(eq(projects.id, input.projectId)).run();
-				// tag_folder_settings has no FK to projects (its scope column
-				// also holds the non-project Sessions lane), so nothing cascades.
-				deleteTagFolderScope(ctx.db, input.projectId);
+				// The project cascade removes its workspaces. Folder settings have no
+				// FK because the same scope column also holds Sessions, so delete both
+				// owners in one transaction: neither can survive a partial failure.
+				ctx.db.transaction((tx) => {
+					tx.delete(projects).where(eq(projects.id, input.projectId)).run();
+					tx.delete(tagFolderSettings)
+						.where(eq(tagFolderSettings.scope, input.projectId))
+						.run();
+				});
+				// Events describe committed state and must not escape the transaction.
+				for (const ws of localWorkspaces) emitLocalWorkspaceDeleted(ctx, ws);
 				emitProjectChanged(ctx.eventBus, "deleted", input.projectId);
 			} catch (err) {
 				throw new TRPCError({

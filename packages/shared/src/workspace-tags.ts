@@ -14,6 +14,14 @@ export const WORKSPACE_TAGS_MAX_PER_WORKSPACE = 32;
  */
 export const SESSIONS_TAG_SCOPE = "sessions";
 
+/** Router boundary for the only two valid folder owner shapes. */
+export const tagFolderScopeInputSchema = z.union([
+	z.literal(SESSIONS_TAG_SCOPE),
+	z.string().uuid(),
+]);
+
+export type TagFolderScopeInput = z.infer<typeof tagFolderScopeInputSchema>;
+
 /** The scope a tag folder lives under: a project id, or the Sessions lane. */
 export function tagFolderScope(projectId: string | null): string {
 	return projectId ?? SESSIONS_TAG_SCOPE;

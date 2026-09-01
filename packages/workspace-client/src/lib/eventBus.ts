@@ -126,7 +126,7 @@ type EventListener<T extends EventType> = T extends "fs:events"
 	? (workspaceId: string, payload: FsEventsPayload) => void
 	: T extends "git:changed"
 		? (workspaceId: string, payload: GitChangedPayload) => void
-	: T extends "agent:lifecycle"
+		: T extends "agent:lifecycle"
 			? (workspaceId: string, payload: AgentLifecyclePayload) => void
 			: T extends "agent:bindings-changed"
 				? (workspaceId: string, payload: AgentBindingsChangedPayload) => void
