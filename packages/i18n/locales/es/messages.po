@@ -21901,11 +21901,6 @@ msgstr "Añadir"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.archive"
-msgstr "Archivar"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.cancel"
 msgstr "Cancelar"
 
@@ -21935,6 +21930,11 @@ msgid "settings.environments.empty"
 msgstr "Aún no hay entornos. Crea uno para iniciar un espacio de trabajo en la nube a partir de él."
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.emptyHint"
+msgstr "Crea uno para iniciar un espacio de trabajo en la nube a partir de él."
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.import"
 msgstr "Importar"
@@ -21954,21 +21954,6 @@ msgstr "Se omitieron claves reservadas o no válidas: {0}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.keyLabel"
 msgstr "Nombre"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindFork"
-msgstr "Fork — copiar un sandbox que ya has configurado"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindImage"
-msgstr "Imagen — crear un sandbox a partir de una imagen de contenedor"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.kindLabel"
-msgstr "Origen"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
@@ -21996,24 +21981,9 @@ msgid "settings.environments.pasteLabel"
 msgstr "Pega un archivo .env"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refFork"
-msgstr "Sandbox del que hacer fork"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
-msgid "settings.environments.refImage"
-msgstr "Referencia de la imagen"
-
-#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
 msgid "settings.environments.secretsDescription"
 msgstr "Se aplican a todos los sandboxes iniciados desde este entorno. Los nombres que Superset usa internamente se rechazan, por lo que una variable de aquí nunca puede cambiar la identidad de un espacio de trabajo."
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
-msgid "settings.environments.secretsTitle"
-msgstr "Variables de entorno"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
