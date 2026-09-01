@@ -1,5 +1,5 @@
 {
-  "id": "fac2ff8c-f547-4d56-9dc6-2d26b781b7d5",
+  "id": "bc322282-5ad9-48a5-929a-14d66cac9a24",
   "prevId": "0dbfa484-5178-4cba-b8f3-c5ecd9c37175",
   "version": "7",
   "dialect": "postgresql",
@@ -5427,8 +5427,7 @@
           "name": "sensitive",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": true
         },
         "created_by_user_id": {
           "name": "created_by_user_id",

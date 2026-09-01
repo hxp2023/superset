@@ -5,7 +5,7 @@ CREATE TABLE "environment_secrets" (
 	"environment_id" uuid NOT NULL,
 	"key" text NOT NULL,
 	"encrypted_value" text NOT NULL,
-	"sensitive" boolean DEFAULT false NOT NULL,
+	"sensitive" boolean NOT NULL,
 	"created_by_user_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,

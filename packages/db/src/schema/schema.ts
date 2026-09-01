@@ -584,7 +584,13 @@ export const environmentSecrets = pgTable(
 			.references(() => environments.id, { onDelete: "cascade" }),
 		key: text().notNull(),
 		encryptedValue: text("encrypted_value").notNull(),
-		sensitive: boolean().notNull().default(false),
+		// No default on purpose. Whether a value is secret is not something to
+		// guess: the API decides it (defaulting to secret), and a column default
+		// would only ever apply to an insert that bypassed it — a seed or a
+		// backfill — which is exactly the case that should have to say what it
+		// means rather than inherit the permissive answer. `false` makes the
+		// value readable in the editor.
+		sensitive: boolean().notNull(),
 		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
 			onDelete: "set null",
 		}),
