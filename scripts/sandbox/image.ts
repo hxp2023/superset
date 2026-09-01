@@ -1,6 +1,13 @@
 /**
  * Builds the Blaxel sandbox image that hosts host-service.
  *
+ * Deliberately carries no repository. This image is the one every customer
+ * gets, and baking our monorepo into it shipped 230 MiB of somebody else's
+ * code to all of them — while re-cloning on every build, because the layer sat
+ * below a bundle that changes each time. Our own checkout is warmed in the
+ * internal environment instead (scripts/sandbox/internal-setup.sh), which is a
+ * fork, so it costs the people who benefit from it and nobody else.
+ *
  *   BL_API_KEY=... BL_WORKSPACE=superset bun run scripts/sandbox/image.ts
  *   bun run scripts/sandbox/image.ts --dry   # print the Dockerfile only
  *
@@ -31,15 +38,6 @@ const HOST_SERVICE_PORT = 4879;
 const IMAGE_NAME = process.env.SANDBOX_IMAGE_NAME ?? "superset-hostsvc";
 
 /**
- * Baked into the image so a workspace never clones. Public URL on purpose: the
- * build needs no credential, and the runtime supplies one per fetch.
- */
-const SANDBOX_REPO_URL =
-	process.env.SANDBOX_REPO_URL ?? "https://github.com/superset-sh/superset.git";
-const SANDBOX_REPO_DEFAULT_BRANCH =
-	process.env.SANDBOX_REPO_DEFAULT_BRANCH ?? "main";
-
-/**
  * Read from host-service rather than hardcoded: a sandbox running a
  * different better-sqlite3 than host-service was built against is a
  * native-ABI mismatch that surfaces as a runtime crash.
@@ -56,6 +54,22 @@ function pinnedVersion(dep: string): string {
 	}
 	return version;
 }
+
+/**
+ * Bumped by hand, on purpose: an agent CLI is the most user-visible thing in
+ * the image, and a silent upgrade mid-fleet is how a working sandbox starts
+ * behaving differently for no reason anyone can point at.
+ */
+/**
+ * The repo's own package manager. Pinned for the same reason the agent CLIs
+ * are: an unpinned install in a cached layer is a version nobody chose.
+ */
+const BUN_VERSION = "1.4.0";
+
+const AGENT_CLI_VERSIONS = {
+	claudeCode: "2.1.257",
+	codex: "0.152.0",
+} as const;
 
 const natives = [
 	`better-sqlite3@${pinnedVersion("better-sqlite3")}`,
@@ -95,7 +109,57 @@ function assertBuilt(): void {
 export const sandboxImage = ImageInstance.fromRegistry("node:24-bookworm-slim")
 	// git for the workspace checkout, openssh-client for SSH remotes, ca-certificates
 	// for HTTPS clones. Deliberately no build-essential/python3 — see the header.
-	.aptInstall("git", "ca-certificates", "openssh-client", "curl")
+	// `procps` is not padding: without it there is no `ps` or `pgrep`, which an
+	// agent reaches for constantly and which this image genuinely lacked.
+	// `tzdata`/`locales` keep dates and git's message locale from being wrong
+	// rather than missing, and the network trio is what makes a connection
+	// failure diagnosable from inside the box instead of a shrug.
+	.aptInstall(
+		"git",
+		"git-lfs",
+		"ca-certificates",
+		"openssh-client",
+		"curl",
+		"wget",
+		"procps",
+		"rsync",
+		"zip",
+		"unzip",
+		"tzdata",
+		"locales",
+		"less",
+		"jq",
+		"ripgrep",
+		"sqlite3",
+		"inotify-tools",
+		"dnsutils",
+		"iputils-ping",
+		"netcat-openbsd",
+		"vim",
+		// A virtual display and a VNC server, so a sandbox can run and show a GUI
+		// program. Capability rather than taste: any customer whose work has a
+		// window needs it, and installing it on first use would mean an apt wait
+		// the first time someone opens the pane.
+		//
+		// `xauth` is not optional despite looking like it — `xvfb-run` exits with
+		// "xauth command not found" without it, which is how this was found.
+		// x11vnc must be started with `-localhost`: the display is full control of
+		// the machine, and the only thing that should reach it is host-service's
+		// authenticated proxy.
+		"xvfb",
+		"xauth",
+		"x11vnc",
+		"openbox",
+		// Verified missing the hard way twice: without iproute2 there is no `ss`,
+		// and a listener check silently reports nothing rather than failing.
+		"iproute2",
+	)
+	// Installed globally rather than via the install script's $HOME/.bun so it
+	// resolves for every user and every non-login shell, which is what a
+	// process started by the platform gets.
+	.runCommands(
+		`npm install -g bun@${BUN_VERSION} --no-audit --no-fund && bun --version`,
+	)
 	.workdir("/app")
 	.runCommands("npm init -y")
 	// The bundle is ESM; without this Node parses /app/*.js as CommonJS and
@@ -114,8 +178,12 @@ export const sandboxImage = ImageInstance.fromRegistry("node:24-bookworm-slim")
 	// agent picker has nothing to offer, since a sandbox has none of the
 	// user's locally-installed agents. Both read their key from the
 	// environment, which is how the sandbox is handed credentials.
+	// Pinned deliberately. Unpinned, this layer caches: a warm builder ships
+	// whatever version it first resolved, months old and invisible, and a cold
+	// one makes two builds a day apart differ. That is the same class of drift
+	// as a stale host-service, and the reason this image exists as code.
 	.runCommands(
-		"npm install -g @anthropic-ai/claude-code @openai/codex --no-audit --no-fund && claude --version && codex --version",
+		`npm install -g @anthropic-ai/claude-code@${AGENT_CLI_VERSIONS.claudeCode} @openai/codex@${AGENT_CLI_VERSIONS.codex} --no-audit --no-fund && claude --version && codex --version`,
 	)
 	// Every first run of the Claude TUI otherwise opens with a theme picker, an
 	// "approve this API key?" prompt and a workspace trust dialog — three
@@ -172,22 +240,12 @@ export const sandboxImage = ImageInstance.fromRegistry("node:24-bookworm-slim")
 	// upward from /pty-daemon. Linked rather than installed twice so the two
 	// can never diverge on the native addon's version.
 	.runCommands("ln -s /app/node_modules /pty-daemon/node_modules")
-	// The repo, baked. This is the difference between a sandbox and a VM someone
-	// configures over SSH: a clone of 280 MiB of history at request time cost
-	// ~40s and put the slowest step of provisioning on the critical path. Built
-	// in, a workspace only has to move to its branch — a one-ref fetch against
-	// an object store that is already warm.
-	//
-	// SANDBOX_REPO_URL is baked without credentials; the token is supplied per
-	// fetch from the environment at runtime, so nothing durable in the image or
-	// in .git/config can read it.
-	.runCommands(
-		`git clone --filter=blob:none --no-checkout ${SANDBOX_REPO_URL} ${SANDBOX_WORKSPACE_PATH} && cd ${SANDBOX_WORKSPACE_PATH} && git checkout ${SANDBOX_REPO_DEFAULT_BRANCH} && git remote set-url origin ${SANDBOX_REPO_URL}`,
-	)
 	// The schema, baked. host-service creates it on first boot, which used to
 	// mean provisioning ran host-service once just to initialise the database
 	// and then killed it. Running that at build time instead removes the entire
 	// step: a fresh sandbox copies a file.
+	// Nothing above this needs a checkout: the schema bake runs host-service
+	// against /app alone. A workspace clones its own repo on first boot.
 	.runCommands(
 		`cd /app && ORGANIZATION_ID=00000000-0000-0000-0000-000000000000 HOST_DB_PATH=/app/host.db.template HOST_MIGRATIONS_FOLDER=/app/drizzle AUTH_TOKEN=build SUPERSET_API_URL=https://example.invalid SUPERSET_HOST_RUN_MODE=sandbox node -e "$(printf '%s' 'const { spawn } = require("node:child_process"); const p = spawn("node", ["host-service.js"], { stdio: ["ignore", "pipe", "pipe"] }); let out = ""; const done = (code) => { try { p.kill("SIGTERM"); } catch {} process.exit(code); }; const watch = (chunk) => { out += chunk; if (out.includes("Initialized at")) setTimeout(() => done(0), 2000); }; p.stdout.on("data", watch); p.stderr.on("data", watch); setTimeout(() => { console.error(out.slice(-800)); done(1); }, 60000);')" `,
 	)

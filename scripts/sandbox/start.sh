@@ -10,17 +10,6 @@
 # sandbox nothing can talk to.
 set -uo pipefail
 
-# TODO(2026-09-01): delete once a fork can be created with its own environment
-# variables. A fork inherits the source sandbox's env and the fork request
-# cannot override it; the update endpoint that would fix it afterwards resets
-# the sandbox to its image (see forkSandbox in
-# packages/trpc/src/lib/blaxel/blaxel.ts). Provisioning writes this file
-# instead. Absent on a created sandbox, which already has its identity.
-if [ -f /data/identity.env ]; then
-  # shellcheck disable=SC1091
-  . /data/identity.env
-fi
-
 WORKSPACE="${SUPERSET_SANDBOX_WORKSPACE_PATH:-/workspace}"
 BRANCH="${SUPERSET_SANDBOX_BRANCH:-}"
 REPO_URL="${SUPERSET_SANDBOX_REPO_URL:-}"
@@ -37,16 +26,15 @@ if [ ! -f /data/host.db ] && [ -f /app/host.db.template ]; then
   cp /app/host.db.template /data/host.db
 fi
 
-# The image bakes one repo. When the workspace wants that repo, moving to its
-# branch is a one-ref fetch against an object store that is already warm. When
-# it wants a different one — any project that isn't the baked one — the baked
-# objects are useless and it clones instead, which is what provisioning did for
-# every workspace before the repo was baked.
+# The image carries no repository, so a workspace normally clones on first
+# boot. An environment forked from a configured sandbox may already have one:
+# when its origin matches what the workspace wants, moving to the branch is a
+# one-ref fetch against objects that are already local, and when it doesn't the
+# baked objects are useless and it clones instead.
 #
 # Getting this wrong is silent rather than loud: fetching the requested branch
 # from the wrong origin leaves a sandbox serving somebody else's code, so the
 # URLs are compared rather than assumed to match.
-# Exactly once per sandbox, and never again.
 #
 # Both branches below are destructive to work in progress: the clone path wipes
 # the directory, and the fetch path moves the branch onto the remote's head,
