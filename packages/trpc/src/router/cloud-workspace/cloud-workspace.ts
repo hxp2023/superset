@@ -1,9 +1,10 @@
 import { db, dbWs } from "@superset/db/client";
 import { cloudWorkspaces, environments, v2Projects } from "@superset/db/schema";
+import { SHARED_ENVIRONMENT_ORGANIZATION_ID } from "@superset/shared/constants";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { Client } from "@upstash/qstash";
-import { and, desc, eq, isNotNull, isNull, ne, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import {
@@ -183,10 +184,18 @@ export const cloudWorkspaceRouter = {
 				});
 			}
 
+			// The organization's own environments, plus the ones the platform
+			// ships — which belong to a sentinel organization the caller is not a
+			// member of, so matching on the caller's own id alone would reject
+			// exactly the environment a customer with none of their own starts
+			// from. Same pair `environment.list` offers.
 			const environment = await db.query.environments.findFirst({
 				where: and(
 					eq(environments.id, input.environmentId),
-					eq(environments.organizationId, input.organizationId),
+					inArray(environments.organizationId, [
+						input.organizationId,
+						SHARED_ENVIRONMENT_ORGANIZATION_ID,
+					]),
 					isNull(environments.archivedAt),
 				),
 			});
