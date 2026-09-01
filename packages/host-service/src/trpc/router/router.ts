@@ -10,6 +10,7 @@ import { gitRouter } from "./git";
 import { githubRouter } from "./github";
 import { healthRouter } from "./health";
 import { hostRouter } from "./host";
+import { imessageRouter } from "./imessage";
 import { issuesRouter } from "./issues";
 import { notificationsRouter } from "./notifications";
 import { pageWatchRouter } from "./page-watch";
@@ -37,6 +38,7 @@ export const appRouter = router({
 	filesystem: filesystemRouter,
 	git: gitRouter,
 	github: githubRouter,
+	imessage: imessageRouter,
 	issues: issuesRouter,
 	notifications: notificationsRouter,
 	pullRequests: pullRequestsRouter,

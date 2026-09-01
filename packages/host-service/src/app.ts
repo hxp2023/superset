@@ -3,13 +3,21 @@ import { trpcServer } from "@hono/trpc-server";
 import { Octokit } from "@octokit/rest";
 import { ChatService } from "@superset/provider-auth/server";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createApiClient } from "./api";
 import { createChatV3Mount, registerChatV3Routes } from "./chat-v3";
 import { createDb, type HostDb } from "./db";
+import { workspaces } from "./db/schema";
 import { EventBus, GitWatcher, registerEventBusRoute } from "./events";
+import { ImessageBridge, readChatDb, sendImessage } from "./imessage/index.ts";
+import {
+	getImessageSettings,
+	loadImessageCursor,
+	saveImessageCursor,
+} from "./imessage/settings";
 import { agentIsBusy, PageWatchManager } from "./page-watch/index.ts";
 import { registerForwardMuxRoute } from "./ports/forward-mux-route";
 import { portManager } from "./ports/port-manager";
@@ -229,11 +237,50 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	});
 	pageWatch.subscribeToTerminalEvents(eventBus);
 
+	// Superset over iMessage (macOS): texts from allowlisted conversations in
+	// ~/Library/Messages/chat.db become agent follow-ups; agents text back via
+	// the `imessage.reply` procedure (`superset imessage reply`). Off-macOS the
+	// bridge constructs but never ticks.
+	const imessage = new ImessageBridge({
+		readChatDb: (sinceRowId, chatIdentifiers) =>
+			readChatDb(sinceRowId, chatIdentifiers),
+		sendMessage: (to, text) => sendImessage(to, text),
+		sendToTerminal: async ({ workspaceId, terminalId, text }) => {
+			const result = await writeFramedInputToSession({
+				terminalId,
+				workspaceId,
+				text,
+				submit: true,
+				db,
+				eventBus,
+			});
+			if ("error" in result) throw new Error(result.error);
+		},
+		listLiveAgents: () => terminalAgentStore.list(),
+		isTerminalAlive: isLiveTerminalSession,
+		hasAgent: (terminalId) => {
+			const binding = terminalAgentStore.get(terminalId);
+			return binding !== undefined && binding.endedAt === undefined;
+		},
+		getWorkspaceName: (workspaceId) => {
+			const row = db
+				.select({ name: workspaces.name })
+				.from(workspaces)
+				.where(eq(workspaces.id, workspaceId))
+				.get();
+			return row?.name || null;
+		},
+		loadCursor: () => loadImessageCursor(db),
+		saveCursor: (cursor) => saveImessageCursor(db, cursor),
+	});
+	imessage.applySettings(getImessageSettings(db));
+
 	const runtime = {
 		auth: chatService,
 		filesystem,
 		pullRequests: pullRequestRuntime,
 		pageWatch,
+		imessage,
 	};
 
 	// Startup sweeps run in the background so they don't block server
@@ -372,6 +419,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 			pageWatch.stop();
 		} catch (err) {
 			console.warn("[host-service] pageWatch.stop failed:", err);
+		}
+		try {
+			imessage.stop();
+		} catch (err) {
+			console.warn("[host-service] imessage.stop failed:", err);
 		}
 		try {
 			await chatV3.dispose();

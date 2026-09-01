@@ -124,6 +124,13 @@ export const hostSettings = sqliteTable("host_settings", {
 	// inject (CLAUDE_CONFIG_DIR / CODEX_HOME). Null = the system default login.
 	defaultClaudeConfigDir: text("default_claude_config_dir"),
 	defaultCodexHome: text("default_codex_home"),
+	// Superset over iMessage (macOS): 1 = bridge enabled.
+	imessageEnabled: integer("imessage_enabled"),
+	// JSON string[] of allowlisted 1:1 chat identifiers (E.164 phone / email).
+	imessageHandles: text("imessage_handles"),
+	// Last chat.db message ROWID the bridge processed; survives restarts so
+	// history is never replayed.
+	imessageCursor: integer("imessage_cursor"),
 });
 
 export const pullRequests = sqliteTable(
