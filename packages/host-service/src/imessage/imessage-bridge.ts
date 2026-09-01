@@ -5,6 +5,7 @@ import {
 	buildNoAgentReply,
 	buildRoutedAck,
 	buildStatusReply,
+	effectiveWatchList,
 	parseInbound,
 	selectInbound,
 } from "./messages";
@@ -42,6 +43,8 @@ export class ImessageBridge {
 	private cursor: number | null = null;
 	private readonly bindings = new Map<string, ConversationBinding>();
 	private activeChatIdentifier: string | null = null;
+	/** The Mac's own Messages addresses, refreshed from every chat.db read. */
+	private ownAccounts: string[] = [];
 	private lastError: string | null = null;
 	private failures = 0;
 	private sendTimestamps: number[] = [];
@@ -71,20 +74,20 @@ export class ImessageBridge {
 			return;
 		}
 
-		// First enable: start at the tail — the bridge answers new texts, it
-		// does not replay history.
+		// Probe up front for the Mac's own addresses (self-chat watching must
+		// not wait a tick) and, on first enable, for the tail — the bridge
+		// answers new texts, it does not replay history.
 		this.cursor ??= this.deps.loadCursor();
-		if (this.cursor === null) {
-			try {
-				this.cursor = this.deps.readChatDb(
-					Number.MAX_SAFE_INTEGER,
-					[],
-				).maxRowId;
+		try {
+			const probe = this.deps.readChatDb(Number.MAX_SAFE_INTEGER, []);
+			this.ownAccounts = probe.ownAccounts;
+			if (this.cursor === null) {
+				this.cursor = probe.maxRowId;
 				this.deps.saveCursor(this.cursor);
-			} catch (error) {
-				this.recordFailure(error, "open");
-				return;
 			}
+		} catch (error) {
+			this.recordFailure(error, "open");
+			return;
 		}
 		this.ensureTicking();
 	}
@@ -123,7 +126,9 @@ export class ImessageBridge {
 				"No active iMessage conversation — pass --to with an allowlisted handle",
 			);
 		}
-		if (!this.settings.handles.includes(to)) {
+		if (
+			!effectiveWatchList(this.settings.handles, this.ownAccounts).includes(to)
+		) {
 			throw new Error(`${to} is not an allowlisted iMessage handle`);
 		}
 		await this.send(to, input.text);
@@ -181,11 +186,15 @@ export class ImessageBridge {
 
 		let snapshot: ReturnType<ImessageBridgeDeps["readChatDb"]>;
 		try {
-			snapshot = this.deps.readChatDb(this.cursor, this.settings.handles);
+			snapshot = this.deps.readChatDb(
+				this.cursor,
+				effectiveWatchList(this.settings.handles, this.ownAccounts),
+			);
 		} catch (error) {
 			this.recordFailure(error, "read");
 			return;
 		}
+		this.ownAccounts = snapshot.ownAccounts;
 		this.failures = 0;
 
 		for (const message of selectInbound(snapshot)) {

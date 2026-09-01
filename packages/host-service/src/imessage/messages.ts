@@ -43,6 +43,21 @@ export function selectInbound(
 	return out;
 }
 
+/**
+ * Messages keys the self-chat by whichever of the user's own addresses the
+ * sending device picked (phone number vs iCloud email), so allowlisting one
+ * own address must watch them all — otherwise a text from the phone lands in
+ * a sibling chat the bridge filters out.
+ */
+export function effectiveWatchList(
+	handles: string[],
+	ownAccounts: string[],
+): string[] {
+	const isSelfMode = handles.some((handle) => ownAccounts.includes(handle));
+	if (!isSelfMode) return handles;
+	return [...new Set([...handles, ...ownAccounts])];
+}
+
 export type InboundAction =
 	| { kind: "status" }
 	| { kind: "help" }

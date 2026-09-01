@@ -13,10 +13,17 @@ superset imessage status
 ```
 
 Texting your **own** iMessage address watches the "Messages to yourself"
-chat, so a second Apple ID is not required. In the self-chat every device
-writes `is_from_me = 1`, which is why every message the bridge sends starts
-with an invisible U+2063 marker — that marker, not the sender column, is the
-loop guard (`selectInbound`).
+chat, so a second Apple ID is not required. Two self-chat facts drive the
+implementation (both observed live, not documented by Apple):
+
+- Messages keys the self-chat by whichever of your own addresses the sending
+  device picked — a text from your phone can land in a chat identified by
+  your phone number even though you allowlisted your email. Allowlisting any
+  own address therefore watches **all** of the Mac's own accounts
+  (`effectiveWatchList`).
+- Every device writes `is_from_me = 1` in the self-chat, which is why every
+  message the bridge sends starts with an invisible U+2063 marker — that
+  marker, not the sender column, is the loop guard (`selectInbound`).
 
 ## Message flow
 

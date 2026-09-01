@@ -3,6 +3,7 @@ import type { TerminalAgentBinding } from "../terminal-agents";
 import {
 	buildAgentPrompt,
 	buildStatusReply,
+	effectiveWatchList,
 	MAX_OUTBOUND_CHARS,
 	OUTBOUND_MARKER,
 	parseInbound,
@@ -78,6 +79,32 @@ describe("selectInbound", () => {
 			]),
 		);
 		expect(picked).toHaveLength(0);
+	});
+});
+
+describe("effectiveWatchList", () => {
+	it("widens to all own accounts when any own address is allowlisted", () => {
+		expect(
+			effectiveWatchList(
+				["me@example.com"],
+				["me@example.com", "+15550001111"],
+			),
+		).toEqual(["me@example.com", "+15550001111"]);
+	});
+
+	it("leaves a non-self allowlist untouched", () => {
+		expect(effectiveWatchList(["+15551234567"], ["me@example.com"])).toEqual([
+			"+15551234567",
+		]);
+	});
+
+	it("dedupes when the allowlist already carries own accounts", () => {
+		expect(
+			effectiveWatchList(
+				["me@example.com", "+15550001111"],
+				["me@example.com", "+15550001111"],
+			),
+		).toEqual(["me@example.com", "+15550001111"]);
 	});
 });
 

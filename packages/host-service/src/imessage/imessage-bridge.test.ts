@@ -43,21 +43,28 @@ function harness(
 		cursor?: number | null;
 		readError?: Error;
 		platform?: NodeJS.Platform;
+		ownAccounts?: string[];
 	} = {},
 ) {
 	const sent: { to: string; text: string }[] = [];
 	const delivered: { terminalId: string; text: string }[] = [];
 	const savedCursors: number[] = [];
+	const readCalls: string[][] = [];
 	let rows = options.rows ?? [];
 	let now = T0;
 
 	const bridge = new ImessageBridge({
-		readChatDb: (sinceRowId): ChatDbSnapshot => {
+		readChatDb: (sinceRowId, chatIdentifiers): ChatDbSnapshot => {
 			if (options.readError) throw options.readError;
+			readCalls.push(chatIdentifiers);
 			return {
-				rows: rows.filter((row) => row.rowId > sinceRowId),
+				rows: rows.filter(
+					(row) =>
+						row.rowId > sinceRowId &&
+						chatIdentifiers.includes(row.chatIdentifier),
+				),
 				maxRowId: options.maxRowId ?? 10,
-				ownAccounts: [SELF],
+				ownAccounts: options.ownAccounts ?? [SELF],
 			};
 		},
 		sendMessage: async (to, text) => {
@@ -85,6 +92,7 @@ function harness(
 		sent,
 		delivered,
 		savedCursors,
+		readCalls,
 		setRows(next: InboundMessage[]) {
 			rows = next;
 		},
@@ -160,6 +168,40 @@ describe("ImessageBridge", () => {
 		h.setRows([]);
 		await h.bridge.tick();
 		expect(h.savedCursors).toEqual([11]);
+	});
+
+	it("watches every own account once one is allowlisted", async () => {
+		// Messages keyed this user's self-chat by phone number even though the
+		// allowlist held the email — the bridge must widen to all own accounts.
+		const PHONE = "+15550001111";
+		const h = harness({
+			ownAccounts: [SELF, PHONE],
+			rows: [
+				inbound({ chatIdentifier: PHONE, isFromMe: true, text: "from phone" }),
+			],
+			agents: [liveAgent()],
+		});
+		h.bridge.applySettings({ enabled: true, handles: [SELF] });
+		await h.bridge.tick();
+		expect(h.readCalls.at(-1)).toEqual([SELF, PHONE]);
+		expect(h.delivered).toHaveLength(1);
+		expect(h.delivered[0]?.text).toContain("from phone");
+
+		// Replies may also target the sibling self-chat.
+		await expect(h.bridge.reply({ text: "done", to: PHONE })).resolves.toEqual({
+			to: PHONE,
+		});
+	});
+
+	it("does not widen the watch list for a non-self allowlist", async () => {
+		const h = harness({
+			ownAccounts: [SELF],
+			rows: [inbound({})],
+			agents: [liveAgent()],
+		});
+		h.bridge.applySettings({ enabled: true, handles: [HANDLE] });
+		await h.bridge.tick();
+		expect(h.readCalls.at(-1)).toEqual([HANDLE]);
 	});
 
 	it("does not tick off macOS", () => {
