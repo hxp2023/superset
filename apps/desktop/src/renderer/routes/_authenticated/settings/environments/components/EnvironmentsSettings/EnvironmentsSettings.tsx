@@ -30,7 +30,12 @@ export function EnvironmentsSettings() {
 	const [name, setName] = useState("");
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
-	const { data: environments, isPending } = cloudTrpc.environment.list.useQuery(
+	const {
+		data: environments,
+		isPending,
+		isError,
+		error,
+	} = cloudTrpc.environment.list.useQuery(
 		{ organizationId: organizationId ?? "" },
 		{ enabled: Boolean(organizationId) },
 	);
@@ -87,7 +92,16 @@ export function EnvironmentsSettings() {
 				</Button>
 			</div>
 
-			{isPending ? (
+			{isError ? (
+				<div className="text-center py-12 text-sm text-destructive">
+					<Trans id="settings.environments.loadFailed">
+						Could not load environments.
+					</Trans>
+					<p className="text-xs text-muted-foreground mt-1">
+						{errorMessage(error)}
+					</p>
+				</div>
+			) : isPending ? (
 				<div className="divide-y divide-border">
 					<div className="py-3">
 						<Skeleton className="h-9 w-full" />
