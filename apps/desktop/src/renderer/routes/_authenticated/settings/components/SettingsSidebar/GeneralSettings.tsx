@@ -256,7 +256,6 @@ const SECTION_GROUPS: SectionGroup[] = [
 					message: "Environments",
 				}),
 				icon: <HiOutlineCube className="h-4 w-4" />,
-				fullWidth: true,
 			},
 			{
 				id: "/settings/integrations",
