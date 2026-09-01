@@ -53,12 +53,15 @@ function sortSecrets(secrets: Secret[], order: SortOrder): Secret[] {
 
 interface EnvironmentVariablesListProps {
 	environmentId: string;
+	/** Bumped by the parent after a save; refetches without remounting. */
+	refreshToken?: number;
 	onAdd: () => void;
 	onEdit: (secret: Secret) => void;
 }
 
 export function EnvironmentVariablesList({
 	environmentId,
+	refreshToken,
 	onAdd,
 	onEdit,
 }: EnvironmentVariablesListProps) {
@@ -84,7 +87,7 @@ export function EnvironmentVariablesList({
 
 	useEffect(() => {
 		fetchSecrets();
-	}, [fetchSecrets]);
+	}, [fetchSecrets, refreshToken]);
 
 	const filteredAndSorted = useMemo(() => {
 		const filtered = searchQuery
@@ -134,13 +137,7 @@ export function EnvironmentVariablesList({
 				</div>
 			)}
 
-			{isLoading ? (
-				<div className="text-sm text-muted-foreground px-4 py-4 text-center border rounded-md">
-					<span className="flex h-9 items-center justify-center">
-						Loading...
-					</span>
-				</div>
-			) : filteredAndSorted.length === 0 ? (
+			{isLoading ? null : filteredAndSorted.length === 0 ? (
 				// Same px-4 py-4 and 36px content height as a row, so the list does
 				// not change height when a filter empties it.
 				<div className="text-sm text-muted-foreground px-4 py-4 text-center border rounded-md">

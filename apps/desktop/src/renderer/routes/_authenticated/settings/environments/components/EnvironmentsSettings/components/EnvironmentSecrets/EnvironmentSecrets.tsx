@@ -54,8 +54,8 @@ export function EnvironmentSecrets({
 
 			<EnvironmentVariablesList
 				environmentId={environmentId}
-				key={reloadKey}
 				onAdd={() => setIsAddOpen(true)}
+				refreshToken={reloadKey}
 				onEdit={(secret) =>
 					setEditing({
 						id: secret.id,
