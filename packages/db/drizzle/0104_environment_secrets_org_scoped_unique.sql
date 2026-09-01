@@ -1,2 +1,0 @@
-ALTER TABLE "environment_secrets" DROP CONSTRAINT "environment_secrets_environment_id_key_unique";--> statement-breakpoint
-ALTER TABLE "environment_secrets" ADD CONSTRAINT "environment_secrets_environment_id_organization_id_key_unique" UNIQUE("environment_id","organization_id","key");

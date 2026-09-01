@@ -61,16 +61,31 @@ export function DashboardSidebarWorkspaceItem({
 	pinnedContext,
 }: DashboardSidebarWorkspaceItemProps) {
 	const { t } = useLingui();
-	const promoteToEnvironment = cloudTrpc.environment.promote.useMutation({
-		onSuccess: (created) =>
-			toast.success(
-				t({
-					id: "dashboard.sidebar.promotedToEnvironment",
-					message: `Saved "${created?.name}" as an environment`,
+	// Promotion forks the sandbox and waits on a cleanup exec inside it, so it
+	// runs for several seconds with nothing on screen. `toast.promise` is what
+	// the rest of the app uses to cover that gap.
+	const promoteToEnvironment = cloudTrpc.environment.promote.useMutation();
+
+	const handlePromoteToEnvironment = useCallback(() => {
+		toast.promise(
+			promoteToEnvironment.mutateAsync({
+				cloudWorkspaceId: workspace.id,
+				name: workspace.name,
+			}),
+			{
+				loading: t({
+					id: "dashboard.sidebar.promotingToEnvironment",
+					message: "Saving as an environment...",
 				}),
-			),
-		onError: (error) => toast.error(errorMessage(error)),
-	});
+				success: (created) =>
+					t({
+						id: "dashboard.sidebar.promotedToEnvironment",
+						message: `Saved "${created?.name}" as an environment`,
+					}),
+				error: (error) => errorMessage(error),
+			},
+		);
+	}, [promoteToEnvironment, workspace.id, workspace.name, t]);
 
 	const {
 		id,
@@ -283,13 +298,7 @@ export function DashboardSidebarWorkspaceItem({
 								isMainWorkspace && hostType === "local-device"
 							}
 							onPromoteToEnvironment={
-								hostType === "cloud"
-									? () =>
-											promoteToEnvironment.mutate({
-												cloudWorkspaceId: id,
-												name: workspace.name,
-											})
-									: undefined
+								hostType === "cloud" ? handlePromoteToEnvironment : undefined
 							}
 							isPinned={workspace.isPinned}
 							onTogglePin={handleTogglePin}
