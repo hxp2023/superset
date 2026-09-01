@@ -19,9 +19,11 @@ export interface HostTagFoldersResult {
 }
 
 /**
- * Collapse replicated `(scope, tag)` rows for rendering. Local wins when it
- * has a value; otherwise the lexicographically first host wins so the result
- * cannot change with query completion order.
+ * Collapse replicated `(scope, tag)` rows for rendering. Local wins at row
+ * granularity; otherwise the lexicographically first host wins so the result
+ * cannot change with query completion order. Do not merge nullable fields:
+ * null is a meaningful explicit reset (for example choosing Default colour),
+ * not proof that a stale remote field should be resurrected.
  */
 export function mergeHostTagFolders(
 	hostResults: HostTagFoldersResult[],

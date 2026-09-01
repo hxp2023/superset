@@ -94,11 +94,14 @@ export function useHostTagFolders(): UseHostTagFoldersResult {
 			if (!target.hostUrl) continue;
 			const bus = getHostEventBus(target.hostUrl);
 			const key = queryKeys[index];
-			cleanups.push(
-				bus.on("tag-folders:changed", "*", () => {
-					void queryClient.invalidateQueries({ queryKey: key });
-				}),
-			);
+			const removeListener = bus.on("tag-folders:changed", "*", () => {
+				void queryClient.invalidateQueries({ queryKey: key });
+			});
+			const releaseBus = bus.retain();
+			cleanups.push(() => {
+				removeListener();
+				releaseBus();
+			});
 		}
 		return () => {
 			for (const cleanup of cleanups) cleanup();

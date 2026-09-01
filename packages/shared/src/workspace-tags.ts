@@ -65,24 +65,26 @@ export function normalizeWorkspaceTags(
 	return [...unique].sort();
 }
 
+/** Router-boundary schema for one tag; parses to its stored normalized form. */
+export const workspaceTagInputSchema = z
+	.string()
+	.superRefine((tag, ctx) => {
+		if (normalizeWorkspaceTag(tag) == null) {
+			ctx.addIssue({
+				code: "custom",
+				message: `Tag must be 1-${WORKSPACE_TAG_MAX_LENGTH} characters after trimming`,
+			});
+		}
+	})
+	.transform((tag) => normalizeWorkspaceTag(tag) as string);
+
 /**
  * Router-boundary schema. Rejects (never silently drops) invalid tags and
  * over-cap sets; parses to the normalized, deduped, sorted set. The cap
  * applies to the deduped set — that is what gets stored.
  */
 export const workspaceTagsInputSchema = z
-	.array(z.string())
-	.superRefine((tags, ctx) => {
-		for (const [index, tag] of tags.entries()) {
-			if (normalizeWorkspaceTag(tag) == null) {
-				ctx.addIssue({
-					code: "custom",
-					message: `Tag must be 1-${WORKSPACE_TAG_MAX_LENGTH} characters after trimming`,
-					path: [index],
-				});
-			}
-		}
-	})
+	.array(workspaceTagInputSchema)
 	.transform((tags) => normalizeWorkspaceTags(tags))
 	.refine((tags) => tags.length <= WORKSPACE_TAGS_MAX_PER_WORKSPACE, {
 		message: `A workspace can have at most ${WORKSPACE_TAGS_MAX_PER_WORKSPACE} tags`,

@@ -8,6 +8,7 @@ import { useOptimisticActions } from "renderer/routes/_authenticated/hooks/useOp
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
 import {
 	applyFolderTagChange,
+	buildSidebarFolderKey,
 	useTagFolderContext,
 } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
@@ -38,7 +39,7 @@ export function DashboardSidebarSessionTagGroup({
 		useDashboardSidebarSectionRename();
 	const { renameSection, setSectionColor } = useDashboardSidebarState();
 	const { tagSettings } = useTagFolderContext();
-	const renameKey = `${SESSIONS_TAG_SCOPE}:${tag}`;
+	const renameKey = buildSidebarFolderKey(SESSIONS_TAG_SCOPE, tag);
 	const setting = tagSettings.find(
 		(item) => item.projectId === SESSIONS_TAG_SCOPE && item.tag === tag,
 	);

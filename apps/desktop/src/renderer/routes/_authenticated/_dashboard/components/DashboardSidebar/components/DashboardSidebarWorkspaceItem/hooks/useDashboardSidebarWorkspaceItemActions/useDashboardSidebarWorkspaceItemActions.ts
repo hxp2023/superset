@@ -26,6 +26,7 @@ import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/Host
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import {
 	applyFolderTagChange,
+	buildSidebarFolderKey,
 	mintFolderTag,
 } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { useDeleteWorkspaceIntent } from "renderer/stores/delete-workspace-intent";
@@ -164,7 +165,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 			void workspaceActions.updateWorkspace(workspaceId, {
 				tags: applyFolderTagChange(currentWorkspaceTags, sessionGroupTags, tag),
 			});
-			requestSectionRename(`${SESSIONS_TAG_SCOPE}:${tag}`);
+			requestSectionRename(buildSidebarFolderKey(SESSIONS_TAG_SCOPE, tag));
 			return;
 		}
 		const sectionId = createSection(projectId);

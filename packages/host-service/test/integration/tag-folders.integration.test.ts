@@ -55,8 +55,35 @@ describe("tag folders router integration", () => {
 		}
 	});
 
+	test("normalizes valid tags and rejects tags the store cannot represent", async () => {
+		host = await createTestHost();
+		await host.trpc.tagFolders.upsert.mutate({
+			scope: SESSIONS_TAG_SCOPE,
+			tag: "  Perf Work  ",
+			color: "#ff0000",
+		});
+		expect(await host.trpc.tagFolders.list.query()).toMatchObject([
+			{ scope: SESSIONS_TAG_SCOPE, tag: "perf work" },
+		]);
+		await expect(
+			host.trpc.tagFolders.upsert.mutate({
+				scope: SESSIONS_TAG_SCOPE,
+				tag: "   ",
+				color: "#ff0000",
+			}),
+		).rejects.toBeInstanceOf(TRPCClientError);
+	});
+
 	test("project removal atomically cleans its folder rows but keeps Sessions", async () => {
 		host = await createTestHost();
+		const sentMessages: string[] = [];
+		host.eventBus.handleOpen({
+			readyState: 1,
+			send(data: string) {
+				sentMessages.push(data);
+			},
+			close() {},
+		});
 		const project = seedProject(host, { repoPath: "/tmp/tag-folder-project" });
 		await host.trpc.tagFolders.upsert.mutate({
 			scope: project.id,
@@ -68,8 +95,15 @@ describe("tag folders router integration", () => {
 			tag: "api",
 			color: "#0000ff",
 		});
+		sentMessages.length = 0;
 
 		await host.trpc.project.remove.mutate({ projectId: project.id });
+		expect(sentMessages.map((message) => JSON.parse(message))).toContainEqual({
+			type: "tag-folders:changed",
+			scope: project.id,
+			settings: [],
+			occurredAt: expect.any(Number),
+		});
 		const rows = await host.trpc.tagFolders.list.query();
 		expect(rows).toEqual([
 			{

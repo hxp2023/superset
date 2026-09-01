@@ -808,6 +808,11 @@ export const projectRouter = router({
 				});
 				// Events describe committed state and must not escape the transaction.
 				for (const ws of localWorkspaces) emitLocalWorkspaceDeleted(ctx, ws);
+				ctx.eventBus.broadcastTagFoldersChanged({
+					scope: input.projectId,
+					settings: [],
+					occurredAt: Date.now(),
+				});
 				emitProjectChanged(ctx.eventBus, "deleted", input.projectId);
 			} catch (err) {
 				throw new TRPCError({

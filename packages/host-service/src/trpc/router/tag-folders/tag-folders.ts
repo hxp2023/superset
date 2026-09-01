@@ -1,4 +1,7 @@
-import { tagFolderScopeInputSchema } from "@superset/shared/workspace-tags";
+import {
+	tagFolderScopeInputSchema,
+	workspaceTagInputSchema,
+} from "@superset/shared/workspace-tags";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -33,7 +36,7 @@ export const tagFoldersRouter = router({
 		.input(
 			z.object({
 				scope: tagFolderScopeInputSchema,
-				tag: z.string().min(1),
+				tag: workspaceTagInputSchema,
 				displayName: z.string().min(1).max(200).nullish(),
 				color: z.string().max(50).nullish(),
 				tabOrder: z.number().int().nullish(),
@@ -61,7 +64,10 @@ export const tagFoldersRouter = router({
 	/** Drop one folder's presentation row (folder deletion). Idempotent. */
 	delete: protectedProcedure
 		.input(
-			z.object({ scope: tagFolderScopeInputSchema, tag: z.string().min(1) }),
+			z.object({
+				scope: tagFolderScopeInputSchema,
+				tag: workspaceTagInputSchema,
+			}),
 		)
 		.mutation(({ ctx, input }) => {
 			assertScopeExists(ctx.db, input.scope);

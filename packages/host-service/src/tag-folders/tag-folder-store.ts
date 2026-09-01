@@ -77,15 +77,20 @@ export function getTagFolderSettings(
 		.sort((left, right) => left.tag.localeCompare(right.tag));
 }
 
-function broadcast(ctx: TagFolderStoreContext, scope: string): void {
+function broadcast(
+	ctx: TagFolderStoreContext,
+	scope: string,
+): TagSettingSnapshot[] {
+	const settings = getTagFolderSettings(ctx.db, scope);
 	ctx.eventBus.broadcastTagFoldersChanged({
 		scope,
-		settings: getTagFolderSettings(ctx.db, scope).map((setting) => ({
+		settings: settings.map((setting) => ({
 			...setting,
 			scope,
 		})),
 		occurredAt: Date.now(),
 	});
+	return settings;
 }
 
 /**
@@ -142,8 +147,7 @@ export function upsertTagFolderSetting(
 			})
 			.run();
 	}
-	broadcast(ctx, scope);
-	return getTagFolderSettings(ctx.db, scope);
+	return broadcast(ctx, scope);
 }
 
 /** Remove one folder's presentation row (folder deletion). Idempotent. */
@@ -160,8 +164,7 @@ export function deleteTagFolderSetting(
 			and(eq(tagFolderSettings.scope, scope), eq(tagFolderSettings.tag, tag)),
 		)
 		.run();
-	broadcast(ctx, scope);
-	return getTagFolderSettings(ctx.db, scope);
+	return broadcast(ctx, scope);
 }
 
 /**

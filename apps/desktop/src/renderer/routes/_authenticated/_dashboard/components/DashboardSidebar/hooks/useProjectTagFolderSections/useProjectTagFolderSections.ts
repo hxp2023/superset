@@ -1,4 +1,3 @@
-import { normalizeWorkspaceTags } from "@superset/shared/workspace-tags";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
@@ -7,6 +6,7 @@ import {
 	deriveTagFolders,
 	useTagFolderContext,
 } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
+import { deriveSessionTagFolderSections } from "./deriveSessionTagFolderSections";
 
 export interface ProjectTagFolderSection {
 	id: string;
@@ -46,16 +46,7 @@ export function useProjectTagFolderSections(projectId: string | null): {
 	);
 	const sections = useMemo(() => {
 		if (projectId === null) {
-			const tags = new Set<string>();
-			for (const workspace of hostWorkspaces) {
-				if (workspace.projectId !== null) continue;
-				for (const tag of normalizeWorkspaceTags(workspace.tags)) tags.add(tag);
-			}
-			return [...tags].sort().map((tag) => ({
-				id: tag,
-				name: tag,
-				color: null,
-			}));
+			return deriveSessionTagFolderSections(hostWorkspaces, tagFolderContext);
 		}
 		return deriveTagFolders(storedSections, hostWorkspaces, tagFolderContext)
 			.filter((section) => section.projectId === projectId)

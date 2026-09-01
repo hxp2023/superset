@@ -7,6 +7,7 @@ import {
 	tagFolderScopeInputSchema,
 	WORKSPACE_TAG_MAX_LENGTH,
 	WORKSPACE_TAGS_MAX_PER_WORKSPACE,
+	workspaceTagInputSchema,
 	workspaceTagsInputSchema,
 } from "./workspace-tags";
 
@@ -76,6 +77,21 @@ describe("normalizeWorkspaceTags", () => {
 			"a",
 			"b",
 		]);
+	});
+});
+
+describe("workspaceTagInputSchema", () => {
+	test("normalizes one valid tag", () => {
+		expect(workspaceTagInputSchema.parse("  Perf Work  ")).toBe("perf work");
+	});
+
+	test("rejects whitespace-only and over-length tags", () => {
+		expect(workspaceTagInputSchema.safeParse("   ").success).toBe(false);
+		expect(
+			workspaceTagInputSchema.safeParse(
+				"a".repeat(WORKSPACE_TAG_MAX_LENGTH + 1),
+			).success,
+		).toBe(false);
 	});
 });
 

@@ -47,6 +47,18 @@ describe("mergeHostTagFolders", () => {
 		expect(mergeHostTagFolders([zeta, alpha])).toEqual([setting("#111111")]);
 	});
 
+	test("treats local nulls as explicit resets instead of filling from a stale replica", () => {
+		const remote = result("remote", false, [
+			setting("#ff0000", { displayName: "Remote label" }),
+		]);
+		const local = result("local", true, [
+			setting("#0000ff", { displayName: "Local label", color: null }),
+		]);
+		expect(mergeHostTagFolders([remote, local])).toEqual([
+			setting("#0000ff", { displayName: "Local label", color: null }),
+		]);
+	});
+
 	test("preserves independent tags and scopes", () => {
 		const rows = mergeHostTagFolders([
 			result("local", true, [
