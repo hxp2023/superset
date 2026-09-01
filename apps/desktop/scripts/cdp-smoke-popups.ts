@@ -67,6 +67,8 @@ interface Expectation {
 	jar?: boolean;
 	/** Exact live window names, sorted because CDP target order is unspecified. */
 	names?: string[];
+	/** Exact postMessage callbacks this case must deliver to the opener. */
+	messages?: string[];
 	/** Whether `window.open` must hand the page a usable handle. */
 	handle?: boolean;
 	note: string;
@@ -97,6 +99,7 @@ const EXPECT: Record<string, Expectation> = {
 		opener: true,
 		jar: true,
 		names: [""],
+		messages: ["ok:(anon)"],
 		handle: true,
 		note: "bare window.open of a sign-in URL (Deel's shape)",
 	},
@@ -106,6 +109,7 @@ const EXPECT: Record<string, Expectation> = {
 		opener: true,
 		jar: true,
 		names: [""],
+		messages: ["ok:(anon)"],
 		handle: true,
 		note: "sign-in URL with a _blank name",
 	},
@@ -115,6 +119,7 @@ const EXPECT: Record<string, Expectation> = {
 		opener: true,
 		jar: true,
 		names: ["authwin"],
+		messages: ["ok:authwin"],
 		handle: true,
 		note: "sign-in URL, named, no features",
 	},
@@ -124,6 +129,7 @@ const EXPECT: Record<string, Expectation> = {
 		opener: true,
 		jar: true,
 		names: ["authpopup"],
+		messages: ["ok:authpopup"],
 		handle: true,
 		note: "window.open with features (Firebase's shape)",
 	},
@@ -133,6 +139,7 @@ const EXPECT: Record<string, Expectation> = {
 		opener: true,
 		jar: true,
 		names: [""],
+		messages: ["ok:(anon)"],
 		handle: true,
 		note: "OIDC hybrid response_type",
 	},
@@ -151,12 +158,14 @@ const EXPECT: Record<string, Expectation> = {
 		opener: true,
 		jar: true,
 		names: ["inner", "outer"],
+		messages: ["ok:outer"],
 		handle: true,
 		note: "a popup opening its own popup (Google's consent step)",
 	},
 	selfClosing: {
 		popups: 0,
 		panes: 0,
+		messages: ["ok:c"],
 		handle: true,
 		note: "window.close() from inside the popup",
 	},
@@ -303,6 +312,39 @@ async function closeFocusedPane(renderer: Cdp): Promise<void> {
 	});
 }
 
+async function focusPaneTarget(
+	renderer: Cdp,
+	target: CdpTarget,
+): Promise<void> {
+	const point = await renderer.eval<{ x: number; y: number } | null>(`(() => {
+		const targetUrl = ${JSON.stringify(target.url)};
+		const element = [...document.querySelectorAll("webview")].find((candidate) =>
+			candidate.getURL?.() === targetUrl || candidate.getAttribute("src") === targetUrl
+		);
+		if (!element) return null;
+		const rect = element.getBoundingClientRect();
+		// Click the host-rendered pane header just above the fixed webview. A
+		// click inside the guest does not bubble to the pane's focus handler.
+		return { x: rect.left + rect.width / 2, y: Math.max(0, rect.top - 10) };
+	})()`);
+	if (!point) throw new Error(`could not locate pane target ${target.id}`);
+	await renderer.send("Input.dispatchMouseEvent", {
+		type: "mousePressed",
+		x: point.x,
+		y: point.y,
+		button: "left",
+		clickCount: 1,
+	});
+	await renderer.send("Input.dispatchMouseEvent", {
+		type: "mouseReleased",
+		x: point.x,
+		y: point.y,
+		button: "left",
+		clickCount: 1,
+	});
+	await sleep(200);
+}
+
 async function main() {
 	if (!PORT || !VITE_PORT) {
 		console.error(
@@ -375,6 +417,7 @@ async function main() {
 			console.log(
 				`${"case".padEnd(19)}${"popups".padEnd(8)}${"opener".padEnd(12)}${"jar".padEnd(10)}${"name".padEnd(20)}${"handle".padEnd(8)}panes  verdict`,
 			);
+			let callbacksDelivered = 0;
 
 			for (const [name, script] of Object.entries(CASES)) {
 				if (ONLY_CASE && name !== ONLY_CASE) continue;
@@ -392,11 +435,10 @@ async function main() {
 						.map((target) => target.id),
 				);
 				const createdPopups = new Map<string, CdpTarget>();
-				const createdPanes = new Map<string, CdpTarget>();
 				try {
 					let actionError: string | null = null;
 					await g
-						.eval(`window.__handle = null; ${script}; 1`)
+						.eval(`window.__handle = null; window.__msgs = []; ${script}; 1`)
 						.catch((error) => {
 							actionError =
 								error instanceof Error ? error.message : String(error);
@@ -415,7 +457,6 @@ async function main() {
 							target.type === "webview" && !paneIdsBefore.has(target.id),
 					);
 					for (const target of live) createdPopups.set(target.id, target);
-					for (const target of livePanes) createdPanes.set(target.id, target);
 					const opener: Array<boolean | null> = [];
 					const jar: Array<boolean | null> = [];
 					const windowNames: Array<string | null> = [];
@@ -454,6 +495,15 @@ async function main() {
 					const handle = await g
 						.eval<string>("String(window.__handle)")
 						.catch(() => "?");
+					const caseMessages = await g
+						.eval<string[]>("window.__msgs ?? []")
+						.catch((error) => {
+							observationErrors.push(
+								`could not read opener callbacks: ${String(error)}`,
+							);
+							return [];
+						});
+					callbacksDelivered += caseMessages.length;
 
 					const bad: string[] = [];
 					if (actionError) bad.push(`action failed: ${actionError}`);
@@ -492,6 +542,17 @@ async function main() {
 							);
 						}
 					}
+					if (want.messages) {
+						const gotMessages = [...caseMessages].sort();
+						const wantedMessages = [...want.messages].sort();
+						if (
+							JSON.stringify(gotMessages) !== JSON.stringify(wantedMessages)
+						) {
+							bad.push(
+								`messages ${JSON.stringify(caseMessages)}!=${JSON.stringify(want.messages)}`,
+							);
+						}
+					}
 					if (want.handle !== undefined) {
 						const got = handle === "HANDLE";
 						if (got !== want.handle) bad.push(`handle ${handle}`);
@@ -507,19 +568,12 @@ async function main() {
 				} finally {
 					await targets()
 						.then((current) => {
-							// Replace the observation snapshot only after enumeration succeeds.
-							// If it fails, retain recorded targets as a cleanup fallback.
+							// Replace the popup snapshot only after enumeration succeeds. If it
+							// fails, retain recorded popup targets as a cleanup fallback.
 							createdPopups.clear();
-							createdPanes.clear();
 							for (const target of current) {
 								if (target.type === "page" && !pageIdsBefore.has(target.id)) {
 									createdPopups.set(target.id, target);
-								}
-								if (
-									target.type === "webview" &&
-									!paneIdsBefore.has(target.id)
-								) {
-									createdPanes.set(target.id, target);
 								}
 							}
 						})
@@ -529,37 +583,30 @@ async function main() {
 							);
 						});
 
+					const popupCleanupErrors = new Map<string, string>();
 					for (const p of createdPopups.values()) {
 						if (!p.webSocketDebuggerUrl) {
-							failures.push(
-								`${name}: could not close popup ${p.id}: no debugger URL`,
-							);
+							popupCleanupErrors.set(p.id, "no debugger URL");
 							continue;
 						}
 						const c = await Cdp.connect(p.webSocketDebuggerUrl).catch(
 							(error) => {
-								failures.push(
-									`${name}: could not connect to popup for cleanup: ${String(error)}`,
-								);
+								popupCleanupErrors.set(p.id, String(error));
 								return null;
 							},
 						);
 						await c?.send("Page.close").catch((error) => {
-							failures.push(
-								`${name}: could not close popup ${p.id}: ${String(error)}`,
-							);
+							popupCleanupErrors.set(p.id, String(error));
 						});
 						c?.close();
 					}
-					const countLiveCreatedPanes = () =>
+					const listLiveCreatedPanes = () =>
 						targets()
-							.then(
-								(current) =>
-									current.filter(
-										(target) =>
-											target.type === "webview" &&
-											!paneIdsBefore.has(target.id),
-									).length,
+							.then((current) =>
+								current.filter(
+									(target) =>
+										target.type === "webview" && !paneIdsBefore.has(target.id),
+								),
 							)
 							.catch((error) => {
 								failures.push(
@@ -567,9 +614,10 @@ async function main() {
 								);
 								return null;
 							});
-					let liveCreatedPaneCount = await countLiveCreatedPanes();
-					while (liveCreatedPaneCount) {
-						const closed = await closeFocusedPane(host)
+					let liveCreatedPanes = await listLiveCreatedPanes();
+					while (liveCreatedPanes?.length) {
+						const closed = await focusPaneTarget(host, liveCreatedPanes[0])
+							.then(() => closeFocusedPane(host))
 							.then(() => true)
 							.catch((error) => {
 								failures.push(
@@ -579,42 +627,53 @@ async function main() {
 							});
 						if (!closed) break;
 
-						const countBeforeClose = liveCreatedPaneCount;
-						let countAfterClose: number | null = countBeforeClose;
+						const countBeforeClose = liveCreatedPanes.length;
+						let panesAfterClose: CdpTarget[] | null = liveCreatedPanes;
 						for (
 							let attempt = 0;
 							attempt < 10 &&
-							countAfterClose !== null &&
-							countAfterClose >= countBeforeClose;
+							panesAfterClose !== null &&
+							panesAfterClose.length >= countBeforeClose;
 							attempt += 1
 						) {
 							await sleep(500);
-							countAfterClose = await countLiveCreatedPanes();
+							panesAfterClose = await listLiveCreatedPanes();
 						}
-						if (countAfterClose === null) break;
-						if (countAfterClose >= countBeforeClose) {
+						if (panesAfterClose === null) break;
+						if (panesAfterClose.length >= countBeforeClose) {
 							failures.push(
 								`${name}: created pane count did not decrease during cleanup`,
 							);
 							break;
 						}
-						liveCreatedPaneCount = countAfterClose;
+						if (panesAfterClose.length === 0) {
+							// A closed webview can briefly disappear and be recreated under a
+							// new target id while the renderer commits its pane state.
+							await sleep(1500);
+							panesAfterClose = await listLiveCreatedPanes();
+							if (panesAfterClose === null) break;
+						}
+						liveCreatedPanes = panesAfterClose;
 					}
 					await sleep(800);
 					await targets()
 						.then((current) => {
 							const remainingIds = new Set(current.map((target) => target.id));
-							for (const createdPane of createdPanes.values()) {
-								if (remainingIds.has(createdPane.id)) {
+							for (const target of current) {
+								if (
+									target.type === "webview" &&
+									!paneIdsBefore.has(target.id)
+								) {
 									failures.push(
-										`${name}: created pane ${createdPane.id} remained after cleanup`,
+										`${name}: created pane ${target.id} remained after cleanup`,
 									);
 								}
 							}
 							for (const popup of createdPopups.values()) {
 								if (remainingIds.has(popup.id)) {
+									const cleanupError = popupCleanupErrors.get(popup.id);
 									failures.push(
-										`${name}: popup ${popup.id} remained after cleanup`,
+										`${name}: popup ${popup.id} remained after cleanup${cleanupError ? ` (${cleanupError})` : ""}`,
 									);
 								}
 							}
@@ -627,21 +686,8 @@ async function main() {
 				}
 			}
 
-			const msgs = await g
-				.eval<string[]>("window.__msgs ?? []")
-				.catch(() => []);
-			const expectsCallback = Object.entries(EXPECT).some(
-				([name, expectation]) =>
-					(!ONLY_CASE || name === ONLY_CASE) &&
-					expectation.opener === true &&
-					name !== "noArgs" &&
-					name !== "blankFragment",
-			);
-			if (expectsCallback && !msgs.some((m) => m.startsWith("ok:"))) {
-				failures.push("no postMessage reached the opener");
-			}
 			console.log(
-				`\npostMessage callbacks delivered to opener: ${msgs.length}`,
+				`\npostMessage callbacks delivered to opener: ${callbacksDelivered}`,
 			);
 		} finally {
 			try {
