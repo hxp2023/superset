@@ -270,7 +270,11 @@ export function resolveDefaultAccountEnv(
 		const ambientCodex = ambientCodexHome();
 		const ambient = { SUPERSET_AMBIENT_CODEX_HOME: ambientCodex };
 		if (!selections.codexHome || !existsSync(selections.codexHome)) {
-			return { ...ambient, CODEX_HOME: ambientCodex };
+			return {
+				...ambient,
+				CODEX_HOME: ambientCodex,
+				SUPERSET_DEFAULT_CODEX_HOME: ambientCodex,
+			};
 		}
 		return {
 			...ambient,
