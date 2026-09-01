@@ -14,6 +14,7 @@ type EventType =
 	| "fs:events"
 	| "git:changed"
 	| "agent:lifecycle"
+	| "agent:bindings-changed"
 	| "terminal:lifecycle"
 	| "port:changed"
 	| "workspace:changed"
@@ -39,6 +40,10 @@ export interface AgentLifecyclePayload {
 	terminalId: string;
 	// Absent when the hook ran without `SUPERSET_AGENT_ID` set.
 	agent?: AgentIdentity;
+	occurredAt: number;
+}
+
+export interface AgentBindingsChangedPayload {
 	occurredAt: number;
 }
 
@@ -121,29 +126,31 @@ type EventListener<T extends EventType> = T extends "fs:events"
 	? (workspaceId: string, payload: FsEventsPayload) => void
 	: T extends "git:changed"
 		? (workspaceId: string, payload: GitChangedPayload) => void
-		: T extends "agent:lifecycle"
+	: T extends "agent:lifecycle"
 			? (workspaceId: string, payload: AgentLifecyclePayload) => void
-			: T extends "terminal:lifecycle"
-				? (workspaceId: string, payload: TerminalLifecyclePayload) => void
-				: T extends "port:changed"
-					? (workspaceId: string, payload: PortChangedPayload) => void
-					: T extends "workspace:changed"
-						? (workspaceId: string, payload: WorkspaceChangedPayload) => void
-						: T extends "workspace:create-settled"
-							? (
-									workspaceId: string,
-									payload: WorkspaceCreateSettledPayload,
-								) => void
-							: T extends "project:changed"
-								? (projectId: string, payload: ProjectChangedPayload) => void
-								: T extends "tag-folders:changed"
-									? (scope: string, payload: TagFoldersChangedPayload) => void
-									: T extends "page-watch:changed"
-										? (
-												workspaceId: string,
-												payload: PageWatchChangedPayload,
-											) => void
-										: never;
+			: T extends "agent:bindings-changed"
+				? (workspaceId: string, payload: AgentBindingsChangedPayload) => void
+				: T extends "terminal:lifecycle"
+					? (workspaceId: string, payload: TerminalLifecyclePayload) => void
+					: T extends "port:changed"
+						? (workspaceId: string, payload: PortChangedPayload) => void
+						: T extends "workspace:changed"
+							? (workspaceId: string, payload: WorkspaceChangedPayload) => void
+							: T extends "workspace:create-settled"
+								? (
+										workspaceId: string,
+										payload: WorkspaceCreateSettledPayload,
+									) => void
+								: T extends "project:changed"
+									? (projectId: string, payload: ProjectChangedPayload) => void
+									: T extends "tag-folders:changed"
+										? (scope: string, payload: TagFoldersChangedPayload) => void
+										: T extends "page-watch:changed"
+											? (
+													workspaceId: string,
+													payload: PageWatchChangedPayload,
+												) => void
+											: never;
 
 interface ListenerEntry {
 	type: EventType;
@@ -243,6 +250,7 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 			message.type === "fs:events" ||
 			message.type === "git:changed" ||
 			message.type === "agent:lifecycle" ||
+			message.type === "agent:bindings-changed" ||
 			message.type === "terminal:lifecycle" ||
 			message.type === "port:changed" ||
 			message.type === "workspace:changed" ||
@@ -280,6 +288,11 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 					...(message.agent ? { agent: message.agent } : {}),
 					occurredAt: message.occurredAt,
 				},
+			);
+		} else if (message.type === "agent:bindings-changed") {
+			(entry.callback as EventListener<"agent:bindings-changed">)(
+				message.workspaceId,
+				{ occurredAt: message.occurredAt },
 			);
 		} else if (message.type === "terminal:lifecycle") {
 			(entry.callback as EventListener<"terminal:lifecycle">)(
