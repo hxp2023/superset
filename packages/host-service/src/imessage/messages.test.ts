@@ -171,6 +171,16 @@ describe("buildStatusReply", () => {
 	it("explains when nothing is running", () => {
 		expect(buildStatusReply([], () => null, T0)).toContain("No agents running");
 	});
+
+	it("caps the list on hosts with many live sessions", () => {
+		const many = Array.from({ length: 20 }, (_, i) =>
+			agent({ terminalId: `term-${i}`, lastEventAt: T0 - i * 1000 }),
+		);
+		const reply = buildStatusReply(many, () => "ws", T0);
+		const lines = reply.split("\n");
+		expect(lines).toHaveLength(9);
+		expect(lines.at(-1)).toBe("…and 12 more");
+	});
 });
 
 describe("truncateOutbound", () => {

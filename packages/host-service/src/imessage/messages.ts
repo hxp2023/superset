@@ -100,6 +100,9 @@ function formatAgo(ms: number): string {
 	return `${Math.floor(hours / 24)}d ago`;
 }
 
+/** A long-lived host tracks dozens of sessions; a text lists the recent few. */
+export const MAX_STATUS_AGENTS = 8;
+
 export function buildStatusReply(
 	agents: TerminalAgentBinding[],
 	workspaceNameOf: (workspaceId: string) => string | null,
@@ -108,15 +111,16 @@ export function buildStatusReply(
 	if (agents.length === 0) {
 		return "No agents running. Start one in Superset, then text your task here.";
 	}
-	const lines = agents
-		.slice()
-		.sort((a, b) => b.lastEventAt - a.lastEventAt)
-		.map((agent) => {
-			const workspace =
-				workspaceNameOf(agent.workspaceId) ?? agent.workspaceId.slice(0, 8);
-			const activity = agentIsBusy(agent.lastEventType) ? "working" : "idle";
-			return `• ${agent.agentId} in ${workspace} — ${activity} (${formatAgo(now - agent.lastEventAt)})`;
-		});
+	const sorted = agents.slice().sort((a, b) => b.lastEventAt - a.lastEventAt);
+	const lines = sorted.slice(0, MAX_STATUS_AGENTS).map((agent) => {
+		const workspace =
+			workspaceNameOf(agent.workspaceId) ?? agent.workspaceId.slice(0, 8);
+		const activity = agentIsBusy(agent.lastEventType) ? "working" : "idle";
+		return `• ${agent.agentId} in ${workspace} — ${activity} (${formatAgo(now - agent.lastEventAt)})`;
+	});
+	if (sorted.length > MAX_STATUS_AGENTS) {
+		lines.push(`…and ${sorted.length - MAX_STATUS_AGENTS} more`);
+	}
 	return lines.join("\n");
 }
 
