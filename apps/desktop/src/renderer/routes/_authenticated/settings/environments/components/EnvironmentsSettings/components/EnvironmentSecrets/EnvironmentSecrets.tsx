@@ -84,66 +84,70 @@ export function EnvironmentSecrets({
 	};
 
 	return (
-		<div className="flex flex-col gap-6">
-			<div className="flex items-center gap-3">
-				<Button onClick={onBack} size="sm" variant="ghost">
-					<HiOutlineArrowLeft className="size-4" />
+		<div className="p-6 max-w-4xl w-full">
+			<div className="mb-8 flex items-start gap-3">
+				<Button
+					className="h-8 w-8 shrink-0"
+					onClick={onBack}
+					size="icon"
+					variant="ghost"
+				>
+					<HiOutlineArrowLeft className="h-4 w-4" />
 				</Button>
-				<div className="flex flex-col">
-					<h2 className="font-medium text-lg">{environment?.name}</h2>
-					<span className="font-mono text-muted-foreground text-xs">
-						{environment?.sourceKind} · {environment?.sourceRef}
-					</span>
+				<div className="min-w-0">
+					<h2 className="text-xl font-semibold truncate">
+						{environment?.name}
+					</h2>
+					<p className="text-sm text-muted-foreground mt-1">
+						<Trans id="settings.environments.secretsDescription">
+							Variables set on every sandbox started from this environment.
+							Names Superset uses itself are rejected, so nothing here can
+							change a workspace's identity.
+						</Trans>
+					</p>
 				</div>
 			</div>
 
-			<div className="flex flex-col gap-2">
-				<h3 className="font-medium text-sm">
-					<Trans id="settings.environments.secretsTitle">
-						Environment variables
-					</Trans>
-				</h3>
-				<p className="max-w-prose text-muted-foreground text-sm">
-					<Trans id="settings.environments.secretsDescription">
-						Set on every sandbox started from this environment. Names Superset
-						uses itself are rejected, so a variable here can never change a
-						workspace's identity.
-					</Trans>
-				</p>
-			</div>
-
 			{isPending ? (
-				<Skeleton className="h-24 w-full" />
+				<div className="divide-y divide-border">
+					<div className="py-3">
+						<Skeleton className="h-5 w-full" />
+					</div>
+					<div className="py-3">
+						<Skeleton className="h-5 w-full" />
+					</div>
+				</div>
 			) : secrets && secrets.length > 0 ? (
-				<div className="flex flex-col divide-y rounded-md border">
+				<div className="divide-y divide-border">
 					{secrets.map((secret) => (
 						<div
-							className="flex items-center justify-between gap-4 p-3"
+							className="group flex items-center justify-between gap-4 py-3"
 							key={secret.id}
 						>
-							<span className="flex min-w-0 items-center gap-2">
-								<HiOutlineLockClosed className="size-4 shrink-0 text-muted-foreground" />
-								<span className="truncate font-mono text-sm">{secret.key}</span>
-							</span>
+							<div className="flex items-center gap-3 min-w-0">
+								<HiOutlineLockClosed className="h-4 w-4 shrink-0 text-muted-foreground" />
+								<div className="text-sm font-mono truncate">{secret.key}</div>
+							</div>
 							<Button
+								className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
 								onClick={() =>
 									removeSecret.mutate({ environmentId, key: secret.key })
 								}
-								size="sm"
+								size="icon"
 								variant="ghost"
 							>
-								<HiOutlineTrash className="size-4" />
+								<HiOutlineTrash className="h-4 w-4" />
 							</Button>
 						</div>
 					))}
 				</div>
 			) : (
-				<p className="rounded-md border border-dashed p-6 text-center text-muted-foreground text-sm">
+				<div className="text-center py-12 text-sm text-muted-foreground">
 					<Trans id="settings.environments.noSecrets">No variables yet.</Trans>
-				</p>
+				</div>
 			)}
 
-			<div className="flex items-end gap-2">
+			<div className="mt-8 flex items-end gap-2">
 				<div className="flex flex-1 flex-col gap-2">
 					<Label htmlFor="secret-key">
 						<Trans id="settings.environments.keyLabel">Name</Trans>

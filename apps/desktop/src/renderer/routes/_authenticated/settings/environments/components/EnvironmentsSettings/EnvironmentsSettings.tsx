@@ -13,7 +13,11 @@ import { Label } from "@superset/ui/label";
 import { Skeleton } from "@superset/ui/skeleton";
 import { toast } from "@superset/ui/sonner";
 import { useState } from "react";
-import { HiOutlineCube, HiOutlinePlus } from "react-icons/hi2";
+import {
+	HiOutlineArchiveBox,
+	HiOutlineCube,
+	HiOutlinePlus,
+} from "react-icons/hi2";
 import { useActiveOrganizationId } from "renderer/hooks/useActiveOrganizationId";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
 import { EnvironmentSecrets } from "./components/EnvironmentSecrets";
@@ -64,68 +68,76 @@ export function EnvironmentsSettings() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6">
-			<div className="flex items-start justify-between gap-4">
-				<div className="flex flex-col gap-1">
-					<h2 className="font-medium text-lg">
+		<div className="p-6 max-w-4xl w-full">
+			<div className="mb-8 flex items-start justify-between gap-4">
+				<div>
+					<h2 className="text-xl font-semibold">
 						<Trans id="settings.environments.title">Environments</Trans>
 					</h2>
-					<p className="max-w-prose text-muted-foreground text-sm">
+					<p className="text-sm text-muted-foreground mt-1">
 						<Trans id="settings.environments.description">
-							The starting point a cloud workspace boots from — a base image, or
-							a sandbox you configured and want to fork.
+							The starting point a cloud workspace boots from. Variables set
+							here reach every sandbox started from it.
 						</Trans>
 					</p>
 				</div>
 				<Button onClick={() => setShowCreate(true)} size="sm">
-					<HiOutlinePlus className="size-4" />
+					<HiOutlinePlus className="h-4 w-4" />
 					<Trans id="settings.environments.new">New environment</Trans>
 				</Button>
 			</div>
 
 			{isPending ? (
-				<div className="flex flex-col gap-2">
-					<Skeleton className="h-14 w-full" />
-					<Skeleton className="h-14 w-full" />
+				<div className="divide-y divide-border">
+					<div className="py-3">
+						<Skeleton className="h-9 w-full" />
+					</div>
+					<div className="py-3">
+						<Skeleton className="h-9 w-full" />
+					</div>
 				</div>
 			) : environments && environments.length > 0 ? (
-				<div className="flex flex-col divide-y rounded-md border">
+				<div className="divide-y divide-border">
 					{environments.map((environment) => (
 						<div
-							className="flex items-center justify-between gap-4 p-3"
+							className="group flex items-center justify-between gap-4 py-3"
 							key={environment.id}
 						>
 							<button
-								className="flex min-w-0 flex-1 items-center gap-3 text-left"
+								className="flex items-center gap-3 min-w-0 flex-1 text-left"
 								onClick={() => setSelectedId(environment.id)}
 								type="button"
 							>
-								<HiOutlineCube className="size-4 shrink-0 text-muted-foreground" />
-								<span className="flex min-w-0 flex-col">
-									<span className="truncate font-medium text-sm">
+								<HiOutlineCube className="h-4 w-4 shrink-0 text-muted-foreground" />
+								<div className="min-w-0">
+									<div className="text-sm font-medium truncate">
 										{environment.name}
-									</span>
-									<span className="truncate font-mono text-muted-foreground text-xs">
-										{environment.sourceKind} · {environment.sourceRef}
-									</span>
-								</span>
+									</div>
+									<div className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+										{environment.sourceRef}
+									</div>
+								</div>
 							</button>
 							<Button
+								className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
 								onClick={() => archive.mutate({ id: environment.id })}
-								size="sm"
+								size="icon"
 								variant="ghost"
 							>
-								<Trans id="settings.environments.archive">Archive</Trans>
+								<HiOutlineArchiveBox className="h-4 w-4" />
 							</Button>
 						</div>
 					))}
 				</div>
 			) : (
-				<p className="rounded-md border border-dashed p-6 text-center text-muted-foreground text-sm">
-					<Trans id="settings.environments.empty">
-						No environments yet. Create one to start a cloud workspace from it.
-					</Trans>
-				</p>
+				<div className="text-center py-12 text-sm text-muted-foreground">
+					<Trans id="settings.environments.empty">No environments yet.</Trans>
+					<p className="text-xs mt-1">
+						<Trans id="settings.environments.emptyHint">
+							Create one to start a cloud workspace from it.
+						</Trans>
+					</p>
+				</div>
 			)}
 
 			<Dialog onOpenChange={setShowCreate} open={showCreate}>
