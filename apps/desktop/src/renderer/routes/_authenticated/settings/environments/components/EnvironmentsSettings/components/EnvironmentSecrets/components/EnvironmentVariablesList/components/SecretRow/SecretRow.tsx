@@ -124,7 +124,7 @@ export function SecretRow({
 											onClick={handleCopy}
 											onMouseEnter={() => setValueHovered(true)}
 											onMouseLeave={() => setValueHovered(false)}
-											className="font-mono text-sm text-muted-foreground max-w-[200px] truncate rounded px-1 py-0.5 hover:bg-accent transition-colors cursor-pointer"
+											className="font-mono text-sm text-muted-foreground w-[200px] text-left truncate rounded px-1 py-0.5 hover:bg-accent transition-colors cursor-pointer"
 										>
 											{secret.value}
 										</button>
@@ -134,7 +134,7 @@ export function SecretRow({
 									</TooltipContent>
 								</Tooltip>
 							) : (
-								<span className="font-mono text-sm text-muted-foreground max-w-[200px] truncate">
+								<span className="font-mono text-sm text-muted-foreground w-[200px] truncate">
 									{
 										"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
 									}
@@ -157,7 +157,7 @@ export function SecretRow({
 
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+					<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-3">
 						<HiEllipsisHorizontal className="h-4 w-4" />
 					</Button>
 				</DropdownMenuTrigger>

@@ -135,14 +135,20 @@ export function EnvironmentVariablesList({
 			)}
 
 			{isLoading ? (
-				<div className="text-sm text-muted-foreground py-8 text-center">
-					Loading...
+				<div className="text-sm text-muted-foreground px-4 py-4 text-center border rounded-md">
+					<span className="flex h-9 items-center justify-center">
+						Loading...
+					</span>
 				</div>
 			) : filteredAndSorted.length === 0 ? (
-				<div className="text-sm text-muted-foreground py-8 text-center border rounded-md">
-					{secrets.length === 0
-						? "No environment variables yet"
-						: "No matching variables"}
+				// Same px-4 py-4 and 36px content height as a row, so the list does
+				// not change height when a filter empties it.
+				<div className="text-sm text-muted-foreground px-4 py-4 text-center border rounded-md">
+					<span className="flex h-9 items-center justify-center">
+						{secrets.length === 0
+							? "No environment variables yet"
+							: "No matching variables"}
+					</span>
 				</div>
 			) : (
 				<div className="border rounded-md">
