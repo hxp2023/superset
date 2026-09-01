@@ -21658,6 +21658,11 @@ msgstr "ブラウザ"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/SettingsSidebar/GeneralSettings.tsx
+msgid "settings.components.generalSettings.environments"
+msgstr "環境"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/SettingsSidebar/GeneralSettings.tsx
 msgid "settings.components.generalSettings.experimental"
 msgstr "実験的機能"
 
