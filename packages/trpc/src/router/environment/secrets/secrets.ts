@@ -11,7 +11,7 @@ import {
 	MAX_SECRETS_PER_ENVIRONMENT,
 	validateSecretKey,
 	validateSecretValue,
-} from "./utils/secrets-validation";
+} from "@superset/shared/environment-secrets";
 
 export const secretsRouter = {
 	list: jwtProcedure

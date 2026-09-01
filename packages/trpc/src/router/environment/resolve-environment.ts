@@ -2,7 +2,7 @@ import { db } from "@superset/db/client";
 import { environmentSecrets, environments } from "@superset/db/schema";
 import { eq } from "drizzle-orm";
 import { decryptSecret } from "./secrets/utils/crypto";
-import { isReservedKey } from "./secrets/utils/secrets-validation";
+import { isReservedKey } from "@superset/shared/environment-secrets";
 
 export interface ResolvedEnvironment {
 	id: string;

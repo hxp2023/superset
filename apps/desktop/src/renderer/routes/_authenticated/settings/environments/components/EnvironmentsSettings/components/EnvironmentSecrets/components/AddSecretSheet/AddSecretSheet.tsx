@@ -1,3 +1,7 @@
+import {
+	validateSecretKey,
+	validateSecretValue,
+} from "@superset/shared/environment-secrets";
 import { alert } from "@superset/ui/atoms/Alert";
 import { Button } from "@superset/ui/button";
 import { Input } from "@superset/ui/input";
@@ -67,6 +71,7 @@ export function AddSecretSheet({
 	const [entries, setEntries] = useState<SecretEntry[]>([createEmptyEntry()]);
 	const [sensitive, setSensitive] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
+	const [entryErrors, setEntryErrors] = useState<Record<string, string>>({});
 	const [isDragOver, setIsDragOver] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,6 +109,16 @@ export function AddSecretSheet({
 		field: keyof SecretEntry,
 		value: string | boolean,
 	) => {
+		// A rejection describes what was typed, so it stops describing anything
+		// the moment the row is edited.
+		const edited = entries[index];
+		if (edited && entryErrors[edited.id]) {
+			setEntryErrors((prev) => {
+				const next = { ...prev };
+				delete next[edited.id];
+				return next;
+			});
+		}
 		setEntries((prev) => {
 			const updated = [...prev];
 			updated[index] = { ...updated[index], [field]: value };
@@ -206,6 +221,29 @@ export function AddSecretSheet({
 		const validEntries = entries.filter((e) => e.key.trim() && e.value.trim());
 		if (validEntries.length === 0) return;
 
+		// Checked here before anything is written: the save loop used to abort on
+		// the first rejection, so earlier rows were already stored while the
+		// toast reported the whole thing as failed.
+		const errors: Record<string, string> = {};
+		for (const entry of validEntries) {
+			const key = validateSecretKey(entry.key.trim());
+			if (!key.valid) {
+				errors[entry.id] = key.error;
+				continue;
+			}
+			const value = validateSecretValue(entry.value.trim());
+			if (!value.valid) errors[entry.id] = value.error;
+		}
+		setEntryErrors(errors);
+		if (Object.keys(errors).length > 0) {
+			toast.error(
+				Object.keys(errors).length === 1
+					? "One variable can't be saved — see the highlighted row"
+					: `${Object.keys(errors).length} variables can't be saved — see the highlighted rows`,
+			);
+			return;
+		}
+
 		setIsSaving(true);
 		try {
 			for (const entry of validEntries) {
@@ -225,7 +263,11 @@ export function AddSecretSheet({
 			onOpenChange(false);
 		} catch (err) {
 			console.error("[secrets/upsert] Failed to save:", err);
-			toast.error("Failed to save environment variables");
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Failed to save environment variables",
+			);
 		} finally {
 			setIsSaving(false);
 		}
@@ -272,33 +314,47 @@ export function AddSecretSheet({
 						</div>
 
 						{entries.map((entry, index) => (
-							<div key={entry.id} className="flex items-start gap-2">
-								<Input
-									placeholder="CLIENT_KEY..."
-									value={entry.key}
-									onChange={(e) => updateEntry(index, "key", e.target.value)}
-									onPaste={(e) => handleKeyPaste(index, e)}
-									className="flex-1 font-mono text-sm mt-[1px]"
-								/>
-								<Textarea
-									placeholder=""
-									value={entry.value}
-									onChange={(e) => updateEntry(index, "value", e.target.value)}
-									className="flex-1 font-mono text-sm min-h-9 py-1.5"
-									rows={1}
-								/>
-								{entries.length > 1 ? (
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground mt-[1px]"
-										onClick={() => removeEntry(index)}
-									>
-										<HiOutlineTrash className="h-4 w-4" />
-									</Button>
-								) : (
-									<div className="w-8 shrink-0" />
-								)}
+							<div key={entry.id} className="flex flex-col gap-1">
+								<div className="flex items-start gap-2">
+									<Input
+										placeholder="CLIENT_KEY..."
+										value={entry.key}
+										onChange={(e) => updateEntry(index, "key", e.target.value)}
+										onPaste={(e) => handleKeyPaste(index, e)}
+										aria-invalid={Boolean(entryErrors[entry.id])}
+										className={`flex-1 font-mono text-sm mt-[1px] ${
+											entryErrors[entry.id]
+												? "border-destructive focus-visible:ring-destructive"
+												: ""
+										}`}
+									/>
+									<Textarea
+										placeholder=""
+										value={entry.value}
+										onChange={(e) =>
+											updateEntry(index, "value", e.target.value)
+										}
+										className="flex-1 font-mono text-sm min-h-9 py-1.5"
+										rows={1}
+									/>
+									{entries.length > 1 ? (
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground mt-[1px]"
+											onClick={() => removeEntry(index)}
+										>
+											<HiOutlineTrash className="h-4 w-4" />
+										</Button>
+									) : (
+										<div className="w-8 shrink-0" />
+									)}
+								</div>
+								{entryErrors[entry.id] ? (
+									<p className="text-xs text-destructive pl-1">
+										{entryErrors[entry.id]}
+									</p>
+								) : null}
 							</div>
 						))}
 

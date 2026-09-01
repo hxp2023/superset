@@ -11,7 +11,14 @@ const MAX_SECRETS_PER_ENVIRONMENT = 50;
  * from a settings form. Prefixes cover the whole identity surface; bare names
  * cover shell and host-service configuration that would break the sandbox.
  */
-const RESERVED_PREFIXES = ["SUPERSET_", "HOST_SERVICE_", "BLAXEL_"];
+const RESERVED_PREFIXES: Array<{ prefix: string; reason: string }> = [
+	{
+		prefix: "SUPERSET_",
+		reason: "carries the workspace's identity into the sandbox",
+	},
+	{ prefix: "HOST_SERVICE_", reason: "configures the sandbox's own server" },
+	{ prefix: "BLAXEL_", reason: "belongs to the sandbox provider" },
+];
 
 const RESERVED_KEYS = new Set([
 	"ORGANIZATION_ID",
@@ -30,27 +37,40 @@ const RESERVED_KEYS = new Set([
 	"IS_SANDBOX",
 ]);
 
-export function isReservedKey(key: string): boolean {
+export function reservedKeyReason(key: string): string | null {
 	const normalized = key.toUpperCase();
-	if (RESERVED_KEYS.has(normalized)) return true;
-	return RESERVED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+	if (RESERVED_KEYS.has(normalized)) {
+		return `${normalized} is set by the sandbox itself, so a value here would be ignored or break it`;
+	}
+	const matched = RESERVED_PREFIXES.find((entry) =>
+		normalized.startsWith(entry.prefix),
+	);
+	if (matched) {
+		return `Names starting with ${matched.prefix} are reserved — that prefix ${matched.reason}`;
+	}
+	return null;
+}
+
+export function isReservedKey(key: string): boolean {
+	return reservedKeyReason(key) !== null;
 }
 
 export function validateSecretKey(
 	key: string,
 ): { valid: true } | { valid: false; error: string } {
 	if (!KEY_PATTERN.test(key))
-		return { valid: false, error: "Key must match [A-Za-z_][A-Za-z0-9_]*" };
+		return {
+			valid: false,
+			error:
+				"Use letters, numbers and underscores only, starting with a letter or underscore",
+		};
 	if (key.length > MAX_KEY_LENGTH)
 		return {
 			valid: false,
 			error: `Key must be <= ${MAX_KEY_LENGTH} characters`,
 		};
-	if (isReservedKey(key))
-		return {
-			valid: false,
-			error: `${key.toUpperCase()} is reserved by Superset`,
-		};
+	const reserved = reservedKeyReason(key);
+	if (reserved) return { valid: false, error: reserved };
 	return { valid: true };
 }
 
