@@ -37,10 +37,16 @@ if (process.env.NODE_ENV !== "production") {
 function sharpLibvipsIncludes(): string[] {
 	const platform = `${process.platform}-${process.arch}`;
 	const require = createRequire(join(process.cwd(), "next.config.ts"));
+	let sharpEntry: string;
 	try {
-		const sharpEntry = require.resolve("sharp", {
+		sharpEntry = require.resolve("sharp", {
 			paths: [join(process.cwd(), "../../packages/trpc")],
 		});
+	} catch {
+		// sharp is no longer a dependency of the router: nothing to ship.
+		return [];
+	}
+	try {
 		const platformPackage = require.resolve(`@img/sharp-${platform}/package`, {
 			paths: [dirname(sharpEntry)],
 		});
