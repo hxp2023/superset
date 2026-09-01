@@ -507,6 +507,10 @@ async function main() {
 				} finally {
 					await targets()
 						.then((current) => {
+							// Replace the observation snapshot only after enumeration succeeds.
+							// If it fails, retain recorded targets as a cleanup fallback.
+							createdPopups.clear();
+							createdPanes.clear();
 							for (const target of current) {
 								if (target.type === "page" && !pageIdsBefore.has(target.id)) {
 									createdPopups.set(target.id, target);
@@ -547,12 +551,44 @@ async function main() {
 						});
 						c?.close();
 					}
-					for (let index = 0; index < createdPanes.size; index += 1) {
-						await closeFocusedPane(host).catch((error) => {
+					let previousCreatedPaneCount: number | null = null;
+					while (true) {
+						const liveCreatedPaneCount = await targets()
+							.then(
+								(current) =>
+									current.filter(
+										(target) =>
+											target.type === "webview" &&
+											!paneIdsBefore.has(target.id),
+									).length,
+							)
+							.catch((error) => {
+								failures.push(
+									`${name}: could not recount panes for cleanup: ${String(error)}`,
+								);
+								return null;
+							});
+						if (!liveCreatedPaneCount) break;
+						if (
+							previousCreatedPaneCount !== null &&
+							liveCreatedPaneCount >= previousCreatedPaneCount
+						) {
 							failures.push(
-								`${name}: could not close created pane: ${String(error)}`,
+								`${name}: created pane count did not decrease during cleanup`,
 							);
-						});
+							break;
+						}
+						previousCreatedPaneCount = liveCreatedPaneCount;
+						const closed = await closeFocusedPane(host)
+							.then(() => true)
+							.catch((error) => {
+								failures.push(
+									`${name}: could not close created pane: ${String(error)}`,
+								);
+								return false;
+							});
+						if (!closed) break;
+						await sleep(800);
 					}
 					await sleep(800);
 					await targets()
