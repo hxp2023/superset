@@ -391,150 +391,193 @@ async function main() {
 						.filter((target) => target.type === "webview")
 						.map((target) => target.id),
 				);
-				let actionError: string | null = null;
-				await g.eval(`window.__handle = null; ${script}; 1`).catch((error) => {
-					actionError = error instanceof Error ? error.message : String(error);
-				});
-				await sleep(
-					OBSERVE_MS ??
-						(name === "nested" || name === "selfClosing" ? 3000 : 2000),
-				);
+				const createdPopups = new Map<string, CdpTarget>();
+				const createdPanes = new Map<string, CdpTarget>();
+				try {
+					let actionError: string | null = null;
+					await g
+						.eval(`window.__handle = null; ${script}; 1`)
+						.catch((error) => {
+							actionError =
+								error instanceof Error ? error.message : String(error);
+						});
+					await sleep(
+						OBSERVE_MS ??
+							(name === "nested" || name === "selfClosing" ? 3000 : 2000),
+					);
 
-				const after = await targets();
-				const live = after.filter(
-					(target) => target.type === "page" && !pageIdsBefore.has(target.id),
-				);
-				const createdPanes = after.filter(
-					(target) =>
-						target.type === "webview" && !paneIdsBefore.has(target.id),
-				);
-				const opener: Array<boolean | null> = [];
-				const jar: Array<boolean | null> = [];
-				const windowNames: Array<string | null> = [];
-				const observationErrors: string[] = [];
-				for (const p of live) {
-					if (!p.webSocketDebuggerUrl) {
-						observationErrors.push(`popup ${p.id} has no debugger URL`);
-						continue;
+					const after = await targets();
+					const live = after.filter(
+						(target) => target.type === "page" && !pageIdsBefore.has(target.id),
+					);
+					const livePanes = after.filter(
+						(target) =>
+							target.type === "webview" && !paneIdsBefore.has(target.id),
+					);
+					for (const target of live) createdPopups.set(target.id, target);
+					for (const target of livePanes) createdPanes.set(target.id, target);
+					const opener: Array<boolean | null> = [];
+					const jar: Array<boolean | null> = [];
+					const windowNames: Array<string | null> = [];
+					const observationErrors: string[] = [];
+					for (const p of live) {
+						if (!p.webSocketDebuggerUrl) {
+							observationErrors.push(`popup ${p.id} has no debugger URL`);
+							continue;
+						}
+						const c = await Cdp.connect(p.webSocketDebuggerUrl).catch(
+							(error) => {
+								observationErrors.push(`popup ${p.id}: ${String(error)}`);
+								return null;
+							},
+						);
+						if (!c) continue;
+						try {
+							await c.send("Runtime.enable");
+							// Probe the popup directly. This also covers about:blank, which never
+							// loads the fixture's window.__info snapshot.
+							opener.push(
+								await c.eval<boolean>("!!window.opener").catch(() => null),
+							);
+							jar.push(
+								await c
+									.eval<boolean>('document.cookie.includes("paneprobe=1")')
+									.catch(() => null),
+							);
+							windowNames.push(
+								await c.eval<string>("window.name").catch(() => null),
+							);
+						} finally {
+							c.close();
+						}
 					}
-					const c = await Cdp.connect(p.webSocketDebuggerUrl).catch((error) => {
-						observationErrors.push(`popup ${p.id}: ${String(error)}`);
-						return null;
-					});
-					if (!c) continue;
-					try {
-						await c.send("Runtime.enable");
-						// Probe the popup directly. This also covers about:blank, which never
-						// loads the fixture's window.__info snapshot.
-						opener.push(
-							await c.eval<boolean>("!!window.opener").catch(() => null),
-						);
-						jar.push(
-							await c
-								.eval<boolean>('document.cookie.includes("paneprobe=1")')
-								.catch(() => null),
-						);
-						windowNames.push(
-							await c.eval<string>("window.name").catch(() => null),
-						);
-					} finally {
-						c.close();
-					}
-				}
-				const handle = await g
-					.eval<string>("String(window.__handle)")
-					.catch(() => "?");
+					const handle = await g
+						.eval<string>("String(window.__handle)")
+						.catch(() => "?");
 
-				const bad: string[] = [];
-				if (actionError) bad.push(`action failed: ${actionError}`);
-				bad.push(...observationErrors);
-				if (live.length !== want.popups)
-					bad.push(`popups ${live.length}!=${want.popups}`);
-				if (createdPanes.length !== want.panes)
-					bad.push(`panes +${createdPanes.length}!=+${want.panes}`);
-				if (want.opener !== undefined) {
-					if (
-						opener.length !== live.length ||
-						opener.some((value) => value !== want.opener)
-					) {
-						bad.push(`opener ${formatObservations(opener)}!=${want.opener}`);
+					const bad: string[] = [];
+					if (actionError) bad.push(`action failed: ${actionError}`);
+					bad.push(...observationErrors);
+					if (live.length !== want.popups)
+						bad.push(`popups ${live.length}!=${want.popups}`);
+					if (livePanes.length !== want.panes)
+						bad.push(`panes +${livePanes.length}!=+${want.panes}`);
+					if (want.opener !== undefined) {
+						if (
+							opener.length !== live.length ||
+							opener.some((value) => value !== want.opener)
+						) {
+							bad.push(`opener ${formatObservations(opener)}!=${want.opener}`);
+						}
 					}
-				}
-				if (want.jar !== undefined) {
-					if (
-						jar.length !== live.length ||
-						jar.some((value) => value !== want.jar)
-					) {
-						bad.push(`jar ${formatObservations(jar)}!=${want.jar}`);
+					if (want.jar !== undefined) {
+						if (
+							jar.length !== live.length ||
+							jar.some((value) => value !== want.jar)
+						) {
+							bad.push(`jar ${formatObservations(jar)}!=${want.jar}`);
+						}
 					}
-				}
-				if (want.names) {
-					const gotNames = windowNames
-						.filter((value): value is string => value != null)
-						.sort();
-					const wantedNames = [...want.names].sort();
-					if (
-						gotNames.length !== live.length ||
-						JSON.stringify(gotNames) !== JSON.stringify(wantedNames)
-					) {
-						bad.push(
-							`names ${JSON.stringify(windowNames)}!=${JSON.stringify(want.names)}`,
-						);
+					if (want.names) {
+						const gotNames = windowNames
+							.filter((value): value is string => value != null)
+							.sort();
+						const wantedNames = [...want.names].sort();
+						if (
+							gotNames.length !== live.length ||
+							JSON.stringify(gotNames) !== JSON.stringify(wantedNames)
+						) {
+							bad.push(
+								`names ${JSON.stringify(windowNames)}!=${JSON.stringify(want.names)}`,
+							);
+						}
 					}
-				}
-				if (want.handle !== undefined) {
-					const got = handle === "HANDLE";
-					if (got !== want.handle) bad.push(`handle ${handle}`);
-				}
-				if (bad.length)
-					failures.push(`${name}: ${bad.join(", ")} (${want.note})`);
+					if (want.handle !== undefined) {
+						const got = handle === "HANDLE";
+						if (got !== want.handle) bad.push(`handle ${handle}`);
+					}
+					if (bad.length)
+						failures.push(`${name}: ${bad.join(", ")} (${want.note})`);
 
-				console.log(
-					`${name.padEnd(19)}${String(live.length).padEnd(8)}${formatObservations(opener).padEnd(12)}${formatObservations(jar).padEnd(10)}${formatObservations(windowNames).padEnd(20)}${handle.padEnd(8)}+${createdPanes.length}     ${bad.length ? `FAIL ${bad.join(", ")}` : "ok"}`,
-				);
+					console.log(
+						`${name.padEnd(19)}${String(live.length).padEnd(8)}${formatObservations(opener).padEnd(12)}${formatObservations(jar).padEnd(10)}${formatObservations(windowNames).padEnd(20)}${handle.padEnd(8)}+${livePanes.length}     ${bad.length ? `FAIL ${bad.join(", ")}` : "ok"}`,
+					);
+				} catch (error) {
+					failures.push(`${name}: case failed unexpectedly: ${String(error)}`);
+				} finally {
+					await targets()
+						.then((current) => {
+							for (const target of current) {
+								if (target.type === "page" && !pageIdsBefore.has(target.id)) {
+									createdPopups.set(target.id, target);
+								}
+								if (
+									target.type === "webview" &&
+									!paneIdsBefore.has(target.id)
+								) {
+									createdPanes.set(target.id, target);
+								}
+							}
+						})
+						.catch((error) => {
+							failures.push(
+								`${name}: could not enumerate targets for cleanup: ${String(error)}`,
+							);
+						});
 
-				for (const p of live) {
-					if (!p.webSocketDebuggerUrl) {
-						failures.push(
-							`${name}: could not close popup ${p.id}: no debugger URL`,
+					for (const p of createdPopups.values()) {
+						if (!p.webSocketDebuggerUrl) {
+							failures.push(
+								`${name}: could not close popup ${p.id}: no debugger URL`,
+							);
+							continue;
+						}
+						const c = await Cdp.connect(p.webSocketDebuggerUrl).catch(
+							(error) => {
+								failures.push(
+									`${name}: could not connect to popup for cleanup: ${String(error)}`,
+								);
+								return null;
+							},
 						);
-						continue;
+						await c?.send("Page.close").catch((error) => {
+							failures.push(
+								`${name}: could not close popup ${p.id}: ${String(error)}`,
+							);
+						});
+						c?.close();
 					}
-					const c = await Cdp.connect(p.webSocketDebuggerUrl).catch((error) => {
-						failures.push(
-							`${name}: could not connect to popup for cleanup: ${String(error)}`,
-						);
-						return null;
-					});
-					await c?.send("Page.close").catch((error) => {
-						failures.push(
-							`${name}: could not close popup ${p.id}: ${String(error)}`,
-						);
-					});
-					c?.close();
-				}
-				for (let index = 0; index < createdPanes.length; index += 1) {
-					await closeFocusedPane(host).catch((error) => {
-						failures.push(
-							`${name}: could not close created pane: ${String(error)}`,
-						);
-					});
-				}
-				await sleep(800);
-				const remainingIds = new Set(
-					(await targets()).map((target) => target.id),
-				);
-				for (const createdPane of createdPanes) {
-					if (remainingIds.has(createdPane.id)) {
-						failures.push(
-							`${name}: created pane ${createdPane.id} remained after cleanup`,
-						);
+					for (let index = 0; index < createdPanes.size; index += 1) {
+						await closeFocusedPane(host).catch((error) => {
+							failures.push(
+								`${name}: could not close created pane: ${String(error)}`,
+							);
+						});
 					}
-				}
-				for (const popup of live) {
-					if (remainingIds.has(popup.id)) {
-						failures.push(`${name}: popup ${popup.id} remained after cleanup`);
-					}
+					await sleep(800);
+					await targets()
+						.then((current) => {
+							const remainingIds = new Set(current.map((target) => target.id));
+							for (const createdPane of createdPanes.values()) {
+								if (remainingIds.has(createdPane.id)) {
+									failures.push(
+										`${name}: created pane ${createdPane.id} remained after cleanup`,
+									);
+								}
+							}
+							for (const popup of createdPopups.values()) {
+								if (remainingIds.has(popup.id)) {
+									failures.push(
+										`${name}: popup ${popup.id} remained after cleanup`,
+									);
+								}
+							}
+						})
+						.catch((error) => {
+							failures.push(
+								`${name}: could not verify target cleanup: ${String(error)}`,
+							);
+						});
 				}
 			}
 
@@ -555,20 +598,27 @@ async function main() {
 				`\npostMessage callbacks delivered to opener: ${msgs.length}`,
 			);
 		} finally {
-			await g.send("Page.navigate", { url: originalPaneUrl }).catch((error) => {
-				failures.push(`could not restore pane URL: ${String(error)}`);
-			});
-			await sleep(1500);
-			const restored = (await targets()).find(
-				(target) => target.id === pane.id,
-			);
-			if (restored?.url !== originalPaneUrl) {
-				failures.push(
-					`pane URL not restored: ${restored?.url ?? "missing"} != ${originalPaneUrl}`,
+			try {
+				await g
+					.send("Page.navigate", { url: originalPaneUrl })
+					.catch((error) => {
+						failures.push(`could not restore pane URL: ${String(error)}`);
+					});
+				await sleep(1500);
+				const restored = (await targets()).find(
+					(target) => target.id === pane.id,
 				);
+				if (restored?.url !== originalPaneUrl) {
+					failures.push(
+						`pane URL not restored: ${restored?.url ?? "missing"} != ${originalPaneUrl}`,
+					);
+				}
+			} catch (error) {
+				failures.push(`could not verify pane restoration: ${String(error)}`);
+			} finally {
+				g.close();
+				host.close();
 			}
-			g.close();
-			host.close();
 		}
 
 		if (failures.length) {
