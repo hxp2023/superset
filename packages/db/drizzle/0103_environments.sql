@@ -25,6 +25,14 @@ CREATE TABLE "environments" (
 	CONSTRAINT "environments_organization_id_name_unique" UNIQUE("organization_id","name")
 );
 --> statement-breakpoint
+--> Every cloud workspace predates environments and so has nothing to point at,
+--> and the column has no sensible default: an environment is what decides the
+--> image a sandbox boots from, so inventing one here would be guessing. The
+--> rows go instead. Authorised deliberately — they are a handful of internal
+--> workspaces behind the @superset.sh gate, all owned by one person.
+--> Their sandboxes are not deleted by this and must be torn down separately,
+--> or they keep running with nothing left that refers to them.
+DELETE FROM "cloud_workspaces";--> statement-breakpoint
 ALTER TABLE "cloud_workspaces" ADD COLUMN "environment_id" uuid NOT NULL;--> statement-breakpoint
 ALTER TABLE "cloud_workspaces" ADD COLUMN "host_version" text;--> statement-breakpoint
 ALTER TABLE "cloud_workspaces" ADD COLUMN "deleted_at" timestamp with time zone;--> statement-breakpoint

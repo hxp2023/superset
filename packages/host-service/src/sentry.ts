@@ -19,16 +19,8 @@ export function initSentry(options: { organizationId?: string }): void {
 			}),
 		],
 		initialScope: {
-			// Undefined values are dropped when the event is serialised to JSON,
-			// so these need no guards: a desktop host simply carries none of the
-			// sandbox tags, and `run_mode` reports whatever mode it is actually
-			// in rather than a hardcoded one.
-			//
-			// A sandbox's failures split across two Sentry projects —
-			// provisioning fails in the API, the runtime fails in here — and a
-			// user sees one broken workspace either way. `cloud_workspace_id` is
-			// what stitches the halves back together, so it is the tag that makes
-			// the separate projects safe rather than a nicety.
+			// Undefined tags are dropped when the event is serialised, so a
+			// desktop host carries none of the sandbox ones.
 			tags: {
 				service: "host-service",
 				organization_id: options.organizationId,
