@@ -102,9 +102,24 @@ export function CommitFilterDropdown({
 								type="button"
 								className="flex min-w-0 items-center gap-1 rounded px-1.5 py-0.5 font-medium text-xs hover:bg-accent"
 							>
-								<span className="truncate">
-									{getFilterLabel(filter, commits)}
-								</span>
+								{/* At rest the trigger is a category chip — "Commits N" —
+								    like the PR view's; a narrowed scope shows its value. */}
+								{filter.kind === "all" ? (
+									<>
+										<span className="truncate">
+											<Trans id="workspace.commitFilter.commitsLabel">
+												Commits
+											</Trans>
+										</span>
+										<span className="shrink-0 font-normal text-muted-foreground tabular-nums">
+											{commits.length}
+										</span>
+									</>
+								) : (
+									<span className="truncate">
+										{getFilterLabel(filter, commits)}
+									</span>
+								)}
 								<ChevronDown className="size-3 shrink-0 text-muted-foreground" />
 							</button>
 						</PopoverAnchor>
