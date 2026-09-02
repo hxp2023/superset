@@ -5,17 +5,32 @@ import { useMemo } from "react";
 import {
 	dropZoneId,
 	parseId,
+	SESSIONS_CONTAINER,
 	useDashboardSidebarDnd,
 } from "../../../../hooks/useSidebarDnd";
 import { useDashboardSidebarSelection } from "../../../../providers/DashboardSidebarSelectionProvider";
+import type {
+	DashboardSidebarWorkspace,
+	DashboardSidebarWorkspaceIndentation,
+} from "../../../../types";
 import { WorkspaceBulkMenuScope } from "../../../DashboardSidebarWorkspaceItem/components/WorkspaceBulkMenuScope";
 import { SidebarDropZone } from "../../../SidebarDropZone";
 import { SortableSectionHeader } from "../../../SortableSectionHeader";
 import { SortableWorkspaceItem } from "../../../SortableWorkspaceItem";
 
+/** Main rows are never bulk-selected; sessions and worktrees are. */
+const isBulkSelectable = (workspace: DashboardSidebarWorkspace) =>
+	workspace.type !== "main" && workspace.pendingTransaction?.type !== "insert";
+
 interface DashboardSidebarExpandedProjectContentProps {
-	projectId: string;
+	/** DnD container: a project id, or SESSIONS_CONTAINER for the Sessions lane. */
+	containerId: string;
+	/** Lane the rows are filed under: the project id, or null for sessions. */
+	projectId: string | null;
 	isCollapsed: boolean;
+	/** Row indentation overrides; the Sessions lane sits flush with its header. */
+	topLevelIndentation?: DashboardSidebarWorkspaceIndentation;
+	groupedIndentation?: DashboardSidebarWorkspaceIndentation;
 	workspaceShortcutLabels: Map<string, string>;
 	onWorkspaceHover: (workspaceId: string) => void | Promise<void>;
 	onDeleteSection: (sectionId: string) => void;
@@ -23,9 +38,17 @@ interface DashboardSidebarExpandedProjectContentProps {
 	onToggleSectionCollapse: (sectionId: string) => void;
 }
 
+/**
+ * The sortable row list of one DnD container — every project, and the
+ * Sessions lane. Ungrouped rows and folder headers are flat siblings so a
+ * folder drag can move whole groups as units (see useSidebarDnd).
+ */
 export function DashboardSidebarExpandedProjectContent({
+	containerId,
 	projectId,
 	isCollapsed,
+	topLevelIndentation,
+	groupedIndentation,
 	workspaceShortcutLabels,
 	onWorkspaceHover,
 	onDeleteSection,
@@ -35,7 +58,8 @@ export function DashboardSidebarExpandedProjectContent({
 	const { t } = useLingui();
 	const {
 		projectItems,
-		getProjectSortingStrategy,
+		sessionItems,
+		getContainerSortingStrategy,
 		activeSectionId,
 		activeWorkspaceHome,
 		groupInfo,
@@ -44,17 +68,22 @@ export function DashboardSidebarExpandedProjectContent({
 		sectionsById,
 	} = useDashboardSidebarDnd();
 	const flatItems = useMemo(
-		() => projectItems[projectId] ?? [],
-		[projectItems, projectId],
+		() =>
+			containerId === SESSIONS_CONTAINER
+				? sessionItems
+				: (projectItems[containerId] ?? []),
+		[projectItems, sessionItems, containerId],
 	);
-	const sortingStrategy = getProjectSortingStrategy(projectId);
+	const sortingStrategy = getContainerSortingStrategy(containerId);
 	const { isWorkspaceSelected, selectWorkspaceFromEvent } =
 		useDashboardSidebarSelection();
 
-	// A pinned workspace can only return to its home project; when every row
-	// of that project is pinned, the empty list needs an explicit drop target.
+	// A pinned workspace can only return to its home container; when every row
+	// of that container is pinned, the empty list needs an explicit drop target.
 	const dropZoneEligible =
-		!isCollapsed && flatItems.length === 0 && activeWorkspaceHome === projectId;
+		!isCollapsed &&
+		flatItems.length === 0 &&
+		activeWorkspaceHome === containerId;
 
 	const selectableWorkspaceIds = useMemo(
 		() =>
@@ -62,13 +91,7 @@ export function DashboardSidebarExpandedProjectContent({
 				const parsed = parseId(id);
 				if (!parsed || parsed.type !== "workspace") return [];
 				const workspace = workspacesById.get(parsed.realId);
-				if (
-					!workspace ||
-					workspace.type !== "worktree" ||
-					workspace.pendingTransaction?.type === "insert"
-				) {
-					return [];
-				}
+				if (!workspace || !isBulkSelectable(workspace)) return [];
 				const group = groupInfo.get(parsed.realId);
 				if (group && collapsedSectionIds.has(group.sectionId)) return [];
 				return [parsed.realId];
@@ -120,9 +143,7 @@ export function DashboardSidebarExpandedProjectContent({
 										isInSection && collapsedSectionIds.has(group.sectionId);
 									const inDraggedSection =
 										isInSection && group.sectionId === activeSectionId;
-									const canBulkSelect =
-										workspace.type === "worktree" &&
-										workspace.pendingTransaction?.type !== "insert";
+									const canBulkSelect = isBulkSelectable(workspace);
 
 									// The zero-height collapse lives inside the sortable wrapper
 									// (see SortableWorkspaceItem) so the clip box moves with the
@@ -136,6 +157,9 @@ export function DashboardSidebarExpandedProjectContent({
 											workspace={workspace}
 											accentColor={group?.color}
 											isInSection={isInSection}
+											indentation={
+												isInSection ? groupedIndentation : topLevelIndentation
+											}
 											onHoverCardOpen={onWorkspaceHover}
 											shortcutLabel={workspaceShortcutLabels.get(parsed.realId)}
 											isSelected={
@@ -146,7 +170,7 @@ export function DashboardSidebarExpandedProjectContent({
 													? (event) =>
 															selectWorkspaceFromEvent(event, {
 																workspaceId: parsed.realId,
-																projectId,
+																projectId: containerId,
 																orderedWorkspaceIds: selectableWorkspaceIds,
 															})
 													: undefined
@@ -164,7 +188,7 @@ export function DashboardSidebarExpandedProjectContent({
 							</SortableContext>
 							{dropZoneEligible && (
 								<SidebarDropZone
-									dropZoneId={dropZoneId(projectId)}
+									dropZoneId={dropZoneId(containerId)}
 									label={t({
 										id: "dashboard.sidebar.projectContent.dropToUnpin",
 										message: "Drop to unpin",

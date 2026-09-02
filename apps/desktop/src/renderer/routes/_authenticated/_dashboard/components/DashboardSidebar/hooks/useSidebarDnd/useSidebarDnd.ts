@@ -31,6 +31,7 @@ import {
 	useState,
 } from "react";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
+import { laneProjectIdForScope } from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import type {
 	DashboardSidebarPinnedWorkspace,
 	DashboardSidebarProject,
@@ -173,12 +174,24 @@ function collectMembership(
 
 function buildMembership(
 	projects: DashboardSidebarProject[],
+	sessionChildren: DashboardSidebarProjectChild[],
 ): Record<string, string> {
 	const membership: Record<string, string> = {};
 	for (const project of projects) {
 		collectMembership(project.children, membership);
 	}
+	collectMembership(sessionChildren, membership);
 	return membership;
+}
+
+function fingerprintChildren(children: DashboardSidebarProjectChild[]): string {
+	return children
+		.map((c) =>
+			c.type === "workspace"
+				? c.workspace.id
+				: `s:${c.section.id}:${c.section.workspaces.map((w) => w.id).join("|")}`,
+		)
+		.join(",");
 }
 
 /**
@@ -254,8 +267,8 @@ export interface DashboardSidebarDndValue {
 	pinnedItems: UniqueIdentifier[];
 	sessionItems: UniqueIdentifier[];
 	projectItems: Record<string, UniqueIdentifier[]>;
-	/** Sorting strategy for a project's SortableContext (see the hook). */
-	getProjectSortingStrategy: (projectId: string) => SortingStrategy;
+	/** Sorting strategy for a container's SortableContext (see the hook). */
+	getContainerSortingStrategy: (containerId: string) => SortingStrategy;
 	activeId: UniqueIdentifier | null;
 	activeType: "project" | "workspace" | "section" | null;
 	/** Container currently holding the active workspace/section, if any. */
@@ -295,14 +308,15 @@ interface UseSidebarDndOptions {
 	/** Projects in their current display order. */
 	projects: DashboardSidebarProject[];
 	pinnedWorkspaces: DashboardSidebarPinnedWorkspace[];
-	sessionWorkspaces: DashboardSidebarWorkspace[];
+	/** The Sessions lane, shaped like a project's children (rows + folders). */
+	sessionChildren: DashboardSidebarProjectChild[];
 	onReorderProjects: (projectIds: string[]) => void;
 }
 
 export function useSidebarDnd({
 	projects,
 	pinnedWorkspaces,
-	sessionWorkspaces,
+	sessionChildren,
 	onReorderProjects,
 }: UseSidebarDndOptions) {
 	const {
@@ -329,11 +343,11 @@ export function useSidebarDnd({
 
 	const [items, setItems] = useState<SidebarDndItems>(() => ({
 		pinned: pinnedWorkspaces.map((ws) => wsId(ws.id)),
-		sessions: sessionWorkspaces.map((ws) => wsId(ws.id)),
+		sessions: buildFlatItems(sessionChildren),
 		byProject: Object.fromEntries(
 			projects.map((project) => [project.id, buildFlatItems(project.children)]),
 		),
-		membership: buildMembership(projects),
+		membership: buildMembership(projects, sessionChildren),
 	}));
 	// Drag handlers read AND write these refs synchronously: pointer events can
 	// batch faster than React re-renders (especially under main-thread stalls),
@@ -382,17 +396,10 @@ export function useSidebarDnd({
 		if (activeId || activeIdRef.current) return; // Don't reset during active drag
 		const fingerprint = [
 			pinnedWorkspaces.map((ws) => ws.id).join("|"),
-			sessionWorkspaces.map((ws) => ws.id).join("|"),
+			fingerprintChildren(sessionChildren),
 			projects
 				.map(
-					(project) =>
-						`${project.id}:${project.children
-							.map((c) =>
-								c.type === "workspace"
-									? c.workspace.id
-									: `s:${c.section.id}:${c.section.workspaces.map((w) => w.id).join("|")}`,
-							)
-							.join(",")}`,
+					(project) => `${project.id}:${fingerprintChildren(project.children)}`,
 				)
 				.join(";"),
 		].join("\n");
@@ -400,32 +407,25 @@ export function useSidebarDnd({
 			prevFingerprintRef.current = fingerprint;
 			commitDragItems({
 				pinned: pinnedWorkspaces.map((ws) => wsId(ws.id)),
-				sessions: sessionWorkspaces.map((ws) => wsId(ws.id)),
+				sessions: buildFlatItems(sessionChildren),
 				byProject: Object.fromEntries(
 					projects.map((project) => [
 						project.id,
 						buildFlatItems(project.children),
 					]),
 				),
-				membership: buildMembership(projects),
+				membership: buildMembership(projects, sessionChildren),
 			});
 		}
-	}, [
-		projects,
-		pinnedWorkspaces,
-		sessionWorkspaces,
-		activeId,
-		commitDragItems,
-	]);
+	}, [projects, pinnedWorkspaces, sessionChildren, activeId, commitDragItems]);
 
 	// ── Lookups ──────────────────────────────────────────────────────
 
 	const workspacesById = useMemo(() => {
 		const map = new Map<string, DashboardSidebarWorkspace>();
 		for (const ws of pinnedWorkspaces) map.set(ws.id, ws);
-		for (const ws of sessionWorkspaces) map.set(ws.id, ws);
-		for (const project of projects) {
-			for (const child of project.children) {
+		const collect = (children: DashboardSidebarProjectChild[]) => {
+			for (const child of children) {
 				if (child.type === "workspace") {
 					map.set(child.workspace.id, child.workspace);
 				} else {
@@ -434,21 +434,23 @@ export function useSidebarDnd({
 					}
 				}
 			}
-		}
+		};
+		collect(sessionChildren);
+		for (const project of projects) collect(project.children);
 		return map;
-	}, [projects, pinnedWorkspaces, sessionWorkspaces]);
+	}, [projects, pinnedWorkspaces, sessionChildren]);
 
 	const sectionsById = useMemo(() => {
 		const map = new Map<string, DashboardSidebarSection>();
-		for (const project of projects) {
-			for (const child of project.children) {
-				if (child.type === "section") {
-					map.set(child.section.id, child.section);
-				}
+		const collect = (children: DashboardSidebarProjectChild[]) => {
+			for (const child of children) {
+				if (child.type === "section") map.set(child.section.id, child.section);
 			}
-		}
+		};
+		collect(sessionChildren);
+		for (const project of projects) collect(project.children);
 		return map;
-	}, [projects]);
+	}, [projects, sessionChildren]);
 
 	const projectsById = useMemo(
 		() => new Map(projects.map((project) => [project.id, project])),
@@ -516,14 +518,8 @@ export function useSidebarDnd({
 	// drop handler: simulate the arrayMove, then read the landing neighbors.
 	const predictedColor = useMemo(() => {
 		if (!activeId || !overId || activeType !== "workspace") return null;
-		if (
-			!activeContainer ||
-			activeContainer === PINNED_CONTAINER ||
-			activeContainer === SESSIONS_CONTAINER
-		) {
-			return null;
-		}
-		const list = items.byProject[activeContainer] ?? [];
+		if (!activeContainer || activeContainer === PINNED_CONTAINER) return null;
+		const list = getContainerList(items, activeContainer);
 		const oldIndex = list.indexOf(activeId);
 		const overIndex = list.indexOf(overId);
 		if (oldIndex === -1 || overIndex === -1) return null;
@@ -547,18 +543,18 @@ export function useSidebarDnd({
 	// "compensates" by scrolling the sidebar, and what left the ghost off the
 	// cursor when it couldn't). The unit strategy moves each group as one
 	// block, the dragged group included.
-	const getProjectSortingStrategy = useCallback(
-		(projectId: string): SortingStrategy => {
-			if (activeType === "section" && activeContainer === projectId) {
+	const getContainerSortingStrategy = useCallback(
+		(containerId: string): SortingStrategy => {
+			if (activeType === "section" && activeContainer === containerId) {
 				return createSectionUnitSortingStrategy(
-					items.byProject[projectId] ?? [],
+					getContainerList(items, containerId),
 					items.membership,
 					isSec,
 				);
 			}
 			return verticalListSortingStrategy;
 		},
-		[items.byProject, items.membership, activeType, activeContainer],
+		[items, activeType, activeContainer],
 	);
 
 	// The sidebar data builder always sorts local main workspaces first,
@@ -692,12 +688,15 @@ export function useSidebarDnd({
 
 	// ── Persistence ──────────────────────────────────────────────────
 
-	const commitProjectToDb = useCallback(
+	// `container` is a project id or SESSIONS_CONTAINER; the Sessions lane's
+	// rows carry projectId null, so map before persisting.
+	const commitContainerToDb = useCallback(
 		(
-			projectId: string,
+			container: string,
 			list: UniqueIdentifier[],
 			membership: Record<string, string>,
 		) => {
+			const projectId = laneProjectIdForScope(container);
 			const parsed = parseFlatItems(list, membership);
 
 			// Top-level order (ungrouped workspaces + sections interleaved)
@@ -746,26 +745,13 @@ export function useSidebarDnd({
 				setWorkspacePinned(workspaceId, ws.projectId, false);
 			}
 
-			if (container === SESSIONS_CONTAINER) {
-				reorderProjectChildren(
-					null,
-					containerList.flatMap((id) => {
-						const parsed = parseId(id);
-						if (parsed?.type !== "workspace") return [];
-						return [{ type: "workspace" as const, id: parsed.realId }];
-					}),
-				);
-				return;
-			}
-
-			commitProjectToDb(container, containerList, membership);
+			commitContainerToDb(container, containerList, membership);
 		},
 		[
 			workspacesById,
 			reorderPinnedWorkspaces,
-			reorderProjectChildren,
 			setWorkspacePinned,
-			commitProjectToDb,
+			commitContainerToDb,
 		],
 	);
 
@@ -826,8 +812,7 @@ export function useSidebarDnd({
 			// landing group's accent (or none) while still mid-drag.
 			const membership = { ...next.membership };
 			const sectionFlatId =
-				targetContainer !== PINNED_CONTAINER &&
-				targetContainer !== SESSIONS_CONTAINER
+				targetContainer !== PINNED_CONTAINER
 					? membershipFromNeighbors(target, membership, active.id)
 					: null;
 			if (sectionFlatId) {
@@ -874,10 +859,14 @@ export function useSidebarDnd({
 
 			if (type === "section") {
 				const container = containerByIdRef.current.get(active.id);
-				if (!container || !projectIds.has(container) || active.id === over.id) {
+				if (
+					!container ||
+					container === PINNED_CONTAINER ||
+					active.id === over.id
+				) {
 					return;
 				}
-				const list = current.byProject[container] ?? [];
+				const list = getContainerList(current, container);
 
 				// Section drag: reorder among top-level units (a section unit
 				// carries its member rows) and flatten back out. Sections sort
@@ -891,9 +880,12 @@ export function useSidebarDnd({
 					(unit) => unit.ids,
 				);
 
-				const newList = normalizeMainFirst(rebuilt);
+				const newList =
+					container === SESSIONS_CONTAINER
+						? rebuilt
+						: normalizeMainFirst(rebuilt);
 				commitDragItems(withContainerList(current, container, newList));
-				commitProjectToDb(container, newList, current.membership);
+				commitContainerToDb(container, newList, current.membership);
 				return;
 			}
 
@@ -965,8 +957,7 @@ export function useSidebarDnd({
 					}
 				} else {
 					const sectionFlatId =
-						targetContainer !== PINNED_CONTAINER &&
-						targetContainer !== SESSIONS_CONTAINER
+						targetContainer !== PINNED_CONTAINER
 							? membershipFromNeighbors(targetList, membership, active.id)
 							: null;
 					if (sectionFlatId) {
@@ -997,7 +988,7 @@ export function useSidebarDnd({
 			projectIds,
 			onReorderProjects,
 			normalizeMainFirst,
-			commitProjectToDb,
+			commitContainerToDb,
 			persistWorkspaceDrop,
 			commitDragItems,
 		],
@@ -1039,7 +1030,7 @@ export function useSidebarDnd({
 			pinnedItems: items.pinned,
 			sessionItems: items.sessions,
 			projectItems: items.byProject,
-			getProjectSortingStrategy,
+			getContainerSortingStrategy,
 			activeId,
 			activeType,
 			activeContainer,
@@ -1053,7 +1044,7 @@ export function useSidebarDnd({
 		}),
 		[
 			items,
-			getProjectSortingStrategy,
+			getContainerSortingStrategy,
 			activeId,
 			activeType,
 			activeContainer,

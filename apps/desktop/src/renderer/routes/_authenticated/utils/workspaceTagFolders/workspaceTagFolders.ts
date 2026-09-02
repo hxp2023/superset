@@ -132,6 +132,20 @@ export function deriveSessionTagFolders(
 
 /** `${projectId}:${tag}` — addressable without a stored row; the tag is
  * recoverable from the key alone. `tag` must already be normalized. */
+/**
+ * Folder rows are keyed by a scope: the project id, or the Sessions tag scope
+ * for project-less sessions. Workspaces keep `projectId: null` for the
+ * Sessions lane; only folders (and their host settings) use the scope.
+ */
+export function sectionScopeForProject(projectId: string | null): string {
+	return projectId ?? SESSIONS_TAG_SCOPE;
+}
+
+/** Inverse of {@link sectionScopeForProject}: the lane's workspace projectId. */
+export function laneProjectIdForScope(scope: string): string | null {
+	return scope === SESSIONS_TAG_SCOPE ? null : scope;
+}
+
 export function buildSidebarFolderKey(projectId: string, tag: string): string {
 	return `${projectId}:${tag}`;
 }
@@ -210,13 +224,13 @@ export function deriveTagFolders(
 
 	const uncoveredTagsByProjectId = new Map<string, Set<string>>();
 	for (const workspace of workspaces) {
-		if (workspace.projectId == null) continue;
+		const scope = sectionScopeForProject(workspace.projectId);
 		for (const tag of normalizeWorkspaceTags(workspace.tags)) {
-			if (coveredTagsByProjectId.get(workspace.projectId)?.has(tag)) continue;
-			let uncovered = uncoveredTagsByProjectId.get(workspace.projectId);
+			if (coveredTagsByProjectId.get(scope)?.has(tag)) continue;
+			let uncovered = uncoveredTagsByProjectId.get(scope);
 			if (!uncovered) {
 				uncovered = new Set();
-				uncoveredTagsByProjectId.set(workspace.projectId, uncovered);
+				uncoveredTagsByProjectId.set(scope, uncovered);
 			}
 			uncovered.add(tag);
 		}
