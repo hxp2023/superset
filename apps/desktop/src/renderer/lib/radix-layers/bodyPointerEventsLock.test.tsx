@@ -9,7 +9,10 @@ if (!alreadyRegistered) GlobalRegistrator.register();
 	globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { act, cleanup, fireEvent, render, screen } = await import(
+// Queries go through `within(document.body)` rather than `screen`: in a full
+// suite run an earlier file may have loaded testing-library against a previous
+// happy-dom window, and `screen` stays bound to that stale body.
+const { act, cleanup, fireEvent, render, waitFor, within } = await import(
 	"@testing-library/react"
 );
 const React = await import("react");
@@ -67,9 +70,10 @@ function MenuOpensDialog() {
 describe("body pointer-events lock across a context menu and an alert dialog", () => {
 	test("is released after the dialog opened from the menu closes", async () => {
 		render(<MenuOpensDialog />);
+		const page = () => within(document.body);
 
 		await act(async () => {
-			fireEvent.contextMenu(screen.getByText("row"), {
+			fireEvent.contextMenu(page().getByText("row"), {
 				clientX: 10,
 				clientY: 10,
 			});
@@ -77,20 +81,19 @@ describe("body pointer-events lock across a context menu and an alert dialog", (
 		expect(document.body.style.pointerEvents).toBe("none");
 
 		await act(async () => {
-			fireEvent.click(await screen.findByText("Delete"));
+			fireEvent.click(await page().findByText("Delete"));
 		});
-		expect(screen.getByRole("alertdialog")).toBeTruthy();
+		expect(page().getByRole("alertdialog")).toBeTruthy();
 		// One shared layer stack keeps the lock held while the dialog is open.
 		expect(document.body.style.pointerEvents).toBe("none");
 
 		await act(async () => {
-			fireEvent.click(screen.getByText("Cancel"));
+			fireEvent.click(page().getByText("Cancel"));
 		});
-		await act(async () => {
-			await new Promise((resolve) => setTimeout(resolve, 20));
+		await waitFor(() => {
+			expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+			expect(document.querySelector('[role="menu"]')).toBeNull();
 		});
-		expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-		expect(document.querySelector('[role="menu"]')).toBeNull();
 		expect(document.body.style.pointerEvents).toBe("");
 	});
 });

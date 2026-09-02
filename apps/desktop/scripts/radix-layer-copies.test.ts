@@ -16,7 +16,10 @@ import { join, resolve, sep } from "node:path";
  *
  * Resolution follows the real install: each package's dependencies are
  * resolved from that package's own realpath, so bun's isolated store is
- * walked the way the bundler walks it.
+ * walked the way the bundler walks it. Only Radix edges are followed, on
+ * purpose: non-Radix packages that carry their own Radix copy (cmdk, vaul)
+ * render nothing in the desktop bundle, and their nested copies can only be
+ * aligned by moving every Radix package forward together.
  */
 
 const LAYER = "@radix-ui/react-dismissable-layer";
@@ -49,7 +52,11 @@ function isRadix(name: string): boolean {
 	return name === "radix-ui" || name.startsWith("@radix-ui/");
 }
 
-/** version -> one dependency chain that reaches it */
+/**
+ * resolved layer directory -> "version via chain". Keyed by directory, not
+ * version: bun's store can hold two installs of one version (different peer
+ * sets), and each is its own module instance with its own lock state.
+ */
 function collectLayerCopies(rootDir: string, into: Map<string, string>): void {
 	const root = readPackage(rootDir);
 	const direct = Object.keys({
@@ -66,7 +73,9 @@ function collectLayerCopies(rootDir: string, into: Map<string, string>): void {
 		visited.add(key);
 		const pkg = readPackage(dir);
 		if (name === LAYER) {
-			if (!into.has(pkg.version)) into.set(pkg.version, chain.join(" > "));
+			if (!into.has(dir)) {
+				into.set(dir, `${pkg.version} via ${chain.join(" > ")}`);
+			}
 			return;
 		}
 		for (const dep of Object.keys(pkg.dependencies ?? {}).filter(isRadix)) {
@@ -86,10 +95,8 @@ describe("Radix DismissableLayer copies", () => {
 		collectLayerCopies(DESKTOP_DIR, copies);
 
 		expect(copies.size).toBeGreaterThan(0);
-		// On failure the diff lists every version with the chain that pulls
-		// it in; align the outlier's package (or bump the whole Radix set).
-		expect(
-			[...copies.entries()].map(([v, via]) => `${v} via ${via}`),
-		).toHaveLength(1);
+		// On failure the diff lists every copy with the chain that pulls it
+		// in; align the outlier's package (or bump the whole Radix set).
+		expect([...copies.values()]).toHaveLength(1);
 	});
 });
