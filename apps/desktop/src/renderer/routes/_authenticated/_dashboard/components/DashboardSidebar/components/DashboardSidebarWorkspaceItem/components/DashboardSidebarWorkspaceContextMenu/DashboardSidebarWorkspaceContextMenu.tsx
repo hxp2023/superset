@@ -21,6 +21,7 @@ import {
 	LuFolderOpen,
 	LuFolderPlus,
 	LuGitBranch,
+	LuHash,
 	LuPencil,
 	LuPin,
 	LuPinOff,
@@ -58,6 +59,7 @@ interface DashboardSidebarWorkspaceContextMenuProps {
 	onOpenInFinder: () => void;
 	onCopyPath: () => void;
 	onCopyBranchName: () => void;
+	onCopyId: () => void;
 	onRemoveFromSidebar: () => void;
 	onRename?: () => void;
 	/** Cloud workspaces only: turn this sandbox into a reusable environment. */
@@ -87,6 +89,7 @@ export function DashboardSidebarWorkspaceContextMenu({
 	onOpenInFinder,
 	onCopyPath,
 	onCopyBranchName,
+	onCopyId,
 	onRemoveFromSidebar,
 	onRename,
 	onPromoteToEnvironment,
@@ -171,6 +174,10 @@ export function DashboardSidebarWorkspaceContextMenu({
 					<Trans id="dashboard.sidebar.workspaceMenu.copyBranchName">
 						Copy Branch Name
 					</Trans>
+				</ContextMenuItem>
+				<ContextMenuItem onSelect={onCopyId}>
+					<LuHash className="size-4 mr-2" />
+					<Trans id="dashboard.sidebar.workspaceMenu.copyId">Copy ID</Trans>
 				</ContextMenuItem>
 				<ContextMenuSeparator />
 				<ContextMenuItem onSelect={onToggleUnread}>

@@ -334,12 +334,32 @@ export function useDashboardSidebarWorkspaceItemActions({
 		}
 	};
 
+	const handleCopyId = async () => {
+		try {
+			await copyToClipboard(workspaceId);
+			toast.success(
+				t({
+					id: "dashboard.sidebar.workspaceActions.idCopied",
+					message: "ID copied",
+				}),
+			);
+		} catch (error) {
+			toast.error(
+				t({
+					id: "dashboard.sidebar.workspaceActions.copyIdFailed",
+					message: `Failed to copy ID: ${errorMessage(error, "Unknown error")}`,
+				}),
+			);
+		}
+	};
+
 	return {
 		cancelRename,
 		handleClearStatus,
 		handleClick,
 		handleCopyPath,
 		handleCopyBranchName,
+		handleCopyId,
 		handleCreateSection,
 		handleMoveToSection,
 		handleOpenInFinder,
