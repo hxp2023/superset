@@ -158,7 +158,6 @@ export function NewChatWidget({
 		if (selectedTarget.kind === "cloud") {
 			createCloudWorkspace
 				.mutateAsync({
-					target: selectedTarget,
 					branch: baseBranch ?? branchData?.defaultBranch ?? null,
 					environmentId: selectedEnvironment?.id ?? null,
 					message,

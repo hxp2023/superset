@@ -1,4 +1,6 @@
+import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { useQuery } from "@tanstack/react-query";
+import { useFeatureFlag } from "posthog-react-native";
 import { useSession } from "@/lib/auth/client";
 import { apiClient } from "@/lib/trpc/client";
 
@@ -9,10 +11,11 @@ import { apiClient } from "@/lib/trpc/client";
 export function useCloudRepoPrefix(): string | null {
 	const { data: session } = useSession();
 	const organizationId = session?.session?.activeOrganizationId ?? null;
+	const enabledByFlag = Boolean(useFeatureFlag(FEATURE_FLAGS.CLOUD_WORKSPACES));
 
 	const { data } = useQuery({
 		queryKey: ["cloud", "cloudWorkspace", "repo", organizationId],
-		enabled: organizationId !== null,
+		enabled: enabledByFlag && organizationId !== null,
 		staleTime: Number.POSITIVE_INFINITY,
 		queryFn: () =>
 			apiClient.cloudWorkspace.repo.query({

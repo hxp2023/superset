@@ -8,10 +8,8 @@ import { getCloudWorkspacesQueryKey } from "@/hooks/useCloudWorkspaces";
 import { useSession } from "@/lib/auth/client";
 import { posthog } from "@/lib/posthog";
 import { apiClient } from "@/lib/trpc/client";
-import type { NewChatTarget } from "../useNewChatTargets";
 
 interface CreateCloudWorkspaceArgs {
-	target: NewChatTarget;
 	/** Null means the repo's default branch, resolved by the branch query. */
 	branch: string | null;
 	/** Null when no environment exists yet; create cannot proceed without one. */
