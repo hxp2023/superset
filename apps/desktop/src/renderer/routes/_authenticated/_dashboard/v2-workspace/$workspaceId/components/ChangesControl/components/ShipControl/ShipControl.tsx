@@ -8,7 +8,7 @@ import {
 } from "@superset/ui/dropdown-menu";
 import { Input } from "@superset/ui/input";
 import { Label } from "@superset/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
 import { toast } from "@superset/ui/sonner";
 import { Textarea } from "@superset/ui/textarea";
 import { workspaceTrpc } from "@superset/workspace-client";
@@ -28,14 +28,19 @@ interface ShipControlProps {
 	workspaceId: string;
 	sync: BranchSyncStatus;
 	onRefresh: () => void;
+	/**
+	 * True when the diff-stat face is showing next to this segment: the ship
+	 * actions collapse into the chevron menu so the control keeps one face.
+	 */
+	compact?: boolean;
 }
 
 /**
- * The no-PR half of the top-bar Changes cluster: one progressive action that
- * walks the branch to a pull request. Uncommitted changes → "Commit" (message
- * popover); committed → "Create PR" (title/description popover; pushes first
- * when the branch is unpublished or ahead). A chevron menu offers "Push" on
- * its own whenever there is something to push.
+ * The no-PR half of the top-bar Changes control: walks the branch to a pull
+ * request. Full mode shows one progressive face — Commit (message popover)
+ * while the tree is dirty, then Create PR (title/description popover; pushes
+ * first when the branch is unpublished or ahead), then Push. Compact mode
+ * (diff stats own the face) folds the same actions into the chevron menu.
  *
  * Session workspaces (null projectId) can't create PRs — the PR route and
  * repo resolution are project-scoped — so they only ever see Commit/Push.
@@ -44,6 +49,7 @@ export function ShipControl({
 	workspaceId,
 	sync,
 	onRefresh,
+	compact = false,
 }: ShipControlProps) {
 	const { t } = useLingui();
 	const { workspace } = useWorkspace();
@@ -53,9 +59,10 @@ export function ShipControl({
 	const needsCommit = sync.hasUncommitted;
 	const needsPush = !sync.hasUpstream || sync.pushCount > 0;
 
-	const [commitOpen, setCommitOpen] = useState(false);
+	// Which popover form is open; both anchor to the whole segment so the
+	// compact menu items and the full-mode faces share one Popover.
+	const [view, setView] = useState<"commit" | "pr" | null>(null);
 	const [commitMessage, setCommitMessage] = useState("");
-	const [prOpen, setPrOpen] = useState(false);
 	const [prTitle, setPrTitle] = useState("");
 	const [prBody, setPrBody] = useState("");
 	const [prDraft, setPrDraft] = useState(false);
@@ -65,7 +72,7 @@ export function ShipControl({
 			toast.success(
 				t({ id: "workspace.shipControl.committed", message: "Committed" }),
 			);
-			setCommitOpen(false);
+			setView(null);
 			setCommitMessage("");
 			onRefresh();
 		},
@@ -101,19 +108,19 @@ export function ShipControl({
 
 	// The branch's commits ahead of its base: prefills the PR title from the
 	// latest subject, and gates Create PR — GitHub rejects a PR with no
-	// commits between base and head, so the button disables instead of
+	// commits between base and head, so the action disables instead of
 	// surfacing that as a failure toast. Same 10s cadence as the PR/sync
 	// queries so committing (here or in a terminal) enables it promptly.
 	const commitsQuery = workspaceTrpc.git.listCommits.useQuery(
 		{ workspaceId },
 		{
-			enabled: canCreatePr && !needsCommit,
+			enabled: canCreatePr,
 			refetchInterval: 10_000,
 			refetchOnWindowFocus: true,
 			staleTime: 10_000,
 		},
 	);
-	// Optimistic while loading so the button doesn't flash disabled.
+	// Optimistic while loading so the action doesn't flash disabled.
 	const hasCommitsAhead =
 		commitsQuery.data == null || commitsQuery.data.commits.length > 0;
 	const latestSubject = commitsQuery.data?.commits[0]?.message ?? "";
@@ -175,7 +182,7 @@ export function ShipControl({
 				}),
 				{ id: toastId },
 			);
-			setPrOpen(false);
+			setView(null);
 			setPrTitle("");
 			setPrBody("");
 			setPrDraft(false);
@@ -194,171 +201,227 @@ export function ShipControl({
 	const showCreatePr = !needsCommit && canCreatePr;
 	if (!needsCommit && !showCreatePr && !needsPush) return null;
 
+	const noCommitsTooltip = t({
+		id: "workspace.shipControl.noCommitsTooltip",
+		message: "No commits to open a pull request from",
+	});
+
 	// enabled: on the hover so a disabled button stays hoverable (pointer
 	// events are kept alive for the native title tooltip) without lighting up.
 	const mainButtonClass =
 		"flex h-full items-center gap-1.5 px-2 text-xs font-medium text-foreground outline-none transition-colors enabled:hover:bg-accent/60 disabled:opacity-50";
+	const chevronButton = (
+		<button
+			type="button"
+			className="flex h-full items-center px-1 outline-none transition-colors hover:bg-accent/60"
+			aria-label={t({
+				id: "workspace.shipControl.openShipOptionsAria",
+				message: "Open ship options",
+			})}
+		>
+			{isShipping || commitMutation.isPending ? (
+				<VscLoading className="size-3 animate-spin text-muted-foreground" />
+			) : (
+				<VscChevronDown className="size-3 text-muted-foreground" />
+			)}
+		</button>
+	);
 
 	return (
-		<div className="flex h-7 items-center overflow-hidden rounded-md border border-border/60 bg-muted/30">
-			{needsCommit ? (
-				<Popover open={commitOpen} onOpenChange={setCommitOpen}>
-					<PopoverTrigger asChild>
-						<button type="button" className={mainButtonClass}>
-							{commitMutation.isPending ? (
-								<VscLoading className="size-3.5 animate-spin" />
+		<Popover
+			open={view !== null}
+			onOpenChange={(open) => {
+				if (!open) setView(null);
+			}}
+		>
+			<PopoverAnchor asChild>
+				{/* A segment of ChangesControl's split button — the parent owns
+				    the border, rounding, and fill. */}
+				<div className="flex items-center">
+					{compact ? (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>{chevronButton}</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-44">
+								{needsCommit && (
+									<DropdownMenuItem
+										className="text-xs"
+										disabled={commitMutation.isPending}
+										onClick={() => setView("commit")}
+									>
+										<VscGitCommit className="size-3.5" />
+										<Trans id="workspace.shipControl.commit">Commit</Trans>
+									</DropdownMenuItem>
+								)}
+								{needsPush && (
+									<DropdownMenuItem
+										className="text-xs"
+										disabled={pushMutation.isPending}
+										onClick={() => pushMutation.mutate({ workspaceId })}
+									>
+										<VscRepoPush className="size-3.5" />
+										<Trans id="workspace.shipControl.push">Push</Trans>
+									</DropdownMenuItem>
+								)}
+								{canCreatePr && (
+									<DropdownMenuItem
+										className="text-xs"
+										disabled={!hasCommitsAhead || isShipping}
+										title={hasCommitsAhead ? undefined : noCommitsTooltip}
+										onClick={() => setView("pr")}
+									>
+										<VscGitPullRequestCreate className="size-3.5" />
+										<Trans id="workspace.shipControl.createPr">Create PR</Trans>
+									</DropdownMenuItem>
+								)}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					) : (
+						<>
+							{needsCommit ? (
+								<button
+									type="button"
+									className={mainButtonClass}
+									onClick={() => setView("commit")}
+								>
+									{commitMutation.isPending ? (
+										<VscLoading className="size-3.5 animate-spin" />
+									) : (
+										<VscGitCommit className="size-3.5" />
+									)}
+									<Trans id="workspace.shipControl.commit">Commit</Trans>
+								</button>
+							) : showCreatePr ? (
+								<button
+									type="button"
+									className={mainButtonClass}
+									disabled={!hasCommitsAhead}
+									title={hasCommitsAhead ? undefined : noCommitsTooltip}
+									onClick={() => setView("pr")}
+								>
+									{isShipping ? (
+										<VscLoading className="size-3.5 animate-spin" />
+									) : (
+										<VscGitPullRequestCreate className="size-3.5" />
+									)}
+									<Trans id="workspace.shipControl.createPr">Create PR</Trans>
+								</button>
 							) : (
-								<VscGitCommit className="size-3.5" />
+								<button
+									type="button"
+									className={mainButtonClass}
+									disabled={pushMutation.isPending}
+									onClick={() => pushMutation.mutate({ workspaceId })}
+								>
+									{pushMutation.isPending ? (
+										<VscLoading className="size-3.5 animate-spin" />
+									) : (
+										<VscRepoPush className="size-3.5" />
+									)}
+									<Trans id="workspace.shipControl.push">Push</Trans>
+								</button>
+							)}
+							{needsPush && (needsCommit || showCreatePr) && (
+								<>
+									<div className="h-full w-px bg-border/60" />
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											{chevronButton}
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end" className="w-40">
+											<DropdownMenuItem
+												className="text-xs"
+												disabled={pushMutation.isPending}
+												onClick={() => pushMutation.mutate({ workspaceId })}
+											>
+												<VscRepoPush className="size-3.5" />
+												<Trans id="workspace.shipControl.push">Push</Trans>
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</>
+							)}
+						</>
+					)}
+				</div>
+			</PopoverAnchor>
+			<PopoverContent
+				align="end"
+				sideOffset={8}
+				className={view === "pr" ? "w-96 p-3" : "w-80 p-3"}
+			>
+				{view === "commit" ? (
+					<div className="flex flex-col gap-2">
+						<Textarea
+							autoFocus
+							value={commitMessage}
+							onChange={(e) => setCommitMessage(e.target.value)}
+							placeholder={defaultCommitMessage}
+							className="min-h-20 text-xs"
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+									e.preventDefault();
+									handleCommit();
+								}
+							}}
+						/>
+						<button
+							type="button"
+							onClick={handleCommit}
+							disabled={commitMutation.isPending}
+							className="flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+						>
+							{commitMutation.isPending && (
+								<VscLoading className="size-3.5 animate-spin" />
 							)}
 							<Trans id="workspace.shipControl.commit">Commit</Trans>
 						</button>
-					</PopoverTrigger>
-					<PopoverContent align="end" sideOffset={8} className="w-80 p-3">
-						<div className="flex flex-col gap-2">
-							<Textarea
-								autoFocus
-								value={commitMessage}
-								onChange={(e) => setCommitMessage(e.target.value)}
-								placeholder={defaultCommitMessage}
-								className="min-h-20 text-xs"
-								onKeyDown={(e) => {
-									if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-										e.preventDefault();
-										handleCommit();
-									}
-								}}
-							/>
+					</div>
+				) : (
+					<div className="flex flex-col gap-2">
+						<Input
+							autoFocus
+							value={effectiveTitle}
+							onChange={(e) => setPrTitle(e.target.value)}
+							placeholder={t({
+								id: "workspace.shipControl.prTitlePlaceholder",
+								message: "Pull request title",
+							})}
+							className="h-8 text-xs"
+						/>
+						<Textarea
+							value={prBody}
+							onChange={(e) => setPrBody(e.target.value)}
+							placeholder={t({
+								id: "workspace.shipControl.prBodyPlaceholder",
+								message: "Description (optional)",
+							})}
+							className="min-h-20 text-xs"
+						/>
+						<div className="flex items-center justify-between">
+							<Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+								<Checkbox
+									checked={prDraft}
+									onCheckedChange={(v) => setPrDraft(v === true)}
+								/>
+								<Trans id="workspace.shipControl.draft">Draft</Trans>
+							</Label>
 							<button
 								type="button"
-								onClick={handleCommit}
-								disabled={commitMutation.isPending}
+								onClick={() => void handleCreatePr()}
+								disabled={
+									!effectiveTitle.trim() || !hasCommitsAhead || isShipping
+								}
 								className="flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
 							>
-								{commitMutation.isPending && (
-									<VscLoading className="size-3.5 animate-spin" />
-								)}
-								<Trans id="workspace.shipControl.commit">Commit</Trans>
+								{isShipping && <VscLoading className="size-3.5 animate-spin" />}
+								<Trans id="workspace.shipControl.createPrAction">
+									Create pull request
+								</Trans>
 							</button>
 						</div>
-					</PopoverContent>
-				</Popover>
-			) : showCreatePr ? (
-				<Popover open={prOpen} onOpenChange={setPrOpen}>
-					<PopoverTrigger asChild>
-						<button
-							type="button"
-							className={mainButtonClass}
-							disabled={!hasCommitsAhead}
-							title={
-								hasCommitsAhead
-									? undefined
-									: t({
-											id: "workspace.shipControl.noCommitsTooltip",
-											message: "No commits to open a pull request from",
-										})
-							}
-						>
-							{isShipping ? (
-								<VscLoading className="size-3.5 animate-spin" />
-							) : (
-								<VscGitPullRequestCreate className="size-3.5" />
-							)}
-							<Trans id="workspace.shipControl.createPr">Create PR</Trans>
-						</button>
-					</PopoverTrigger>
-					<PopoverContent align="end" sideOffset={8} className="w-96 p-3">
-						<div className="flex flex-col gap-2">
-							<Input
-								autoFocus
-								value={effectiveTitle}
-								onChange={(e) => setPrTitle(e.target.value)}
-								placeholder={t({
-									id: "workspace.shipControl.prTitlePlaceholder",
-									message: "Pull request title",
-								})}
-								className="h-8 text-xs"
-							/>
-							<Textarea
-								value={prBody}
-								onChange={(e) => setPrBody(e.target.value)}
-								placeholder={t({
-									id: "workspace.shipControl.prBodyPlaceholder",
-									message: "Description (optional)",
-								})}
-								className="min-h-20 text-xs"
-							/>
-							<div className="flex items-center justify-between">
-								<Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-									<Checkbox
-										checked={prDraft}
-										onCheckedChange={(v) => setPrDraft(v === true)}
-									/>
-									<Trans id="workspace.shipControl.draft">Draft</Trans>
-								</Label>
-								<button
-									type="button"
-									onClick={() => void handleCreatePr()}
-									disabled={
-										!effectiveTitle.trim() || !hasCommitsAhead || isShipping
-									}
-									className="flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-								>
-									{isShipping && (
-										<VscLoading className="size-3.5 animate-spin" />
-									)}
-									<Trans id="workspace.shipControl.createPrAction">
-										Create pull request
-									</Trans>
-								</button>
-							</div>
-						</div>
-					</PopoverContent>
-				</Popover>
-			) : (
-				<button
-					type="button"
-					className={mainButtonClass}
-					disabled={pushMutation.isPending}
-					onClick={() => pushMutation.mutate({ workspaceId })}
-				>
-					{pushMutation.isPending ? (
-						<VscLoading className="size-3.5 animate-spin" />
-					) : (
-						<VscRepoPush className="size-3.5" />
-					)}
-					<Trans id="workspace.shipControl.push">Push</Trans>
-				</button>
-			)}
-
-			{needsPush && (needsCommit || showCreatePr) && (
-				<>
-					<div className="h-full w-px bg-border/60" />
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<button
-								type="button"
-								className="flex h-full items-center px-1 outline-none transition-colors hover:bg-accent/60"
-								aria-label={t({
-									id: "workspace.shipControl.openShipOptionsAria",
-									message: "Open ship options",
-								})}
-							>
-								<VscChevronDown className="size-3 text-muted-foreground" />
-							</button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-40">
-							<DropdownMenuItem
-								className="text-xs"
-								disabled={pushMutation.isPending}
-								onClick={() => pushMutation.mutate({ workspaceId })}
-							>
-								<VscRepoPush className="size-3.5" />
-								<Trans id="workspace.shipControl.push">Push</Trans>
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</>
-			)}
-		</div>
+					</div>
+				)}
+			</PopoverContent>
+		</Popover>
 	);
 }

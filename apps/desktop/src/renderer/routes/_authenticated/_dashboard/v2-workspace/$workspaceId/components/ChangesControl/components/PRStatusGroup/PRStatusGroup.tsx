@@ -16,6 +16,7 @@ import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
+import { GitCompareArrows } from "lucide-react";
 import { useMemo } from "react";
 import { LuArrowUpRight } from "react-icons/lu";
 import { VscChevronDown, VscGitMerge, VscLoading } from "react-icons/vsc";
@@ -31,6 +32,11 @@ interface PRStatusGroupProps {
 	state: PRFlowState;
 	workspaceId: string;
 	onRefresh?: () => void;
+	/**
+	 * Opens the Changes pane. Lives in the menu because the diff-stat face
+	 * yields to the PR badge once a PR exists.
+	 */
+	onOpenChanges?: () => void;
 }
 
 /**
@@ -48,6 +54,7 @@ export function PRStatusGroup({
 	state,
 	workspaceId,
 	onRefresh,
+	onOpenChanges,
 }: PRStatusGroupProps) {
 	const { t } = useLingui();
 	const navigate = useNavigate();
@@ -151,11 +158,10 @@ export function PRStatusGroup({
 	);
 
 	return (
+		// A segment of ChangesControl's split button — the parent owns the
+		// border and rounding; the state tint lives in this segment's fill.
 		<div
-			className={cn(
-				"flex h-7 items-center overflow-hidden rounded-md border",
-				tint.container,
-			)}
+			className={cn("flex items-center", tint.container)}
 			aria-busy={mergePRMutation.isPending}
 		>
 			<HoverCard openDelay={150} closeDelay={120}>
@@ -265,6 +271,12 @@ export function PRStatusGroup({
 							<DropdownMenuSeparator />
 						</>
 					)}
+					{onOpenChanges && (
+						<DropdownMenuItem className="text-xs" onClick={onOpenChanges}>
+							<GitCompareArrows className="size-3.5" />
+							<Trans id="workspace.changesPill.openChanges">Open changes</Trans>
+						</DropdownMenuItem>
+					)}
 					<DropdownMenuItem asChild className="text-xs">
 						<a href={pr.url} target="_blank" rel="noopener noreferrer">
 							<LuArrowUpRight className="size-3.5" />
@@ -280,8 +292,8 @@ export function PRStatusGroup({
 }
 
 /**
- * State-tinted styling for the PR badge bordered group. Mirrors the PRIcon
- * color palette so the whole group reads as "open"/"draft"/etc. at a glance,
+ * State-tinted styling for the PR badge segment. Mirrors the PRIcon color
+ * palette so the whole segment reads as "open"/"draft"/etc. at a glance,
  * not just the icon.
  */
 function stateTintClasses(state: PRState): {
@@ -292,31 +304,31 @@ function stateTintClasses(state: PRState): {
 	switch (state) {
 		case "open":
 			return {
-				container: "border-emerald-500/30 bg-emerald-500/10",
+				container: "bg-emerald-500/10",
 				hover: "hover:bg-emerald-500/15 focus-visible:bg-emerald-500/15",
 				divider: "bg-emerald-500/30",
 			};
 		case "merged":
 			return {
-				container: "border-violet-500/30 bg-violet-500/10",
+				container: "bg-violet-500/10",
 				hover: "hover:bg-violet-500/15 focus-visible:bg-violet-500/15",
 				divider: "bg-violet-500/30",
 			};
 		case "closed":
 			return {
-				container: "border-rose-500/30 bg-rose-500/10",
+				container: "bg-rose-500/10",
 				hover: "hover:bg-rose-500/15 focus-visible:bg-rose-500/15",
 				divider: "bg-rose-500/30",
 			};
 		case "draft":
 			return {
-				container: "border-border bg-muted/40",
+				container: "bg-muted/40",
 				hover: "hover:bg-muted/60 focus-visible:bg-muted/60",
 				divider: "bg-border",
 			};
 		case "queued":
 			return {
-				container: "border-amber-500/30 bg-amber-500/10",
+				container: "bg-amber-500/10",
 				hover: "hover:bg-amber-500/15 focus-visible:bg-amber-500/15",
 				divider: "bg-amber-500/30",
 			};
