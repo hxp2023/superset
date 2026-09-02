@@ -202,7 +202,19 @@ export function ShipControl({
 				}),
 				{
 					id: toastId,
-					description: created.url,
+					description: (
+						<a
+							href={created.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline underline-offset-2 transition-colors hover:text-foreground"
+						>
+							{t({
+								id: "workspace.shipControl.prUrlLink",
+								message: "PR URL",
+							})}
+						</a>
+					),
 					action: {
 						label: t({
 							id: "workspace.shipControl.openPrToastAction",
