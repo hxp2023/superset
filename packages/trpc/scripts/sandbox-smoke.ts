@@ -6,6 +6,7 @@
  * Deletes the sandbox afterwards, pass or fail.
  *
  *   bun run sandbox:smoke              # from the repo root; reads .env
+ *   bun run sandbox:smoke -- --keep    # leave the sandbox up for poking at
  *
  * Skips the API's own wrapper on purpose: the workspace row, the QStash
  * delivery and the GitHub App token mint. The mint needs the production App
@@ -25,6 +26,7 @@ import {
 
 const REPO_URL = "https://github.com/superset-sh/superset.git";
 const BRANCH = process.env.SMOKE_BRANCH ?? "main";
+const KEEP = process.argv.includes("--keep");
 const HEALTH_ATTEMPTS = 40;
 const VNC_TIMEOUT_MS = 30_000;
 
@@ -80,7 +82,8 @@ try {
 			SUPERSET_API_URL:
 				process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
 			SUPERSET_HOST_RUN_MODE: "sandbox",
-			SUPERSET_SANDBOX_WORKSPACE_ID: crypto.randomUUID(),
+			SUPERSET_SANDBOX_WORKSPACE_ID:
+				process.env.SMOKE_WORKSPACE_ID ?? crypto.randomUUID(),
 			SUPERSET_SANDBOX_WORKSPACE_NAME: "smoke",
 			SUPERSET_SANDBOX_BRANCH: BRANCH,
 			SUPERSET_SANDBOX_WORKSPACE_PATH: SANDBOX_WORKSPACE_PATH,
@@ -91,6 +94,7 @@ try {
 	console.log(`${at()} provisioned ${sandbox.providerSandboxId}`);
 
 	const access = await mintPreviewAccess(name);
+	if (KEEP) console.log(`${at()} preview ${access.url}`);
 	const headers = {
 		"X-Blaxel-Preview-Token": access.token,
 		authorization: "Bearer sandbox",
@@ -145,11 +149,13 @@ try {
 	failures.push("provision");
 	console.log(`${at()} FAIL provision: ${String(error).slice(0, 400)}`);
 } finally {
-	await deleteSandbox(name)
-		.then(() => console.log(`${at()} deleted ${name}`))
-		.catch((error) =>
-			console.log(`${at()} delete failed: ${String(error).slice(0, 200)}`),
-		);
+	if (KEEP) console.log(`${at()} kept ${name}`);
+	else
+		await deleteSandbox(name)
+			.then(() => console.log(`${at()} deleted ${name}`))
+			.catch((error) =>
+				console.log(`${at()} delete failed: ${String(error).slice(0, 200)}`),
+			);
 }
 
 if (failures.length) {
