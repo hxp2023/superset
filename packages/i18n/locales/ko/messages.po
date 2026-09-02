@@ -4877,17 +4877,17 @@ msgstr "추천 닫기"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.empty"
-msgstr ""
+msgstr "환경을 찾을 수 없습니다."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.searchPlaceholder"
-msgstr ""
+msgstr "환경 검색..."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.selectEnvironment"
-msgstr ""
+msgstr "환경 선택"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/GitHubIssueLinkCommand/GitHubIssueLinkCommand.tsx
@@ -17479,12 +17479,12 @@ msgstr "변경 앞부분의 줄을 아래에 표시"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.empty"
-msgstr ""
+msgstr "사용 가능한 환경 없음"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.loadFailed"
-msgstr ""
+msgstr "환경을 불러오지 못했습니다"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/components/ai-elements/environment-variables.tsx
@@ -17836,7 +17836,7 @@ msgstr "커밋"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/(home)/new-session/_layout.tsx
 msgid "mobile.nav.environment.title"
-msgstr ""
+msgstr "환경"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/_layout.tsx

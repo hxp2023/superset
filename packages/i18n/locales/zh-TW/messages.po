@@ -4877,17 +4877,17 @@ msgstr "忽略建議"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.empty"
-msgstr ""
+msgstr "找不到環境。"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.searchPlaceholder"
-msgstr ""
+msgstr "搜尋環境..."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.selectEnvironment"
-msgstr ""
+msgstr "選擇環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/GitHubIssueLinkCommand/GitHubIssueLinkCommand.tsx
@@ -17479,12 +17479,12 @@ msgstr "顯示下方改動之前的行"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.empty"
-msgstr ""
+msgstr "沒有可用的環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.loadFailed"
-msgstr ""
+msgstr "無法載入環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/components/ai-elements/environment-variables.tsx
@@ -17836,7 +17836,7 @@ msgstr "提交"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/(home)/new-session/_layout.tsx
 msgid "mobile.nav.environment.title"
-msgstr ""
+msgstr "環境"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/_layout.tsx

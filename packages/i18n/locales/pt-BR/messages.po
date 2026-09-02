@@ -4877,17 +4877,17 @@ msgstr "Dispensar sugestões"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.empty"
-msgstr ""
+msgstr "Nenhum ambiente encontrado."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.searchPlaceholder"
-msgstr ""
+msgstr "Buscar ambientes..."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.selectEnvironment"
-msgstr ""
+msgstr "Selecionar ambiente"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/GitHubIssueLinkCommand/GitHubIssueLinkCommand.tsx
@@ -17479,12 +17479,12 @@ msgstr "Mostrar as linhas antes da alteração abaixo"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.empty"
-msgstr ""
+msgstr "Nenhum ambiente disponível"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.loadFailed"
-msgstr ""
+msgstr "Não foi possível carregar os ambientes"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/components/ai-elements/environment-variables.tsx
@@ -17836,7 +17836,7 @@ msgstr "Commits"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/(home)/new-session/_layout.tsx
 msgid "mobile.nav.environment.title"
-msgstr ""
+msgstr "Ambiente"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/_layout.tsx

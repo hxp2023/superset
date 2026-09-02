@@ -4877,17 +4877,17 @@ msgstr "Bỏ qua gợi ý"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.empty"
-msgstr ""
+msgstr "Không tìm thấy environment nào."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.searchPlaceholder"
-msgstr ""
+msgstr "Tìm environment..."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.selectEnvironment"
-msgstr ""
+msgstr "Chọn environment"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/GitHubIssueLinkCommand/GitHubIssueLinkCommand.tsx
@@ -17479,12 +17479,12 @@ msgstr "Hiện các dòng trước thay đổi bên dưới"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.empty"
-msgstr ""
+msgstr "Không có environment nào"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.loadFailed"
-msgstr ""
+msgstr "Không thể tải environment"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/components/ai-elements/environment-variables.tsx
@@ -17836,7 +17836,7 @@ msgstr "Commit"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/(home)/new-session/_layout.tsx
 msgid "mobile.nav.environment.title"
-msgstr ""
+msgstr "Environment"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/_layout.tsx

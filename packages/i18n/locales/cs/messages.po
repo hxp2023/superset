@@ -4877,17 +4877,17 @@ msgstr "Skrýt návrhy"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.empty"
-msgstr ""
+msgstr "Nenalezena žádná prostředí."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.searchPlaceholder"
-msgstr ""
+msgstr "Hledat prostředí..."
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
 msgid "dashboard.newWorkspaceModal.environmentPicker.selectEnvironment"
-msgstr ""
+msgstr "Vybrat prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/GitHubIssueLinkCommand/GitHubIssueLinkCommand.tsx
@@ -17479,12 +17479,12 @@ msgstr "Zobrazit řádky před změnou níže"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.empty"
-msgstr ""
+msgstr "Žádná dostupná prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 msgid "mobile.environmentPicker.loadFailed"
-msgstr ""
+msgstr "Nepodařilo se načíst prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/components/ai-elements/environment-variables.tsx
@@ -17836,7 +17836,7 @@ msgstr "Commity"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/(home)/new-session/_layout.tsx
 msgid "mobile.nav.environment.title"
-msgstr ""
+msgstr "Prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/_layout.tsx
