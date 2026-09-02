@@ -309,11 +309,11 @@ export function AutomationBody({
 							<div className="min-h-[240px] px-4 py-3">
 								<MarkdownEditor
 									content={draft.prompt}
+									// No onSave: the editor fires it on blur, so clicking Save
+									// would save twice — once from the blur, once from the
+									// button. onChange already keeps the draft current.
 									onChange={(next: string) => edit({ prompt: next })}
 									editable={!readOnly}
-									onSave={() => {
-										if (!readOnly) save();
-									}}
 									placeholder={t({
 										id: "dashboard.automations.body.promptPlaceholder",
 										message: "Add prompt e.g. look for crashes in $sentry",
