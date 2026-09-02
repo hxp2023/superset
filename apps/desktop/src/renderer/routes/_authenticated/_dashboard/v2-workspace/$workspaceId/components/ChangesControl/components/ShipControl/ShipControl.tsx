@@ -12,7 +12,7 @@ import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
 import { toast } from "@superset/ui/sonner";
 import { Textarea } from "@superset/ui/textarea";
 import { workspaceTrpc } from "@superset/workspace-client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
 	VscChevronDown,
 	VscGitCommit,
@@ -62,6 +62,14 @@ export function ShipControl({
 	// Which popover form is open; both anchor to the whole segment so the
 	// compact menu items and the full-mode faces share one Popover.
 	const [view, setView] = useState<"commit" | "pr" | null>(null);
+	// A compact menu item can't open the popover directly: the menu content
+	// stays mounted (and keeps reclaiming focus) through its exit animation,
+	// so a popover opened on click loses its autofocused field a few
+	// milliseconds later and dismisses itself as focus-outside. Items only
+	// record the intent; the menu's onCloseAutoFocus — which fires once its
+	// focus scope is genuinely torn down — opens the popover and suppresses
+	// the focus-return to the chevron (equally focus-outside).
+	const pendingViewRef = useRef<"commit" | "pr" | null>(null);
 	const [commitMessage, setCommitMessage] = useState("");
 	const [prTitle, setPrTitle] = useState("");
 	const [prBody, setPrBody] = useState("");
@@ -241,12 +249,25 @@ export function ShipControl({
 					{compact ? (
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>{chevronButton}</DropdownMenuTrigger>
-							<DropdownMenuContent align="end" className="w-44">
+							<DropdownMenuContent
+								align="end"
+								className="w-44"
+								onCloseAutoFocus={(event) => {
+									const pending = pendingViewRef.current;
+									if (pending) {
+										pendingViewRef.current = null;
+										event.preventDefault();
+										setView(pending);
+									}
+								}}
+							>
 								{needsCommit && (
 									<DropdownMenuItem
 										className="text-xs"
 										disabled={commitMutation.isPending}
-										onClick={() => setView("commit")}
+										onClick={() => {
+											pendingViewRef.current = "commit";
+										}}
 									>
 										<VscGitCommit className="size-3.5" />
 										<Trans id="workspace.shipControl.commit">Commit</Trans>
@@ -267,7 +288,9 @@ export function ShipControl({
 										className="text-xs"
 										disabled={!hasCommitsAhead || isShipping}
 										title={hasCommitsAhead ? undefined : noCommitsTooltip}
-										onClick={() => setView("pr")}
+										onClick={() => {
+											pendingViewRef.current = "pr";
+										}}
 									>
 										<VscGitPullRequestCreate className="size-3.5" />
 										<Trans id="workspace.shipControl.createPr">Create PR</Trans>
