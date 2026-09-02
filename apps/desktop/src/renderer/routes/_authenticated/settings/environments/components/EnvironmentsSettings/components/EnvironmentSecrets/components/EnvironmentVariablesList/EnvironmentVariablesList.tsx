@@ -85,8 +85,6 @@ export function EnvironmentVariablesList({
 		}
 	}, [environmentId]);
 
-	// The parent bumps refreshToken to force a refetch, so the effect re-runs on
-	// a value its body never reads.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: a trigger, not an input
 	useEffect(() => {
 		fetchSecrets();
@@ -141,8 +139,6 @@ export function EnvironmentVariablesList({
 			)}
 
 			{isLoading ? null : filteredAndSorted.length === 0 ? (
-				// Same px-4 py-4 and 36px content height as a row, so the list does
-				// not change height when a filter empties it.
 				<div className="text-sm text-muted-foreground px-4 py-4 text-center border rounded-md">
 					<span className="flex h-9 items-center justify-center">
 						{secrets.length === 0

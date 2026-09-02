@@ -109,8 +109,6 @@ export function AddSecretSheet({
 		field: keyof SecretEntry,
 		value: string | boolean,
 	) => {
-		// A rejection describes what was typed, so it stops describing anything
-		// the moment the row is edited.
 		const edited = entries[index];
 		if (edited && entryErrors[edited.id]) {
 			setEntryErrors((prev) => {
@@ -167,7 +165,7 @@ export function AddSecretSheet({
 		});
 	}, []);
 
-	const MAX_FILE_SIZE = 256 * 1024; // 256 KB
+	const MAX_FILE_SIZE = 256 * 1024;
 
 	const validateAndReadFile = useCallback(
 		(file: File) => {
@@ -221,9 +219,6 @@ export function AddSecretSheet({
 		const validEntries = entries.filter((e) => e.key.trim() && e.value.trim());
 		if (validEntries.length === 0) return;
 
-		// Checked here before anything is written: the save loop used to abort on
-		// the first rejection, so earlier rows were already stored while the
-		// toast reported the whole thing as failed.
 		const errors: Record<string, string> = {};
 		for (const entry of validEntries) {
 			const key = validateSecretKey(entry.key.trim());

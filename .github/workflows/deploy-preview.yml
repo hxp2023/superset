@@ -60,8 +60,6 @@ jobs:
         run: |
           bun drizzle-kit check
           bun drizzle-kit migrate
-          # After migrations, because it writes rows in the tables they create.
-          # Idempotent: re-points the shipped environment at the current image.
           bun run --cwd ../.. db:seed-shared-environments
 
       - name: Save database success status

@@ -40,8 +40,6 @@ jobs:
           DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
         run: |
           bun drizzle-kit migrate
-          # After migrations, because it writes rows in the tables they create.
-          # Idempotent: re-points the shipped environment at the current image.
           bun run --cwd ../.. db:seed-shared-environments
 
   deploy-api:

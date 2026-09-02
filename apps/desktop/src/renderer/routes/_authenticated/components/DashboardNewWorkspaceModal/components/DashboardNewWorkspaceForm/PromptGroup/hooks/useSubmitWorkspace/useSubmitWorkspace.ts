@@ -113,9 +113,6 @@ export function useSubmitWorkspace(
 				);
 				return;
 			}
-			// A cloud workspace starts from an environment, and there is no
-			// implicit default: an organization with none configured cannot
-			// create one until somebody adds it in settings.
 			const environments = await cloudTrpcClient.environment.list.query({
 				organizationId: activeOrganizationId,
 			});
