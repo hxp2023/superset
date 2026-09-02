@@ -193,10 +193,8 @@ export function NewChatWidget({
 	const headerChips = [
 		cloudScope
 			? {
-					id: "environment",
-					label:
-						selectedEnvironment?.name ??
-						t({ id: "mobile.filter.cloud", message: "Cloud" }),
+					id: "project",
+					label: t({ id: "mobile.filter.cloud", message: "Cloud" }),
 				}
 			: {
 					id: "project",
@@ -206,6 +204,19 @@ export function NewChatWidget({
 					avatar: true,
 					iconUri: selectedTarget?.projectIconUrl ?? undefined,
 				},
+		...(cloudScope
+			? [
+					{
+						id: "environment",
+						label:
+							selectedEnvironment?.name ??
+							t({
+								id: "mobile.newChat.environmentChip",
+								message: "Environment",
+							}),
+					},
+				]
+			: []),
 		...(branchLabel ? [{ id: "branch", label: branchLabel, muted: true }] : []),
 	];
 
@@ -269,6 +280,7 @@ export function NewChatWidget({
 				});
 			}}
 			onChipPress={(id) => {
+				if (id === "project" && cloudScope) return;
 				void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 				if (id === "environment") {
 					router.push("/(authenticated)/(home)/new-session/environment");

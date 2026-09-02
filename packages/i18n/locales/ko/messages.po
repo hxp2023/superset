@@ -17936,6 +17936,11 @@ msgstr "워크스페이스"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/home/components/NewChatWidget/NewChatWidget.tsx
+msgid "mobile.newChat.environmentChip"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/(home)/home/components/NewChatWidget/NewChatWidget.tsx
 msgid "mobile.newChat.noProjectAvailable"
 msgstr "사용할 수 있는 프로젝트가 없습니다"
 
