@@ -1,7 +1,4 @@
-import {
-	SortableContext,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext } from "@dnd-kit/sortable";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
@@ -38,9 +35,8 @@ export function DashboardSidebarExpandedProjectContent({
 	const { t } = useLingui();
 	const {
 		projectItems,
-		getProjectSortableItems,
-		activeType,
-		activeContainer,
+		getProjectSortingStrategy,
+		activeSectionId,
 		activeWorkspaceHome,
 		groupInfo,
 		collapsedSectionIds,
@@ -51,7 +47,7 @@ export function DashboardSidebarExpandedProjectContent({
 		() => projectItems[projectId] ?? [],
 		[projectItems, projectId],
 	);
-	const sortableItems = getProjectSortableItems(projectId);
+	const sortingStrategy = getProjectSortingStrategy(projectId);
 	const { isWorkspaceSelected, selectWorkspaceFromEvent } =
 		useDashboardSidebarSelection();
 
@@ -96,10 +92,7 @@ export function DashboardSidebarExpandedProjectContent({
 							workspacesById={workspacesById}
 							groupInfo={groupInfo}
 						>
-							<SortableContext
-								items={sortableItems}
-								strategy={verticalListSortingStrategy}
-							>
+							<SortableContext items={flatItems} strategy={sortingStrategy}>
 								{flatItems.map((id) => {
 									const parsed = parseId(id);
 									if (!parsed) return null;
@@ -125,10 +118,8 @@ export function DashboardSidebarExpandedProjectContent({
 									const isInSection = !!group;
 									const isInCollapsedSection =
 										isInSection && collapsedSectionIds.has(group.sectionId);
-									const sectionDragActive =
-										activeType === "section" && activeContainer === projectId;
-									const hidden =
-										isInCollapsedSection || (sectionDragActive && isInSection);
+									const inDraggedSection =
+										isInSection && group.sectionId === activeSectionId;
 									const canBulkSelect =
 										workspace.type === "worktree" &&
 										workspace.pendingTransaction?.type !== "insert";
@@ -136,7 +127,8 @@ export function DashboardSidebarExpandedProjectContent({
 									// The zero-height collapse lives inside the sortable wrapper
 									// (see SortableWorkspaceItem) so the clip box moves with the
 									// dnd translate — wrapping here would clip displaced rows
-									// out of view mid-drag.
+									// out of view mid-drag. Rows stay mounted and full-height
+									// during a section drag: the group travels as a block.
 									return (
 										<SortableWorkspaceItem
 											key={String(id)}
@@ -159,10 +151,10 @@ export function DashboardSidebarExpandedProjectContent({
 															})
 													: undefined
 											}
-											collapsed={hidden}
-											collapseInstantly={sectionDragActive}
+											collapsed={isInCollapsedSection}
+											isDragPlaceholder={inDraggedSection}
 											disabled={
-												hidden ||
+												isInCollapsedSection ||
 												(workspace.type === "main" &&
 													workspace.hostType === "local-device")
 											}

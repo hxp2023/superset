@@ -15,7 +15,12 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import {
+	arrayMove,
+	type SortingStrategy,
+	sortableKeyboardCoordinates,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
 	createContext,
 	useCallback,
@@ -33,6 +38,12 @@ import type {
 	DashboardSidebarSection,
 	DashboardSidebarWorkspace,
 } from "../../types";
+import {
+	buildTopLevelUnits,
+	closestUnitCenter,
+	createSectionUnitSortingStrategy,
+	findUnitIndex,
+} from "./sectionUnits";
 
 // ── ID helpers ───────────────────────────────────────────────────────
 
@@ -243,11 +254,14 @@ export interface DashboardSidebarDndValue {
 	pinnedItems: UniqueIdentifier[];
 	sessionItems: UniqueIdentifier[];
 	projectItems: Record<string, UniqueIdentifier[]>;
-	getProjectSortableItems: (projectId: string) => UniqueIdentifier[];
+	/** Sorting strategy for a project's SortableContext (see the hook). */
+	getProjectSortingStrategy: (projectId: string) => SortingStrategy;
 	activeId: UniqueIdentifier | null;
 	activeType: "project" | "workspace" | "section" | null;
 	/** Container currently holding the active workspace/section, if any. */
 	activeContainer: string | null;
+	/** Real id of the section being dragged, if the active item is a section. */
+	activeSectionId: string | null;
 	/**
 	 * The dragged workspace's home container ("sessions" or its project id) —
 	 * the only non-pinned container it may be dropped into.
@@ -258,14 +272,6 @@ export interface DashboardSidebarDndValue {
 	projectsById: Map<string, DashboardSidebarProject>;
 	groupInfo: Map<string, { sectionId: string; color: string | null }>;
 	collapsedSectionIds: Set<string>;
-	/**
-	 * Height (px) of the rows hidden by an active section drag. Rendered as a
-	 * spacer at the end of the sidebar scroller so the pickup doesn't shrink
-	 * scrollHeight: a shrink clamps scrollTop when scrolled near the bottom,
-	 * and dnd-kit folds that scroll delta into the DragOverlay transform —
-	 * the ghost then rides the collapsed height away from the cursor.
-	 */
-	sectionDragSpacerPx: number;
 }
 
 const DashboardSidebarDndContext =
@@ -475,22 +481,10 @@ export function useSidebarDnd({
 		? (containerById.get(activeId) ?? null)
 		: null;
 
-	// Matches the sidebar workspace row height (h-8).
-	const SIDEBAR_ROW_PX = 32;
-	const sectionDragSpacerPx = useMemo(() => {
-		if (activeType !== "section" || !activeContainer) return 0;
-		const list = items.byProject[activeContainer] ?? [];
-		let hiddenRows = 0;
-		for (const id of list) {
-			const sectionFlatId = items.membership[String(id)];
-			if (!sectionFlatId) continue;
-			const parsed = parseId(sectionFlatId);
-			const section = parsed ? sectionsById.get(parsed.realId) : undefined;
-			// Members of collapsed sections are already zero-height before the drag.
-			if (section && !section.isCollapsed) hiddenRows++;
-		}
-		return hiddenRows * SIDEBAR_ROW_PX;
-	}, [activeType, activeContainer, items, sectionsById]);
+	const activeSectionId = useMemo(() => {
+		if (!activeId || activeType !== "section") return null;
+		return parseId(activeId)?.realId ?? null;
+	}, [activeId, activeType]);
 
 	const activeWorkspaceHome = useMemo(() => {
 		if (!activeId || activeType !== "workspace") return null;
@@ -546,17 +540,23 @@ export function useSidebarDnd({
 		return sec?.color ?? null;
 	}, [activeId, overId, activeType, activeContainer, items, sectionsById]);
 
-	// When dragging a section, its project's SortableContext collapses to the
-	// top-level units — section headers and ungrouped rows — so the section can
-	// sort against both (grouped rows hide and move with their header). Other
-	// projects (and idle projects) keep everything.
-	const getProjectSortableItems = useCallback(
-		(projectId: string) => {
-			const list = items.byProject[projectId] ?? [];
+	// A section drag sorts top-level units — section headers (carrying their
+	// member rows) and ungrouped rows. The flat item list and every row's
+	// height stay exactly as they were: nothing collapses at pickup, so the
+	// header never shifts under the pointer (a shift there is what dnd-kit
+	// "compensates" by scrolling the sidebar, and what left the ghost off the
+	// cursor when it couldn't). The unit strategy moves each group as one
+	// block, the dragged group included.
+	const getProjectSortingStrategy = useCallback(
+		(projectId: string): SortingStrategy => {
 			if (activeType === "section" && activeContainer === projectId) {
-				return list.filter((id) => isSec(id) || !items.membership[String(id)]);
+				return createSectionUnitSortingStrategy(
+					items.byProject[projectId] ?? [],
+					items.membership,
+					isSec,
+				);
 			}
-			return list;
+			return verticalListSortingStrategy;
 		},
 		[items.byProject, items.membership, activeType, activeContainer],
 	);
@@ -633,19 +633,19 @@ export function useSidebarDnd({
 			}
 
 			if (type === "section") {
-				// Stock closestCenter is safe here because SectionDragSpacer keeps
-				// scrollHeight constant at pickup (no scrollTop clamp to desync
-				// dnd-kit's scroll compensation) and the drag-collapse is instant
-				// (the member-unregister re-measure sees the final layout).
+				// Closest unit center within the section's own project. Unit rects
+				// come from the transform-agnostic droppable rects, so the hop
+				// past a group happens when the ghost's center crosses the group's
+				// un-displaced center — no feedback from the displacement itself.
+				const current = itemsRef.current;
 				const container = containerByIdRef.current.get(args.active.id);
-				return closestCenter({
-					...args,
-					droppableContainers: args.droppableContainers.filter(
-						(candidate) =>
-							container != null &&
-							containerByIdRef.current.get(candidate.id) === container,
-					),
-				});
+				if (!container) return [];
+				const units = buildTopLevelUnits(
+					getContainerList(current, container),
+					current.membership,
+					isSec,
+				);
+				return closestUnitCenter(units)(args);
 			}
 
 			if (type === "workspace") {
@@ -879,37 +879,12 @@ export function useSidebarDnd({
 				}
 				const list = current.byProject[container] ?? [];
 
-				// Section drag: the SortableContext held top-level units — section
-				// headers and ungrouped rows. Collapse the flat list into those
-				// units (a section unit carries its member rows), reorder the
-				// dragged section among them, and flatten back out. Sections sort
+				// Section drag: reorder among top-level units (a section unit
+				// carries its member rows) and flatten back out. Sections sort
 				// against ungrouped rows exactly like any other item.
-				interface TopLevelUnit {
-					key: UniqueIdentifier;
-					ids: UniqueIdentifier[];
-				}
-				const units: TopLevelUnit[] = [];
-				const unitBySection = new Map<string, TopLevelUnit>();
-				for (const id of list) {
-					if (isSec(id)) {
-						const unit: TopLevelUnit = { key: id, ids: [id] };
-						units.push(unit);
-						unitBySection.set(String(id), unit);
-						continue;
-					}
-					const sectionFlatId = current.membership[String(id)];
-					const owner = sectionFlatId
-						? unitBySection.get(sectionFlatId)
-						: undefined;
-					if (owner) {
-						owner.ids.push(id);
-					} else {
-						units.push({ key: id, ids: [id] });
-					}
-				}
-
-				const oldIdx = units.findIndex((unit) => unit.key === active.id);
-				const newIdx = units.findIndex((unit) => unit.key === over.id);
+				const units = buildTopLevelUnits(list, current.membership, isSec);
+				const oldIdx = findUnitIndex(units, active.id);
+				const newIdx = findUnitIndex(units, over.id);
 				if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
 
 				const rebuilt = arrayMove(units, oldIdx, newIdx).flatMap(
@@ -1064,31 +1039,31 @@ export function useSidebarDnd({
 			pinnedItems: items.pinned,
 			sessionItems: items.sessions,
 			projectItems: items.byProject,
-			getProjectSortableItems,
+			getProjectSortingStrategy,
 			activeId,
 			activeType,
 			activeContainer,
+			activeSectionId,
 			activeWorkspaceHome,
 			workspacesById,
 			sectionsById,
 			projectsById,
 			groupInfo,
 			collapsedSectionIds,
-			sectionDragSpacerPx,
 		}),
 		[
 			items,
-			getProjectSortableItems,
+			getProjectSortingStrategy,
 			activeId,
 			activeType,
 			activeContainer,
+			activeSectionId,
 			activeWorkspaceHome,
 			workspacesById,
 			sectionsById,
 			projectsById,
 			groupInfo,
 			collapsedSectionIds,
-			sectionDragSpacerPx,
 		],
 	);
 
