@@ -227,6 +227,22 @@ not the product (which is how a 5s path got reported here as 40s), and most of
 the weight is packages host-service imports at module load and never calls, so
 the lever is that import graph rather than anything about sandboxes.
 
+**The writable disk is half of memory, and `storageMb` does nothing.** The
+root is an overlay whose upper layer is tmpfs sized at ~50% of the sandbox's
+memory: 8 GB of memory gives 3.9 GB of disk, 16 GB gives 7.9 GB, 32 GB gives
+16 GB (and 8 CPUs). Every file written also occupies RAM, so a 16 GB sandbox
+holding a 6 GB checkout has ~9 GB left for processes — the full dev stack
+pushed it to 15.0/16.0 GB before Electron even started. Passing
+`storageMb` to `createIfNotExists` changes nothing (measured with 40960 —
+still 3.9 GB), and `/bl` is the provider's control mount, not storage. A
+checkout plus `bun install` of this monorepo is ~6 GB, so a golden that
+carries `node_modules` and expects to run the dev stack needs 32 GB of memory,
+and every fork inherits that size along with the files. Filling the disk is what a "wedged" sandbox looks
+like: every `process.exec`, even `echo`, returns `status: failed` with empty
+logs from then on. Volumes are the provider's answer for more disk, but one
+attaches to a single sandbox and cannot be forked, so they don't fit the
+golden model.
+
 **host-service has no HTTP health route.** Readiness is the `health.check` tRPC
 procedure; `GET /health` 404s. A probe on the wrong path looks exactly like a
 sandbox that never came up, which cost an afternoon here.
