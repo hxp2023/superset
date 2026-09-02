@@ -123,7 +123,22 @@ async function forkSandbox(
 		} as never,
 		throwOnError: true,
 	});
-	return await SandboxInstance.get(name);
+	// The update restarts the fork. Until it is back, the control plane can
+	// drop a session mid-request and the edge answers 502/504, so wait for it
+	// here rather than letting the first preview or exec pay for it.
+	const deadline = Date.now() + 120_000;
+	for (;;) {
+		try {
+			const current = await SandboxInstance.get(name);
+			if (current.status === "DEPLOYED") return current;
+		} catch (error) {
+			if (Date.now() > deadline) throw error;
+		}
+		if (Date.now() > deadline) {
+			throw new Error(`fork ${name} did not come back after its spec update`);
+		}
+		await new Promise((resolve) => setTimeout(resolve, 3000));
+	}
 }
 
 export async function provisionSandbox(args: {
