@@ -19,6 +19,7 @@ interface ChangesPanelProps {
 	workspaceId: string;
 	/** Absolute path of this pane's current diff target (selection echo). */
 	selectedFilePath?: string;
+	selectedChangeKey?: string;
 	/** openInNewTab=false navigates this pane; true opens a new diff tab. */
 	onSelectFile?: (
 		path: string,
@@ -38,6 +39,7 @@ interface ChangesPanelProps {
 export function ChangesPanel({
 	workspaceId,
 	selectedFilePath,
+	selectedChangeKey,
 	onSelectFile,
 	onOpenFile,
 }: ChangesPanelProps) {
@@ -214,6 +216,7 @@ export function ChangesPanel({
 			totalDeletions={totalDeletions}
 			worktreePath={worktreePath}
 			selectedFilePath={selectedFilePath}
+			selectedChangeKey={selectedChangeKey}
 			onSelectFile={onSelectFile}
 			onOpenFile={onOpenFile}
 			onOpenInEditor={handleOpenInEditor}

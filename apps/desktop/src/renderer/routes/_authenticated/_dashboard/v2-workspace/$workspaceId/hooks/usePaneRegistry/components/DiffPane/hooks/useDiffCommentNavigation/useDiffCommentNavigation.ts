@@ -34,12 +34,16 @@ export function useDiffCommentNavigation({
 	const orderedThreads = useMemo(() => buildOrderedThreads(items), [items]);
 	const [focusedThreadId, setFocusedThreadId] = useState<string | null>(null);
 	const [navFocusTick, setNavFocusTick] = useState(0);
+	// Before any navigation (or after a refetch dropped the focused thread)
+	// the counter reads as the first thread rather than "–": the next click
+	// then advances from there instead of the position looking undefined.
 	const focusedThreadIndex = useMemo(() => {
-		if (focusedThreadId == null) return null;
+		if (orderedThreads.length === 0) return null;
+		if (focusedThreadId == null) return 0;
 		const index = orderedThreads.findIndex(
 			(t) => t.threadId === focusedThreadId,
 		);
-		return index === -1 ? null : index;
+		return index === -1 ? 0 : index;
 	}, [orderedThreads, focusedThreadId]);
 
 	const jumpToThread = useCallback(
@@ -82,24 +86,37 @@ export function useDiffCommentNavigation({
 		[orderedThreads, fileByItemId, collapsedSet, setCollapsed, codeViewRef],
 	);
 
+	// Virgin state keys off the id, not the derived index: the counter shows
+	// the first thread by default, but the first "next" click should scroll
+	// to that thread, not skip past it.
 	const goToNextComment = useCallback(() => {
 		if (orderedThreads.length === 0) return;
 		jumpToThread(
-			focusedThreadIndex == null
+			focusedThreadId == null
 				? 0
-				: (focusedThreadIndex + 1) % orderedThreads.length,
+				: ((focusedThreadIndex ?? 0) + 1) % orderedThreads.length,
 		);
-	}, [orderedThreads.length, focusedThreadIndex, jumpToThread]);
+	}, [
+		orderedThreads.length,
+		focusedThreadId,
+		focusedThreadIndex,
+		jumpToThread,
+	]);
 
 	const goToPrevComment = useCallback(() => {
 		if (orderedThreads.length === 0) return;
 		jumpToThread(
-			focusedThreadIndex == null
+			focusedThreadId == null
 				? orderedThreads.length - 1
-				: (focusedThreadIndex - 1 + orderedThreads.length) %
+				: ((focusedThreadIndex ?? 0) - 1 + orderedThreads.length) %
 						orderedThreads.length,
 		);
-	}, [orderedThreads.length, focusedThreadIndex, jumpToThread]);
+	}, [
+		orderedThreads.length,
+		focusedThreadId,
+		focusedThreadIndex,
+		jumpToThread,
+	]);
 
 	const isNavFocused = useCallback(
 		(threadId: string) => focusedThreadId === threadId,

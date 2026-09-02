@@ -23,6 +23,7 @@ interface ChangesFileListProps {
 	viewMode: ChangesViewMode;
 	worktreePath?: string;
 	selectedFilePath?: string;
+	selectedChangeKey?: string;
 	foldSignal: FoldSignal;
 	onSelectFile?: (
 		path: string,
@@ -65,6 +66,7 @@ export const ChangesFileList = memo(function ChangesFileList({
 	viewMode,
 	worktreePath,
 	selectedFilePath,
+	selectedChangeKey,
 	foldSignal,
 	onSelectFile,
 	onOpenFile,
@@ -128,6 +130,7 @@ export const ChangesFileList = memo(function ChangesFileList({
 								workspaceId={workspaceId}
 								worktreePath={worktreePath}
 								selectedFilePath={selectedFilePath}
+								selectedChangeKey={selectedChangeKey}
 								foldSignal={foldSignal}
 								onSelectFile={onSelectFile}
 								onOpenFile={onOpenFile}
@@ -138,6 +141,8 @@ export const ChangesFileList = memo(function ChangesFileList({
 								files={groupFiles}
 								workspaceId={workspaceId}
 								worktreePath={worktreePath}
+								selectedFilePath={selectedFilePath}
+								selectedChangeKey={selectedChangeKey}
 								foldSignal={foldSignal}
 								onSelectFile={onSelectFile}
 								onOpenFile={onOpenFile}

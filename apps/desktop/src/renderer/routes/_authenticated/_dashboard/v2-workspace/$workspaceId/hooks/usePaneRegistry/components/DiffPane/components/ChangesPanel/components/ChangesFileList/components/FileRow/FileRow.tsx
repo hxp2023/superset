@@ -17,6 +17,7 @@ import {
 } from "@superset/ui/dropdown-menu";
 import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { cn } from "@superset/ui/utils";
 import { workspaceTrpc } from "@superset/workspace-client";
 import {
 	ChevronDown,
@@ -58,6 +59,8 @@ interface FileRowProps {
 	worktreePath?: string;
 	/** Hide the directory prefix — used when the row sits under a folder group. */
 	hideDir?: boolean;
+	/** Highlight as the diff pane's currently open file. */
+	isSelected?: boolean;
 	onSelect?: (path: string, openInNewTab?: boolean, changeKey?: string) => void;
 	onOpenFile?: (absolutePath: string, openInNewTab?: boolean) => void;
 	onOpenInEditor?: (path: string) => void;
@@ -68,6 +71,7 @@ export const FileRow = memo(function FileRow({
 	workspaceId,
 	worktreePath,
 	hideDir,
+	isSelected,
 	onSelect,
 	onOpenFile,
 	onOpenInEditor,
@@ -119,7 +123,10 @@ export const FileRow = memo(function FileRow({
 		<div className="group relative">
 			<button
 				type="button"
-				className="flex w-full items-center gap-1.5 py-1 pr-3 pl-3 text-left text-xs hover:bg-accent/50"
+				className={cn(
+					"flex w-full items-center gap-1.5 py-1 pr-3 pl-3 text-left text-xs hover:bg-accent/50",
+					isSelected && "bg-accent/70",
+				)}
 				{...fileDrag}
 				onClick={(e) => {
 					const intent = policy.getIntent(e);

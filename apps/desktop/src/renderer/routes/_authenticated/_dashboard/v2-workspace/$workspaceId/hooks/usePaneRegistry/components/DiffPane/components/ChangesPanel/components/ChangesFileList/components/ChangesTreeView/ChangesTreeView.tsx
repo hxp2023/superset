@@ -71,6 +71,8 @@ interface ChangesTreeViewProps {
 	worktreePath?: string;
 	/** Absolute path of the file whose diff is currently open, if any. */
 	selectedFilePath?: string;
+	/** Disambiguates a path present in several sections (staged + unstaged). */
+	selectedChangeKey?: string;
 	/** Bumped by the toolbar's expand-all / collapse-all buttons. */
 	foldSignal: FoldSignal;
 	onSelectFile?: (
@@ -104,6 +106,7 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 	workspaceId,
 	worktreePath,
 	selectedFilePath,
+	selectedChangeKey,
 	foldSignal,
 	onSelectFile,
 	onOpenFile,
@@ -218,13 +221,23 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 	useEffect(() => {
 		if (!selectedRelPath) return;
 		const selectedTreePath = toTreePath.get(selectedRelPath) ?? selectedRelPath;
-		if (!fileByTreePath.has(selectedTreePath)) return;
+		const file = fileByTreePath.get(selectedTreePath);
+		if (!file) return;
+		// The same path can sit in several sections (staged + unstaged); only
+		// the section holding the selected change echoes the focus, or every
+		// section's copy would light up.
+		if (
+			selectedChangeKey != null &&
+			getChangesetFileKey(file) !== selectedChangeKey
+		) {
+			return;
+		}
 		if (lastUserSelectRef.current === selectedRelPath) {
 			lastUserSelectRef.current = null;
 			return;
 		}
 		model.focusPath(selectedTreePath);
-	}, [model, selectedRelPath, fileByTreePath, toTreePath]);
+	}, [model, selectedRelPath, selectedChangeKey, fileByTreePath, toTreePath]);
 
 	handlersRef.current.onSelect = (treePath) => {
 		const realPath = toRealPath.get(treePath) ?? treePath;

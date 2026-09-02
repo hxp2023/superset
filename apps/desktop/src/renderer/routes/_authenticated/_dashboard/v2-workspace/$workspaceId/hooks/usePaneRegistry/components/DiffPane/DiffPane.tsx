@@ -882,6 +882,7 @@ export function DiffPane({
 					<ChangesPanel
 						workspaceId={workspaceId}
 						selectedFilePath={selectedAbsolutePath}
+						selectedChangeKey={data.changeKey}
 						onSelectFile={handlePanelSelectFile}
 						onOpenFile={onOpenFile}
 					/>
