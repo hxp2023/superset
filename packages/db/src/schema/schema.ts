@@ -614,9 +614,6 @@ export const cloudWorkspaces = pgTable(
 		organizationId: uuid("organization_id")
 			.notNull()
 			.references(() => organizations.id, { onDelete: "cascade" }),
-		projectId: uuid("project_id")
-			.notNull()
-			.references(() => v2Projects.id, { onDelete: "cascade" }),
 		// Creation inputs, not the workspace's identity: the sandbox's own
 		// host.db owns the workspace row (name, branch) once it is seeded, the
 		// same way every other host does. Read these to provision a sandbox,
@@ -646,7 +643,6 @@ export const cloudWorkspaces = pgTable(
 	},
 	(table) => [
 		index("cloud_workspaces_organization_id_idx").on(table.organizationId),
-		index("cloud_workspaces_project_id_idx").on(table.projectId),
 		unique("cloud_workspaces_provider_sandbox_id_unique").on(
 			table.provider,
 			table.providerSandboxId,

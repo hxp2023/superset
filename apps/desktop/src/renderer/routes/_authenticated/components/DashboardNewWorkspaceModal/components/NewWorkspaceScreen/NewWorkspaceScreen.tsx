@@ -1046,19 +1046,21 @@ export function NewWorkspaceScreen({
 									updateDraft({ hostId: next });
 								}}
 							/>
-							<ProjectPickerPill
-								selectedProject={selectedProject}
-								projects={projects}
-								isSessionSelected={draft.isSession}
-								onSelectProject={(selectedProjectId) => {
-									if (selectedProjectId === null) {
-										selectSession();
-										return;
-									}
-									setLastProjectId(selectedProjectId);
-									selectProject(selectedProjectId);
-								}}
-							/>
+							{draft.hostId !== CLOUD_HOST_ID && (
+								<ProjectPickerPill
+									selectedProject={selectedProject}
+									projects={projects}
+									isSessionSelected={draft.isSession}
+									onSelectProject={(selectedProjectId) => {
+										if (selectedProjectId === null) {
+											selectSession();
+											return;
+										}
+										setLastProjectId(selectedProjectId);
+										selectProject(selectedProjectId);
+									}}
+								/>
+							)}
 							{draft.hostId === CLOUD_HOST_ID && (
 								<EnvironmentPickerPill
 									selectedEnvironment={selectedEnvironment}

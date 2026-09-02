@@ -798,12 +798,14 @@ export function PromptGroup({
 							updateDraft({ hostId: next });
 						}}
 					/>
-					<ProjectPickerPill
-						selectedProject={selectedProject}
-						projects={recentProjects}
-						isSessionSelected={isSessionSelected}
-						onSelectProject={onSelectProject}
-					/>
+					{hostId !== CLOUD_HOST_ID && (
+						<ProjectPickerPill
+							selectedProject={selectedProject}
+							projects={recentProjects}
+							isSessionSelected={isSessionSelected}
+							onSelectProject={onSelectProject}
+						/>
+					)}
 					{hostId === CLOUD_HOST_ID && (
 						<EnvironmentPickerPill
 							selectedEnvironment={selectedEnvironment}

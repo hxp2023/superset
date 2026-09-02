@@ -83,7 +83,6 @@ export function NewChatWidget({
 				if (!organizationId) return null;
 				return apiClient.cloudWorkspace.listBranches.query({
 					organizationId,
-					projectId: selectedTarget.projectId,
 				});
 			}
 			return getHostServiceClientByUrl(

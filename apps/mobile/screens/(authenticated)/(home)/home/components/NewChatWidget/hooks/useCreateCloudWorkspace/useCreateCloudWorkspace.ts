@@ -33,7 +33,6 @@ export function useCreateCloudWorkspace() {
 
 	return useMutation({
 		mutationFn: async ({
-			target,
 			branch,
 			environmentId,
 			message,
@@ -53,7 +52,6 @@ export function useCreateCloudWorkspace() {
 			}
 			return apiClient.cloudWorkspace.create.mutate({
 				organizationId,
-				projectId: target.projectId,
 				environmentId,
 				prompt: message.text.trim() || undefined,
 				// Omitted when unresolved: the server falls back to the repo's
@@ -61,11 +59,10 @@ export function useCreateCloudWorkspace() {
 				branch: branch ?? undefined,
 			});
 		},
-		onSuccess: (row: CloudWorkspaceRow, { target, branch }) => {
+		onSuccess: (row: CloudWorkspaceRow, { branch }) => {
 			// The API emits `workspace_created`; this is only the client asking.
 			posthog.capture("workspace_create_requested", {
 				workspace_id: row.id,
-				project_id: target.projectId,
 				organization_id: organizationId,
 				host_kind: "cloud",
 				source: "mobile_composer",
@@ -84,9 +81,8 @@ export function useCreateCloudWorkspace() {
 			void queryClient.invalidateQueries({ queryKey: key });
 			router.push(`/(authenticated)/workspace/${row.id}`);
 		},
-		onError: (error, { target, branch }) => {
+		onError: (error, { branch }) => {
 			posthog.capture("workspace_create_failed", {
-				project_id: target.projectId,
 				organization_id: organizationId,
 				host_kind: "cloud",
 				source: "mobile_composer",

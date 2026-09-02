@@ -104,15 +104,6 @@ export function useSubmitWorkspace(
 		// Cloud workspaces are provisioned by the API, not the local host, so
 		// they bypass the host `workspaces.create` path entirely.
 		if (hostId === CLOUD_HOST_ID) {
-			if (!projectId) {
-				toast.error(
-					t({
-						id: "dashboard.newWorkspaceModal.submit.cloudRequiresProject",
-						message: "Cloud workspaces require a project",
-					}),
-				);
-				return;
-			}
 			const environments = await cloudTrpcClient.environment.list.query({
 				organizationId: activeOrganizationId,
 			});
@@ -136,7 +127,6 @@ export function useSubmitWorkspace(
 				// provisioned behind it, which the workspace screen renders.
 				const created = await createCloudWorkspace.mutateAsync({
 					organizationId: activeOrganizationId,
-					projectId,
 					environmentId: environment.id,
 					name: workspaceName ?? undefined,
 					prompt: draft.prompt.trim() || undefined,

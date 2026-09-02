@@ -6,9 +6,9 @@ export {
 	promoteSandboxToEnvironment,
 	provisionSandbox,
 } from "./blaxel";
+export { type CloudRepo, cloudRepo } from "./cloud-repo";
 export {
 	listRemoteBranches,
 	type RemoteBranch,
 	type RemoteBranchPage,
 } from "./list-branches";
-export { type ProjectRepo, repoForProject } from "./repo-for-project";
