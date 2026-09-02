@@ -60,5 +60,16 @@ if [ -n "$REPO_URL" ] && [ ! -f "$BOOTSTRAP_MARKER" ]; then
   unset GIT_ASKPASS
 fi
 
+# A headless X display for the desktop pane. x11vnc listens on loopback only;
+# host-service proxies /desktop/vnc onto it, so nothing here is reachable from
+# outside the sandbox. All fire-and-forget: a missing display costs the pane,
+# not the workspace.
+if command -v Xvfb >/dev/null 2>&1; then
+  export DISPLAY=:1
+  Xvfb :1 -screen 0 1440x900x24 -nolisten tcp >/dev/null 2>&1 &
+  (sleep 1 && openbox >/dev/null 2>&1) &
+  (sleep 1 && x11vnc -display :1 -localhost -rfbport 5900 -forever -shared -nopw -quiet >/dev/null 2>&1) &
+fi
+
 cd /app
 exec node host-service.js
