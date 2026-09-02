@@ -230,6 +230,16 @@ export async function provisionSandbox(args: {
 	return { providerSandboxId: args.name, sandboxUrl };
 }
 
+/** Left behind by a fork, and each one makes it serve the source's identity. */
+const INHERITED_IDENTITY: Array<[path: string, recursive: boolean]> = [
+	["/data/host.db", false],
+	["/data/host.db-wal", false],
+	["/data/host.db-shm", false],
+	["/data/.workspace-bootstrapped", false],
+	["/root/.superset/host", true],
+	["/root/.gitconfig", false],
+];
+
 /**
  * Copies a workspace's sandbox into a dedicated sandbox an environment owns,
  * and strips everything that belonged to the workspace it came from.
@@ -250,26 +260,18 @@ export async function promoteSandboxToEnvironment(args: {
 
 	const golden = await SandboxInstance.get(args.goldenName);
 
-	// `stop` rather than killing the pid: the fork inherits the process spec,
-	// restartOnFailure included, so a killed host-service would come straight
-	// back — still holding the source workspace's identity.
 	for (const name of ["host-service", "diag-start"]) {
 		await golden.process.stop(name).catch(() => {});
 	}
 
+	for (const [path, recursive] of INHERITED_IDENTITY) {
+		await golden.fs.rm(path, recursive).catch(() => {});
+	}
+
+	// pty-daemon is spawned by host-service, so the process API cannot see it.
 	await golden.process.exec({
 		name: "prepare-environment",
-		command: [
-			// host.db carries the source's seeded project and workspace rows;
-			// without this every fork serves that workspace's identity.
-			"rm -f /data/host.db /data/host.db-wal /data/host.db-shm",
-			// Written by start.sh on first boot. Left in place, a fork skips its
-			// own branch checkout and serves whatever the source had checked out.
-			"rm -f /data/.workspace-bootstrapped",
-			// Per-repo installation token belonging to the source workspace.
-			"rm -rf /root/.superset/host /root/.gitconfig",
-			"pkill -f pty-daemon.js || true",
-		].join(" && "),
+		command: "pkill -f pty-daemon.js || true",
 		waitForCompletion: true,
 	} as never);
 
