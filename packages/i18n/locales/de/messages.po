@@ -17937,7 +17937,7 @@ msgstr "Arbeitsbereich"
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/home/components/NewChatWidget/NewChatWidget.tsx
 msgid "mobile.newChat.environmentChip"
-msgstr ""
+msgstr "Umgebung"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/home/components/NewChatWidget/NewChatWidget.tsx
