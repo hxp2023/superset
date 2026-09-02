@@ -12,6 +12,7 @@ import type {
 	PaneViewerData,
 	TerminalPaneData,
 } from "../../types";
+import { openChangesPaneInStore } from "../../utils/openChangesPaneInStore";
 import { openPagePaneInStore } from "../../utils/openPagePaneInStore";
 import { useDefaultBrowserUrl } from "../useDefaultBrowserUrl";
 import type { TerminalLauncher } from "../useV2TerminalLauncher";
@@ -40,6 +41,7 @@ export function useWorkspacePaneOpeners({
 	addTerminalTab: () => Promise<void>;
 	addChatV3Tab: () => void;
 	addBrowserTab: () => void;
+	openChangesPane: () => void;
 	openCommentPane: (comment: CommentPaneData) => void;
 	openPagePane: (page: PagePaneData) => void;
 } {
@@ -192,6 +194,10 @@ export function useWorkspacePaneOpeners({
 		[store],
 	);
 
+	const openChangesPane = useCallback(() => {
+		openChangesPaneInStore(store);
+	}, [store]);
+
 	const openPagePane = useCallback(
 		(page: PagePaneData) => {
 			openPagePaneInStore(store, page);
@@ -204,6 +210,7 @@ export function useWorkspacePaneOpeners({
 		addTerminalTab,
 		addChatV3Tab,
 		addBrowserTab,
+		openChangesPane,
 		openCommentPane,
 		openPagePane,
 	};

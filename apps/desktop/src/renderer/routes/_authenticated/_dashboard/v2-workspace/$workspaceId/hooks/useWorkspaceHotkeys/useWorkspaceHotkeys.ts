@@ -14,10 +14,10 @@ import { useRightSidebarToggleIntent } from "renderer/stores/right-sidebar-toggl
 import type { StoreApi } from "zustand";
 import type {
 	BrowserPaneData,
-	DiffPaneData,
 	PaneViewerData,
 	TerminalPaneData,
 } from "../../types";
+import { openChangesPaneInStore } from "../../utils/openChangesPaneInStore";
 import { useDefaultBrowserUrl } from "../useDefaultBrowserUrl";
 import type { TerminalLauncher } from "../useV2TerminalLauncher";
 
@@ -38,7 +38,7 @@ export function useWorkspaceHotkeys({
 	launcher: TerminalLauncher;
 	onBeforeCloseTab?: WorkspaceProps<PaneViewerData>["onBeforeCloseTab"];
 }) {
-	const { setRightSidebarOpen, setRightSidebarTab } = useV2UserPreferences();
+	const { setRightSidebarOpen } = useV2UserPreferences();
 	const defaultBrowserUrl = useDefaultBrowserUrl();
 	const visiblePresets = useMemo(
 		() => matchedPresets.filter((preset) => preset.pinnedToBar !== false),
@@ -77,26 +77,7 @@ export function useWorkspaceHotkeys({
 	});
 
 	useHotkey("OPEN_DIFF_VIEWER", () => {
-		setRightSidebarOpen(true);
-		setRightSidebarTab("changes");
-
-		const state = store.getState();
-		for (const tab of state.tabs) {
-			for (const pane of Object.values(tab.panes)) {
-				if (pane.kind !== "diff") continue;
-				state.setActiveTab(tab.id);
-				state.setActivePane({ tabId: tab.id, paneId: pane.id });
-				return;
-			}
-		}
-		state.addTab({
-			panes: [
-				{
-					kind: "diff",
-					data: { path: "", collapsedFiles: [] } as DiffPaneData,
-				},
-			],
-		});
+		openChangesPaneInStore(store);
 	});
 
 	// --- Tab management ---

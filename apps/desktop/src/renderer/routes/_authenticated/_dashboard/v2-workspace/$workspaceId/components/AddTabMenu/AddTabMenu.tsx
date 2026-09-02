@@ -5,6 +5,7 @@ import {
 	DropdownMenuSeparator,
 } from "@superset/ui/dropdown-menu";
 import { BsTerminalPlus } from "react-icons/bs";
+import { LuGitCompareArrows } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { HotkeyMenuShortcut } from "renderer/components/HotkeyMenuShortcut";
 
@@ -12,6 +13,7 @@ interface AddTabMenuProps {
 	onAddTerminal: () => void;
 	onAddChatV3?: (() => void) | undefined;
 	onAddBrowser: () => void;
+	onAddChanges: () => void;
 	showPresetsBar: boolean;
 	onToggleShowPresetsBar: (enabled: boolean) => void;
 }
@@ -20,6 +22,7 @@ export function AddTabMenu({
 	onAddTerminal,
 	onAddChatV3,
 	onAddBrowser,
+	onAddChanges,
 	showPresetsBar,
 	onToggleShowPresetsBar,
 }: AddTabMenuProps) {
@@ -46,6 +49,13 @@ export function AddTabMenu({
 					<Trans id="workspace.addTabMenu.browser">Browser</Trans>
 				</span>
 				<HotkeyMenuShortcut hotkeyId="NEW_BROWSER" />
+			</DropdownMenuItem>
+			<DropdownMenuItem className="gap-2" onClick={onAddChanges}>
+				<LuGitCompareArrows className="size-4" />
+				<span>
+					<Trans id="workspace.addTabMenu.changes">Changes</Trans>
+				</span>
+				<HotkeyMenuShortcut hotkeyId="OPEN_DIFF_VIEWER" />
 			</DropdownMenuItem>
 			<DropdownMenuSeparator />
 			<DropdownMenuCheckboxItem

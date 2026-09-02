@@ -35,13 +35,13 @@ import {
 import { FileIcon } from "renderer/lib/fileIcons";
 import { DiscardConfirmDialog } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/DiscardConfirmDialog";
 import { StatusIndicator } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/StatusIndicator";
-import { PathActionsMenuItems } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/components/PathActionsMenuItems";
 import {
 	type ChangesetFile,
 	getChangesetFileKey,
 } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
 import { useFileDrag } from "../../hooks/useFileDrag";
+import { PathActionsMenuItems } from "../PathActionsMenuItems";
 
 function splitPath(path: string): { dir: string; basename: string } {
 	const lastSlash = path.lastIndexOf("/");

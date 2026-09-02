@@ -120,6 +120,8 @@ const MOD_KEY = navigator.platform.toLowerCase().includes("mac")
 
 interface UsePaneRegistryOptions {
 	onOpenFile: (path: string, openInNewTab?: boolean) => void;
+	/** ⇧-tier clicks in the Changes pane's panel open a separate diff tab. */
+	onOpenDiffInNewTab?: (path: string, changeKey?: string) => void;
 	onRevealPath: (path: string) => void;
 	launcher: TerminalLauncher;
 	store: StoreApi<WorkspaceStore<PaneViewerData>>;
@@ -127,6 +129,7 @@ interface UsePaneRegistryOptions {
 
 export function usePaneRegistry({
 	onOpenFile,
+	onOpenDiffInNewTab,
 	onRevealPath,
 	launcher,
 	store,
@@ -370,6 +373,7 @@ export function usePaneRegistry({
 						context={ctx}
 						workspaceId={workspaceId}
 						onOpenFile={onOpenFile}
+						onOpenDiffInNewTab={onOpenDiffInNewTab}
 						onCreateNewAgentSession={createNewAgentSession}
 					/>
 				),
@@ -797,6 +801,7 @@ export function usePaneRegistry({
 			focusAgentTerminal,
 			workspaceTrpcUtils,
 			t,
+			onOpenDiffInNewTab,
 		],
 	);
 }

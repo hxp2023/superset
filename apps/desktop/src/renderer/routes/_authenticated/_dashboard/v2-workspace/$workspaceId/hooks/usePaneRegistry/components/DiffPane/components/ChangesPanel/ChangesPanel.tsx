@@ -13,15 +13,13 @@ import type {
 	ChangesViewMode,
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
-import type { SidebarTabDefinition } from "../../types";
 import { ChangesTabContent } from "./components/ChangesTabContent";
 
-export type { ChangesFilter, ChangesViewMode };
-
-interface UseChangesTabParams {
+interface ChangesPanelProps {
 	workspaceId: string;
-	/** Absolute path of the file whose diff/preview is currently open. */
+	/** Absolute path of this pane's current diff target (selection echo). */
 	selectedFilePath?: string;
+	/** openInNewTab=false navigates this pane; true opens a new diff tab. */
 	onSelectFile?: (
 		path: string,
 		openInNewTab?: boolean,
@@ -30,12 +28,19 @@ interface UseChangesTabParams {
 	onOpenFile?: (absolutePath: string, openInNewTab?: boolean) => void;
 }
 
-export function useChangesTab({
+/**
+ * The Changes pane's left panel: branch header, commit filter, totals, and the
+ * sectioned changed-files list. This is the former sidebar Changes tab moved
+ * wholesale — the pane is now the one Changes surface. Re-renders on any
+ * sidebarState change through useSidebarDiffRef's whole-row live query, so the
+ * plain collection reads below stay fresh.
+ */
+export function ChangesPanel({
 	workspaceId,
 	selectedFilePath,
 	onSelectFile,
 	onOpenFile,
-}: UseChangesTabParams): SidebarTabDefinition {
+}: ChangesPanelProps) {
 	const { t } = useLingui();
 	const status = useWorkspaceGitStatus();
 	const collections = useCollections();
@@ -180,7 +185,7 @@ export function useChangesTab({
 				utils.git.getBaseBranch.invalidate({ workspaceId }),
 			]);
 		} catch (error) {
-			console.warn("Failed to refresh changes tab", error);
+			console.warn("Failed to refresh changes panel", error);
 			toast.error(
 				errorMessage(
 					error,
@@ -193,7 +198,7 @@ export function useChangesTab({
 		}
 	}, [utils, workspaceId, t]);
 
-	const content = (
+	return (
 		<ChangesTabContent
 			workspaceId={workspaceId}
 			status={status}
@@ -220,11 +225,4 @@ export function useChangesTab({
 			canRenameBranch={canRenameBranch}
 		/>
 	);
-
-	return {
-		id: "changes",
-		label: t({ id: "workspace.changesTab.label", message: "Changes" }),
-		badge: totalChanges > 0 ? totalChanges : undefined,
-		content,
-	};
 }

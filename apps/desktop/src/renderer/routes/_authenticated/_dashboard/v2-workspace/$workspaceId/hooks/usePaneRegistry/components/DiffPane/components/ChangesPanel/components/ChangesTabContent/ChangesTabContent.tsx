@@ -3,11 +3,11 @@ import type { AppRouter } from "@superset/host-service";
 import { Spinner } from "@superset/ui/spinner";
 import type { inferRouterOutputs } from "@trpc/server";
 import { memo, useCallback, useState } from "react";
+import type { ChangesetFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import type {
 	ChangesFilter,
 	ChangesViewMode,
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
-import type { ChangesetFile } from "../../../../../../hooks/useChangeset";
 import type { FoldSignal } from "../ChangesFileList";
 import { ChangesFileList } from "../ChangesFileList";
 import { ChangesHeader } from "../ChangesHeader";

@@ -3,7 +3,7 @@ import { workspaceTrpc } from "@superset/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useRef, useState } from "react";
-import { LuFile, LuGitCompareArrows } from "react-icons/lu";
+import { LuFile } from "react-icons/lu";
 import { getChangesetFileKey } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import { useWorkspaceGitStatus } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/providers/WorkspaceGitStatusProvider";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
@@ -16,7 +16,6 @@ import type { CommentPaneData, DiffFocusSide } from "../../types";
 import { FilesTab } from "./components/FilesTab";
 import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
-import { useChangesTab } from "./hooks/useChangesTab";
 import { usePRFlowState } from "./hooks/usePRFlowState";
 import { useReviewTab } from "./hooks/useReviewTab";
 import type { SidebarTabDefinition } from "./types";
@@ -77,7 +76,7 @@ export function WorkspaceSidebar({
 	const activeTab: SidebarTabId =
 		localState && isSidebarTabId(localState.sidebarState.activeTab)
 			? localState.sidebarState.activeTab
-			: "changes";
+			: "files";
 
 	function setActiveTab(tab: string) {
 		if (!isSidebarTabId(tab)) return;
@@ -90,23 +89,9 @@ export function WorkspaceSidebar({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [compact, setCompact] = useState(false);
 
-	const changesTabDef = useChangesTab({
-		workspaceId,
-		selectedFilePath,
-		onSelectFile: onSelectDiffFile
-			? (path, openInNewTab, changeKey) =>
-					onSelectDiffFile(path, openInNewTab, undefined, undefined, changeKey)
-			: undefined,
-		onOpenFile: onSelectFile,
-	});
-	const changesTab: SidebarTabDefinition = {
-		...changesTabDef,
-		icon: LuGitCompareArrows,
-	};
-
 	// PR review comments are always relative to the base branch, so they map
 	// onto the "against-base" source group — matching the same query (and
-	// changeKey format) the Changes tab uses for that group lets us disambiguate
+	// changeKey format) the Changes pane uses for that group lets us disambiguate
 	// a path that also has staged/unstaged edits, instead of falling back to
 	// "first item whose path matches" and landing on the wrong group.
 	const baseBranchQuery = workspaceTrpc.git.getBaseBranch.useQuery(
@@ -160,7 +145,7 @@ export function WorkspaceSidebar({
 		),
 	};
 
-	const tabs: SidebarTabDefinition[] = [filesTab, changesTab, reviewTab];
+	const tabs: SidebarTabDefinition[] = [filesTab, reviewTab];
 	const activeTabDef = tabs.find((t) => t.id === activeTab) ?? tabs[0];
 
 	const tabCount = tabs.length;

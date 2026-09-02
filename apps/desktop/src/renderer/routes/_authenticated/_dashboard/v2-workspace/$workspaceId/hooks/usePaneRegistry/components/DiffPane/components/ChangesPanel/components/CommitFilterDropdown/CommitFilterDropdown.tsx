@@ -11,7 +11,7 @@ import {
 import type { inferRouterOutputs } from "@trpc/server";
 import { Check, ChevronDown, ListFilter } from "lucide-react";
 import { useState } from "react";
-import type { ChangesFilter } from "../../useChangesTab";
+import type { ChangesFilter } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
 import { CommitRow } from "./components/CommitRow";
 import { RangeModal } from "./components/RangeModal";
 
