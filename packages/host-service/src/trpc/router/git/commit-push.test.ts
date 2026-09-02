@@ -157,7 +157,12 @@ describe("gitRouter.push", () => {
 		const remoteGit = simpleGit(remote);
 		const remoteBranches = await remoteGit.raw(["branch", "--list"]);
 		expect(remoteBranches).toContain("feature");
-		const mainSubject = await remoteGit.raw(["log", "-1", "--pretty=%s", "main"]);
+		const mainSubject = await remoteGit.raw([
+			"log",
+			"-1",
+			"--pretty=%s",
+			"main",
+		]);
 		expect(mainSubject.trim()).toBe("initial");
 		const upstream = (
 			await git.raw(["rev-parse", "--abbrev-ref", "@{upstream}"])
