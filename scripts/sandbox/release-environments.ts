@@ -176,6 +176,46 @@ async function run(
 	return { code: result.exitCode ?? 0, logs };
 }
 
+// A synchronous exec dies at the edge gateway after roughly two minutes
+// (504), and the setup takes longer than that once dependencies install. So
+// it runs detached and the script polls the process until it finishes.
+async function runLong(
+	name: string,
+	command: string,
+	maxMs = 20 * 60_000,
+): Promise<{ code: number; logs: string }> {
+	await sandbox.process.exec({
+		name,
+		command: `bash -lc ${JSON.stringify(command)}`,
+		waitForCompletion: false,
+	} as never);
+	const started = Date.now();
+	for (;;) {
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+		const info = (await sandbox.process.get(name).catch(() => null)) as {
+			status?: string;
+			exitCode?: number;
+		} | null;
+		if (
+			info &&
+			["completed", "failed", "stopped", "killed"].includes(info.status ?? "")
+		) {
+			const logs = String(await sandbox.process.logs(name).catch(() => ""));
+			return {
+				code: info.exitCode ?? (info.status === "completed" ? 0 : 1),
+				logs,
+			};
+		}
+		if (Date.now() - started > maxMs) {
+			const logs = String(await sandbox.process.logs(name).catch(() => ""));
+			return {
+				code: 124,
+				logs: `${logs}\n[release] ${name} still running after ${maxMs / 60000} min`,
+			};
+		}
+	}
+}
+
 await sandbox.fs.write(
 	"/tmp/internal-setup.sh",
 	readFileSync(join(import.meta.dir, "internal-setup.sh"), "utf8"),
@@ -183,7 +223,7 @@ await sandbox.fs.write(
 log(
 	"golden: running internal-setup.sh (dependency install takes several minutes)",
 );
-const setup = await run(
+const setup = await runLong(
 	"internal-setup",
 	`SUPERSET_SANDBOX_WORKSPACE_PATH=${WORKSPACE} bash /tmp/internal-setup.sh`,
 );
@@ -272,13 +312,27 @@ await provisionSandbox({
 });
 const access = await mintPreviewAccess(probe);
 const forked = await SandboxInstance.get(probe);
+// The edge drops the odd HTTP/2 session (GOAWAY, 502/504) under a long
+// poll; a check is idempotent, so retry it rather than fail the release.
 async function probeRun(name: string, command: string): Promise<string> {
-	await forked.process.exec({
-		name,
-		command: `bash -lc ${JSON.stringify(command)}`,
-		waitForCompletion: true,
-	} as never);
-	return String(await forked.process.logs(name).catch(() => ""));
+	for (let attempt = 1; ; attempt++) {
+		try {
+			await forked.process.exec({
+				name: `${name}-${attempt}`,
+				command: `bash -lc ${JSON.stringify(command)}`,
+				waitForCompletion: true,
+			} as never);
+			return String(
+				await forked.process.logs(`${name}-${attempt}`).catch(() => ""),
+			);
+		} catch (error) {
+			if (attempt >= 4) throw error;
+			log(
+				`  probe exec ${name} retry ${attempt}: ${String((error as Error).message ?? error).slice(0, 80)}`,
+			);
+			await new Promise((resolve) => setTimeout(resolve, 5000));
+		}
+	}
 }
 async function until(
 	label: string,
