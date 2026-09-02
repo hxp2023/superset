@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
 import { toast } from "@superset/ui/sonner";
 import { Textarea } from "@superset/ui/textarea";
 import { workspaceTrpc } from "@superset/workspace-client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	VscChevronDown,
 	VscGitCommit,
@@ -21,6 +21,7 @@ import {
 	VscRepoPush,
 } from "react-icons/vsc";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
+import { useWorkspaceGitStatus } from "../../../../providers/WorkspaceGitStatusProvider";
 import type { BranchSyncStatus } from "../../utils/getPRFlowState";
 
 interface ShipControlProps {
@@ -46,6 +47,7 @@ export function ShipControl({
 }: ShipControlProps) {
 	const { t } = useLingui();
 	const { workspace } = useWorkspace();
+	const status = useWorkspaceGitStatus();
 	const canCreatePr = workspace.projectId != null;
 
 	const needsCommit = sync.hasUncommitted;
@@ -97,27 +99,50 @@ export function ShipControl({
 	const createPrMutation =
 		workspaceTrpc.pullRequests.createForWorkspace.useMutation();
 
-	// Prefill the PR title from the branch's latest commit subject once the
-	// popover opens; tanstack-query dedupes this with the Changes panel's own
-	// commit list when one is mounted.
+	// The branch's commits ahead of its base: prefills the PR title from the
+	// latest subject, and gates Create PR — GitHub rejects a PR with no
+	// commits between base and head, so the button disables instead of
+	// surfacing that as a failure toast. Same 10s cadence as the PR/sync
+	// queries so committing (here or in a terminal) enables it promptly.
 	const commitsQuery = workspaceTrpc.git.listCommits.useQuery(
 		{ workspaceId },
-		{ enabled: prOpen && canCreatePr },
+		{
+			enabled: canCreatePr && !needsCommit,
+			refetchInterval: 10_000,
+			refetchOnWindowFocus: true,
+			staleTime: 10_000,
+		},
 	);
+	// Optimistic while loading so the button doesn't flash disabled.
+	const hasCommitsAhead =
+		commitsQuery.data == null || commitsQuery.data.commits.length > 0;
 	const latestSubject = commitsQuery.data?.commits[0]?.message ?? "";
 	const effectiveTitle = prTitle || latestSubject;
 
 	const isShipping = pushMutation.isPending || createPrMutation.isPending;
 
+	const changedPaths = useMemo(() => {
+		const data = status.data;
+		if (!data) return [];
+		return [...new Set([...data.staged, ...data.unstaged].map((f) => f.path))];
+	}, [status.data]);
+	// Fallback when the message box is left empty. Deliberately not
+	// translated: commit messages live in git history, not the UI.
+	const defaultCommitMessage =
+		changedPaths.length === 1
+			? `Update ${changedPaths[0]?.split("/").pop()}`
+			: changedPaths.length > 1
+				? `Update ${changedPaths.length} files`
+				: "Update";
+
 	const handleCommit = () => {
-		const message = commitMessage.trim();
-		if (!message) return;
+		const message = commitMessage.trim() || defaultCommitMessage;
 		commitMutation.mutate({ workspaceId, message });
 	};
 
 	const handleCreatePr = async () => {
 		const title = effectiveTitle.trim();
-		if (!title) return;
+		if (!title || !hasCommitsAhead) return;
 		const toastId = toast.loading(
 			needsPush
 				? t({ id: "workspace.shipControl.pushing", message: "Pushing..." })
@@ -169,8 +194,10 @@ export function ShipControl({
 	const showCreatePr = !needsCommit && canCreatePr;
 	if (!needsCommit && !showCreatePr && !needsPush) return null;
 
+	// enabled: on the hover so a disabled button stays hoverable (pointer
+	// events are kept alive for the native title tooltip) without lighting up.
 	const mainButtonClass =
-		"flex h-full items-center gap-1.5 px-2 text-xs font-medium text-foreground outline-none transition-colors hover:bg-accent/60";
+		"flex h-full items-center gap-1.5 px-2 text-xs font-medium text-foreground outline-none transition-colors enabled:hover:bg-accent/60 disabled:opacity-50";
 
 	return (
 		<div className="flex h-7 items-center overflow-hidden rounded-md border border-border/60 bg-muted/30">
@@ -192,10 +219,7 @@ export function ShipControl({
 								autoFocus
 								value={commitMessage}
 								onChange={(e) => setCommitMessage(e.target.value)}
-								placeholder={t({
-									id: "workspace.shipControl.commitMessagePlaceholder",
-									message: "Commit message",
-								})}
+								placeholder={defaultCommitMessage}
 								className="min-h-20 text-xs"
 								onKeyDown={(e) => {
 									if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -207,7 +231,7 @@ export function ShipControl({
 							<button
 								type="button"
 								onClick={handleCommit}
-								disabled={!commitMessage.trim() || commitMutation.isPending}
+								disabled={commitMutation.isPending}
 								className="flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
 							>
 								{commitMutation.isPending && (
@@ -221,7 +245,19 @@ export function ShipControl({
 			) : showCreatePr ? (
 				<Popover open={prOpen} onOpenChange={setPrOpen}>
 					<PopoverTrigger asChild>
-						<button type="button" className={mainButtonClass}>
+						<button
+							type="button"
+							className={mainButtonClass}
+							disabled={!hasCommitsAhead}
+							title={
+								hasCommitsAhead
+									? undefined
+									: t({
+											id: "workspace.shipControl.noCommitsTooltip",
+											message: "No commits to open a pull request from",
+										})
+							}
+						>
 							{isShipping ? (
 								<VscLoading className="size-3.5 animate-spin" />
 							) : (
@@ -262,7 +298,9 @@ export function ShipControl({
 								<button
 									type="button"
 									onClick={() => void handleCreatePr()}
-									disabled={!effectiveTitle.trim() || isShipping}
+									disabled={
+										!effectiveTitle.trim() || !hasCommitsAhead || isShipping
+									}
 									className="flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
 								>
 									{isShipping && (
