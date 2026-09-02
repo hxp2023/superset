@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchModelRate } from "./pricing";
+import { cacheSavingsUsd, costUsd, matchModelRate } from "./pricing";
 
 describe("matchModelRate", () => {
 	test("matches vendor-qualified ids from multi-model harnesses", () => {
@@ -18,6 +18,26 @@ describe("matchModelRate", () => {
 		const rate = matchModelRate("grok", "grok-4.6");
 		expect(rate.approximate).toBe(false);
 		expect(rate.inputPerM).toBe(2);
+	});
+
+	test("prices Fable 5.1 cache reads at its own rate, not the usual 0.1x", () => {
+		const fable51 = matchModelRate("claude", "claude-fable-5-1");
+		const fable5 = matchModelRate("claude", "claude-fable-5");
+		expect(fable51).toMatchObject({
+			inputPerM: 10,
+			outputPerM: 50,
+			approximate: false,
+		});
+		const cachedMillion = {
+			uncachedInput: 0,
+			cachedInput: 1_000_000,
+			cacheWrite5m: 0,
+			cacheWrite1h: 0,
+			output: 0,
+		};
+		expect(costUsd(fable51, cachedMillion)).toBeCloseTo(0.25);
+		expect(costUsd(fable5, cachedMillion)).toBeCloseTo(1);
+		expect(cacheSavingsUsd(fable51, cachedMillion)).toBeCloseTo(9.75);
 	});
 
 	test("uses Gemini Pro long-context tiers above 200k prompt tokens", () => {

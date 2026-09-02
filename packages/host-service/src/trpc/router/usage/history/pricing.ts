@@ -8,11 +8,16 @@ import type { UsageAgent } from "../types";
  * Longest-prefix match on the lowercased model id; unknown models fall back
  * to the agent's cheapest rate and mark the result approximate.
  */
-export const PRICING_TABLE_UPDATED = "2026-08-16";
+export const PRICING_TABLE_UPDATED = "2026-09-01";
 
 export interface ModelRate {
 	inputPerM: number;
 	outputPerM: number;
+	/**
+	 * Cache-read price in USD per million tokens, for models priced off the
+	 * usual `CACHE_READ_MULTIPLIER` share of input.
+	 */
+	cacheReadPerM?: number;
 	longContext?: ModelRate;
 }
 
@@ -22,6 +27,9 @@ export const CACHE_WRITE_5M_MULTIPLIER = 1.25;
 export const CACHE_WRITE_1H_MULTIPLIER = 2;
 
 const CLAUDE_RATES: Record<string, ModelRate> = {
+	// Fable 5.1 keeps Fable 5's token price but cuts cache reads to $0.25/M
+	// (0.025x input) instead of the usual 0.1x.
+	"claude-fable-5-1": { inputPerM: 10, outputPerM: 50, cacheReadPerM: 0.25 },
 	"claude-fable-5": { inputPerM: 10, outputPerM: 50 },
 	"claude-mythos": { inputPerM: 10, outputPerM: 50 },
 	"claude-opus-5": { inputPerM: 5, outputPerM: 25 },
@@ -172,11 +180,16 @@ export interface TokenCounts {
 	output: number;
 }
 
+/** The model's own cache-read price, else the usual share of its input rate. */
+function cacheReadPerM(rate: ModelRate): number {
+	return rate.cacheReadPerM ?? rate.inputPerM * CACHE_READ_MULTIPLIER;
+}
+
 export function costUsd(rate: ModelRate, tokens: TokenCounts): number {
 	return (
 		(tokens.uncachedInput / 1e6) * rate.inputPerM +
 		(tokens.output / 1e6) * rate.outputPerM +
-		(tokens.cachedInput / 1e6) * rate.inputPerM * CACHE_READ_MULTIPLIER +
+		(tokens.cachedInput / 1e6) * cacheReadPerM(rate) +
 		(tokens.cacheWrite5m / 1e6) * rate.inputPerM * CACHE_WRITE_5M_MULTIPLIER +
 		(tokens.cacheWrite1h / 1e6) * rate.inputPerM * CACHE_WRITE_1H_MULTIPLIER
 	);
@@ -184,7 +197,5 @@ export function costUsd(rate: ModelRate, tokens: TokenCounts): number {
 
 /** Dollars saved by cache reads vs paying full input price for them. */
 export function cacheSavingsUsd(rate: ModelRate, tokens: TokenCounts): number {
-	return (
-		(tokens.cachedInput / 1e6) * rate.inputPerM * (1 - CACHE_READ_MULTIPLIER)
-	);
+	return (tokens.cachedInput / 1e6) * (rate.inputPerM - cacheReadPerM(rate));
 }
