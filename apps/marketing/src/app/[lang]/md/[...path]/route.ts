@@ -1,7 +1,6 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@superset/i18n";
 import { COMPANY } from "@superset/shared/constants";
-import { initServerI18n } from "@/app/i18n-server";
 import { MCP_CAPABILITIES } from "@/app/[lang]/mcp-install/components/McpCapabilities/constants";
 import {
 	COMPARISON_SECTIONS,
@@ -9,6 +8,7 @@ import {
 	PRICING_FAQ_ITEMS,
 	PRICING_TIERS,
 } from "@/app/[lang]/pricing/constants";
+import { initServerI18n } from "@/app/i18n-server";
 import { getBlogPost } from "@/lib/blog";
 import { getCategoryPage } from "@/lib/category";
 import { getChangelogEntry } from "@/lib/changelog";
