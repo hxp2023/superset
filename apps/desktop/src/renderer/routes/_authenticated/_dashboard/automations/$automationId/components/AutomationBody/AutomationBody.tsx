@@ -53,6 +53,11 @@ export function AutomationBody({
 	const updateMutation = useMutation({
 		mutationFn: (patch: AutomationUpdatePatch) =>
 			apiTrpcClient.automation.update.mutate({ id: automation.id, ...patch }),
+		// The prompt saves through here now, and a new version may have landed.
+		onSuccess: () =>
+			queryClient.invalidateQueries({
+				queryKey: ["automation-versions", automation.id],
+			}),
 		onError: (error) =>
 			toast.error(
 				errorMessage(
@@ -60,29 +65,6 @@ export function AutomationBody({
 					t({
 						id: "dashboard.automations.body.updateFailedToast",
 						message: "Failed to update automation",
-					}),
-				),
-			),
-	});
-
-	const setPromptMutation = useMutation({
-		mutationFn: (next: string) =>
-			apiTrpcClient.automation.setPrompt.mutate({
-				id: automation.id,
-				prompt: next,
-			}),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["automation-versions", automation.id],
-			});
-		},
-		onError: (error) =>
-			toast.error(
-				errorMessage(
-					error,
-					t({
-						id: "dashboard.automations.body.promptUpdateFailedToast",
-						message: "Failed to update prompt",
 					}),
 				),
 			),
@@ -116,12 +98,9 @@ export function AutomationBody({
 		save,
 		discard,
 	} = useAutomationDraft(saved, async (next) => {
-		const { prompt, ...rest } = next;
-		await updateMutation.mutateAsync(rest);
-		// Versioned, so only when it actually moved.
-		if (prompt !== automation.prompt) {
-			await setPromptMutation.mutateAsync(prompt);
-		}
+		// One call, one transaction: the prompt is versioned server-side and only
+		// when it changed, so the page cannot half-save.
+		await updateMutation.mutateAsync(next);
 		toast.success(
 			t({
 				id: "dashboard.automations.body.savedToast",
