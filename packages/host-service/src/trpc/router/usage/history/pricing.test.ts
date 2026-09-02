@@ -5,8 +5,8 @@ describe("matchModelRate", () => {
 	test("matches vendor-qualified ids from multi-model harnesses", () => {
 		const rate = matchModelRate("opencode", "anthropic/claude-sonnet-5");
 		expect(rate.approximate).toBe(false);
-		expect(rate.inputPerM).toBe(3);
-		expect(rate.outputPerM).toBe(15);
+		expect(rate.inputPerM).toBe(2);
+		expect(rate.outputPerM).toBe(10);
 	});
 
 	test("unknown models fall back to the cheapest rate, marked approximate", () => {
@@ -20,12 +20,21 @@ describe("matchModelRate", () => {
 		expect(rate.inputPerM).toBe(2);
 	});
 
-	test("prices Fable 5.1 cache reads at its own rate, not the usual 0.1x", () => {
+	test("prices Fable 5.1 and Mythos 5.1 cache reads at their own rate, not the usual 0.1x", () => {
 		const fable51 = matchModelRate("claude", "claude-fable-5-1");
 		const fable5 = matchModelRate("claude", "claude-fable-5");
 		expect(fable51).toMatchObject({
 			inputPerM: 10,
 			outputPerM: 50,
+			cacheReadPerM: 0.25,
+			approximate: false,
+		});
+		expect(matchModelRate("claude", "claude-mythos-5-1")).toMatchObject({
+			cacheReadPerM: 0.25,
+			approximate: false,
+		});
+		expect(matchModelRate("omp", "anthropic/claude-fable-5-1")).toMatchObject({
+			cacheReadPerM: 0.25,
 			approximate: false,
 		});
 		const cachedMillion = {
@@ -37,7 +46,11 @@ describe("matchModelRate", () => {
 		};
 		expect(costUsd(fable51, cachedMillion)).toBeCloseTo(0.25);
 		expect(costUsd(fable5, cachedMillion)).toBeCloseTo(1);
+		expect(
+			costUsd(matchModelRate("claude", "claude-mythos-5"), cachedMillion),
+		).toBeCloseTo(1);
 		expect(cacheSavingsUsd(fable51, cachedMillion)).toBeCloseTo(9.75);
+		expect(cacheSavingsUsd(fable5, cachedMillion)).toBeCloseTo(9);
 	});
 
 	test("uses Gemini Pro long-context tiers above 200k prompt tokens", () => {

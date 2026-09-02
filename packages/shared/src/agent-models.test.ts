@@ -126,6 +126,7 @@ describe("buildAgentModelArgs", () => {
 			models.find((model) => model.id === id)?.group;
 		expect(groupOf("opus")).toBe("Latest");
 		expect(groupOf("claude-opus-4-8")).toBe("Pinned releases");
+		expect(groupOf("claude-fable-5-1")).toBe("Pinned releases");
 		// The header carries the distinction, so labels stay bare.
 		expect(models.find((model) => model.id === "opus")?.label).toBe("Opus");
 	});
