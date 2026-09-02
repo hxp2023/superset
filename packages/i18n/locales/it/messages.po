@@ -16863,8 +16863,8 @@ msgstr "Impossibile caricare gli agenti da {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/agent/AgentPickerScreen.tsx
-msgid "mobile.agentPicker.cloudNoAgent"
-msgstr "I workspace cloud non eseguono ancora un agente"
+#~ msgid "mobile.agentPicker.cloudNoAgent"
+#~ msgstr "I workspace cloud non eseguono ancora un agente"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: host.name

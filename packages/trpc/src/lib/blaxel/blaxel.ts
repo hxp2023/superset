@@ -9,6 +9,7 @@
  */
 
 import { SandboxInstance, settings, updateSandbox } from "@blaxel/core";
+import { CLOUD_AGENT_LAUNCH_ENV_NAMES } from "@superset/shared/cloud-agent-launch";
 import { SANDBOX_CREDENTIAL_PLACEHOLDER } from "@superset/shared/constants";
 import { env } from "../../env";
 import { userError } from "../../i18n-error";
@@ -207,6 +208,7 @@ const INHERITED_IDENTITY: Array<[path: string, recursive: boolean]> = [
 ];
 
 const INHERITED_IDENTITY_ENVS = new Set([
+	...CLOUD_AGENT_LAUNCH_ENV_NAMES,
 	"ORGANIZATION_ID",
 	"SUPERSET_SANDBOX_BRANCH",
 	"SUPERSET_SANDBOX_GIT_TOKEN",

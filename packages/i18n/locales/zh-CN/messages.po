@@ -16863,8 +16863,8 @@ msgstr "无法从{0}加载智能体"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/agent/AgentPickerScreen.tsx
-msgid "mobile.agentPicker.cloudNoAgent"
-msgstr "云端工作区还不能运行智能体"
+#~ msgid "mobile.agentPicker.cloudNoAgent"
+#~ msgstr "云端工作区还不能运行智能体"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: host.name

@@ -16863,8 +16863,8 @@ msgstr "No se pudieron cargar los agentes de {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/agent/AgentPickerScreen.tsx
-msgid "mobile.agentPicker.cloudNoAgent"
-msgstr "Los espacios de trabajo en la nube aún no ejecutan ningún agente"
+#~ msgid "mobile.agentPicker.cloudNoAgent"
+#~ msgstr "Los espacios de trabajo en la nube aún no ejecutan ningún agente"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: host.name

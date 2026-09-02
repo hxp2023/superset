@@ -1,6 +1,14 @@
+import { existsSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import {
+	type CloudAgentLaunch,
+	readCloudAgentLaunch,
+} from "@superset/shared/cloud-agent-launch";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../db";
 import { projects, workspaces } from "../../db/schema";
+import { runAgentInWorkspace } from "../../trpc/router/agents/agents";
+import type { HostServiceContext } from "../../types";
 
 /**
  * Makes a sandbox describe its own workspace, instead of being described from
@@ -23,6 +31,10 @@ export interface SandboxIdentity {
 	projectName: string;
 	branch: string;
 	worktreePath: string;
+	/** The agent the workspace was created with, or null for an idle one. */
+	launch: CloudAgentLaunch | null;
+	/** Written once the launch has happened, so a restart never repeats it. */
+	launchMarkerPath: string;
 }
 
 export function readSandboxIdentity(
@@ -37,7 +49,49 @@ export function readSandboxIdentity(
 		workspaceName: env.SUPERSET_SANDBOX_WORKSPACE_NAME || "workspace",
 		projectName: env.SUPERSET_SANDBOX_PROJECT_NAME || "project",
 		branch: env.SUPERSET_SANDBOX_BRANCH || "main",
+		launch: readCloudAgentLaunch(env),
+		launchMarkerPath: join(
+			dirname(env.HOST_DB_PATH || "/data/host.db"),
+			".sandbox-agent-launched",
+		),
 	};
+}
+
+/**
+ * Runs the agent the workspace was created with, once. The same code path a
+ * local host takes for `agents.run`, so the terminal, session tracking and
+ * pane seeding all behave the way they do on a laptop. Called after the
+ * server is listening: launching needs the pty daemon and the event bus up.
+ */
+export async function launchSandboxAgentOnce(
+	ctx: HostServiceContext,
+	identity: SandboxIdentity,
+): Promise<void> {
+	if (!identity.launch) return;
+	if (existsSync(identity.launchMarkerPath)) return;
+	const { agent, prompt, model, effort, mode } = identity.launch;
+	try {
+		await runAgentInWorkspace(ctx, {
+			workspaceId: identity.workspaceId,
+			agent,
+			prompt,
+			model,
+			effort,
+			mode,
+		});
+		writeFileSync(
+			identity.launchMarkerPath,
+			`${agent} ${new Date().toISOString()}\n`,
+		);
+		console.log(
+			`[sandbox] launched ${agent} for workspace ${identity.workspaceId}`,
+		);
+	} catch (error) {
+		console.error(
+			`[sandbox] could not launch ${agent} for workspace ${identity.workspaceId}`,
+			error,
+		);
+	}
 }
 
 export function runSandboxSelfSeed(
