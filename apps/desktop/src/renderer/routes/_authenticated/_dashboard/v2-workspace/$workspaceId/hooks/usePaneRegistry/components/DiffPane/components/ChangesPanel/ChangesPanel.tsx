@@ -173,33 +173,6 @@ export function ChangesPanel({
 
 	const canRenameBranch = !status.data?.currentBranch.upstream;
 
-	const totalChanges = files.length;
-	const totalAdditions = files.reduce((sum, f) => sum + f.additions, 0);
-	const totalDeletions = files.reduce((sum, f) => sum + f.deletions, 0);
-
-	const handleRefresh = useCallback(async () => {
-		try {
-			await Promise.all([
-				utils.git.getStatus.invalidate({ workspaceId }),
-				utils.git.getDiff.invalidate({ workspaceId }),
-				utils.git.listCommits.invalidate({ workspaceId }),
-				utils.git.listBranches.invalidate({ workspaceId }),
-				utils.git.getBaseBranch.invalidate({ workspaceId }),
-			]);
-		} catch (error) {
-			console.warn("Failed to refresh changes panel", error);
-			toast.error(
-				errorMessage(
-					error,
-					t({
-						id: "workspace.changesTab.refreshFailed",
-						message: "Failed to refresh changes",
-					}),
-				),
-			);
-		}
-	}, [utils, workspaceId, t]);
-
 	return (
 		<ChangesTabContent
 			workspaceId={workspaceId}
@@ -211,9 +184,6 @@ export function ChangesPanel({
 			baseBranch={baseBranch}
 			files={files}
 			isLoading={isLoading}
-			totalChanges={totalChanges}
-			totalAdditions={totalAdditions}
-			totalDeletions={totalDeletions}
 			worktreePath={worktreePath}
 			selectedFilePath={selectedFilePath}
 			selectedChangeKey={selectedChangeKey}
@@ -222,7 +192,6 @@ export function ChangesPanel({
 			onOpenInEditor={handleOpenInEditor}
 			onFilterChange={setFilter}
 			onViewModeChange={setViewMode}
-			onRefresh={handleRefresh}
 			onBaseBranchChange={setBaseBranch}
 			onRenameBranch={handleRenameBranch}
 			canRenameBranch={canRenameBranch}

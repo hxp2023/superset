@@ -24,6 +24,9 @@ interface ChangesSectionProps {
 	sectionKey: V2ChangesSectionKey;
 	title: string;
 	count: number;
+	/** Section-wide +/− totals, right-aligned on the header. */
+	additions?: number;
+	deletions?: number;
 	stagingActions?: { kind: SectionKind; workspaceId: string };
 	children: ReactNode;
 }
@@ -32,6 +35,8 @@ export function ChangesSection({
 	sectionKey,
 	title,
 	count,
+	additions = 0,
+	deletions = 0,
 	stagingActions,
 	children,
 }: ChangesSectionProps) {
@@ -179,6 +184,17 @@ export function ChangesSection({
 					<span className="shrink-0 text-[10px] text-muted-foreground">
 						{count}
 					</span>
+					{(additions > 0 || deletions > 0) && (
+						<span className="ml-auto shrink-0 pl-2 text-[10px] tabular-nums">
+							{additions > 0 && (
+								<span className="text-green-400/90">+{additions}</span>
+							)}
+							{additions > 0 && deletions > 0 && " "}
+							{deletions > 0 && (
+								<span className="text-red-400/90">−{deletions}</span>
+							)}
+						</span>
+					)}
 				</CollapsibleTrigger>
 				{stagingActions && (
 					<div className="flex shrink-0 items-center gap-0.5 pr-1.5">

@@ -10,7 +10,6 @@ import type {
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
 import type { FoldSignal } from "../ChangesFileList";
 import { ChangesFileList } from "../ChangesFileList";
-import { ChangesHeader } from "../ChangesHeader";
 import { ChangesToolbar } from "../ChangesToolbar";
 import { shouldShowChangesLoading } from "./shouldShowChangesLoading";
 
@@ -30,9 +29,6 @@ interface ChangesTabContentProps {
 	baseBranch: string | null;
 	files: ChangesetFile[];
 	isLoading: boolean;
-	totalChanges: number;
-	totalAdditions: number;
-	totalDeletions: number;
 	worktreePath?: string;
 	selectedFilePath?: string;
 	selectedChangeKey?: string;
@@ -45,7 +41,6 @@ interface ChangesTabContentProps {
 	onOpenInEditor?: (path: string) => void;
 	onFilterChange: (filter: ChangesFilter) => void;
 	onViewModeChange: (viewMode: ChangesViewMode) => void;
-	onRefresh: () => void;
 	onBaseBranchChange: (branchName: string) => void;
 	onRenameBranch: (newName: string) => void;
 	canRenameBranch: boolean;
@@ -61,9 +56,6 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 	baseBranch,
 	files,
 	isLoading,
-	totalChanges,
-	totalAdditions,
-	totalDeletions,
 	worktreePath,
 	selectedFilePath,
 	selectedChangeKey,
@@ -72,7 +64,6 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 	onOpenInEditor,
 	onFilterChange,
 	onViewModeChange,
-	onRefresh,
 	onBaseBranchChange,
 	onRenameBranch,
 	canRenameBranch,
@@ -118,16 +109,7 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="py-1.5">
-				<ChangesHeader
-					currentBranch={status.data.currentBranch}
-					defaultBranchName={status.data.defaultBranch.name}
-					baseBranch={baseBranch}
-					branches={branches.data?.branches ?? []}
-					onBaseBranchChange={onBaseBranchChange}
-					onRenameBranch={onRenameBranch}
-					canRename={canRenameBranch}
-				/>
+			<div className="pt-1">
 				<ChangesToolbar
 					filter={filter}
 					onFilterChange={onFilterChange}
@@ -135,15 +117,16 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 					uncommittedCount={
 						status.data.staged.length + status.data.unstaged.length
 					}
-					totalFiles={totalChanges}
-					totalAdditions={totalAdditions}
-					totalDeletions={totalDeletions}
-					isRefreshing={status.isFetching}
 					viewMode={viewMode}
 					onViewModeChange={onViewModeChange}
-					onRefresh={onRefresh}
 					collapsed={foldCollapsed}
 					onToggleFold={toggleFold}
+					baseBranch={baseBranch ?? status.data.defaultBranch.name}
+					branches={branches.data?.branches ?? []}
+					onBaseBranchChange={onBaseBranchChange}
+					currentBranchName={status.data.currentBranch.name}
+					canRenameBranch={canRenameBranch}
+					onRenameBranch={onRenameBranch}
 				/>
 			</div>
 			<ChangesFileList

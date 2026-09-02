@@ -117,6 +117,8 @@ export const ChangesFileList = memo(function ChangesFileList({
 						sectionKey={key}
 						title={i18n._(GROUP_TITLES[key])}
 						count={groupFiles.length}
+						additions={groupFiles.reduce((sum, f) => sum + f.additions, 0)}
+						deletions={groupFiles.reduce((sum, f) => sum + f.deletions, 0)}
 						stagingActions={
 							hasStagingActions
 								? { kind: key as "unstaged" | "staged", workspaceId }
