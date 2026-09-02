@@ -261,34 +261,8 @@ export const SANDBOX_WORKSPACE_PATH = "/workspace";
  */
 export const SANDBOX_HOST_DB_PATH = "/data/host.db";
 
-/**
- * The image every cloud workspace boots from.
- *
- * A constant rather than configuration because it was configuration three
- * times over — the build named it, a deploy secret named it again, and a local
- * .env named it a third time, with nothing checking the three agreed. A build
- * that produced one name while the secret said another would have pointed
- * provisioning at an image that does not exist.
- *
- * Deployments that need a different one set BLAXEL_SANDBOX_IMAGE, which is now
- * an override with a correct default rather than a value that must be supplied.
- * Rolling back is a tag, not a name.
- */
 export const SANDBOX_IMAGE_NAME = "superset-hostsvc";
 
-/**
- * Owner of the environments the platform ships, which belong to no customer.
- *
- * A sentinel organization rather than a nullable column so the foreign key and
- * every `organizationId` code path stay uniform, and rather than a copy per
- * organization so that rebuilding an image updates one row instead of needing
- * a backfill across every organization that existed when it changed.
- *
- * Nobody is a member of it. That is what makes it read-only in practice:
- * `assertMember` fails for every real caller, so the only access is the
- * explicit shared-environment allowance in the environment router, and every
- * mutation path refuses a row owned by this organization.
- */
 export const SHARED_ENVIRONMENT_ORGANIZATION_ID =
 	"00000000-0000-0000-0000-000000000000";
 

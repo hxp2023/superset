@@ -61,14 +61,8 @@ export function DashboardSidebarWorkspaceItem({
 	pinnedContext,
 }: DashboardSidebarWorkspaceItemProps) {
 	const { t } = useLingui();
-	// TODO(SUPER-2116): move this into the create-environment flow, where it is
-	// discoverable and can list only the workspaces it will accept. This offers
-	// itself on any cloud workspace, but promote requires status "ready", so
-	// picking one that is provisioning or failed errors after the click.
-	//
-	// Promotion forks the sandbox and waits on a cleanup exec inside it, so it
-	// runs for several seconds with nothing on screen. `toast.promise` is what
-	// the rest of the app uses to cover that gap.
+	// TODO(SUPER-2116): belongs in the create-environment flow; this offers
+	// itself on workspaces that are not "ready" and cannot be promoted.
 	const promoteToEnvironment = cloudTrpc.environment.promote.useMutation();
 
 	const handlePromoteToEnvironment = useCallback(() => {

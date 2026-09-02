@@ -71,24 +71,9 @@ export interface ProvisionedSandbox {
  */
 export interface SandboxEnvironment {
 	sourceKind: "image" | "fork";
-	/** Image reference for `image`; the source sandbox name to fork for `fork`. */
 	sourceRef: string;
 }
 
-/**
- * A fork inherits the source sandbox's environment and the fork request cannot
- * override it, so a workspace forked from an environment would serve the source
- * workspace's identity until this replaces it.
- *
- * Merged over what the fork inherited rather than written wholesale: the fork
- * also carries the proxy credential placeholders, which this must not disturb.
- * The API redacts env values to `****` on read and treats that value as
- * "unchanged" on write, so entries this doesn't override survive untouched
- * without ever being handled here in the clear.
- *
- * The update lands on the running sandbox within about 20 seconds, which is
- * ahead of the `start.sh` exec that follows it in `provisionSandbox`.
- */
 async function forkSandbox(
 	name: string,
 	sourceSandbox: string,
@@ -139,9 +124,6 @@ export async function provisionSandbox(args: {
 	region?: string;
 }): Promise<ProvisionedSandbox> {
 	configureBlaxel();
-	// The root filesystem is a RAM-backed overlay, so memory is shared between
-	// running processes and everything written at runtime — a warm checkout plus
-	// node_modules plus an agent plus a dev server all come out of this number.
 	const memoryMb = args.memoryMb ?? 8192;
 	const region = args.region ?? env.BLAXEL_REGION;
 	const { envs: credentialEnvs, routing } = agentCredentialRoutes();
@@ -164,15 +146,14 @@ export async function provisionSandbox(args: {
 					name: args.name,
 					image: args.environment.sourceRef,
 					memory: memoryMb,
-					// Without disk-backed root the writable layer is tmpfs in RAM,
-					// and a checkout plus node_modules is write-heavy enough to
-					// exhaust it.
+					// Without disk-backed root the writable layer is tmpfs in RAM, and a
+					// checkout plus node_modules is write-heavy enough to exhaust it.
 					storageMb: 20480,
 					ports: [{ target: HOST_SERVICE_PORT, protocol: "HTTP" }],
 					region,
 					envs,
-					// Routing is fixed at creation, so a sandbox can never be
-					// re-pointed at a different secret later in its life.
+					// Routing is fixed at creation, so a sandbox can never be re-pointed at
+					// a different secret later in its life.
 					network: { proxy: { routing } },
 				} as never);
 
@@ -208,19 +189,6 @@ export async function provisionSandbox(args: {
 	// sandbox, and it is not awaited. The script needs a second or two; the
 	// client discovers the result by polling the health endpoint it already
 	// polls, so there is nothing to wait for here.
-	//
-	// Deliberately no `keepAlive`: it suppresses the provider's automatic
-	// standby, so the sandbox would bill continuously and never sleep. A sandbox
-	// is meant to wake on inbound traffic.
-	//
-	// And deliberately no `restartOnFailure`. Nothing supervises this process —
-	// the platform supervises its own agent, not ours — so a restart is the
-	// obvious reflex, but we have never observed host-service exit. Restarting
-	// an unexplained exit converts a bug we would investigate into a wobble
-	// nobody sees, and it does nothing for the failure we have actually hit: a
-	// missing environment variable throws identically five times and dies
-	// anyway. Worth revisiting once startup errors reach Sentry, which today
-	// they do not — until then a restart loop would be silent.
 	await sandbox.process.exec({
 		name: "host-service",
 		command: "/app/start.sh",
@@ -230,7 +198,6 @@ export async function provisionSandbox(args: {
 	return { providerSandboxId: args.name, sandboxUrl };
 }
 
-/** Left behind by a fork, and each one makes it serve the source's identity. */
 const INHERITED_IDENTITY: Array<[path: string, recursive: boolean]> = [
 	["/data/host.db", false],
 	["/data/host.db-wal", false],
@@ -240,16 +207,6 @@ const INHERITED_IDENTITY: Array<[path: string, recursive: boolean]> = [
 	["/root/.gitconfig", false],
 ];
 
-/**
- * Copies a workspace's sandbox into a dedicated sandbox an environment owns,
- * and strips everything that belonged to the workspace it came from.
- *
- * The source keeps running and can be deleted later; the copy is frozen
- * because nothing runs in it. Each step below is a silent wrong answer if
- * skipped — a fork inherits processes, memory and filesystem, so anything the
- * source identified itself with would be adopted by every workspace forked
- * from this environment.
- */
 export async function promoteSandboxToEnvironment(args: {
 	sourceSandbox: string;
 	goldenName: string;
@@ -268,7 +225,6 @@ export async function promoteSandboxToEnvironment(args: {
 		await golden.fs.rm(path, recursive).catch(() => {});
 	}
 
-	// pty-daemon is spawned by host-service, so the process API cannot see it.
 	await golden.process.exec({
 		name: "prepare-environment",
 		command: "pkill -f pty-daemon.js || true",

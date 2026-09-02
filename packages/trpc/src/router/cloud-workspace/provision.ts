@@ -125,19 +125,9 @@ export async function provisionCloudWorkspace(
 					// silently serving the baked repo's code.
 					SUPERSET_SANDBOX_REPO_URL: clone.cloneUrl,
 					...(clone.token ? { SUPERSET_SANDBOX_GIT_TOKEN: clone.token } : {}),
-					// Telemetry. Without a DSN in here `captureFatalStartupError`
-					// is a no-op and a sandbox that dies on boot tells us nothing
-					// — the failure mode that made the last investigation manual.
-					// The tags let one Sentry issue name the workspace and the
-					// image it came from, and correlate with a provisioning
-					// failure recorded against the same id on the API side.
 					...(env.SENTRY_DSN_SANDBOX
 						? {
 								HOST_SERVICE_SENTRY_DSN: env.SENTRY_DSN_SANDBOX,
-								// Which deploy this sandbox came from, not what it is — the Sentry
-								// project already means "sandbox", so tagging every event with that
-								// again says nothing. Preview and production sandboxes report to the
-								// same project, and this is the only thing telling them apart.
 								HOST_SERVICE_SENTRY_ENVIRONMENT:
 									env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "development",
 							}

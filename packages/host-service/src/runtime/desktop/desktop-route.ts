@@ -2,24 +2,10 @@ import { connect, type Socket } from "node:net";
 import type { NodeWebSocket } from "@hono/node-ws";
 import type { Hono } from "hono";
 
-/**
- * The VNC server's port. Fixed rather than taken from the request: a
- * caller-supplied port would turn an authenticated socket into a way to reach
- * any port on the loopback interface, which is a capability this route has no
- * reason to hand out.
- */
 const VNC_PORT = 5900;
 
-/**
- * Loopback on purpose, and it must stay that way. x11vnc is started with
- * `-localhost`, so the display is reachable only from inside the sandbox — this
- * proxy, sitting behind the same auth as `/terminal/*`, is the sole way in. A
- * VNC session is full control of the machine; binding the server to 0.0.0.0
- * would expose it to anything that can route to the sandbox.
- */
 const VNC_HOST = "127.0.0.1";
 
-/** Frames buffered while the TCP socket is still connecting. */
 const MAX_PENDING_FRAMES = 64;
 const MAX_PENDING_BYTES = 4 * 1024 * 1024;
 
@@ -33,25 +19,9 @@ function toBytes(data: unknown): Uint8Array | null {
 	if (ArrayBuffer.isView(data)) {
 		return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 	}
-	// RFB is a binary protocol; a text frame means the client is misconfigured
-	// rather than that we should guess an encoding for it.
 	return null;
 }
 
-/**
- * Bridges a client WebSocket to the sandbox's VNC server so the desktop can
- * render the machine's screen in a pane.
- *
- * RFB is a raw TCP protocol and browsers cannot open TCP sockets, so the bytes
- * have to arrive over a WebSocket — which is exactly what noVNC expects on the
- * other end. Frames pass through untouched in both directions; this understands
- * nothing about RFB and deliberately stays that way, so protocol versions and
- * encodings are negotiated between the client and x11vnc without this being in
- * the middle of it.
- *
- * Modelled on the browser CDP route, which does the same job for a WebSocket
- * upstream instead of a TCP one.
- */
 export function registerDesktopRoute({
 	app,
 	upgradeWebSocket,
@@ -74,17 +44,9 @@ export function registerDesktopRoute({
 						pending.length = 0;
 						pendingBytes = 0;
 					});
-					// Copied rather than viewed: a Buffer's backing store is typed
-					// ArrayBufferLike, which may be a SharedArrayBuffer, and the
-					// socket only accepts a plain ArrayBuffer-backed view. The copy
-					// also detaches the frame from Node's pooled buffer, which is
-					// reused as soon as this handler returns.
 					socket.on("data", (chunk: Buffer) => {
 						ws.send(new Uint8Array(chunk));
 					});
-					// A refused connection is the ordinary case, not an error: it
-					// means no VNC server is running in this sandbox. Say so, rather
-					// than leaving the client to guess from a dropped socket.
 					socket.on("error", () => {
 						ws.close(1011, "No desktop session on this host");
 					});

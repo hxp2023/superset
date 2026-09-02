@@ -1,21 +1,8 @@
 const KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const MAX_KEY_LENGTH = 256;
 const MAX_VALUE_SIZE = 16 * 1024;
-// Size rather than count is the limit that means anything: the values are
-// handed to the provider in one `spec.runtime.envs` payload, so bytes are what
-// cost. A count cap would be a worse proxy for the same thing — five 16 KB
-// values exceed this while satisfying any sane count. The provider itself
-// imposes no count worth mirroring; 250 variables were accepted and visible
-// inside a sandbox when measured.
 const MAX_TOTAL_SIZE = 128 * 1024;
 
-/**
- * These reach a sandbox through the same `spec.runtime.envs` payload that
- * carries its identity, so a user-supplied `ORGANIZATION_ID` would make a
- * workspace serve under another organization — a cross-tenant failure reachable
- * from a settings form. Prefixes cover the whole identity surface; bare names
- * cover shell and host-service configuration that would break the sandbox.
- */
 const RESERVED_PREFIXES: Array<{ prefix: string; reason: string }> = [
 	{
 		prefix: "SUPERSET_",

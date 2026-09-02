@@ -184,11 +184,6 @@ export const cloudWorkspaceRouter = {
 				});
 			}
 
-			// The organization's own environments, plus the ones the platform
-			// ships — which belong to a sentinel organization the caller is not a
-			// member of, so matching on the caller's own id alone would reject
-			// exactly the environment a customer with none of their own starts
-			// from. Same pair `environment.list` offers.
 			const environment = await db.query.environments.findFirst({
 				where: and(
 					eq(environments.id, input.environmentId),

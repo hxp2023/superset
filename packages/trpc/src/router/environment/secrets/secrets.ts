@@ -44,11 +44,6 @@ export const secretsRouter = {
 			return rows;
 		}),
 
-	/**
-	 * Values for the editor. Sensitive entries come back empty rather than
-	 * decrypted — the list is for editing the set, not for recovering a secret
-	 * someone already stored.
-	 */
 	getDecrypted: jwtProcedure
 		.input(z.object({ environmentId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
@@ -143,15 +138,6 @@ export const secretsRouter = {
 				ctx.activeOrganizationId,
 			);
 
-			// The aggregate limit, enforced rather than merely declared. Every
-			// value travels to the provider in one `spec.runtime.envs` payload, so
-			// total bytes are the cost — and the per-value check above bounds one
-			// entry, not a thousand of them.
-			//
-			// Measured on ciphertext because that is what a single SQL sum can see
-			// without decrypting every row. Ciphertext is never smaller than its
-			// plaintext, so this rejects slightly earlier than the stated limit,
-			// which is the safe direction.
 			const [stored] = await db
 				.select({
 					bytes: sum(sql`length(${environmentSecrets.encryptedValue})`),

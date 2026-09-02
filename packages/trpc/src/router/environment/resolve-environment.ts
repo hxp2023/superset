@@ -12,12 +12,6 @@ export interface ResolvedEnvironment {
 	envs: Record<string, string>;
 }
 
-/**
- * @param organizationId the workspace's organization. Required, and not derived
- * from the environment: a shared environment is owned by no customer and holds
- * a separate set of values per organization, so resolving without it would feed
- * whichever organization wrote first into every other organization's sandbox.
- */
 export async function resolveEnvironment(
 	environmentId: string,
 	organizationId: string,
@@ -42,8 +36,6 @@ export async function resolveEnvironment(
 
 	const envs: Record<string, string> = {};
 	for (const secret of rows) {
-		// Validation rejects reserved keys on write; re-checked here so a row
-		// written before a name became reserved can never shadow identity.
 		if (isReservedKey(secret.key)) continue;
 		envs[secret.key] = decryptSecret(secret.encryptedValue, {
 			environmentId,

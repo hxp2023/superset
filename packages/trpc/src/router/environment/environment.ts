@@ -21,29 +21,16 @@ export async function loadEnvironment(id: string, organizationIds: string[]) {
 			i18nKey: "serverError.environment.environmentNotFound",
 		});
 	}
-	// A shared environment belongs to no customer, so membership cannot be the
-	// test — nobody is a member of the sentinel organization. It is readable by
-	// everyone and writable by no one; `assertOwned` below is what enforces the
-	// second half at each mutation.
 	if (row.organizationId !== SHARED_ENVIRONMENT_ORGANIZATION_ID) {
 		assertMember(organizationIds, row.organizationId);
 	}
 	return row;
 }
 
-/** True for the environments the platform ships, which no caller may modify. */
 export function isSharedEnvironment(row: { organizationId: string }): boolean {
 	return row.organizationId === SHARED_ENVIRONMENT_ORGANIZATION_ID;
 }
 
-/**
- * Which organization's values apply to this environment.
- *
- * A shared environment holds a separate set per organization, so the answer is
- * the caller's own; an owned one can only hold its owner's. Getting this wrong
- * in the shared case would resolve one customer's secrets into another's
- * sandbox, which is why every secret query goes through it.
- */
 export function secretOwnerOrganizationId(
 	row: { organizationId: string },
 	activeOrganizationId: string | null,
@@ -59,10 +46,6 @@ export function secretOwnerOrganizationId(
 	return activeOrganizationId;
 }
 
-/**
- * Guards every write. Without it any member of any organization could rename,
- * re-point or archive a shipped environment for every other customer at once.
- */
 function assertOwned(row: { organizationId: string }): void {
 	if (isSharedEnvironment(row)) {
 		throw userError({
@@ -81,8 +64,6 @@ export const environmentRouter = {
 		.query(async ({ ctx, input }) => {
 			assertInternal(ctx.email);
 			assertMember(ctx.organizationIds, input.organizationId);
-			// The organization's own environments plus the ones we ship, which
-			// are what a customer with no environments of their own starts from.
 			return db
 				.select()
 				.from(environments)
@@ -105,13 +86,6 @@ export const environmentRouter = {
 			return loadEnvironment(input.id, ctx.organizationIds);
 		}),
 
-	/**
-	 * Only a name. The base a sandbox boots from is infrastructure we maintain,
-	 * not something anyone can usefully type — an image tag like
-	 * `superset-hostsvc:hoockx6bbvtx` is meaningless to whoever is filling in
-	 * the form. Forking sets these itself once an environment has a sandbox
-	 * worth copying.
-	 */
 	create: jwtProcedure
 		.input(
 			z.object({
@@ -135,14 +109,6 @@ export const environmentRouter = {
 			return row;
 		}),
 
-	/**
-	 * Turns a workspace someone configured into a reusable starting point.
-	 *
-	 * Forks the workspace's sandbox into one the environment owns rather than
-	 * pointing at the workspace itself: the workspace keeps running and can be
-	 * deleted later, and the copy stays frozen because nothing runs in it. A
-	 * live source would instead be re-copied, mid-work, on every provision.
-	 */
 	promote: jwtProcedure
 		.input(
 			z.object({

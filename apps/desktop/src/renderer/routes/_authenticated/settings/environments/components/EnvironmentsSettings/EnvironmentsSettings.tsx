@@ -91,8 +91,6 @@ export function EnvironmentsSettings({
 		);
 	}
 
-	// A search that matched neither of this section's items has nothing here to
-	// show; rendering the empty shell would read as "you have no environments".
 	if (!showList && !showSecrets) return null;
 
 	return (

@@ -26,27 +26,16 @@ if [ ! -f /data/host.db ] && [ -f /app/host.db.template ]; then
   cp /app/host.db.template /data/host.db
 fi
 
-# The image carries no repository, so a workspace normally clones on first
-# boot. An environment forked from a configured sandbox may already have one:
-# when its origin matches what the workspace wants, moving to the branch is a
-# one-ref fetch against objects that are already local, and when it doesn't the
-# baked objects are useless and it clones instead.
+# The image bakes no repo, but an environment forked from a configured sandbox
+# may carry one. When the workspace wants that repo, moving to its
+# branch is a one-ref fetch against an object store that is already warm. When
+# it wants a different one — any project that isn't the baked one — the baked
+# objects are useless and it clones instead, which is what provisioning did for
+# every workspace before the repo was baked.
 #
 # Getting this wrong is silent rather than loud: fetching the requested branch
 # from the wrong origin leaves a sandbox serving somebody else's code, so the
 # URLs are compared rather than assumed to match.
-#
-# Both branches below are destructive to work in progress: the clone path wipes
-# the directory, and the fetch path moves the branch onto the remote's head,
-# which orphans commits an agent made and hadn't pushed. That was survivable
-# only because nothing ever ran this script twice. It now restarts — the
-# provider restarts it on failure, and updating host-service re-runs it — so
-# the repository bootstrap is fenced behind a marker and every later run falls
-# straight through to serving.
-#
-# The marker is written only after the bootstrap succeeds, so a run interrupted
-# midway retries on the next start rather than leaving a half-checked-out
-# workspace nothing will ever repair.
 BOOTSTRAP_MARKER=/data/.workspace-bootstrapped
 
 if [ -n "$REPO_URL" ] && [ ! -f "$BOOTSTRAP_MARKER" ]; then
