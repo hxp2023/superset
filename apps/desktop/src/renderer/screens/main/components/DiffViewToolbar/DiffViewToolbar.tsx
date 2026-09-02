@@ -7,6 +7,7 @@ import {
 	LuColumns2,
 	LuFiles,
 	LuFoldVertical,
+	LuMessageSquare,
 	LuRows2,
 	LuUnfoldVertical,
 } from "react-icons/lu";
@@ -144,7 +145,25 @@ export function DiffViewToolbar({
 			<div className="flex items-center gap-1">
 				{commentNav != null && commentNav.total > 0 && (
 					<>
-						<div className="flex items-center gap-0.5 rounded-md bg-muted/50 px-1 py-0.5">
+						<div className="flex items-center gap-0.5 rounded-md bg-muted/50 px-1.5 py-0.5">
+							{/* Name the cluster: bare up/down chevrons next to a counter
+							    read as generic paging, not comment navigation. */}
+							<LuMessageSquare
+								aria-hidden="true"
+								className="size-3.5 shrink-0 text-muted-foreground"
+								strokeWidth={1.5}
+							/>
+							<span className="mr-0.5 ml-1 text-[11px] font-medium text-muted-foreground">
+								<Trans id="dashboard.pullRequests.codeTab.commentsLabel">
+									Comments
+								</Trans>
+							</span>
+							<span className="min-w-[3ch] text-center text-[11px] tabular-nums text-muted-foreground">
+								{commentNav.focusedIndex != null
+									? commentNav.focusedIndex + 1
+									: "–"}
+								/{commentNav.total}
+							</span>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<button
@@ -165,12 +184,6 @@ export function DiffViewToolbar({
 									</Trans>
 								</TooltipContent>
 							</Tooltip>
-							<span className="min-w-[3ch] text-center text-[11px] tabular-nums text-muted-foreground">
-								{commentNav.focusedIndex != null
-									? commentNav.focusedIndex + 1
-									: "–"}
-								/{commentNav.total}
-							</span>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<button
