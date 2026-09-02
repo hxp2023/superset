@@ -116,8 +116,6 @@ export function TriggersCard({
 						recentProjects={recentProjects}
 						disabled={readOnly}
 						onSelectProject={(v2ProjectId) =>
-							// A pin belongs to one project; carrying it across a switch
-							// leaves a trigger that cannot run.
 							onScopeChange(
 								v2ProjectId === scope.v2ProjectId
 									? { v2ProjectId }
@@ -132,7 +130,6 @@ export function TriggersCard({
 						showLocalOnlineState
 						disabled={readOnly}
 						onSelectHostId={(nextHostId) =>
-							// Same for the device: a workspace lives on one host.
 							onScopeChange(
 								nextHostId === scope.targetHostId
 									? { targetHostId: nextHostId }

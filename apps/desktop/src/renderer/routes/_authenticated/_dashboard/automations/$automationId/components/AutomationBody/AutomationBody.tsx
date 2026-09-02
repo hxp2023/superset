@@ -53,7 +53,6 @@ export function AutomationBody({
 	const updateMutation = useMutation({
 		mutationFn: (patch: AutomationUpdatePatch) =>
 			apiTrpcClient.automation.update.mutate({ id: automation.id, ...patch }),
-		// The prompt saves through here now, and a new version may have landed.
 		onSuccess: () =>
 			queryClient.invalidateQueries({
 				queryKey: ["automation-versions", automation.id],
@@ -98,8 +97,6 @@ export function AutomationBody({
 		save,
 		discard,
 	} = useAutomationDraft(saved, async (next) => {
-		// One call, one transaction: the prompt is versioned server-side and only
-		// when it changed, so the page cannot half-save.
 		await updateMutation.mutateAsync(next);
 		toast.success(
 			t({
@@ -116,9 +113,6 @@ export function AutomationBody({
 		draft.triggers,
 	);
 
-	// Everything derived reads the draft, not the saved row: the pickers are
-	// scoped by these, so sourcing them from the server value made a switched
-	// device still list the old host's workspaces.
 	const searchFiles = useProjectFileSearch({
 		hostId: draft.targetHostId,
 		projectId: draft.v2ProjectId,
@@ -146,15 +140,10 @@ export function AutomationBody({
 				<div className="mb-3 flex items-start gap-3">
 					<EmojiTextInput
 						value={draft.name}
-						// Into the draft on every keystroke, not on blur: the draft is what
-						// Save commits, and a blur that races the click on Save would drop
-						// the rename silently.
 						onChange={(next) => edit({ name: next })}
 						editable={!readOnly}
 						onBlur={(next) => {
 							if (readOnly) return;
-							// Trim on the way out; an empty title falls back to the saved one
-							// rather than saving a nameless automation.
 							edit({ name: next.trim() || automation.name });
 						}}
 						placeholder={t({
@@ -309,9 +298,7 @@ export function AutomationBody({
 							<div className="min-h-[240px] px-4 py-3">
 								<MarkdownEditor
 									content={draft.prompt}
-									// No onSave: the editor fires it on blur, so clicking Save
-									// would save twice — once from the blur, once from the
-									// button. onChange already keeps the draft current.
+									// No onSave: it fires on blur, which would save twice.
 									onChange={(next: string) => edit({ prompt: next })}
 									editable={!readOnly}
 									placeholder={t({

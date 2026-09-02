@@ -70,8 +70,6 @@ export const createAutomationSchema = z
 export const updateAutomationSchema = z.object({
 	id: z.string().uuid(),
 	name: z.string().min(1).max(200).optional(),
-	// Versioned like setPrompt, but in the same transaction as the rest, so a
-	// page that saves everything at once cannot half-succeed.
 	prompt: z.string().max(100_000).optional(),
 	agent: agentSchema.optional(),
 	targetHostId: z.string().min(1).nullish(),
