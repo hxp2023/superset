@@ -13,9 +13,34 @@ describe("visibleQuotaAgents", () => {
 		]);
 	});
 
-	it("shows Grok and Antigravity only once they have a login", () => {
+	it("hides Grok and Antigravity while neither has a login", () => {
+		expect(visibleQuotaAgents([{ agent: "claude" }])).toEqual([
+			"claude",
+			"codex",
+		]);
+	});
+
+	it("shows Grok once it has a login", () => {
+		expect(visibleQuotaAgents([{ agent: "grok" }])).toEqual([
+			"claude",
+			"codex",
+			"grok",
+		]);
+	});
+
+	it("shows Antigravity once it has a login", () => {
 		expect(visibleQuotaAgents([{ agent: "agy" }, { agent: "claude" }])).toEqual(
 			["claude", "codex", "agy"],
 		);
+	});
+
+	it("orders every section by display order, not by account order", () => {
+		expect(
+			visibleQuotaAgents([
+				{ agent: "agy" },
+				{ agent: "grok" },
+				{ agent: "codex" },
+			]),
+		).toEqual(["claude", "codex", "grok", "agy"]);
 	});
 });
