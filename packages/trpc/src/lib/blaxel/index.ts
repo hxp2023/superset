@@ -1,5 +1,4 @@
 export {
-	agentCredentialRoutes,
 	deleteSandbox,
 	mintPreviewAccess,
 	type PreviewAccess,
