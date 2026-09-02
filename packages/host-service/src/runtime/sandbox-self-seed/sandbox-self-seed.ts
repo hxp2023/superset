@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import type { HostDb } from "../../db";
 import { projects, workspaces } from "../../db/schema";
 import { runAgentInWorkspace } from "../../trpc/router/agents/agents";
+import { seedDefaultsIfEmpty } from "../../trpc/router/settings/agent-configs";
 import type { HostServiceContext } from "../../types";
 
 /**
@@ -71,6 +72,9 @@ export async function launchSandboxAgentOnce(
 	if (existsSync(identity.launchMarkerPath)) return;
 	const { agent, prompt, model, effort, mode } = identity.launch;
 	try {
+		// Nothing has listed this host's agents yet, so the built-in presets are
+		// not in its table; the launch resolves the agent through that table.
+		seedDefaultsIfEmpty(ctx.db);
 		await runAgentInWorkspace(ctx, {
 			workspaceId: identity.workspaceId,
 			agent,
