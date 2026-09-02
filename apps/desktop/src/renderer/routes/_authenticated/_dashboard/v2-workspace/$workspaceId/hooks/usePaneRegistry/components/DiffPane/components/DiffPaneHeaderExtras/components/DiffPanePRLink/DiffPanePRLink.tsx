@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
+import { LuArrowRight } from "react-icons/lu";
 import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
@@ -62,12 +63,18 @@ export function DiffPanePRLink({ workspaceId }: DiffPanePRLinkProps) {
 							id: "workspace.diffPane.openPullRequestAria",
 							message: `Open pull request #${pr.number}`,
 						})}
-						className="flex h-5 items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-1.5 transition-colors hover:bg-accent/60"
+						className="group flex h-5 items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-1.5 transition-colors hover:bg-accent/60"
 					>
 						<PRIcon state={state} className="size-3.5" />
+						{/* Verb-first label: the bare number read as a badge, not as
+						    navigation into the expanded PR view. */}
 						<span className="font-medium text-[11px] text-foreground tabular-nums">
-							#{pr.number}
+							{t({
+								id: "workspace.diffPane.openPrChip",
+								message: `Open PR #${pr.number}`,
+							})}
 						</span>
+						<LuArrowRight className="size-3 text-muted-foreground transition-transform group-hover:translate-x-px" />
 					</button>
 				</TooltipTrigger>
 				<TooltipContent side="bottom">

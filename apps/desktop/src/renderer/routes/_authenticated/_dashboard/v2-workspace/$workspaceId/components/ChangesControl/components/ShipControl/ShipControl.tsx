@@ -137,6 +137,10 @@ export function ShipControl({
 		},
 	});
 
+	// A second push mutation with no global toasts: the create-PR flow runs
+	// its own labeled toast sequence, and reusing `pushMutation` there popped
+	// a stray "Pushed" toast mid-flow (and a duplicate, mislabeled error).
+	const flowPushMutation = workspaceTrpc.git.push.useMutation();
 	const createPrMutation =
 		workspaceTrpc.pullRequests.createForWorkspace.useMutation();
 
@@ -162,7 +166,10 @@ export function ShipControl({
 		}
 	}, [view, prTitle, latestSubject]);
 
-	const isShipping = pushMutation.isPending || createPrMutation.isPending;
+	const isShipping =
+		pushMutation.isPending ||
+		flowPushMutation.isPending ||
+		createPrMutation.isPending;
 
 	const changedPaths = useMemo(() => {
 		const data = status.data;
@@ -187,24 +194,32 @@ export function ShipControl({
 		const title = prTitle.trim();
 		if (!title || !hasCommitsAhead) return;
 		const toastId = toast.loading(
-			needsPush
-				? t({ id: "workspace.shipControl.pushing", message: "Pushing..." })
-				: t({
-						id: "workspace.shipControl.creatingPr",
-						message: "Creating PR...",
-					}),
+			t({ id: "workspace.shipControl.pushing", message: "Pushing..." }),
+		);
+		// Always push first rather than trusting `needsPush`: the sync
+		// snapshot can be up to 10s stale right after a commit, and skipping
+		// the push then would open the PR at the old remote tip. Pushing an
+		// already-synced branch is a cheap no-op.
+		try {
+			await flowPushMutation.mutateAsync({ workspaceId });
+		} catch (error) {
+			toast.error(
+				t({
+					id: "workspace.shipControl.pushFailed",
+					message: `Push failed: ${error instanceof Error ? error.message : String(error)}`,
+				}),
+				{ id: toastId },
+			);
+			return;
+		}
+		toast.loading(
+			t({
+				id: "workspace.shipControl.creatingPr",
+				message: "Creating PR...",
+			}),
+			{ id: toastId },
 		);
 		try {
-			if (needsPush) {
-				await pushMutation.mutateAsync({ workspaceId });
-				toast.loading(
-					t({
-						id: "workspace.shipControl.creatingPr",
-						message: "Creating PR...",
-					}),
-					{ id: toastId },
-				);
-			}
 			const created = await createPrMutation.mutateAsync({
 				workspaceId,
 				title,

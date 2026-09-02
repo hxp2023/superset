@@ -69,6 +69,7 @@ export const createForWorkspace = protectedProcedure
 
 		const repo = await resolveGithubRepo(ctx, workspace.projectId);
 		const octokit = await ctx.github();
+		let created: { number: number; html_url: string };
 		try {
 			const { data } = await octokit.pulls.create({
 				owner: repo.owner,
@@ -79,14 +80,25 @@ export const createForWorkspace = protectedProcedure
 				draft: input.draft,
 				...(input.body ? { body: input.body } : {}),
 			});
-			await ctx.runtime.pullRequests.refreshPullRequestsByWorkspaces([
-				input.workspaceId,
-			]);
-			return { number: data.number, url: data.html_url };
+			created = data;
 		} catch (error) {
 			throw actionRejectionError(
 				error,
 				"GitHub refused to create the pull request.",
 			);
 		}
+		// The PR exists at this point — a refresh hiccup (rate limit, transient
+		// network) must not surface as a create failure; the background sync
+		// links it within its next pass anyway.
+		try {
+			await ctx.runtime.pullRequests.refreshPullRequestsByWorkspaces([
+				input.workspaceId,
+			]);
+		} catch (error) {
+			console.warn(
+				"[pull-requests:create-for-workspace] created PR but failed to refresh workspace link",
+				{ workspaceId: input.workspaceId, prNumber: created.number, error },
+			);
+		}
+		return { number: created.number, url: created.html_url };
 	});

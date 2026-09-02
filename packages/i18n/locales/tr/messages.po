@@ -32753,6 +32753,12 @@ msgid "workspace.diffPane.openOnGithubAria"
 msgstr "GitHub'da aç"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: pr.number
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffPaneHeaderExtras/components/DiffPanePRLink/DiffPanePRLink.tsx
+msgid "workspace.diffPane.openPrChip"
+msgstr "PR #{0} aç"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffPaneHeaderExtras/components/DiffPanePRLink/DiffPanePRLink.tsx
 msgid "workspace.diffPane.openPullRequest"
 msgstr "Pull request'i aç"
@@ -34415,6 +34421,7 @@ msgid "workspace.shipControl.pushed"
 msgstr "Push edildi"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: error instanceof Error ? error.message : String(error)
 #. placeholder {0}: error.message
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.pushFailed"
