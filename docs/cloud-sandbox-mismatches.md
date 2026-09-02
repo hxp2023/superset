@@ -246,6 +246,22 @@ space are volumes (one per sandbox, attached at creation, not forkable) and
 Agent Drive; neither fits the golden-and-fork model, which is why memory is the
 lever.
 
+**A fork copies files and env, not network config.** The egress-proxy
+routing that injects the org's model keys (`network.proxy.routing`) is set
+when an image sandbox is created; a fork of another sandbox starts with
+`spec.network` null, so a workspace forked from an environment had no proxy
+and its `ANTHROPIC_API_KEY` placeholder pointed at nothing. Applying the
+routing to the fork afterwards with `updateSandbox` works (the fork restarts
+in a few seconds and comes back with a working local proxy), which is what
+`forkSandbox` does now. Putting the routing on the source instead does not:
+its forks inherit `HTTP_PROXY`/`HTTPS_PROXY` as unresolved
+`{{file(/var/run/secrets/…)}}` templates and every outbound request fails
+with "Unsupported proxy syntax". The release probe checks a fork can reach
+`api.anthropic.com` through the injected key. Keep real model keys out of an
+environment's variables: they override the placeholder, and Claude Code then
+stops on its "use this custom API key?" prompt, which the image only
+pre-answers for the placeholder.
+
 **host-service has no HTTP health route.** Readiness is the `health.check` tRPC
 procedure; `GET /health` 404s. A probe on the wrong path looks exactly like a
 sandbox that never came up, which cost an afternoon here.
