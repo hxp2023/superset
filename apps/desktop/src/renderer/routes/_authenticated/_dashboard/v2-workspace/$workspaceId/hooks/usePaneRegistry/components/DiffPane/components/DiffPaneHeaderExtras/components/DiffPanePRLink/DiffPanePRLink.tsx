@@ -12,10 +12,10 @@ interface DiffPanePRLinkProps {
 
 /**
  * Opens the in-app PR view (/pull-requests/$prNumber) for the workspace's
- * linked pull request — unlike the sidebar's PR affordances, which link to
- * github.com. Hidden when no PR is linked, and for session workspaces
- * (null projectId): the PR route is project-scoped and can't resolve a repo
- * without one.
+ * linked pull request — same navigation as the top bar's PR badge, kept in
+ * the pane header so the jump is at hand while reading the diff. Hidden when
+ * no PR is linked, and for session workspaces (null projectId): the PR route
+ * is project-scoped and can't resolve a repo without one.
  */
 export function DiffPanePRLink({ workspaceId }: DiffPanePRLinkProps) {
 	const { t } = useLingui();

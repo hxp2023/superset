@@ -1,5 +1,9 @@
-import type { PullRequest } from "../getPRFlowState";
+import type { AppRouter } from "@superset/host-service";
+import type { inferRouterOutputs } from "@trpc/server";
 
+type PullRequest = NonNullable<
+	inferRouterOutputs<AppRouter>["git"]["getPullRequest"]
+>;
 type CheckRun = PullRequest["checks"][number];
 
 /** Effective per-check status after collapsing GitHub's status × conclusion grid. */

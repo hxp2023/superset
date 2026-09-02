@@ -1,6 +1,6 @@
 import { cn } from "@superset/ui/utils";
 import { LuCircleCheck, LuCircleDashed, LuCircleX } from "react-icons/lu";
-import type { ChecksRollup } from "../../../../utils/computeChecksStatus";
+import type { ChecksRollup } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/utils/computeChecksStatus";
 
 interface PRStatusIndicatorsProps {
 	checks: ChecksRollup;

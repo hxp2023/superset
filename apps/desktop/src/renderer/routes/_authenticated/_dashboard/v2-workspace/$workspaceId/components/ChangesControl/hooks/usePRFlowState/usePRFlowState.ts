@@ -4,7 +4,7 @@ import {
 	type PullRequest as FlowPullRequest,
 	getPRFlowState,
 	type PRFlowState,
-} from "../../components/PRActionHeader/utils/getPRFlowState";
+} from "../../utils/getPRFlowState";
 
 interface UsePRFlowStateResult {
 	flowState: PRFlowState;

@@ -16,7 +16,6 @@ import type { CommentPaneData, DiffFocusSide } from "../../types";
 import { FilesTab } from "./components/FilesTab";
 import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
-import { usePRFlowState } from "./hooks/usePRFlowState";
 import { useReviewTab } from "./hooks/useReviewTab";
 import type { SidebarTabDefinition } from "./types";
 
@@ -128,7 +127,6 @@ export function WorkspaceSidebar({
 			: undefined,
 	});
 
-	const { flowState, onRetry } = usePRFlowState(workspaceId);
 	const filesTab: SidebarTabDefinition = {
 		id: "files",
 		label: t({ id: "workspace.sidebar.filesTab", message: "Files" }),
@@ -169,11 +167,7 @@ export function WorkspaceSidebar({
 			ref={containerRef}
 			className="isolate flex h-full w-full min-h-0 flex-col overflow-hidden bg-background"
 		>
-			<PRActionHeader
-				workspaceId={workspaceId}
-				state={flowState}
-				onRetry={onRetry}
-			/>
+			<PRActionHeader workspaceId={workspaceId} />
 			<SidebarHeader
 				tabs={tabs}
 				activeTab={activeTabDef?.id ?? activeTab}

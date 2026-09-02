@@ -4,6 +4,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuLabel,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import {
@@ -14,10 +15,14 @@ import {
 import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
 import { workspaceTrpc } from "@superset/workspace-client";
+import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { LuArrowUpRight } from "react-icons/lu";
 import { VscChevronDown, VscGitMerge, VscLoading } from "react-icons/vsc";
+import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
+import { computeChecksRollup } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/utils/computeChecksStatus";
+import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
-import { computeChecksRollup } from "../../utils/computeChecksStatus";
 import type { PRFlowState } from "../../utils/getPRFlowState";
 import { PRDetailCard } from "./components/PRDetailCard";
 import { PRStatusIndicators } from "./components/PRStatusIndicators";
@@ -29,14 +34,14 @@ interface PRStatusGroupProps {
 }
 
 /**
- * v1-style PR badge sitting on the right of the action header — link to the
- * PR with status icon, compact CI/review indicators next to the number, plus
- * a merge dropdown when the PR is open and not a draft. Hovering the link
- * surfaces a rich detail popover (title, branches, CI summary, review status,
- * last activity).
+ * Top-bar PR badge — status icon + number + compact CI/review indicators,
+ * with a dropdown for merge actions (open, non-draft PRs) and a GitHub link.
+ * Clicking the badge opens the in-app PR view; session workspaces (null
+ * projectId) fall back to github.com since the PR route is project-scoped.
+ * Hovering surfaces a rich detail popover (title, branch, CI summary, last
+ * activity).
  *
- * Closed/merged/draft PRs render the link without the merge dropdown.
- * Indicators are suppressed past `open`/`draft` since post-merge CI/review
+ * Indicators are suppressed past `open`/`queued` since post-merge CI/review
  * state is historical noise.
  */
 export function PRStatusGroup({
@@ -45,6 +50,9 @@ export function PRStatusGroup({
 	onRefresh,
 }: PRStatusGroupProps) {
 	const { t } = useLingui();
+	const navigate = useNavigate();
+	const { workspace } = useWorkspace();
+	const projectId = workspace.projectId;
 	const pr =
 		state.kind === "pr-exists"
 			? state.pr
@@ -128,37 +136,57 @@ export function PRStatusGroup({
 
 	const tint = stateTintClasses(linkState);
 
+	const badgeContent = (
+		<>
+			<PRIcon state={linkState} className="size-4" />
+			<span className="font-mono text-xs text-muted-foreground">
+				#{pr.number}
+			</span>
+			{showIndicators && <PRStatusIndicators checks={checks} />}
+		</>
+	);
+	const badgeClass = cn(
+		"flex h-full items-center gap-1 px-1.5 outline-none transition-colors",
+		tint.hover,
+	);
+
 	return (
 		<div
 			className={cn(
-				"flex items-center overflow-hidden rounded border",
+				"flex h-7 items-center overflow-hidden rounded-md border",
 				tint.container,
 			)}
 			aria-busy={mergePRMutation.isPending}
 		>
 			<HoverCard openDelay={150} closeDelay={120}>
 				<HoverCardTrigger asChild>
-					<a
-						href={pr.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						className={cn(
-							"flex items-center gap-1 px-1.5 py-0.5 outline-none transition-colors",
-							tint.hover,
-						)}
-					>
-						<PRIcon state={linkState} className="size-4" />
-						{/* Icon-only when the nearest @container is narrow (resizable
-						    sidebar); the number and indicators come back with room. */}
-						<span className="hidden font-mono text-xs text-muted-foreground @[240px]:inline">
-							#{pr.number}
-						</span>
-						{showIndicators && (
-							<span className="hidden @[240px]:contents">
-								<PRStatusIndicators checks={checks} />
-							</span>
-						)}
-					</a>
+					{projectId != null ? (
+						<button
+							type="button"
+							className={badgeClass}
+							onClick={() => {
+								// Same pair the PR list's own row click performs — the detail
+								// pane may have been collapsed the last time the view was open.
+								usePullRequestsSplitViewStore.getState().expandDetail();
+								void navigate({
+									to: "/pull-requests/$prNumber",
+									params: { prNumber: String(pr.number) },
+									search: { project: projectId },
+								});
+							}}
+						>
+							{badgeContent}
+						</button>
+					) : (
+						<a
+							href={pr.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={badgeClass}
+						>
+							{badgeContent}
+						</a>
+					)}
 				</HoverCardTrigger>
 				<HoverCardContent
 					align="end"
@@ -169,38 +197,38 @@ export function PRStatusGroup({
 				</HoverCardContent>
 			</HoverCard>
 
-			{canMerge && (
-				<>
-					<div className={cn("h-full w-px", tint.divider)} />
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<button
-								type="button"
-								className={cn(
-									"flex items-center px-1 py-0.5 outline-none transition-colors",
-									tint.hover,
-								)}
-								disabled={mergePRMutation.isPending}
-								aria-label={
-									mergePRMutation.isPending
-										? t({
-												id: "workspace.prStatusGroup.mergingAria",
-												message: "Merging pull request",
-											})
-										: t({
-												id: "workspace.prStatusGroup.openMergeOptionsAria",
-												message: "Open merge options",
-											})
-								}
-							>
-								{mergePRMutation.isPending ? (
-									<VscLoading className="size-3 animate-spin text-muted-foreground" />
-								) : (
-									<VscChevronDown className="size-3 text-muted-foreground" />
-								)}
-							</button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-44">
+			<div className={cn("h-full w-px", tint.divider)} />
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<button
+						type="button"
+						className={cn(
+							"flex h-full items-center px-1 outline-none transition-colors",
+							tint.hover,
+						)}
+						disabled={mergePRMutation.isPending}
+						aria-label={
+							mergePRMutation.isPending
+								? t({
+										id: "workspace.prStatusGroup.mergingAria",
+										message: "Merging pull request",
+									})
+								: t({
+										id: "workspace.prStatusGroup.openPrOptionsAria",
+										message: "Open pull request options",
+									})
+						}
+					>
+						{mergePRMutation.isPending ? (
+							<VscLoading className="size-3 animate-spin text-muted-foreground" />
+						) : (
+							<VscChevronDown className="size-3 text-muted-foreground" />
+						)}
+					</button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-44">
+					{canMerge && (
+						<>
 							<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
 								<Trans id="workspace.prStatusGroup.mergeMenuLabel">Merge</Trans>
 							</DropdownMenuLabel>
@@ -234,10 +262,19 @@ export function PRStatusGroup({
 									Rebase and merge
 								</Trans>
 							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</>
-			)}
+							<DropdownMenuSeparator />
+						</>
+					)}
+					<DropdownMenuItem asChild className="text-xs">
+						<a href={pr.url} target="_blank" rel="noopener noreferrer">
+							<LuArrowUpRight className="size-3.5" />
+							<Trans id="workspace.prStatusGroup.viewOnGitHub">
+								View on GitHub
+							</Trans>
+						</a>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	);
 }

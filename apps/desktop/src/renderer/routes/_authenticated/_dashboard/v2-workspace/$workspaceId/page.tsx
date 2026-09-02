@@ -27,7 +27,7 @@ import { StateScreenShell } from "../components/StateScreenShell";
 import { useWorkspace } from "../providers/WorkspaceProvider";
 import { AddTabMenu } from "./components/AddTabMenu";
 import { BackgroundTerminalsButton } from "./components/BackgroundTerminalsButton";
-import { ChangesPill } from "./components/ChangesPill";
+import { ChangesControl } from "./components/ChangesControl";
 import { V2NotificationStatusIndicator } from "./components/V2NotificationStatusIndicator";
 import { V2PresetsBar } from "./components/V2PresetsBar";
 import { V2WorkspaceRunButton } from "./components/V2WorkspaceRunButton";
@@ -384,7 +384,12 @@ function V2WorkspaceContent() {
 											store={store}
 										/>
 									)}
-									{isLayoutReady && <ChangesPill onClick={openChangesPane} />}
+									{isLayoutReady && (
+										<ChangesControl
+											workspaceId={workspaceId}
+											onOpenChanges={openChangesPane}
+										/>
+									)}
 									{workspaceRunButton}
 									<RightSidebarToggle />
 									{!isMac && <WindowControls />}
