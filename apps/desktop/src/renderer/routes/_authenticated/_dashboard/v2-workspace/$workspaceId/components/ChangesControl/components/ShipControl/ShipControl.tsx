@@ -132,7 +132,15 @@ export function ShipControl({
 	const hasCommitsAhead =
 		commitsQuery.data == null || commitsQuery.data.commits.length > 0;
 	const latestSubject = commitsQuery.data?.commits[0]?.message ?? "";
-	const effectiveTitle = prTitle || latestSubject;
+
+	// Seed the title from the latest commit subject once, when the PR form
+	// opens. A render-time `prTitle || latestSubject` fallback looked the
+	// same but made the field uneditable: clearing it snapped the prefill
+	// straight back.
+	const openPrView = () => {
+		setPrTitle((prev) => prev || latestSubject);
+		setView("pr");
+	};
 
 	const isShipping = pushMutation.isPending || createPrMutation.isPending;
 
@@ -156,7 +164,7 @@ export function ShipControl({
 	};
 
 	const handleCreatePr = async () => {
-		const title = effectiveTitle.trim();
+		const title = prTitle.trim();
 		if (!title || !hasCommitsAhead) return;
 		const toastId = toast.loading(
 			needsPush
@@ -257,7 +265,8 @@ export function ShipControl({
 									if (pending) {
 										pendingViewRef.current = null;
 										event.preventDefault();
-										setView(pending);
+										if (pending === "pr") openPrView();
+										else setView(pending);
 									}
 								}}
 							>
@@ -319,7 +328,7 @@ export function ShipControl({
 									className={mainButtonClass}
 									disabled={!hasCommitsAhead}
 									title={hasCommitsAhead ? undefined : noCommitsTooltip}
-									onClick={() => setView("pr")}
+									onClick={openPrView}
 								>
 									{isShipping ? (
 										<VscLoading className="size-3.5 animate-spin" />
@@ -403,7 +412,7 @@ export function ShipControl({
 					<div className="flex flex-col gap-2">
 						<Input
 							autoFocus
-							value={effectiveTitle}
+							value={prTitle}
 							onChange={(e) => setPrTitle(e.target.value)}
 							placeholder={t({
 								id: "workspace.shipControl.prTitlePlaceholder",
@@ -431,9 +440,7 @@ export function ShipControl({
 							<button
 								type="button"
 								onClick={() => void handleCreatePr()}
-								disabled={
-									!effectiveTitle.trim() || !hasCommitsAhead || isShipping
-								}
+								disabled={!prTitle.trim() || !hasCommitsAhead || isShipping}
 								className="flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
 							>
 								{isShipping && <VscLoading className="size-3.5 animate-spin" />}
