@@ -1,5 +1,9 @@
 import type { MessageDescriptor } from "@lingui/core";
-import { i18n } from "@superset/i18n";
+import { i18n, isSupportedLocale } from "@superset/i18n";
+import {
+	initServerI18n as activateServerI18n,
+	preloadServerLocale,
+} from "@superset/i18n/server";
 import { COMPANY } from "@superset/shared/constants";
 import { MCP_CAPABILITIES } from "@/app/[lang]/mcp-install/components/McpCapabilities/constants";
 import {
@@ -8,7 +12,6 @@ import {
 	PRICING_FAQ_ITEMS,
 	PRICING_TIERS,
 } from "@/app/[lang]/pricing/constants";
-import { initServerI18n } from "@/app/i18n-server";
 import { getBlogPost } from "@/lib/blog";
 import { getCategoryPage } from "@/lib/category";
 import { getChangelogEntry } from "@/lib/changelog";
@@ -258,15 +261,22 @@ function loadPage(section: string, slug: string): MarkdownPage | undefined {
 
 export async function GET(
 	_request: Request,
-	{ params }: { params: Promise<{ path: string[] }> },
+	{ params }: { params: Promise<{ lang: string; path: string[] }> },
 ) {
 	// Route handlers render outside the root layout, so the shared i18n
-	// instance is not seeded for them. This activates the language the URL
-	// names — /md/... is English, /ja/md/... is Japanese — and 404s an
-	// unsupported segment rather than silently serving English.
-	const locale = await initServerI18n();
-
-	const { path } = await params;
+	// instance is not seeded for them. Activate the language the URL names —
+	// /md/... is English, /ja/md/... is Japanese.
+	//
+	// The locale comes from the route's own params rather than
+	// next/root-params: [lang] is a parent segment, so it is already in
+	// params here, and that works the same in a route handler as in a server
+	// component. app/i18n-server.ts reads root-params instead, which is a
+	// server-component API — using it here would risk 404ing every twin.
+	const { lang, path } = await params;
+	if (!isSupportedLocale(lang)) return markdownNotFound();
+	await preloadServerLocale(lang);
+	activateServerI18n(lang);
+	const locale = lang;
 	const [section, slug] = path;
 	const page =
 		path.length === 2 && section && slug ? loadPage(section, slug) : undefined;
