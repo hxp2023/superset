@@ -27,6 +27,9 @@ process.env.SKIP_ENV_VALIDATION ??= "1";
 const ROOT = join(import.meta.dir, "..", "..");
 const SKIP_BASE = process.argv.includes("--skip-base");
 const KEEP_OLD = process.argv.includes("--keep-old");
+// --probe-neon lets the probe branch the database the way a real workspace
+// does, and deletes that branch afterwards; the default probe skips it.
+const PROBE_NEON = process.argv.includes("--probe-neon");
 const PRODUCTION = process.argv.includes("--production");
 const IMAGE = "superset-hostsvc";
 const REGION = process.env.BLAXEL_REGION ?? "us-pdx-1";
@@ -238,6 +241,8 @@ const { SANDBOX_HOST_DB_PATH } = await import(
 	"../../packages/shared/src/constants.ts"
 );
 const probe = `ws-release-probe-${Date.now().toString(36)}`;
+const probeWorkspaceId = crypto.randomUUID();
+const probeBranch = `cloud-${probeWorkspaceId.split("-")[0]}`;
 log(`probe: provisioning ${probe} as a fork of ${golden}`);
 await provisionSandbox({
 	name: probe,
@@ -254,8 +259,11 @@ await provisionSandbox({
 		SUPERSET_API_URL:
 			process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
 		SUPERSET_HOST_RUN_MODE: "sandbox",
-		SUPERSET_SANDBOX_WORKSPACE_ID: crypto.randomUUID(),
+		SUPERSET_SANDBOX_WORKSPACE_ID: probeWorkspaceId,
 		SUPERSET_SANDBOX_WORKSPACE_NAME: "release-probe",
+		// A real workspace branches the database for itself at first boot; a
+		// probe must not leave a Neon branch behind unless asked to prove it.
+		...(PROBE_NEON ? {} : { SUPERSET_RELEASE_PROBE: "1" }),
 		SUPERSET_SANDBOX_BRANCH: "main",
 		SUPERSET_SANDBOX_WORKSPACE_PATH: WORKSPACE,
 		SUPERSET_SANDBOX_REPO_URL: "https://github.com/superset-sh/superset.git",
@@ -361,6 +369,17 @@ if (ENV_FILE) {
 		))
 	)
 		probeFailed++;
+	if (PROBE_NEON) {
+		const stamp = await probeRun(
+			"db-branch",
+			"cat /workspace/.superset-db-branch 2>/dev/null; tail -n 3 /tmp/superset-workspace-db.log 2>/dev/null",
+		);
+		const ok = stamp.includes(probeBranch);
+		log(
+			`${ok ? "ok  " : "FAIL"} database branch: ${stamp.trim().split("\n").pop() ?? "(no output)"}`,
+		);
+		if (!ok) probeFailed++;
+	}
 	if (
 		!(await until(
 			"electron desktop on the display",
@@ -383,6 +402,28 @@ if (probeFailed)
 	);
 await deleteSandbox(probe);
 log(`probe: ${probe} deleted`);
+if (PROBE_NEON && probeEnv.NEON_PROJECT_ID) {
+	const del = Bun.spawnSync(
+		[
+			"neonctl",
+			"branches",
+			"delete",
+			probeBranch,
+			"--project-id",
+			probeEnv.NEON_PROJECT_ID,
+		],
+		{
+			env: { ...process.env, NEON_API_KEY: probeEnv.NEON_API_KEY ?? "" },
+			stdout: "ignore",
+			stderr: "pipe",
+		},
+	);
+	log(
+		del.exitCode === 0
+			? `probe: Neon branch ${probeBranch} deleted`
+			: `probe: Neon branch ${probeBranch} NOT deleted: ${new TextDecoder().decode(del.stderr).trim().slice(0, 120)}`,
+	);
+}
 
 // 3. environments rows
 const { db } = await import("../../packages/db/src/client.ts");

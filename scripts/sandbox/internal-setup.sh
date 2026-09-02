@@ -12,9 +12,12 @@ apt-get update -qq
 # desktop's `electron-builder install-app-deps`, which compiles native-keymap
 # and friends against Electron. xdotool lets an agent drive the display.
 apt-get install -y -qq --no-install-recommends \
-  zsh tmux fzf silversearcher-ag neovim xterm xdotool \
+  zsh tmux fzf silversearcher-ag neovim xterm xdotool jq \
   build-essential python3 pkg-config libx11-dev libxkbfile-dev >/dev/null
 log "shell tooling installed"
+# neonctl: a workspace branches the database for itself at first boot (below),
+# the same way .superset/setup.sh does on a laptop.
+npm install -g neonctl@2 >/dev/null 2>&1 && log "neonctl $(neonctl --version 2>/dev/null) installed" || { log "neonctl install failed"; exit 1; }
 # The image has no locale, so the prompt's glyphs print "character not in
 # range". C.UTF-8 ships with glibc and needs no locale-gen.
 cat > /etc/profile.d/superset-locale.sh <<'LOCALE'
@@ -61,9 +64,50 @@ done < <(env -0)
 install -m 600 "$tmp" "$out"; rm -f "$tmp"
 MATERIALIZE
 chmod 755 /usr/local/bin/superset-materialize-env
+# First boot of a workspace: branch the Neon project for it, point .env at the
+# branch, seed the dev account. Mirrors .superset/setup.sh (neonctl branches
+# create from the project's default branch, connection strings by role) with
+# the workspace id as the branch name, since cloud workspaces share a display
+# name. Idempotent through the stamp file; release probes skip it so a
+# pipeline run never leaves a branch behind.
+cat > /usr/local/bin/superset-workspace-db <<'WORKSPACEDB'
+#!/usr/bin/env bash
+set -u
+ENV_FILE="${1:-/workspace/.env}"
+STAMP="/workspace/.superset-db-branch"
+[ -f "$ENV_FILE" ] || exit 0
+[ -f "$STAMP" ] && exit 0
+[ "${SUPERSET_RELEASE_PROBE:-}" = "1" ] && exit 0
+set -a; . "$ENV_FILE"; set +a
+if [ -z "${NEON_API_KEY:-}" ] || [ -z "${NEON_PROJECT_ID:-}" ] || [ -z "${SUPERSET_SANDBOX_WORKSPACE_ID:-}" ]; then
+  echo "workspace-db: NEON_API_KEY, NEON_PROJECT_ID or SUPERSET_SANDBOX_WORKSPACE_ID missing; keeping the environment's DATABASE_URL"
+  exit 0
+fi
+name="cloud-${SUPERSET_SANDBOX_WORKSPACE_ID%%-*}"
+export NEON_API_KEY
+existing="$(neonctl branches list --project-id "$NEON_PROJECT_ID" --output json 2>/dev/null | jq -r --arg n "$name" '.[] | select(.name == $n) | .id // empty')"
+if [ -n "$existing" ]; then
+  branch="$existing"
+else
+  created="$(neonctl branches create --project-id "$NEON_PROJECT_ID" --name "$name" --output json)" || { echo "workspace-db: branch create failed"; exit 1; }
+  branch="$(printf '%s' "$created" | jq -r '.branch.id // .id // empty')"
+fi
+[ -n "$branch" ] || { echo "workspace-db: no branch id"; exit 1; }
+direct="$(neonctl connection-string "$branch" --project-id "$NEON_PROJECT_ID" --role-name neondb_owner)" || exit 1
+pooled="$(neonctl connection-string "$branch" --project-id "$NEON_PROJECT_ID" --role-name neondb_owner --pooled)" || exit 1
+tmp="$(mktemp)"
+grep -vE '^(DATABASE_URL|DATABASE_URL_UNPOOLED)=' "$ENV_FILE" > "$tmp"
+printf "DATABASE_URL='%s'\nDATABASE_URL_UNPOOLED='%s'\n" "$pooled" "$direct" >> "$tmp"
+install -m 600 "$tmp" "$ENV_FILE"; rm -f "$tmp"
+echo "workspace-db: branch $name ($branch)"
+( cd /workspace && set -a && . "$ENV_FILE" && set +a && NODE_ENV=development bun run db:seed-dev ) || { echo "workspace-db: db:seed-dev failed"; exit 1; }
+printf '%s %s\n' "$name" "$branch" > "$STAMP"
+WORKSPACEDB
+chmod 755 /usr/local/bin/superset-workspace-db
 cat > "$HOME/.config/openbox/autostart" <<'AUTOSTART'
 xterm -geometry 140x40+40+40 -fa Monospace -fs 11 -bg black -fg white &
 superset-materialize-env /workspace/.env
+superset-workspace-db /workspace/.env > /tmp/superset-workspace-db.log 2>&1
 # With a .env in place bring the whole dev stack up on this display: api, web
 # and the Electron desktop, the same tasks `bun dev` runs. The desktop runs in
 # its own window with `--noSandbox`: Electron refuses to start as root
