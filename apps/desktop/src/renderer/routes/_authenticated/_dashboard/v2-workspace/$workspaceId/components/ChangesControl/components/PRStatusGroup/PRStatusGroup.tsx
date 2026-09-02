@@ -19,7 +19,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { GitCompareArrows } from "lucide-react";
 import { useMemo } from "react";
 import { LuArrowUpRight } from "react-icons/lu";
-import { VscChevronDown, VscGitMerge, VscLoading } from "react-icons/vsc";
+import {
+	VscChevronDown,
+	VscGitMerge,
+	VscGitPullRequest,
+	VscLoading,
+} from "react-icons/vsc";
 import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
 import { computeChecksRollup } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/utils/computeChecksStatus";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
@@ -41,7 +46,8 @@ interface PRStatusGroupProps {
 
 /**
  * Top-bar PR badge — status icon + number + compact CI/review indicators,
- * with a dropdown for merge actions (open, non-draft PRs) and a GitHub link.
+ * with a dropdown for merge actions (open, non-draft PRs), marking a draft
+ * ready for review, and a GitHub link.
  * Clicking the badge opens the in-app PR view; session workspaces (null
  * projectId) fall back to github.com since the PR route is project-scoped.
  * Hovering surfaces a rich detail popover (title, branch, CI summary, last
@@ -112,6 +118,51 @@ export function PRStatusGroup({
 		},
 	});
 
+	const markReadyMutation =
+		workspaceTrpc.github.markPullRequestReady.useMutation({
+			onMutate: () => {
+				const toastId = toast.loading(
+					t({
+						id: "workspace.prStatusGroup.markingReady",
+						message: "Marking ready for review...",
+					}),
+				);
+				return { toastId };
+			},
+			onSuccess: async (_data, _variables, context) => {
+				toast.success(
+					t({
+						id: "workspace.prStatusGroup.markedReady",
+						message: "PR ready for review",
+					}),
+					{ id: context?.toastId },
+				);
+				try {
+					await refreshPRMutation.mutateAsync({ workspaceIds: [workspaceId] });
+				} catch (error) {
+					console.warn("Failed to refresh PR state after marking ready", error);
+					toast.warning(
+						t({
+							id: "workspace.prStatusGroup.markedReadyRefreshFailed",
+							message:
+								"Marked ready, but couldn't refresh PR state — try again in a moment",
+						}),
+					);
+				} finally {
+					onRefresh?.();
+				}
+			},
+			onError: (error, _variables, context) => {
+				toast.error(
+					t({
+						id: "workspace.prStatusGroup.markReadyFailed",
+						message: `Ready for review failed: ${error.message}`,
+					}),
+					{ id: context?.toastId },
+				);
+			},
+		});
+
 	const checks = useMemo(
 		() => (pr ? computeChecksRollup(pr.checks) : null),
 		[pr],
@@ -162,7 +213,7 @@ export function PRStatusGroup({
 		// border and rounding; the state tint lives in this segment's fill.
 		<div
 			className={cn("flex items-center", tint.container)}
-			aria-busy={mergePRMutation.isPending}
+			aria-busy={mergePRMutation.isPending || markReadyMutation.isPending}
 		>
 			<HoverCard openDelay={150} closeDelay={120}>
 				<HoverCardTrigger asChild>
@@ -212,7 +263,7 @@ export function PRStatusGroup({
 							"flex h-full items-center px-1 outline-none transition-colors",
 							tint.hover,
 						)}
-						disabled={mergePRMutation.isPending}
+						disabled={mergePRMutation.isPending || markReadyMutation.isPending}
 						aria-label={
 							mergePRMutation.isPending
 								? t({
@@ -225,7 +276,7 @@ export function PRStatusGroup({
 									})
 						}
 					>
-						{mergePRMutation.isPending ? (
+						{mergePRMutation.isPending || markReadyMutation.isPending ? (
 							<VscLoading className="size-3 animate-spin text-muted-foreground" />
 						) : (
 							<VscChevronDown className="size-3 text-muted-foreground" />
@@ -233,6 +284,27 @@ export function PRStatusGroup({
 					</button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
+					{linkState === "draft" && (
+						<>
+							<DropdownMenuItem
+								className="text-xs"
+								disabled={markReadyMutation.isPending}
+								onClick={() =>
+									markReadyMutation.mutate({
+										owner: pr.repoOwner,
+										repo: pr.repoName,
+										pullNumber: pr.number,
+									})
+								}
+							>
+								<VscGitPullRequest className="size-3.5" />
+								<Trans id="workspace.prStatusGroup.readyForReview">
+									Ready for review
+								</Trans>
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+						</>
+					)}
 					{canMerge && (
 						<>
 							<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
