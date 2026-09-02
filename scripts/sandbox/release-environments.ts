@@ -111,9 +111,20 @@ if (SKIP_BASE) {
 // 2. internal golden
 const golden = `env-internal-${Date.now().toString(36)}`;
 log(`golden: creating ${golden} from ${IMAGE}`);
+// Agent credentials ride the provider's egress proxy: the sandbox holds a
+// placeholder, the proxy swaps in the real key on the way to the model API.
+// Routing is fixed when a sandbox is created and forks inherit it, so it has
+// to be on the golden — a fork made later can't be given it. The keys come
+// from whoever runs this release.
+const { agentCredentialRoutes } = await import(
+	"../../packages/trpc/src/lib/blaxel/index.ts"
+);
+const credentials = agentCredentialRoutes();
 const sandbox = await SandboxInstance.createIfNotExists({
 	name: golden,
 	image: IMAGE,
+	envs: credentials.envs,
+	network: { proxy: { routing: credentials.routing } },
 	// The writable root is tmpfs sized at half of memory, and those pages count
 	// against the same memory (docs/cloud-sandbox-mismatches.md). A checkout
 	// plus node_modules is ~6 GB, and the dev stack (api, web, electron-vite,
@@ -431,6 +442,17 @@ if (ENV_FILE) {
 		const ok = stamp.includes(probeBranch);
 		log(
 			`${ok ? "ok  " : "FAIL"} database branch: ${stamp.trim().split("\n").pop() ?? "(no output)"}`,
+		);
+		if (!ok) probeFailed++;
+	}
+	{
+		const status = await probeRun(
+			"agent-credentials",
+			"curl -s -o /dev/null -w '%{http_code}' --max-time 15 -H \"x-api-key: $ANTHROPIC_API_KEY\" -H 'anthropic-version: 2023-06-01' https://api.anthropic.com/v1/models",
+		);
+		const ok = status.trim() === "200";
+		log(
+			`${ok ? "ok  " : "FAIL"} agent credentials via proxy: ${status.trim() || "(no output)"}`,
 		);
 		if (!ok) probeFailed++;
 	}

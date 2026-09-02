@@ -30,7 +30,7 @@ interface ProxyRoute {
  * authenticates with. Secrets are scoped to their own rule — a key declared
  * here cannot be resolved by any other destination.
  */
-function agentCredentialRoutes(): {
+export function agentCredentialRoutes(): {
 	envs: Array<{ name: string; value: string }>;
 	routing: ProxyRoute[];
 } {
