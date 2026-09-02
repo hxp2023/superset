@@ -47,9 +47,12 @@ while IFS= read -r -d '' entry; do
   if [[ "$value" != *"'"* ]]; then
     printf "%s='%s'\n" "$key" "$value" >> "$tmp"
   else
-    # Double quotes are the fallback for values with a single quote in them;
-    # the file is both sourced by sh and read by dotenv, so backslash, quote,
-    # dollar and backtick all have to be escaped or they expand.
+    # Double quotes are the fallback for values with a single quote in them.
+    # The autostart sources this file with sh, so backslash, quote, dollar and
+    # backtick are escaped the way sh unescapes them (round-trip verified).
+    # dotenv keeps those backslashes, so a value with both a single quote and
+    # one of these characters reads differently from a shell that skipped the
+    # autostart; sh sets the process env first, and dotenv never overrides it.
     escaped="${value//\\/\\\\}"; escaped="${escaped//\"/\\\"}"
     escaped="${escaped//\$/\\\$}"; escaped="${escaped//\`/\\\`}"
     printf '%s="%s"\n' "$key" "$escaped" >> "$tmp"
