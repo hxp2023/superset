@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import RFB from "@novnc/novnc/core/rfb.js";
+import RFB from "@novnc/novnc";
 import { useEffect, useRef, useState } from "react";
 import {
 	getHostServiceWsToken,

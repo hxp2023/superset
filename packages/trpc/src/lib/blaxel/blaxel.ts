@@ -207,6 +207,16 @@ const INHERITED_IDENTITY: Array<[path: string, recursive: boolean]> = [
 	["/root/.gitconfig", false],
 ];
 
+const INHERITED_IDENTITY_ENVS = new Set([
+	"ORGANIZATION_ID",
+	"SUPERSET_SANDBOX_BRANCH",
+	"SUPERSET_SANDBOX_GIT_TOKEN",
+	"SUPERSET_SANDBOX_PROJECT_NAME",
+	"SUPERSET_SANDBOX_REPO_URL",
+	"SUPERSET_SANDBOX_WORKSPACE_ID",
+	"SUPERSET_SANDBOX_WORKSPACE_NAME",
+]);
+
 export async function promoteSandboxToEnvironment(args: {
 	sourceSandbox: string;
 	goldenName: string;
@@ -218,11 +228,15 @@ export async function promoteSandboxToEnvironment(args: {
 	const golden = await SandboxInstance.get(args.goldenName);
 
 	for (const name of ["host-service", "diag-start"]) {
-		await golden.process.stop(name).catch(() => {});
+		await golden.process.stop(name).catch((error) => {
+			if (!isSandboxNotFound(error)) throw error;
+		});
 	}
 
 	for (const [path, recursive] of INHERITED_IDENTITY) {
-		await golden.fs.rm(path, recursive).catch(() => {});
+		await golden.fs.rm(path, recursive).catch((error) => {
+			if (!isSandboxNotFound(error)) throw error;
+		});
 	}
 
 	await golden.process.exec({
@@ -230,6 +244,29 @@ export async function promoteSandboxToEnvironment(args: {
 		command: "pkill -f pty-daemon.js || true",
 		waitForCompletion: true,
 	} as never);
+
+	// Blaxel copies the source's env into the fork and env is immutable after
+	// creation, so the promoting workspace's credentials would otherwise ride
+	// into a shared environment every later workspace forks from. The git token
+	// is the dangerous one: provisioning only sets it when the clone needs it,
+	// so a public-repo workspace would inherit the promoter's instead.
+	const current = await SandboxInstance.get(args.goldenName);
+	const spec = structuredClone(current.spec) as {
+		runtime?: { envs?: Array<{ name: string; value: string }> };
+	};
+	if (spec.runtime?.envs) {
+		spec.runtime.envs = spec.runtime.envs.filter(
+			(entry) => !INHERITED_IDENTITY_ENVS.has(entry.name),
+		);
+		await updateSandbox({
+			path: { sandboxName: args.goldenName },
+			body: {
+				...(current as never as { sandbox: object }).sandbox,
+				spec,
+			} as never,
+			throwOnError: true,
+		});
+	}
 
 	return args.goldenName;
 }

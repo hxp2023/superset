@@ -1,4 +1,4 @@
-declare module "@novnc/novnc/core/rfb.js" {
+declare module "@novnc/novnc" {
 	interface RFBEventMap {
 		connect: CustomEvent<void>;
 		disconnect: CustomEvent<{ clean: boolean }>;

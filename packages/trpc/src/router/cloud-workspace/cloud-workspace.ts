@@ -1,6 +1,9 @@
 import { db, dbWs } from "@superset/db/client";
 import { cloudWorkspaces, environments, v2Projects } from "@superset/db/schema";
-import { SHARED_ENVIRONMENT_ORGANIZATION_ID } from "@superset/shared/constants";
+import {
+	SHARED_ENVIRONMENT_NAME,
+	SHARED_ENVIRONMENT_ORGANIZATION_ID,
+} from "@superset/shared/constants";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { Client } from "@upstash/qstash";
@@ -162,7 +165,9 @@ export const cloudWorkspaceRouter = {
 				/** Omitted = the repo's default branch, resolved here — a client
 				 * whose branch query hadn't answered must not guess "main". */
 				branch: z.string().min(1).max(300).optional(),
-				environmentId: z.string().uuid(),
+				/** Omitted = the shared default environment, resolved here — a
+				 * client with no environment picker must not guess an id. */
+				environmentId: z.string().uuid().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -185,14 +190,23 @@ export const cloudWorkspaceRouter = {
 			}
 
 			const environment = await db.query.environments.findFirst({
-				where: and(
-					eq(environments.id, input.environmentId),
-					inArray(environments.organizationId, [
-						input.organizationId,
-						SHARED_ENVIRONMENT_ORGANIZATION_ID,
-					]),
-					isNull(environments.archivedAt),
-				),
+				where: input.environmentId
+					? and(
+							eq(environments.id, input.environmentId),
+							inArray(environments.organizationId, [
+								input.organizationId,
+								SHARED_ENVIRONMENT_ORGANIZATION_ID,
+							]),
+							isNull(environments.archivedAt),
+						)
+					: and(
+							eq(
+								environments.organizationId,
+								SHARED_ENVIRONMENT_ORGANIZATION_ID,
+							),
+							eq(environments.name, SHARED_ENVIRONMENT_NAME),
+							isNull(environments.archivedAt),
+						),
 			});
 			if (!environment) {
 				throw userError({

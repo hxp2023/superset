@@ -5,6 +5,7 @@ import {
 } from "../../packages/db/src/schema/index.ts";
 import {
 	SANDBOX_IMAGE_NAME,
+	SHARED_ENVIRONMENT_NAME,
 	SHARED_ENVIRONMENT_ORGANIZATION_ID,
 } from "../../packages/shared/src/constants.ts";
 
@@ -13,8 +14,6 @@ const SHARED_ORGANIZATION = {
 	name: "Superset",
 	slug: "superset-shared-environments",
 } as const;
-
-export const SHARED_ENVIRONMENT_NAME = "Default";
 
 export async function seedSharedEnvironments(
 	imageRef = process.env.BLAXEL_SANDBOX_IMAGE ?? SANDBOX_IMAGE_NAME,

@@ -12,7 +12,7 @@ import { secretsRouter } from "./secrets";
 
 export async function loadEnvironment(id: string, organizationIds: string[]) {
 	const row = await db.query.environments.findFirst({
-		where: eq(environments.id, id),
+		where: and(eq(environments.id, id), isNull(environments.archivedAt)),
 	});
 	if (!row) {
 		throw userError({
