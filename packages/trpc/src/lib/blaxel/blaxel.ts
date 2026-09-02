@@ -203,6 +203,8 @@ const INHERITED_IDENTITY: Array<[path: string, recursive: boolean]> = [
 	["/data/host.db-wal", false],
 	["/data/host.db-shm", false],
 	["/data/.workspace-bootstrapped", false],
+	["/data/.sandbox-agent-launched", false],
+	["/data/.superset-db-branch", false],
 	["/root/.superset/host", true],
 	["/root/.gitconfig", false],
 ];

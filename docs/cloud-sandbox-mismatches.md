@@ -94,13 +94,14 @@ the edge.** A sandbox whose preview is ever made public is open to anyone with
 the URL. Treat preview configuration (`public: false`) as the security-
 critical setting it now is.
 
-**Model credentials never enter the sandbox.** The provider's egress proxy
+**Model credentials never enter an image sandbox.** (A fork is the exception;
+see "A fork can never have the egress proxy" below.) The provider's egress proxy
 substitutes them at the edge from a `{{SECRET:...}}` routing rule; the sandbox
 env holds only `SANDBOX_CREDENTIAL_PLACEHOLDER`. The placeholder must still be
 *set* — an unset key reads as "not logged in" and produces no request for the
 proxy to rewrite.
 
-**Credentials are fixed at creation, so a sandbox can't gain one later.** The
+**Proxy credentials are fixed at creation, so a sandbox can't gain one later.** The
 routing rules that carry them are part of the create call, which is the
 property that stops a sandbox being re-pointed at a different secret mid-life.
 The cost is that adding a provider, or rotating a key, reaches only sandboxes

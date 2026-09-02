@@ -123,6 +123,11 @@ export function NewChatWidget({
 	const selectedAgent = isCloudTarget
 		? cloudAgentConfig(agentId)
 		: agentConfigs?.find((config) => config.presetId === agentId);
+	// A preset picked for a laptop may not exist in the sandbox; under Cloud
+	// the effective agent is the one that will actually launch.
+	const effectiveAgentId = isCloudTarget
+		? (selectedAgent?.presetId ?? "claude")
+		: agentId;
 	const agentIconUri = useAgentIconUri(selectedAgent?.iconId ?? agentId);
 	// Null until the branch list resolves. The previous fallback was the literal
 	// string "default", which reads as a branch name and is not one.
@@ -157,7 +162,7 @@ export function NewChatWidget({
 			attachment_count: message.attachments.length,
 			message_length: message.text.trim().length,
 			draft_restored: initialDraft.length > 0,
-			agent: isCloudTarget ? (selectedAgent?.presetId ?? "claude") : agentId,
+			agent: effectiveAgentId,
 			destination: isCloudTarget ? "new_cloud_workspace" : "new_workspace",
 		});
 		if (!selectedTarget) {
@@ -174,7 +179,7 @@ export function NewChatWidget({
 				.mutateAsync({
 					branch: baseBranch ?? branchData?.defaultBranch ?? null,
 					environmentId: selectedEnvironment?.id ?? null,
-					agent: selectedAgent?.presetId ?? "claude",
+					agent: effectiveAgentId,
 					message,
 				})
 				.then(() => {
@@ -234,7 +239,7 @@ export function NewChatWidget({
 	];
 
 	const selectedModel = {
-		id: agentId ?? "claude",
+		id: effectiveAgentId ?? "claude",
 		label: selectedAgent?.label ?? "Claude",
 		iconUri: agentIconUri ?? undefined,
 	};
@@ -266,7 +271,7 @@ export function NewChatWidget({
 				if (expanded && !wasExpanded.current) {
 					posthog.capture("new_session_started", {
 						target_kind: selectedTarget?.kind ?? null,
-						agent: isCloudTarget ? null : agentId,
+						agent: effectiveAgentId,
 					});
 				}
 				wasExpanded.current = expanded;

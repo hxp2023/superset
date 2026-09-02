@@ -180,6 +180,9 @@ export function PromptGroup({
 	// recognize.
 	const launchHostUrl = useMemo(() => {
 		const id = draft.hostId ?? machineId;
+		// "cloud" is a sentinel, not a host: resolving it would query a relay
+		// address for a machine that does not exist.
+		if (id === CLOUD_HOST_ID) return null;
 		if (!id || !activeOrganizationId) return null;
 		return (
 			resolveHostUrl({

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -69,24 +69,40 @@ export function readSandboxIdentity(
 function approveClaudeApiKey(): void {
 	const key = process.env.ANTHROPIC_API_KEY;
 	if (!key) return;
-	const path = join(homedir(), ".claude.json");
+	const path = join(process.env.CLAUDE_CONFIG_DIR || homedir(), ".claude.json");
 	let config: Record<string, unknown> = {};
-	try {
-		config = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-	} catch {
-		// No config yet, or not JSON: start from an empty one.
+	if (existsSync(path)) {
+		try {
+			const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+			if (!parsed || typeof parsed !== "object")
+				throw new Error("not an object");
+			config = parsed as Record<string, unknown>;
+		} catch (error) {
+			// Rewriting a file this process cannot read would destroy whatever
+			// Claude keeps in it; leave the prompt to the person instead.
+			console.warn(
+				`[sandbox] ${path} is not readable JSON, key not approved`,
+				error,
+			);
+			return;
+		}
 	}
-	const responses = (config.customApiKeyResponses ?? {}) as {
-		approved?: string[];
-		rejected?: string[];
-	};
+	const responses =
+		config.customApiKeyResponses &&
+		typeof config.customApiKeyResponses === "object"
+			? (config.customApiKeyResponses as {
+					approved?: unknown;
+					rejected?: unknown;
+				})
+			: {};
+	const approved = Array.isArray(responses.approved) ? responses.approved : [];
+	const rejected = Array.isArray(responses.rejected) ? responses.rejected : [];
 	const suffix = key.slice(-20);
-	const approved = responses.approved ?? [];
 	if (approved.includes(suffix)) return;
 	config.customApiKeyResponses = {
 		...responses,
 		approved: [...approved, suffix],
-		rejected: (responses.rejected ?? []).filter((entry) => entry !== suffix),
+		rejected: rejected.filter((entry) => entry !== suffix),
 	};
 	writeFileSync(path, JSON.stringify(config, null, 2));
 }
@@ -104,6 +120,13 @@ export async function launchSandboxAgentOnce(
 	if (!identity.launch) return;
 	if (existsSync(identity.launchMarkerPath)) return;
 	const { agent, prompt, model, effort, mode } = identity.launch;
+	// Claimed before the launch, not after: a restart while the first launch
+	// is still setting up its terminal would otherwise start a second one.
+	// A failed launch gives the claim back so the next start retries.
+	writeFileSync(
+		identity.launchMarkerPath,
+		`${agent} ${new Date().toISOString()}\n`,
+	);
 	try {
 		// Nothing has listed this host's agents yet, so the built-in presets are
 		// not in its table; the launch resolves the agent through that table.
@@ -117,14 +140,11 @@ export async function launchSandboxAgentOnce(
 			effort,
 			mode,
 		});
-		writeFileSync(
-			identity.launchMarkerPath,
-			`${agent} ${new Date().toISOString()}\n`,
-		);
 		console.log(
 			`[sandbox] launched ${agent} for workspace ${identity.workspaceId}`,
 		);
 	} catch (error) {
+		rmSync(identity.launchMarkerPath, { force: true });
 		console.error(
 			`[sandbox] could not launch ${agent} for workspace ${identity.workspaceId}`,
 			error,

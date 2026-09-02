@@ -41,7 +41,9 @@ export async function generateCloudWorkspaceName(
 			.replace(/^["']|["']$/g, "")
 			.trim();
 		// A sentence is a reply, not a title; fall through to the derived one.
-		if (generated && generated.length <= 40 && !/[.!?]$/.test(generated))
+		// The instruction asks for 20 characters; twice that is the tolerance
+		// before a long answer is treated as a reply too.
+		if (generated && generated.length <= 40 && !generated.endsWith("."))
 			return generated;
 	} catch (error) {
 		console.error("[cloud-workspace] name generation failed", error);

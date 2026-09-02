@@ -1,3 +1,4 @@
+import { isCloudAgentId } from "@superset/shared/cloud-agent-launch";
 import { provisionCloudWorkspace } from "@superset/trpc/cloud-workspace-provision";
 import { z } from "zod";
 import { verifyQstashRequest } from "@/lib/verifyQstash";
@@ -14,7 +15,7 @@ const payloadSchema = z
 		namingPrompt: z.string().max(20000).optional(),
 		launch: z
 			.object({
-				agent: z.string().min(1),
+				agent: z.string().refine(isCloudAgentId, "unknown cloud agent"),
 				prompt: z.string().max(20000),
 				model: z.string().min(1).optional(),
 				effort: z.string().min(1).optional(),

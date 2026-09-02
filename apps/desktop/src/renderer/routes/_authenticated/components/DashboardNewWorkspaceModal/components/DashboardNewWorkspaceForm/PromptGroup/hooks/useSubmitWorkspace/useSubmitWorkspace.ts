@@ -145,7 +145,10 @@ export function useSubmitWorkspace(
 					organizationId: activeOrganizationId,
 					environmentId: environment.id,
 					name: workspaceName ?? undefined,
-					prompt: (cloudPrompt ?? draft.prompt).trim() || undefined,
+					// Linked PR and issue bodies can push this past the create input's
+					// 20,000-character cap.
+					prompt:
+						(cloudPrompt ?? draft.prompt).trim().slice(0, 20_000) || undefined,
 					branch: branchName ?? "main",
 					...(wantCloudAgent
 						? {

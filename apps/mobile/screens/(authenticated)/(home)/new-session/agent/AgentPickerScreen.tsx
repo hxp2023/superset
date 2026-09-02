@@ -61,6 +61,11 @@ export function AgentPickerScreen() {
 	const agentId = useNewSessionPreferencesStore((state) => state.agentId);
 	const setAgentId = useNewSessionPreferencesStore((state) => state.setAgentId);
 	const { machineId } = useLocalSearchParams<{ machineId?: string }>();
+	// Under Cloud a laptop-only preset resolves to the one that launches.
+	const selectedAgentId =
+		machineId === CLOUD_TARGET_ID && (!agentId || !isCloudAgentId(agentId))
+			? "claude"
+			: agentId;
 
 	const hostsQuery = useOrgHostsQuery();
 	const host =
@@ -173,7 +178,7 @@ export function AgentPickerScreen() {
 				configs.map((config) => {
 					// Persist the presetId, not the row id: config ids are per-host
 					// UUIDs, presetIds resolve on any host (agents.run accepts both).
-					const isSelected = config.presetId === agentId;
+					const isSelected = config.presetId === selectedAgentId;
 					return (
 						<Pressable
 							key={config.id}

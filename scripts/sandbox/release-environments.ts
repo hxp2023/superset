@@ -429,7 +429,7 @@ if (ENV_FILE) {
 	if (PROBE_NEON) {
 		const stamp = await probeRun(
 			"db-branch",
-			"cat /workspace/.superset-db-branch 2>/dev/null; tail -n 3 /tmp/superset-workspace-db.log 2>/dev/null",
+			"cat /data/.superset-db-branch 2>/dev/null; tail -n 3 /tmp/superset-workspace-db.log 2>/dev/null",
 		);
 		const ok = stamp.includes(probeBranch);
 		log(
@@ -440,11 +440,13 @@ if (ENV_FILE) {
 	{
 		const status = await probeRun(
 			"agent-credentials",
-			"curl -s -o /dev/null -w '%{http_code}' --max-time 15 -H \"x-api-key: $ANTHROPIC_API_KEY\" -H 'anthropic-version: 2023-06-01' https://api.anthropic.com/v1/models",
+			"curl -s -o /dev/null -w '%{http_code}' --max-time 15 -H \"x-api-key: $ANTHROPIC_API_KEY\" -H 'anthropic-version: 2023-06-01' https://api.anthropic.com/v1/models" +
+				"; echo; curl -s -o /dev/null -w '%{http_code}' --max-time 15 -H \"Authorization: Bearer $OPENAI_API_KEY\" https://api.openai.com/v1/models",
 		);
-		const ok = status.trim() === "200";
+		const codes = status.trim().split(/\s+/);
+		const ok = codes.length === 2 && codes.every((code) => code === "200");
 		log(
-			`${ok ? "ok  " : "FAIL"} agent credentials (ANTHROPIC_API_KEY from the env file): ${status.trim() || "(no output)"}`,
+			`${ok ? "ok  " : "FAIL"} agent credentials (Anthropic, OpenAI; keys from the env file): ${codes.join(" ") || "(no output)"}`,
 		);
 		if (!ok) probeFailed++;
 	}
