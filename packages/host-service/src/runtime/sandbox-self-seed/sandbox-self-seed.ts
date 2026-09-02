@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -144,7 +145,7 @@ export async function launchSandboxAgentOnce(
 			`[sandbox] launched ${agent} for workspace ${identity.workspaceId}`,
 		);
 	} catch (error) {
-		rmSync(identity.launchMarkerPath, { force: true });
+		await rm(identity.launchMarkerPath, { force: true });
 		console.error(
 			`[sandbox] could not launch ${agent} for workspace ${identity.workspaceId}`,
 			error,
