@@ -1,4 +1,5 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
 	type CloudAgentLaunch,
@@ -59,6 +60,38 @@ export function readSandboxIdentity(
 }
 
 /**
+ * Claude Code stops on a "use this custom API key?" prompt the first time it
+ * sees an `ANTHROPIC_API_KEY`, and a launch nobody is watching would sit on
+ * it. The key reaches the sandbox from the environment's variables, so it is
+ * approved here the way the prompt would record it: the last 20 characters
+ * in `~/.claude.json`.
+ */
+function approveClaudeApiKey(): void {
+	const key = process.env.ANTHROPIC_API_KEY;
+	if (!key) return;
+	const path = join(homedir(), ".claude.json");
+	let config: Record<string, unknown> = {};
+	try {
+		config = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+	} catch {
+		// No config yet, or not JSON: start from an empty one.
+	}
+	const responses = (config.customApiKeyResponses ?? {}) as {
+		approved?: string[];
+		rejected?: string[];
+	};
+	const suffix = key.slice(-20);
+	const approved = responses.approved ?? [];
+	if (approved.includes(suffix)) return;
+	config.customApiKeyResponses = {
+		...responses,
+		approved: [...approved, suffix],
+		rejected: (responses.rejected ?? []).filter((entry) => entry !== suffix),
+	};
+	writeFileSync(path, JSON.stringify(config, null, 2));
+}
+
+/**
  * Runs the agent the workspace was created with, once. The same code path a
  * local host takes for `agents.run`, so the terminal, session tracking and
  * pane seeding all behave the way they do on a laptop. Called after the
@@ -75,6 +108,7 @@ export async function launchSandboxAgentOnce(
 		// Nothing has listed this host's agents yet, so the built-in presets are
 		// not in its table; the launch resolves the agent through that table.
 		seedDefaultsIfEmpty(ctx.db);
+		if (agent === "claude") approveClaudeApiKey();
 		await runAgentInWorkspace(ctx, {
 			workspaceId: identity.workspaceId,
 			agent,

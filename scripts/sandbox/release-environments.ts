@@ -444,7 +444,7 @@ if (ENV_FILE) {
 		);
 		const ok = status.trim() === "200";
 		log(
-			`${ok ? "ok  " : "FAIL"} agent credentials via proxy: ${status.trim() || "(no output)"}`,
+			`${ok ? "ok  " : "FAIL"} agent credentials (ANTHROPIC_API_KEY from the env file): ${status.trim() || "(no output)"}`,
 		);
 		if (!ok) probeFailed++;
 	}

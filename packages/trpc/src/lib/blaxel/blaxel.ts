@@ -8,7 +8,7 @@
  * token — no relay hop, so websockets work and the sandbox can still sleep.
  */
 
-import { SandboxInstance, settings, updateSandbox } from "@blaxel/core";
+import { SandboxInstance, settings } from "@blaxel/core";
 import { CLOUD_AGENT_LAUNCH_ENV_NAMES } from "@superset/shared/cloud-agent-launch";
 import { SANDBOX_CREDENTIAL_PLACEHOLDER } from "@superset/shared/constants";
 import { env } from "../../env";
@@ -75,70 +75,49 @@ export interface SandboxEnvironment {
 	sourceRef: string;
 }
 
+/**
+ * TODO(2026-09-01): remove once a fork can be given its own environment
+ * variables.
+ *
+ * A fork inherits the source's env vars and the fork request cannot override
+ * them. The documented way to fix that afterwards, `PUT /sandboxes/{name}` with
+ * changed `spec.runtime.envs`, cannot be used: on sandbox-api 2026-08-27 it
+ * re-materialises the sandbox from its image and discards the whole writable
+ * layer. Verified on a plain sandbox — files under /data, /root, /opt,
+ * /workspace and /tmp all vanished and a git repo baked into the image came
+ * back clean, because the root filesystem is a `volatile` overlay. That would
+ * throw away exactly the configured state a fork exists to carry. Reported
+ * upstream; Blaxel are integrating env updates into fork directly.
+ *
+ * Until then identity is handed over as a file the fork reads on boot, which
+ * touches no spec and survives restarts. Delete this and pass the values
+ * normally once fork accepts them.
+ */
+const IDENTITY_FILE = "/data/identity.env";
+
 async function forkSandbox(
 	name: string,
 	sourceSandbox: string,
 	workspaceEnv: Record<string, string>,
-	credentials: {
-		envs: Array<{ name: string; value: string }>;
-		routing: ProxyRoute[];
-	},
 ): Promise<SandboxInstance> {
 	const source = await SandboxInstance.get(sourceSandbox);
 	await source.fork(name);
 	const forked = await SandboxInstance.get(name);
 
-	const spec = structuredClone(forked.spec) as {
-		runtime?: { envs?: Array<{ name: string; value: string }> };
-		network?: { proxy: { routing: ProxyRoute[] } };
-	};
-	// A fork copies the source's files and env, not its network config, so the
-	// credential placeholders and the proxy routing that an image sandbox gets
-	// at creation have to be applied here. The update restarts the fork (a few
-	// seconds, before anything has connected to it); a source that carried the
-	// routing itself would hand every fork unresolved proxy templates instead.
-	const overrides: Record<string, string> = {};
-	for (const entry of credentials.envs) overrides[entry.name] = entry.value;
-	Object.assign(overrides, workspaceEnv);
-	const inherited = spec.runtime?.envs ?? [];
-	const replaced = new Set<string>();
-	const envs = inherited.map((entry) => {
-		const override = overrides[entry.name];
-		if (override === undefined) return entry;
-		replaced.add(entry.name);
-		return { name: entry.name, value: override };
-	});
-	for (const [key, value] of Object.entries(overrides)) {
-		if (!replaced.has(key)) envs.push({ name: key, value });
-	}
-	if (!spec.runtime) spec.runtime = {};
-	spec.runtime.envs = envs;
-	spec.network = { proxy: { routing: credentials.routing } };
-
-	await updateSandbox({
-		path: { sandboxName: name },
-		body: {
-			...(forked as never as { sandbox: object }).sandbox,
-			spec,
-		} as never,
-		throwOnError: true,
-	});
-	// The update restarts the fork. Until it is back, the control plane can
-	// drop a session mid-request and the edge answers 502/504, so wait for it
-	// here rather than letting the first preview or exec pay for it.
-	const deadline = Date.now() + 120_000;
-	for (;;) {
-		try {
-			const current = await SandboxInstance.get(name);
-			if (current.status === "DEPLOYED") return current;
-		} catch (error) {
-			if (Date.now() > deadline) throw error;
-		}
-		if (Date.now() > deadline) {
-			throw new Error(`fork ${name} did not come back after its spec update`);
-		}
-		await new Promise((resolve) => setTimeout(resolve, 3000));
-	}
+	// Single-quoted with embedded quotes escaped: values carry URLs and tokens.
+	// Identity the source carried and this fork does not set is unset, so a
+	// workspace forked from a promoted environment never runs with the
+	// promoter's token or launches the promoter's agent.
+	const contents = [
+		...Object.entries(workspaceEnv).map(
+			([key, value]) => `export ${key}='${value.replaceAll("'", "'\\''")}'`,
+		),
+		...[...INHERITED_IDENTITY_ENVS]
+			.filter((key) => !(key in workspaceEnv))
+			.map((key) => `unset ${key}`),
+	].join("\n");
+	await forked.fs.write(IDENTITY_FILE, `${contents}\n`);
+	return forked;
 }
 
 export async function provisionSandbox(args: {
@@ -171,7 +150,6 @@ export async function provisionSandbox(args: {
 					args.name,
 					args.environment.sourceRef,
 					args.workspaceEnv,
-					{ envs: credentialEnvs, routing },
 				)
 			: await SandboxInstance.createIfNotExists({
 					name: args.name,
@@ -274,29 +252,13 @@ export async function promoteSandboxToEnvironment(args: {
 		waitForCompletion: true,
 	} as never);
 
-	// Blaxel copies the source's env into the fork and env is immutable after
-	// creation, so the promoting workspace's credentials would otherwise ride
-	// into a shared environment every later workspace forks from. The git token
-	// is the dangerous one: provisioning only sets it when the clone needs it,
-	// so a public-repo workspace would inherit the promoter's instead.
-	const current = await SandboxInstance.get(args.goldenName);
-	const spec = structuredClone(current.spec) as {
-		runtime?: { envs?: Array<{ name: string; value: string }> };
-	};
-	if (spec.runtime?.envs) {
-		spec.runtime.envs = spec.runtime.envs.filter(
-			(entry) => !INHERITED_IDENTITY_ENVS.has(entry.name),
-		);
-		await updateSandbox({
-			path: { sandboxName: args.goldenName },
-			body: {
-				...(current as never as { sandbox: object }).sandbox,
-				spec,
-			} as never,
-			throwOnError: true,
-		});
-	}
-
+	// Blaxel copies the source's env into the fork, and the only way to change
+	// it afterwards, a spec update, rebuilds the sandbox from its image (see
+	// forkSandbox). So the promoting workspace's identity and credentials stay
+	// in the golden's env; every workspace forked from it unsets them in the
+	// identity file it boots from, which is where the git token matters:
+	// provisioning only sets one when the clone needs it, and a public-repo
+	// workspace must not inherit the promoter's.
 	return args.goldenName;
 }
 
