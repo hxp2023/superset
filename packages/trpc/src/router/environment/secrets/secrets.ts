@@ -85,7 +85,13 @@ export const secretsRouter = {
 			return rows.map((row) => ({
 				id: row.id,
 				key: row.key,
-				value: row.sensitive ? "" : decryptSecret(row.encryptedValue),
+				value: row.sensitive
+					? ""
+					: decryptSecret(row.encryptedValue, {
+							environmentId: input.environmentId,
+							organizationId,
+							key: row.key,
+						}),
 				sensitive: row.sensitive,
 				createdAt: row.createdAt,
 				updatedAt: row.updatedAt,
@@ -173,7 +179,11 @@ export const secretsRouter = {
 					organizationId,
 					environmentId: input.environmentId,
 					key: input.key,
-					encryptedValue: encryptSecret(input.value),
+					encryptedValue: encryptSecret(input.value, {
+						environmentId: input.environmentId,
+						organizationId,
+						key: input.key,
+					}),
 					sensitive: input.sensitive,
 					createdByUserId: ctx.userId,
 				})
@@ -184,7 +194,11 @@ export const secretsRouter = {
 						environmentSecrets.key,
 					],
 					set: {
-						encryptedValue: encryptSecret(input.value),
+						encryptedValue: encryptSecret(input.value, {
+							environmentId: input.environmentId,
+							organizationId,
+							key: input.key,
+						}),
 						sensitive: input.sensitive,
 					},
 				});

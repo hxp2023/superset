@@ -45,7 +45,11 @@ export async function resolveEnvironment(
 		// Validation rejects reserved keys on write; re-checked here so a row
 		// written before a name became reserved can never shadow identity.
 		if (isReservedKey(secret.key)) continue;
-		envs[secret.key] = decryptSecret(secret.encryptedValue);
+		envs[secret.key] = decryptSecret(secret.encryptedValue, {
+			environmentId,
+			organizationId,
+			key: secret.key,
+		});
 	}
 
 	return {
