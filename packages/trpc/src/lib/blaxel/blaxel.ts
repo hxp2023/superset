@@ -79,6 +79,10 @@ async function forkSandbox(
 	name: string,
 	sourceSandbox: string,
 	workspaceEnv: Record<string, string>,
+	credentials: {
+		envs: Array<{ name: string; value: string }>;
+		routing: ProxyRoute[];
+	},
 ): Promise<SandboxInstance> {
 	const source = await SandboxInstance.get(sourceSandbox);
 	await source.fork(name);
@@ -86,20 +90,30 @@ async function forkSandbox(
 
 	const spec = structuredClone(forked.spec) as {
 		runtime?: { envs?: Array<{ name: string; value: string }> };
+		network?: { proxy: { routing: ProxyRoute[] } };
 	};
+	// A fork copies the source's files and env, not its network config, so the
+	// credential placeholders and the proxy routing that an image sandbox gets
+	// at creation have to be applied here. The update restarts the fork (a few
+	// seconds, before anything has connected to it); a source that carried the
+	// routing itself would hand every fork unresolved proxy templates instead.
+	const overrides: Record<string, string> = {};
+	for (const entry of credentials.envs) overrides[entry.name] = entry.value;
+	Object.assign(overrides, workspaceEnv);
 	const inherited = spec.runtime?.envs ?? [];
 	const replaced = new Set<string>();
 	const envs = inherited.map((entry) => {
-		const override = workspaceEnv[entry.name];
+		const override = overrides[entry.name];
 		if (override === undefined) return entry;
 		replaced.add(entry.name);
 		return { name: entry.name, value: override };
 	});
-	for (const [key, value] of Object.entries(workspaceEnv)) {
+	for (const [key, value] of Object.entries(overrides)) {
 		if (!replaced.has(key)) envs.push({ name: key, value });
 	}
 	if (!spec.runtime) spec.runtime = {};
 	spec.runtime.envs = envs;
+	spec.network = { proxy: { routing: credentials.routing } };
 
 	await updateSandbox({
 		path: { sandboxName: name },
@@ -142,6 +156,7 @@ export async function provisionSandbox(args: {
 					args.name,
 					args.environment.sourceRef,
 					args.workspaceEnv,
+					{ envs: credentialEnvs, routing },
 				)
 			: await SandboxInstance.createIfNotExists({
 					name: args.name,
@@ -152,8 +167,6 @@ export async function provisionSandbox(args: {
 					ports: [{ target: HOST_SERVICE_PORT, protocol: "HTTP" }],
 					region,
 					envs,
-					// Routing is fixed at creation, so a sandbox can never be re-pointed at
-					// a different secret later in its life.
 					network: { proxy: { routing } },
 				} as never);
 

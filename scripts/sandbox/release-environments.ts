@@ -111,20 +111,12 @@ if (SKIP_BASE) {
 // 2. internal golden
 const golden = `env-internal-${Date.now().toString(36)}`;
 log(`golden: creating ${golden} from ${IMAGE}`);
-// Agent credentials ride the provider's egress proxy: the sandbox holds a
-// placeholder, the proxy swaps in the real key on the way to the model API.
-// Routing is fixed when a sandbox is created and forks inherit it, so it has
-// to be on the golden — a fork made later can't be given it. The keys come
-// from whoever runs this release.
-const { agentCredentialRoutes } = await import(
-	"../../packages/trpc/src/lib/blaxel/index.ts"
-);
-const credentials = agentCredentialRoutes();
+// No credential routing here on purpose: a fork inherits a source's proxy
+// variables as unresolved templates and loses egress entirely. provisioning
+// applies the routing to each fork instead, and the probe below checks it.
 const sandbox = await SandboxInstance.createIfNotExists({
 	name: golden,
 	image: IMAGE,
-	envs: credentials.envs,
-	network: { proxy: { routing: credentials.routing } },
 	// The writable root is tmpfs sized at half of memory, and those pages count
 	// against the same memory (docs/cloud-sandbox-mismatches.md). A checkout
 	// plus node_modules is ~6 GB, and the dev stack (api, web, electron-vite,
