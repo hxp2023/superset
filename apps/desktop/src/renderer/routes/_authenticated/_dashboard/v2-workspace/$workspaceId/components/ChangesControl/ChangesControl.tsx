@@ -5,6 +5,7 @@ import { memo, useMemo } from "react";
 import { useWorkspaceGitStatus } from "../../providers/WorkspaceGitStatusProvider";
 import { changesPillStats } from "./changesPillStats";
 import { PRStatusGroup } from "./components/PRStatusGroup";
+import { ShipControl } from "./components/ShipControl";
 import { usePRFlowState } from "./hooks/usePRFlowState";
 
 interface ChangesControlProps {
@@ -19,9 +20,10 @@ interface ChangesControlProps {
  * merge menu — when a PR exists.
  *
  * Each half hides on its own: the pill while status is unknown or the tree is
- * clean (mirroring BackgroundTerminalsButton's disappear-at-zero behavior),
- * the PR badge while the flow state is loading/unavailable/no-pr. No dead
- * placeholder affordances in the top bar.
+ * clean (mirroring BackgroundTerminalsButton's disappear-at-zero behavior);
+ * the right half is the PR badge once a PR exists, the ShipControl
+ * (commit → push → create PR) before one does, and nothing while the flow
+ * state is loading or unavailable — no dead placeholder affordances.
  */
 export const ChangesControl = memo(function ChangesControl({
 	workspaceId,
@@ -61,11 +63,19 @@ export const ChangesControl = memo(function ChangesControl({
 					</span>
 				</Button>
 			)}
-			<PRStatusGroup
-				state={flowState}
-				workspaceId={workspaceId}
-				onRefresh={onRetry}
-			/>
+			{flowState.kind === "no-pr" ? (
+				<ShipControl
+					workspaceId={workspaceId}
+					sync={flowState.sync}
+					onRefresh={onRetry}
+				/>
+			) : (
+				<PRStatusGroup
+					state={flowState}
+					workspaceId={workspaceId}
+					onRefresh={onRetry}
+				/>
+			)}
 		</>
 	);
 });

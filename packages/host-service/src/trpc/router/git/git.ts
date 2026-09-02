@@ -564,6 +564,77 @@ export const gitRouter = router({
 			return { success: true };
 		}),
 
+	commit: protectedProcedure
+		// Commit hooks (lint-staged etc.) run here and can be slow.
+		.meta({ timeoutMs: 60_000 })
+		.input(
+			z.object({
+				workspaceId: z.string(),
+				message: z.string().trim().min(1),
+				stageAll: z.boolean().default(true),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
+			const git = await ctx.git(worktreePath);
+			if (input.stageAll) {
+				await git.raw(["add", "-A"]);
+			}
+			// Read the staged file list instead of `--quiet` exit codes:
+			// simple-git treats a non-zero exit with empty stderr as success, so
+			// `diff --quiet`'s exit-1 signal never surfaces as a rejection.
+			const staged = (
+				await git.raw(["diff", "--cached", "--name-only"])
+			).trim();
+			if (!staged) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Nothing to commit",
+				});
+			}
+			await git.raw(["commit", "-m", input.message]);
+			const hash = (await git.revparse(["HEAD"])).trim();
+			return { success: true, hash };
+		}),
+
+	push: protectedProcedure
+		.meta({ timeoutMs: 120_000 })
+		.input(z.object({ workspaceId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
+			const git = await ctx.git(worktreePath);
+			const branch = (
+				await git.revparse(["--abbrev-ref", "HEAD"]).catch(() => "")
+			).trim();
+			if (!branch || branch === "HEAD") {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cannot push with a detached HEAD",
+				});
+			}
+			const hasUpstream = await git
+				.raw(["rev-parse", "--abbrev-ref", "@{upstream}"])
+				.then(
+					() => true,
+					() => false,
+				);
+			if (hasUpstream) {
+				await git.raw(["push"]);
+			} else {
+				const remotes = await git.getRemotes(false).catch(() => []);
+				const remote =
+					remotes.find((r) => r.name === "origin")?.name ?? remotes[0]?.name;
+				if (!remote) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "No git remote to push to",
+					});
+				}
+				await git.raw(["push", "-u", remote, branch]);
+			}
+			return { success: true };
+		}),
+
 	getDiff: queryProcedure
 		.meta({ timeoutMs: 30_000 })
 		.input(getDiffInputShape)
