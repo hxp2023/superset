@@ -1,6 +1,7 @@
 import type { MessageDescriptor } from "@lingui/core";
-import { i18n, initI18n } from "@superset/i18n";
+import { i18n } from "@superset/i18n";
 import { COMPANY } from "@superset/shared/constants";
+import { initServerI18n } from "@/app/i18n-server";
 import { MCP_CAPABILITIES } from "@/app/[lang]/mcp-install/components/McpCapabilities/constants";
 import {
 	COMPARISON_SECTIONS,
@@ -20,10 +21,6 @@ import {
 } from "@/lib/llms";
 import { markdownNotFound } from "@/lib/markdown-not-found";
 import { getAllPeople } from "@/lib/people";
-
-// Route handlers render outside the root layout, so the shared i18n instance
-// is not seeded for them. Idempotent.
-initI18n();
 
 interface MarkdownPage {
 	title: string;
@@ -263,6 +260,12 @@ export async function GET(
 	_request: Request,
 	{ params }: { params: Promise<{ path: string[] }> },
 ) {
+	// Route handlers render outside the root layout, so the shared i18n
+	// instance is not seeded for them. This activates the language the URL
+	// names — /md/... is English, /ja/md/... is Japanese — and 404s an
+	// unsupported segment rather than silently serving English.
+	const locale = await initServerI18n();
+
 	const { path } = await params;
 	const [section, slug] = path;
 	const page =
@@ -271,17 +274,27 @@ export async function GET(
 		return markdownNotFound();
 	}
 
+	// The document a localized twin is the markdown of is the localized page,
+	// not the English one.
+	const canonical =
+		locale === "en"
+			? page.url
+			: page.url.replace(
+					COMPANY.MARKETING_URL,
+					`${COMPANY.MARKETING_URL}/${locale}`,
+				);
+
 	const lines = [
 		...buildFrontmatter({
 			title: page.title,
 			description: page.description ?? page.title,
-			canonical: page.url,
+			canonical,
 			lastUpdated: page.date,
 		}),
 		`# ${page.title}`,
 		"",
 		...(page.description ? [page.description, ""] : []),
-		`URL: ${page.url}`,
+		`URL: ${canonical}`,
 		...(page.date ? [`Date: ${page.date}`] : []),
 		...(page.author ? [`Author: ${page.author}`] : []),
 		"",
