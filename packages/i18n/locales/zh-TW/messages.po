@@ -34345,11 +34345,6 @@ msgstr "提交失敗：{0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-#~ msgid "workspace.shipControl.commitMessagePlaceholder"
-#~ msgstr "提交訊息"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.committed"
 msgstr "已提交"
 

@@ -34345,11 +34345,6 @@ msgstr "커밋 실패: {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-#~ msgid "workspace.shipControl.commitMessagePlaceholder"
-#~ msgstr "커밋 메시지"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.committed"
 msgstr "커밋 완료"
 

@@ -34344,11 +34344,6 @@ msgstr "コミットに失敗しました: {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-#~ msgid "workspace.shipControl.commitMessagePlaceholder"
-#~ msgstr "コミットメッセージ"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.committed"
 msgstr "コミットしました"
 
