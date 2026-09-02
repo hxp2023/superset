@@ -16,7 +16,6 @@ import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
-import { GitCompareArrows } from "lucide-react";
 import { useMemo } from "react";
 import { LuArrowUpRight } from "react-icons/lu";
 import {
@@ -38,8 +37,8 @@ interface PRStatusGroupProps {
 	workspaceId: string;
 	onRefresh?: () => void;
 	/**
-	 * Opens the Changes pane. Lives in the menu because the diff-stat face
-	 * yields to the PR badge once a PR exists.
+	 * Opens the Changes pane — the badge's main click, since it replaced the
+	 * diff-stat pill as the control's face once a PR exists.
 	 */
 	onOpenChanges?: () => void;
 }
@@ -47,11 +46,11 @@ interface PRStatusGroupProps {
 /**
  * Top-bar PR badge — status icon + number + compact CI/review indicators,
  * with a dropdown for merge actions (open, non-draft PRs), marking a draft
- * ready for review, and a GitHub link.
- * Clicking the badge opens the in-app PR view; session workspaces (null
- * projectId) fall back to github.com since the PR route is project-scoped.
- * Hovering surfaces a rich detail popover (title, branch, CI summary, last
- * activity).
+ * ready for review, the in-app PR view, and a GitHub link.
+ * Clicking the badge opens the Changes pane; the in-app PR view lives in the
+ * menu (hidden for session workspaces — null projectId — since the PR route
+ * is project-scoped). Hovering surfaces a rich detail popover (title,
+ * branch, CI summary, last activity).
  *
  * Indicators are suppressed past `open`/`queued` since post-merge CI/review
  * state is historical noise.
@@ -217,20 +216,14 @@ export function PRStatusGroup({
 		>
 			<HoverCard openDelay={150} closeDelay={120}>
 				<HoverCardTrigger asChild>
-					{projectId != null ? (
+					{/* The face opens the Changes pane — the badge replaced the
+					    diff-stat pill, so its click keeps that pill's job; the PR
+					    view is one menu entry (or the hover card) away. */}
+					{onOpenChanges != null ? (
 						<button
 							type="button"
 							className={badgeClass}
-							onClick={() => {
-								// Same pair the PR list's own row click performs — the detail
-								// pane may have been collapsed the last time the view was open.
-								usePullRequestsSplitViewStore.getState().expandDetail();
-								void navigate({
-									to: "/pull-requests/$prNumber",
-									params: { prNumber: String(pr.number) },
-									search: { project: projectId },
-								});
-							}}
+							onClick={onOpenChanges}
 						>
 							{badgeContent}
 						</button>
@@ -343,10 +336,24 @@ export function PRStatusGroup({
 							<DropdownMenuSeparator />
 						</>
 					)}
-					{onOpenChanges && (
-						<DropdownMenuItem className="text-xs" onClick={onOpenChanges}>
-							<GitCompareArrows className="size-3.5" />
-							<Trans id="workspace.changesPill.openChanges">Open changes</Trans>
+					{projectId != null && (
+						<DropdownMenuItem
+							className="text-xs"
+							onClick={() => {
+								// Same pair the PR list's own row click performs — the detail
+								// pane may have been collapsed the last time the view was open.
+								usePullRequestsSplitViewStore.getState().expandDetail();
+								void navigate({
+									to: "/pull-requests/$prNumber",
+									params: { prNumber: String(pr.number) },
+									search: { project: projectId },
+								});
+							}}
+						>
+							<VscGitPullRequest className="size-3.5" />
+							<Trans id="workspace.prStatusGroup.openPullRequest">
+								Open pull request
+							</Trans>
 						</DropdownMenuItem>
 					)}
 					<DropdownMenuItem asChild className="text-xs">
