@@ -13,7 +13,7 @@ import { toast } from "@superset/ui/sonner";
 import { Textarea } from "@superset/ui/textarea";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	VscChevronDown,
 	VscGitCommit,
@@ -79,6 +79,25 @@ export function ShipControl({
 	const [prBody, setPrBody] = useState("");
 	const [prDraft, setPrDraft] = useState(false);
 
+	// The branch's commits ahead of its base: prefills the PR title from the
+	// latest subject, and gates Create PR — GitHub rejects a PR with no
+	// commits between base and head, so the action disables instead of
+	// surfacing that as a failure toast. Same 10s cadence as the PR/sync
+	// queries so committing (here or in a terminal) enables it promptly.
+	const commitsQuery = workspaceTrpc.git.listCommits.useQuery(
+		{ workspaceId },
+		{
+			enabled: canCreatePr,
+			refetchInterval: 10_000,
+			refetchOnWindowFocus: true,
+			staleTime: 10_000,
+		},
+	);
+	// Optimistic while loading so the action doesn't flash disabled.
+	const hasCommitsAhead =
+		commitsQuery.data == null || commitsQuery.data.commits.length > 0;
+	const latestSubject = commitsQuery.data?.commits[0]?.message ?? "";
+
 	const commitMutation = workspaceTrpc.git.commit.useMutation({
 		onSuccess: () => {
 			toast.success(
@@ -86,6 +105,9 @@ export function ShipControl({
 			);
 			setView(null);
 			setCommitMessage("");
+			// The 10s poll is too slow here: the face flips to Create PR
+			// immediately and must not sit disabled on pre-commit data.
+			void commitsQuery.refetch();
 			onRefresh();
 		},
 		onError: (error) => {
@@ -118,33 +140,27 @@ export function ShipControl({
 	const createPrMutation =
 		workspaceTrpc.pullRequests.createForWorkspace.useMutation();
 
-	// The branch's commits ahead of its base: prefills the PR title from the
-	// latest subject, and gates Create PR — GitHub rejects a PR with no
-	// commits between base and head, so the action disables instead of
-	// surfacing that as a failure toast. Same 10s cadence as the PR/sync
-	// queries so committing (here or in a terminal) enables it promptly.
-	const commitsQuery = workspaceTrpc.git.listCommits.useQuery(
-		{ workspaceId },
-		{
-			enabled: canCreatePr,
-			refetchInterval: 10_000,
-			refetchOnWindowFocus: true,
-			staleTime: 10_000,
-		},
-	);
-	// Optimistic while loading so the action doesn't flash disabled.
-	const hasCommitsAhead =
-		commitsQuery.data == null || commitsQuery.data.commits.length > 0;
-	const latestSubject = commitsQuery.data?.commits[0]?.message ?? "";
-
-	// Seed the title from the latest commit subject once, when the PR form
-	// opens. A render-time `prTitle || latestSubject` fallback looked the
-	// same but made the field uneditable: clearing it snapped the prefill
-	// straight back.
+	// Seed the title from the latest commit subject when the PR form opens. A
+	// render-time `prTitle || latestSubject` fallback looked the same but
+	// made the field uneditable: clearing it snapped the prefill straight
+	// back. The effect covers the form opening before listCommits resolves —
+	// it seeds late when the subject arrives, but never over the user's own
+	// typing (or deliberate clearing).
+	const prTitleTouchedRef = useRef(false);
 	const openPrView = () => {
 		setPrTitle((prev) => prev || latestSubject);
 		setView("pr");
 	};
+	useEffect(() => {
+		if (
+			view === "pr" &&
+			!prTitleTouchedRef.current &&
+			prTitle === "" &&
+			latestSubject
+		) {
+			setPrTitle(latestSubject);
+		}
+	}, [view, prTitle, latestSubject]);
 
 	const isShipping = pushMutation.isPending || createPrMutation.isPending;
 
@@ -235,6 +251,7 @@ export function ShipControl({
 			);
 			setView(null);
 			setPrTitle("");
+			prTitleTouchedRef.current = false;
 			setPrBody("");
 			setPrDraft(false);
 			onRefresh();
@@ -448,7 +465,10 @@ export function ShipControl({
 						<Input
 							autoFocus
 							value={prTitle}
-							onChange={(e) => setPrTitle(e.target.value)}
+							onChange={(e) => {
+								prTitleTouchedRef.current = true;
+								setPrTitle(e.target.value);
+							}}
 							placeholder={t({
 								id: "workspace.shipControl.prTitlePlaceholder",
 								message: "Pull request title",

@@ -614,42 +614,76 @@ export const gitRouter = router({
 			}
 			// Workspace branches fork from the base branch, so git's
 			// autoSetupMerge usually leaves them tracking e.g. origin/main — a
-			// plain `git push` refuses that name mismatch (and must never mean
-			// "push to main"). Unless the upstream already IS this branch's own
-			// remote ref, publish under the branch's own name and re-point the
-			// upstream there, same as the v1 push flow.
-			const upstream = await git
+			// plain `git push` refuses that name mismatch, and honoring it would
+			// mean pushing to main. But a different-name upstream is deliberate
+			// for PR-checkout workspaces (local alice/feature-x tracking the PR
+			// head feature-x), so the linked PR's head branch decides: matching
+			// upstream → push to it; anything else → publish under the branch's
+			// own name and re-point the upstream there (v1's push flow).
+			const upstreamRef = await git
 				.raw(["rev-parse", "--abbrev-ref", "@{upstream}"])
 				.then(
 					(ref) => ref.trim(),
 					() => null,
 				);
-			const upstreamMatchesBranch =
-				upstream != null && upstream.split("/").slice(1).join("/") === branch;
-			if (upstreamMatchesBranch) {
+			// `branch.<name>.remote` distinguishes remote tracking from tracking
+			// a local branch ("."), where @{upstream} prints a bare branch name
+			// that must never be mistaken for a remote.
+			const configuredRemote = (
+				await git.raw(["config", `branch.${branch}.remote`]).catch(() => "")
+			).trim();
+			const hasRemoteUpstream =
+				upstreamRef != null && !!configuredRemote && configuredRemote !== ".";
+			const upstreamBranch = !hasRemoteUpstream
+				? null
+				: upstreamRef.startsWith(`${configuredRemote}/`)
+					? upstreamRef.slice(configuredRemote.length + 1)
+					: upstreamRef.split("/").slice(1).join("/");
+
+			if (hasRemoteUpstream && upstreamBranch === branch) {
 				await git.raw(["push"]);
-			} else {
-				const upstreamRemote = upstream?.split("/")[0];
-				const remotes = await git.getRemotes(false).catch(() => []);
-				const remote =
-					upstreamRemote ??
-					remotes.find((r) => r.name === "origin")?.name ??
-					remotes[0]?.name;
-				if (!remote) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "No git remote to push to",
-					});
-				}
-				// HEAD refspec avoids resolving the branch name as a local ref —
-				// more reliable in worktrees (mirrors v1's pushWithSetUpstream).
-				await git.raw([
-					"push",
-					"--set-upstream",
-					remote,
-					`HEAD:refs/heads/${branch}`,
-				]);
+				return { success: true };
 			}
+
+			const remotes = await git.getRemotes(false).catch(() => []);
+			const fallbackRemote =
+				remotes.find((r) => r.name === "origin")?.name ?? remotes[0]?.name;
+			const remote = hasRemoteUpstream ? configuredRemote : fallbackRemote;
+			if (!remote) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "No git remote to push to",
+				});
+			}
+
+			const workspace = ctx.db.query.workspaces
+				.findFirst({ where: eq(workspaces.id, input.workspaceId) })
+				.sync();
+			const linkedPr = workspace?.pullRequestId
+				? ctx.db.query.pullRequests
+						.findFirst({ where: eq(pullRequests.id, workspace.pullRequestId) })
+						.sync()
+				: null;
+
+			if (
+				hasRemoteUpstream &&
+				upstreamBranch != null &&
+				linkedPr?.headBranch === upstreamBranch
+			) {
+				// PR checkout: the upstream deliberately points at the PR's head
+				// under a different local name. Push there and keep the tracking.
+				await git.raw(["push", remote, `HEAD:refs/heads/${upstreamBranch}`]);
+				return { success: true };
+			}
+
+			// HEAD refspec avoids resolving the branch name as a local ref —
+			// more reliable in worktrees (mirrors v1's pushWithSetUpstream).
+			await git.raw([
+				"push",
+				"--set-upstream",
+				remote,
+				`HEAD:refs/heads/${branch}`,
+			]);
 			return { success: true };
 		}),
 

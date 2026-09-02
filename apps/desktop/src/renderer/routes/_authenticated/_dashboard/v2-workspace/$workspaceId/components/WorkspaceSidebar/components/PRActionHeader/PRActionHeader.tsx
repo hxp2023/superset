@@ -11,7 +11,8 @@ interface PRActionHeaderProps {
  */
 export function PRActionHeader({ workspaceId }: PRActionHeaderProps) {
 	return (
-		<div className="flex h-10 shrink-0 items-center gap-2 bg-muted/45 px-2 dark:bg-muted/35">
+		// @container: V2WorkspaceOpenInButton's label shows via @[320px] queries.
+		<div className="@container flex h-10 shrink-0 items-center gap-2 bg-muted/45 px-2 dark:bg-muted/35">
 			<div className="drag h-full min-w-0 flex-1" />
 			<div className="flex items-center gap-2">
 				<V2WorkspaceOpenInButton workspaceId={workspaceId} />

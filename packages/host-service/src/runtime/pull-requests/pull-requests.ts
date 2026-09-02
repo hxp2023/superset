@@ -459,9 +459,11 @@ export class PullRequestRuntimeManager {
 		// the project refresh matches PRs by the row's recorded upstream — a
 		// stale row (e.g. still tracking the base branch it forked from) would
 		// miss the freshly created PR entirely until the next watcher sweep.
+		// Through the per-workspace queue, so an overlapping watcher sync can't
+		// interleave with this read+write and clobber the newer snapshot.
 		await Promise.all(
 			active.map((workspace) =>
-				this.syncWorkspaceRow(workspace).catch(() => null),
+				this.enqueueWorkspaceSync(workspace.id).catch(() => null),
 			),
 		);
 

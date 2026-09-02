@@ -58,7 +58,7 @@ export const ChangesControl = memo(function ChangesControl({
 					onClick={onOpenChanges}
 					aria-label={label}
 					title={label}
-					className="flex items-center gap-1 px-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-accent/60 hover:text-foreground"
+					className="flex items-center gap-1 px-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:bg-accent/60 focus-visible:text-foreground"
 				>
 					<GitCompareArrows className="size-3.5" />
 					<span className="tabular-nums text-emerald-600 [.dark_&]:text-[#34d399]">

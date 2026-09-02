@@ -179,6 +179,9 @@ export function PRStatusGroup({
 					? "queued"
 					: "open";
 	const canMerge = pr.state === "open" && !pr.isDraft;
+	// A closed/merged draft can't transition to ready — GitHub rejects it.
+	const canMarkReady =
+		linkState === "draft" && pr.state !== "closed" && pr.state !== "merged";
 	// Queued PRs are still actively running checks, so keep CI/review indicators.
 	const showIndicators = pr.state === "open" || pr.state === "queued";
 
@@ -277,7 +280,7 @@ export function PRStatusGroup({
 					</button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
-					{linkState === "draft" && (
+					{canMarkReady && (
 						<>
 							<DropdownMenuItem
 								className="text-xs"
