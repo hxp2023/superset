@@ -116,7 +116,9 @@ export function useSubmitWorkspace(
 			const environments = await cloudTrpcClient.environment.list.query({
 				organizationId: activeOrganizationId,
 			});
-			const environment = environments[0];
+			const environment =
+				environments.find((row) => row.id === draft.environmentId) ??
+				environments[0];
 			if (!environment) {
 				toast.error(
 					t({

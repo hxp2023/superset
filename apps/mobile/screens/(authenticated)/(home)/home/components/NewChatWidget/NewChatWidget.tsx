@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
+import { useCloudEnvironments } from "@/hooks/useCloudEnvironments";
 import type { HostWorkspaceItem } from "@/hooks/useHostWorkspaces";
 import { useSession } from "@/lib/auth/client";
 import { getHostServiceClientByUrl } from "@/lib/host-service/client";
@@ -56,6 +57,13 @@ export function NewChatWidget({
 		targets.find((target) => target.key === targetKey) ?? defaultTarget;
 	const isCloudTarget = selectedTarget?.kind === "cloud";
 	const cloudScope = useWorkspaceScope() === "cloud";
+	const environmentId = useNewSessionPreferencesStore(
+		(state) => state.environmentId,
+	);
+	const environmentsQuery = useCloudEnvironments();
+	const environments = environmentsQuery.data ?? [];
+	const selectedEnvironment =
+		environments.find((row) => row.id === environmentId) ?? environments[0];
 
 	const { data: session } = useSession();
 	const organizationId = session?.session?.activeOrganizationId ?? null;
@@ -153,6 +161,7 @@ export function NewChatWidget({
 				.mutateAsync({
 					target: selectedTarget,
 					branch: baseBranch ?? branchData?.defaultBranch ?? null,
+					environmentId: selectedEnvironment?.id ?? null,
 					message,
 				})
 				.then(() => {
@@ -184,8 +193,10 @@ export function NewChatWidget({
 	const headerChips = [
 		cloudScope
 			? {
-					id: "project",
-					label: t({ id: "mobile.filter.cloud", message: "Cloud" }),
+					id: "environment",
+					label:
+						selectedEnvironment?.name ??
+						t({ id: "mobile.filter.cloud", message: "Cloud" }),
 				}
 			: {
 					id: "project",
@@ -258,9 +269,10 @@ export function NewChatWidget({
 				});
 			}}
 			onChipPress={(id) => {
-				if (id === "project" && cloudScope) return;
 				void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-				if (id === "project") {
+				if (id === "environment") {
+					router.push("/(authenticated)/(home)/new-session/environment");
+				} else if (id === "project") {
 					if (targets.length > 0) {
 						router.push({
 							pathname: "/(authenticated)/(home)/new-session/project",

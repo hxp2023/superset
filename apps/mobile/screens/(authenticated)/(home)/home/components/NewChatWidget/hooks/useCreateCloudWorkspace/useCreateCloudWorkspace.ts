@@ -14,6 +14,8 @@ interface CreateCloudWorkspaceArgs {
 	target: NewChatTarget;
 	/** Null means the repo's default branch, resolved by the branch query. */
 	branch: string | null;
+	/** Null when no environment exists yet; create cannot proceed without one. */
+	environmentId: string | null;
 	message: PromptInputMessage;
 }
 
@@ -33,9 +35,15 @@ export function useCreateCloudWorkspace() {
 		mutationFn: async ({
 			target,
 			branch,
+			environmentId,
 			message,
 		}: CreateCloudWorkspaceArgs) => {
 			if (!organizationId) throw new Error("No active organization");
+			if (!environmentId) {
+				throw new Error(
+					"Add an environment in Settings before creating a cloud workspace",
+				);
+			}
 			if (message.attachments.length > 0) {
 				// Attachments today are written to a host, and this workspace's
 				// host doesn't exist yet — blob-backed attachments are the fix.
@@ -46,6 +54,7 @@ export function useCreateCloudWorkspace() {
 			return apiClient.cloudWorkspace.create.mutate({
 				organizationId,
 				projectId: target.projectId,
+				environmentId,
 				prompt: message.text.trim() || undefined,
 				// Omitted when unresolved: the server falls back to the repo's
 				// actual default branch, which the client must not guess.
