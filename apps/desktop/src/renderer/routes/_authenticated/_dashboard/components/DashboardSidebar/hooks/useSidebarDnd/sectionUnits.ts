@@ -127,6 +127,26 @@ export function createSectionUnitSortingStrategy(
 		}
 	});
 
+	// dnd-kit calls the strategy once per sortable per pointer move with the
+	// same `rects` array; the unit rects are the same for every call in that
+	// batch, so derive them once per measurement instead of once per row.
+	const unitRectsByRects = new WeakMap<ClientRect[], (ClientRect | null)[]>();
+	const getUnitRects = (rects: ClientRect[]) => {
+		let unitRects = unitRectsByRects.get(rects);
+		if (!unitRects) {
+			unitRects = units.map((u) =>
+				unionRect(
+					u.ids.map((id) => {
+						const itemIndex = indexById.get(id);
+						return itemIndex == null ? undefined : rects[itemIndex];
+					}),
+				),
+			);
+			unitRectsByRects.set(rects, unitRects);
+		}
+		return unitRects;
+	};
+
 	return ({
 		activeIndex,
 		activeNodeRect: fallbackActiveRect,
@@ -140,14 +160,7 @@ export function createSectionUnitSortingStrategy(
 		if (activeUnit == null || overUnit == null || unit == null) return null;
 		if (!rects[index]) return null; // hidden / disabled row: nothing to move
 
-		const unitRects = units.map((u) =>
-			unionRect(
-				u.ids.map((id) => {
-					const itemIndex = indexById.get(id);
-					return itemIndex == null ? undefined : rects[itemIndex];
-				}),
-			),
-		);
+		const unitRects = getUnitRects(rects);
 		const activeRect = unitRects[activeUnit] ?? fallbackActiveRect;
 		if (!activeRect) return null;
 
@@ -188,11 +201,12 @@ export function closestUnitCenter(units: TopLevelUnit[]): CollisionDetection {
 	return ({ collisionRect, droppableRects, droppableContainers }) => {
 		const centerY = collisionRect.top + collisionRect.height / 2;
 		const centerX = collisionRect.left + collisionRect.width / 2;
+		const containerById = new Map(
+			droppableContainers.map((container) => [container.id, container]),
+		);
 		const collisions: CollisionDescriptor[] = [];
 		for (const unit of units) {
-			const droppableContainer = droppableContainers.find(
-				(container) => container.id === unit.key,
-			);
+			const droppableContainer = containerById.get(unit.key);
 			if (!droppableContainer) continue;
 			const rect = unionRect(unit.ids.map((id) => droppableRects.get(id)));
 			if (!rect) continue;
