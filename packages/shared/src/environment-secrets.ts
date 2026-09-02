@@ -7,7 +7,7 @@ const MAX_VALUE_SIZE = 16 * 1024;
 // values exceed this while satisfying any sane count. The provider itself
 // imposes no count worth mirroring; 250 variables were accepted and visible
 // inside a sandbox when measured.
-const MAX_TOTAL_SIZE = 64 * 1024;
+const MAX_TOTAL_SIZE = 128 * 1024;
 
 /**
  * These reach a sandbox through the same `spec.runtime.envs` payload that
