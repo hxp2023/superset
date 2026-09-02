@@ -319,6 +319,12 @@ msgid "admin.mrr.computing"
 msgstr "Počítá se ve Stripe — při prvním načtení až minutu"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: formatDateTime(new Date(series.dataThrough), TIMESTAMP_FORMAT)
+#: ../../apps/admin/src/app/(dashboard)/components/MrrTile/MrrTile.tsx
+msgid "admin.mrr.dataThrough"
+msgstr "Data ze Stripe do {0}"
+
+#. js-lingui-explicit-id
 #: ../../apps/admin/src/app/(dashboard)/components/MrrTile/MrrTile.tsx
 msgid "admin.mrr.description"
 msgstr "Vlastní MRR report ze Stripe Sigma, počítaný na vyžádání přes Query Run API"
@@ -3069,6 +3075,11 @@ msgstr "Tento agent už na vybraném zařízení neexistuje (jeho agenti mohli b
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
+msgid "dashboard.automations.body.discard"
+msgstr "Zahodit"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
 msgid "dashboard.automations.body.instructions"
 msgstr "Instrukce"
 
@@ -3090,13 +3101,23 @@ msgstr "Přidejte prompt, např. hledej pády v $sentry"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
-msgid "dashboard.automations.body.promptUpdateFailedToast"
-msgstr "Nepodařilo se aktualizovat prompt"
+msgid "dashboard.automations.body.resumeAriaLabel"
+msgstr "Pokračovat v automatizaci"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
-msgid "dashboard.automations.body.resumeAriaLabel"
-msgstr "Pokračovat v automatizaci"
+msgid "dashboard.automations.body.save"
+msgstr "Uložit"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
+msgid "dashboard.automations.body.savedToast"
+msgstr "Automatizace uložena"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
+msgid "dashboard.automations.body.saving"
+msgstr "Ukládání…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
@@ -3127,11 +3148,6 @@ msgstr "kolega"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
 msgid "dashboard.automations.body.titlePlaceholder"
 msgstr "Název automatizace"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
-msgid "dashboard.automations.body.triggersSavedToast"
-msgstr "Spouštěče uloženy"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/automations/$automationId/components/AutomationBody/AutomationBody.tsx
@@ -4875,6 +4891,21 @@ msgid "dashboard.newWorkspaceModal.dismissSuggestions"
 msgstr "Skrýt návrhy"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
+msgid "dashboard.newWorkspaceModal.environmentPicker.empty"
+msgstr "Nenalezena žádná prostředí."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
+msgid "dashboard.newWorkspaceModal.environmentPicker.searchPlaceholder"
+msgstr "Hledat prostředí..."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/EnvironmentPickerPill/EnvironmentPickerPill.tsx
+msgid "dashboard.newWorkspaceModal.environmentPicker.selectEnvironment"
+msgstr "Vybrat prostředí"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/components/GitHubIssueLinkCommand/GitHubIssueLinkCommand.tsx
 msgid "dashboard.newWorkspaceModal.githubIssueLink.emptyAll"
 msgstr "Nenalezeny žádné issues."
@@ -5493,8 +5524,8 @@ msgstr "Nepodařilo se vytvořit cloudový pracovní prostor"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
-msgid "dashboard.newWorkspaceModal.submit.cloudRequiresProject"
-msgstr "Cloudové pracovní prostory vyžadují projekt"
+msgid "dashboard.newWorkspaceModal.submit.cloudRequiresEnvironment"
+msgstr "Před vytvořením cloudového pracovního prostoru přidejte prostředí v Nastavení"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/PromptGroup/hooks/useSubmitWorkspace/useSubmitWorkspace.ts
@@ -8083,6 +8114,17 @@ msgid "dashboard.sidebar.projectRow.newWorkspaceAriaLabel"
 msgstr "Nový pracovní prostor"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: created?.name
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/DashboardSidebarWorkspaceItem.tsx
+msgid "dashboard.sidebar.promotedToEnvironment"
+msgstr "\"{0}\" uloženo jako prostředí"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/DashboardSidebarWorkspaceItem.tsx
+msgid "dashboard.sidebar.promotingToEnvironment"
+msgstr "Ukládání jako prostředí..."
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceHoverCardContent/components/PullRequestStatusBadge/PullRequestStatusBadge.tsx
 msgid "dashboard.sidebar.prStatus.closed"
 msgstr "Uzavřený"
@@ -8347,6 +8389,11 @@ msgstr "Zatím žádné skupiny"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceBulkContextMenu/DashboardSidebarWorkspaceBulkContextMenu.tsx
 msgid "dashboard.sidebar.workspaceBulkMenu.ungroup"
 msgstr "Zrušit skupinu"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
+msgid "dashboard.sidebar.workspaceContextMenu.promoteToEnvironment"
+msgstr "Uložit jako prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceHoverCardContent/DashboardSidebarWorkspaceHoverCardContent.tsx
@@ -11830,6 +11877,16 @@ msgstr "Rozdělit aktuální panel a otevřít nový panel prohlížeče"
 #: ../../apps/desktop/src/renderer/hotkeys/registry.ts
 msgid "hotkeys.splitWithBrowser.label"
 msgstr "Rozdělit s novým prohlížečem"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/hotkeys/registry.ts
+msgid "hotkeys.splitWithDesktop.description"
+msgstr "Rozdělit aktuální panel a otevřít plochu sandboxu"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/hotkeys/registry.ts
+msgid "hotkeys.splitWithDesktop.label"
+msgstr "Rozdělit s plochou"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/hotkeys/registry.ts
@@ -17261,6 +17318,7 @@ msgstr "Něco se pokazilo."
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/new-session/agent/AgentPickerScreen.tsx
+#: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/components/WorkspaceCreateFailedState/WorkspaceCreateFailedState.tsx
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/new-session/NewSessionSheet.tsx
 msgid "mobile.common.tryAgain"
@@ -17433,6 +17491,16 @@ msgstr "Zobrazit řádky za změnou výše"
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/files-changed/components/ExpanderRow/ExpanderRow.tsx
 msgid "mobile.diff.showLinesBefore"
 msgstr "Zobrazit řádky před změnou níže"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
+msgid "mobile.environmentPicker.empty"
+msgstr "Žádná dostupná prostředí"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/(home)/new-session/environment/EnvironmentPickerScreen.tsx
+msgid "mobile.environmentPicker.loadFailed"
+msgstr "Nepodařilo se načíst prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/components/ai-elements/environment-variables.tsx
@@ -17782,6 +17850,11 @@ msgid "mobile.nav.commits.title"
 msgstr "Commity"
 
 #. js-lingui-explicit-id
+#: ../../apps/mobile/app/(authenticated)/(home)/new-session/_layout.tsx
+msgid "mobile.nav.environment.title"
+msgstr "Prostředí"
+
+#. js-lingui-explicit-id
 #: ../../apps/mobile/app/(authenticated)/_layout.tsx
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/files-changed/FilesChangedScreen.tsx
 msgid "mobile.nav.filesChanged.title"
@@ -17876,6 +17949,11 @@ msgstr "Řazení"
 #: ../../apps/mobile/screens/(authenticated)/workspace/[id]/WorkspaceScreen/WorkspaceScreen.tsx
 msgid "mobile.nav.workspace.title"
 msgstr "Pracovní prostor"
+
+#. js-lingui-explicit-id
+#: ../../apps/mobile/screens/(authenticated)/(home)/home/components/NewChatWidget/NewChatWidget.tsx
+msgid "mobile.newChat.environmentChip"
+msgstr "Prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/mobile/screens/(authenticated)/(home)/home/components/NewChatWidget/NewChatWidget.tsx
@@ -21659,6 +21737,11 @@ msgstr "Prohlížeč"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/SettingsSidebar/GeneralSettings.tsx
+msgid "settings.components.generalSettings.environments"
+msgstr "Prostředí"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/SettingsSidebar/GeneralSettings.tsx
 msgid "settings.components.generalSettings.experimental"
 msgstr "Experimentální"
 
@@ -21888,6 +21971,66 @@ msgstr "Adresář"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/components/WorktreeLocationPicker/WorktreeLocationPicker.tsx
 msgid "settings.components.worktreeLocationPicker.reset"
 msgstr "Obnovit"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.cancel"
+msgstr "Zrušit"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.create"
+msgstr "Vytvořit"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.created"
+msgstr "Prostředí vytvořeno"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.createTitle"
+msgstr "Nové prostředí"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.description"
+msgstr "Výchozí bod, ze kterého se spouští cloudový pracovní prostor — základní image nebo sandbox, který jste nakonfigurovali a chcete forknout."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.empty"
+msgstr "Zatím žádná prostředí. Vytvořte jedno a spusťte z něj cloudový pracovní prostor."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.emptyHint"
+msgstr "Vytvořte jedno, abyste z něj mohli spustit cloudový pracovní prostor."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.loadFailed"
+msgstr "Nepodařilo se načíst prostředí."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.nameLabel"
+msgstr "Název"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.namePlaceholder"
+msgstr "monorepo-warm"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.new"
+msgstr "Nové prostředí"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
+msgid "settings.environments.title"
+msgstr "Prostředí"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/experimental/components/ExperimentalSettings/ExperimentalSettings.tsx
@@ -30927,6 +31070,11 @@ msgstr "Chat v3"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/AddTabMenu/AddTabMenu.tsx
+msgid "workspace.addTabMenu.desktop"
+msgstr "Plocha"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/AddTabMenu/AddTabMenu.tsx
 msgid "workspace.addTabMenu.showScriptsBar"
 msgstr "Zobrazit lištu skriptů"
 
@@ -32371,6 +32519,21 @@ msgid "workspace.commitFilter.uncommittedChanges"
 msgstr "Necommitnuté změny"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DesktopPane/DesktopPane.tsx
+msgid "workspace.desktopPane.connecting"
+msgstr "Připojování k ploše…"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DesktopPane/DesktopPane.tsx
+msgid "workspace.desktopPane.error"
+msgstr "K ploše se nepodařilo připojit."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DesktopPane/DesktopPane.tsx
+msgid "workspace.desktopPane.unavailable"
+msgstr "V tomto sandboxu neběží žádná relace plochy."
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffHeaderMetadata/DiffHeaderMetadata.tsx
 msgid "workspace.diffPane.allChangesSavedAria"
 msgstr "Všechny změny uloženy"
@@ -33603,6 +33766,11 @@ msgstr "Rozdělit svisle"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useDefaultContextMenuActions/useDefaultContextMenuActions.tsx
+msgid "workspace.paneContextMenu.splitWithDesktop"
+msgstr "Rozdělit s plochou"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useDefaultContextMenuActions/useDefaultContextMenuActions.tsx
 msgid "workspace.paneContextMenu.splitWithNewBrowser"
 msgstr "Rozdělit s novým prohlížečem"
 
@@ -33675,6 +33843,11 @@ msgstr "Zavřít terminál"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/usePaneRegistry.tsx
 msgid "workspace.paneRegistry.copy"
 msgstr "Kopírovat"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/usePaneRegistry.tsx
+msgid "workspace.paneRegistry.desktopTitle"
+msgstr "Plocha"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/usePaneRegistry.tsx

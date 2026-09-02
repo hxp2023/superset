@@ -197,8 +197,8 @@ What it needs, roughly in order of how much it buys:
   push the branch, provision a fresh sandbox, restore the checkout. Slower,
   but it must exist for the cases where in-place fails.
 
-Note that the *image tag* is a deploy-time env var (`BLAXEL_SANDBOX_IMAGE`),
-so new sandboxes pick up a rebuilt image for free. It is only existing ones
+Note that the *image tag* lives on the environment row (`sourceRef`, seeded from
+the `SANDBOX_IMAGE_NAME` constant), so new sandboxes pick up a rebuilt image for free. It is only existing ones
 that strand — which is why this reads as fine right up until the first
 long-lived workspace.
 
@@ -242,3 +242,28 @@ enabled" even though routing works, so don't use those as a health check.
 Alpine) and only the pinned version ships prebuilds at all; better-sqlite3 must
 match what host-service was built against or it crashes on load. The image
 asserts the prebuild exists rather than letting something compile silently.
+
+**Local dev cannot exercise a sandbox, and the failure mode if you force it is
+silent.** `setup.local.sh` copies `.env.local.example` to `.env`, which sets
+`BLAXEL_API_KEY=fake-blaxel-api-key` — so provisioning fails at the provider and
+no sandbox is ever created. That part is loud and fine. The trap is what happens
+when someone supplies real Blaxel credentials to a local API to try a sandbox
+end-to-end: provisioning passes `SUPERSET_API_URL: env.NEXT_PUBLIC_API_URL`
+into the sandbox, and in local dev that value is `http://localhost:3001`. Inside
+the container `localhost` is the container, so the sandbox boots, serves, and
+looks healthy while every call it makes back to the API dials itself. Nothing
+reports an error at provision time. Treat sandboxes as a deployed-API-only
+surface, or tunnel a public URL and override `NEXT_PUBLIC_API_URL` for the
+provisioning process specifically.
+
+**Sandbox telemetry does not travel with the desktop build.** The host-service
+Sentry DSN is compiled into the desktop bundle at desktop build time
+(`apps/desktop/electron.vite.config.ts`) and handed to host-service when the
+desktop spawns it. A sandbox is started by the API and never sees a desktop
+bundle, so it can never receive that DSN — which is why sandbox startup crashes
+were invisible for as long as sandboxes have existed, rather than merely
+under-reported. Sandboxes now report to their own project via
+`SENTRY_DSN_SANDBOX` on the API, tagged with the cloud workspace id, image tag
+and provider. Keep the workspace id on both sides: a provisioning failure is
+recorded against the API and a runtime failure against the sandbox, and that id
+is the only thing that joins the two halves of one broken workspace.
