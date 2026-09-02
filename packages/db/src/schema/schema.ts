@@ -584,12 +584,6 @@ export const environmentSecrets = pgTable(
 			.references(() => environments.id, { onDelete: "cascade" }),
 		key: text().notNull(),
 		encryptedValue: text("encrypted_value").notNull(),
-		// No default on purpose. Whether a value is secret is not something to
-		// guess: the API decides it (defaulting to secret), and a column default
-		// would only ever apply to an insert that bypassed it — a seed or a
-		// backfill — which is exactly the case that should have to say what it
-		// means rather than inherit the permissive answer. `false` makes the
-		// value readable in the editor.
 		sensitive: boolean().notNull(),
 		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
 			onDelete: "set null",
@@ -603,10 +597,6 @@ export const environmentSecrets = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
-		// Scoped by organization as well as environment: a shared environment
-		// (one the platform ships, owned by no customer) carries each
-		// organization's own values, so two organizations must be able to hold
-		// the same key on it without overwriting one another.
 		unique("environment_secrets_environment_id_organization_id_key_unique").on(
 			table.environmentId,
 			table.organizationId,

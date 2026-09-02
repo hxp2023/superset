@@ -19,8 +19,6 @@ export function initSentry(options: { organizationId?: string }): void {
 			}),
 		],
 		initialScope: {
-			// Undefined tags are dropped when the event is serialised, so a
-			// desktop host carries none of the sandbox ones.
 			tags: {
 				service: "host-service",
 				organization_id: options.organizationId,
