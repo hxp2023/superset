@@ -51,22 +51,22 @@ if (PRODUCTION) {
 	if (!key || !project)
 		fail("--production needs NEON_API_KEY and NEON_PROJECT_ID");
 	const headers = { authorization: `Bearer ${key}` };
-	const branches = (await (
-		await fetch(
-			`https://console.neon.tech/api/v2/projects/${project}/branches`,
-			{ headers },
-		)
-	).json()) as {
+	const branchesResponse = await fetch(
+		`https://console.neon.tech/api/v2/projects/${project}/branches`,
+		{ headers },
+	);
+	if (!branchesResponse.ok) fail(`Neon branches: ${branchesResponse.status}`);
+	const branches = (await branchesResponse.json()) as {
 		branches: Array<{ id: string; name: string; default?: boolean }>;
 	};
 	const main = branches.branches.find((b) => b.default);
 	if (!main) fail("no default branch in the Neon project");
-	const uri = (await (
-		await fetch(
-			`https://console.neon.tech/api/v2/projects/${project}/connection_uri?branch_id=${main.id}&database_name=neondb&role_name=neondb_owner&pooled=false`,
-			{ headers },
-		)
-	).json()) as { uri?: string };
+	const uriResponse = await fetch(
+		`https://console.neon.tech/api/v2/projects/${project}/connection_uri?branch_id=${main.id}&database_name=neondb&role_name=neondb_owner&pooled=false`,
+		{ headers },
+	);
+	if (!uriResponse.ok) fail(`Neon connection_uri: ${uriResponse.status}`);
+	const uri = (await uriResponse.json()) as { uri?: string };
 	if (!uri.uri) fail("could not resolve the production connection string");
 	process.env.DATABASE_URL = uri.uri;
 	log(`database: Neon branch ${main.name} (${main.id})`);
@@ -120,7 +120,11 @@ const sandbox = await SandboxInstance.createIfNotExists({
 	memory: 32768,
 	region: REGION,
 } as never);
-await sandbox.wait?.({ maxWait: 300_000, interval: 2000 }).catch(() => {});
+await sandbox
+	.wait?.({ maxWait: 300_000, interval: 2000 })
+	.catch((error: unknown) =>
+		fail(`golden ${golden} never became ready: ${String(error).slice(0, 120)}`),
+	);
 
 // The golden never carries variables: in production they arrive as environment
 // secrets, injected into each workspace's env. SUPERSET_INTERNAL_ENV_FILE feeds
@@ -366,7 +370,7 @@ if (ENV_FILE) {
 		))
 	) {
 		probeFailed++;
-		const { logs } = await run(
+		const logs = await probeRun(
 			"desktop-log",
 			"tail -n 15 /tmp/superset-desktop.log 2>/dev/null | sed 's/\\x1b\\[[0-9;?]*[A-Za-z]//g' | cut -c1-200",
 		);
@@ -438,12 +442,14 @@ log(
 if (previous?.sourceKind === "fork" && previous.sourceRef !== golden) {
 	if (KEEP_OLD) log(`previous golden ${previous.sourceRef} kept (--keep-old)`);
 	else {
-		await SandboxInstance.delete(previous.sourceRef).catch((error: unknown) =>
+		try {
+			await SandboxInstance.delete(previous.sourceRef);
+			log(`previous golden ${previous.sourceRef} deleted`);
+		} catch (error) {
 			log(
 				`previous golden ${previous.sourceRef} not deleted: ${String(error).slice(0, 120)}`,
-			),
-		);
-		log(`previous golden ${previous.sourceRef} deleted`);
+			);
+		}
 	}
 }
 log(`done: ${golden}`);

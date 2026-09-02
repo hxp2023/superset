@@ -47,7 +47,12 @@ while IFS= read -r -d '' entry; do
   if [[ "$value" != *"'"* ]]; then
     printf "%s='%s'\n" "$key" "$value" >> "$tmp"
   else
-    printf '%s="%s"\n' "$key" "${value//\"/\\\"}" >> "$tmp"
+    # Double quotes are the fallback for values with a single quote in them;
+    # the file is both sourced by sh and read by dotenv, so backslash, quote,
+    # dollar and backtick all have to be escaped or they expand.
+    escaped="${value//\\/\\\\}"; escaped="${escaped//\"/\\\"}"
+    escaped="${escaped//\$/\\\$}"; escaped="${escaped//\`/\\\`}"
+    printf '%s="%s"\n' "$key" "$escaped" >> "$tmp"
   fi
 done < <(env -0)
 install -m 600 "$tmp" "$out"; rm -f "$tmp"
