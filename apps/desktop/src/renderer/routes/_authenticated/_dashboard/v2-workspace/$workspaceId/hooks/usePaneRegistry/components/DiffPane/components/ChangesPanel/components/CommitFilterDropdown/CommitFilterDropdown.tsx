@@ -30,7 +30,7 @@ function getFilterLabel(filter: ChangesFilter, commits: Commit[]): string {
 	if (filter.kind === "all")
 		return i18n._({
 			id: "workspace.commitFilter.allChanges",
-			message: "All changes",
+			message: "All commits",
 		});
 	if (filter.kind === "uncommitted")
 		return i18n._({
@@ -125,7 +125,7 @@ export function CommitFilterDropdown({
 							<div className="flex flex-1 items-center justify-between">
 								<span>
 									<Trans id="workspace.commitFilter.allChanges">
-										All changes
+										All commits
 									</Trans>
 								</span>
 								{filter.kind === "all" && <Check className="size-3.5" />}
