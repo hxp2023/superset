@@ -612,25 +612,43 @@ export const gitRouter = router({
 					message: "Cannot push with a detached HEAD",
 				});
 			}
-			const hasUpstream = await git
+			// Workspace branches fork from the base branch, so git's
+			// autoSetupMerge usually leaves them tracking e.g. origin/main — a
+			// plain `git push` refuses that name mismatch (and must never mean
+			// "push to main"). Unless the upstream already IS this branch's own
+			// remote ref, publish under the branch's own name and re-point the
+			// upstream there, same as the v1 push flow.
+			const upstream = await git
 				.raw(["rev-parse", "--abbrev-ref", "@{upstream}"])
 				.then(
-					() => true,
-					() => false,
+					(ref) => ref.trim(),
+					() => null,
 				);
-			if (hasUpstream) {
+			const upstreamMatchesBranch =
+				upstream != null && upstream.split("/").slice(1).join("/") === branch;
+			if (upstreamMatchesBranch) {
 				await git.raw(["push"]);
 			} else {
+				const upstreamRemote = upstream?.split("/")[0];
 				const remotes = await git.getRemotes(false).catch(() => []);
 				const remote =
-					remotes.find((r) => r.name === "origin")?.name ?? remotes[0]?.name;
+					upstreamRemote ??
+					remotes.find((r) => r.name === "origin")?.name ??
+					remotes[0]?.name;
 				if (!remote) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "No git remote to push to",
 					});
 				}
-				await git.raw(["push", "-u", remote, branch]);
+				// HEAD refspec avoids resolving the branch name as a local ref —
+				// more reliable in worktrees (mirrors v1's pushWithSetUpstream).
+				await git.raw([
+					"push",
+					"--set-upstream",
+					remote,
+					`HEAD:refs/heads/${branch}`,
+				]);
 			}
 			return { success: true };
 		}),

@@ -140,6 +140,31 @@ describe("gitRouter.push", () => {
 		expect(remoteSubject.trim()).toBe("more");
 	});
 
+	test("upstream on the base branch pushes under the branch's own name", async () => {
+		// Workspace branches fork from the base with autoSetupMerge, ending up
+		// tracking e.g. origin/main — plain `git push` refuses the name
+		// mismatch, and pushing to main would be wrong anyway.
+		await git.push(["-u", "origin", "main"]);
+		await git.checkoutBranch("feature", "main");
+		await git.raw(["branch", "--set-upstream-to=origin/main", "feature"]);
+		await writeFile(join(repo, "feat.txt"), "feat\n");
+		await git.add(["feat.txt"]);
+		await git.commit("feature work");
+
+		const caller = createCaller(repo);
+		await caller.push({ workspaceId: "ws" });
+
+		const remoteGit = simpleGit(remote);
+		const remoteBranches = await remoteGit.raw(["branch", "--list"]);
+		expect(remoteBranches).toContain("feature");
+		const mainSubject = await remoteGit.raw(["log", "-1", "--pretty=%s", "main"]);
+		expect(mainSubject.trim()).toBe("initial");
+		const upstream = (
+			await git.raw(["rev-parse", "--abbrev-ref", "@{upstream}"])
+		).trim();
+		expect(upstream).toBe("origin/feature");
+	});
+
 	test("throws BAD_REQUEST on a detached HEAD", async () => {
 		const head = (await git.revparse(["HEAD"])).trim();
 		await git.raw(["checkout", "--detach", head]);
