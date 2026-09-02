@@ -69,7 +69,7 @@ import { getCharacterOffsetAtClientX } from "./utils/getCharacterOffsetAtClientX
 const DEFAULT_TREE_WIDTH = 320;
 const MIN_TREE_WIDTH = 240;
 const MAX_TREE_WIDTH = 640;
-const HIDE_TREE_PANE_WIDTH_THRESHOLD = 700;
+const HIDE_TREE_PANE_WIDTH_THRESHOLD = 820;
 
 interface CreateNewAgentSessionInput {
 	configId: string;
