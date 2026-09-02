@@ -12,6 +12,7 @@ import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
 import { toast } from "@superset/ui/sonner";
 import { Textarea } from "@superset/ui/textarea";
 import { workspaceTrpc } from "@superset/workspace-client";
+import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
 	VscChevronDown,
@@ -20,6 +21,7 @@ import {
 	VscLoading,
 	VscRepoPush,
 } from "react-icons/vsc";
+import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { useWorkspaceGitStatus } from "../../../../providers/WorkspaceGitStatusProvider";
 import type { BranchSyncStatus } from "../../utils/getPRFlowState";
@@ -52,9 +54,11 @@ export function ShipControl({
 	compact = false,
 }: ShipControlProps) {
 	const { t } = useLingui();
+	const navigate = useNavigate();
 	const { workspace } = useWorkspace();
 	const status = useWorkspaceGitStatus();
-	const canCreatePr = workspace.projectId != null;
+	const projectId = workspace.projectId;
+	const canCreatePr = projectId != null;
 
 	const needsCommit = sync.hasUncommitted;
 	const needsPush = !sync.hasUpstream || sync.pushCount > 0;
@@ -196,7 +200,26 @@ export function ShipControl({
 					id: "workspace.shipControl.prCreated",
 					message: `PR #${created.number} created`,
 				}),
-				{ id: toastId },
+				{
+					id: toastId,
+					description: created.url,
+					action: {
+						label: t({
+							id: "workspace.shipControl.openPrToastAction",
+							message: "Open",
+						}),
+						onClick: () => {
+							if (projectId == null) return;
+							// Same pair the PR badge's own click performs.
+							usePullRequestsSplitViewStore.getState().expandDetail();
+							void navigate({
+								to: "/pull-requests/$prNumber",
+								params: { prNumber: String(created.number) },
+								search: { project: projectId },
+							});
+						},
+					},
+				},
 			);
 			setView(null);
 			setPrTitle("");
