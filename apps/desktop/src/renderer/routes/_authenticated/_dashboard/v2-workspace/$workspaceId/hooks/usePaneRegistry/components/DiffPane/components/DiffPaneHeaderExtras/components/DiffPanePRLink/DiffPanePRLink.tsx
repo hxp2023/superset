@@ -62,10 +62,12 @@ export function DiffPanePRLink({ workspaceId }: DiffPanePRLinkProps) {
 							id: "workspace.diffPane.openPullRequestAria",
 							message: `Open pull request #${pr.number}`,
 						})}
-						className="flex items-center gap-1 rounded p-1 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+						className="flex h-5 items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-1.5 transition-colors hover:bg-accent/60"
 					>
 						<PRIcon state={state} className="size-3.5" />
-						<span className="text-[11px] tabular-nums">#{pr.number}</span>
+						<span className="font-medium text-[11px] text-foreground tabular-nums">
+							#{pr.number}
+						</span>
 					</button>
 				</TooltipTrigger>
 				<TooltipContent side="bottom">

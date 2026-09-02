@@ -877,7 +877,7 @@ export function DiffPane({
 					maxWidth={MAX_TREE_WIDTH}
 					handleSide="right"
 					onDoubleClickHandle={() => setTreeWidth(DEFAULT_TREE_WIDTH)}
-					className="flex min-h-0 flex-col"
+					className="flex min-h-0 flex-col border-border/20 border-r"
 				>
 					<ChangesPanel
 						workspaceId={workspaceId}

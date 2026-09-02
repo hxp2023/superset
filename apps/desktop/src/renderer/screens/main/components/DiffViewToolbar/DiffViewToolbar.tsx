@@ -69,6 +69,7 @@ export function DiffViewToolbar({
 				<button
 					type="button"
 					onClick={onToggleTree}
+					aria-pressed={!isTreeCollapsed}
 					aria-label={
 						isTreeCollapsed
 							? t({
@@ -80,13 +81,25 @@ export function DiffViewToolbar({
 									message: "Hide file tree",
 								})
 					}
-					className="flex items-center gap-1.5 rounded-md bg-fill-hover px-1.5 py-1 text-muted-foreground transition-colors hover:bg-fill-selected hover:text-foreground"
+					className={cn(
+						"flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors",
+						isTreeCollapsed
+							? "text-muted-foreground hover:bg-fill-hover hover:text-foreground"
+							: "bg-secondary text-foreground",
+					)}
 				>
 					<LuFiles className="size-3.5 shrink-0" strokeWidth={1.5} />
 					<span className="text-[11px] font-medium">
 						<Trans id="dashboard.pullRequests.codeTab.files">Files</Trans>
 					</span>
-					<span className="text-[11px] tabular-nums text-muted-foreground/70">
+					<span
+						className={cn(
+							"text-[11px] tabular-nums",
+							isTreeCollapsed
+								? "text-muted-foreground/70"
+								: "text-muted-foreground",
+						)}
+					>
 						{fileCount}
 					</span>
 				</button>
