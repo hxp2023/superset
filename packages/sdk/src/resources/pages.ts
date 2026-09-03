@@ -30,7 +30,7 @@ export class PageComments extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<PageCommentListResponse> {
 		return this._client.query<PageCommentListResponse>(
-			"pageComment.list",
+			{ method: "pages.comments.list", procedure: "pageComment.list" },
 			{ pageId: params.pageId, activatedOnly: params.activatedOnly },
 			options,
 		);
@@ -46,7 +46,7 @@ export class PageComments extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<PageCommentReplyResult> {
 		return this._client.mutation<PageCommentReplyResult>(
-			"pageComment.reply",
+			{ method: "pages.comments.reply", procedure: "pageComment.reply" },
 			{
 				threadId: params.threadId,
 				body: params.body,
@@ -66,7 +66,7 @@ export class PageComments extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<PageCommentResolveResult> {
 		return this._client.mutation<PageCommentResolveResult>(
-			"pageComment.resolve",
+			{ method: "pages.comments.resolve", procedure: "pageComment.resolve" },
 			{ threadId: params.threadId, resolved: params.resolved ?? true },
 			options,
 		);
@@ -94,7 +94,7 @@ export class Pages extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<PageListResponse> {
 		return this._client.query<PageListResponse>(
-			"page.list",
+			{ method: "pages.list", procedure: "page.list" },
 			params?.workspaceId ? { workspaceId: params.workspaceId } : undefined,
 			options,
 		);
@@ -107,7 +107,11 @@ export class Pages extends APIResource {
 	 * Mirrors `superset pages get <idOrSlug>`.
 	 */
 	retrieve(idOrSlug: string, options?: RequestOptions): APIPromise<Page> {
-		return this._client.query<Page>("page.get", pageRef(idOrSlug), options);
+		return this._client.query<Page>(
+			{ method: "pages.retrieve", procedure: "page.get" },
+			pageRef(idOrSlug),
+			options,
+		);
 	}
 
 	/**
@@ -120,7 +124,7 @@ export class Pages extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<PageVersionListResponse> {
 		return this._client.query<PageVersionListResponse>(
-			"page.versions",
+			{ method: "pages.versions", procedure: "page.versions" },
 			pageRef(idOrSlug),
 			options,
 		);
@@ -139,7 +143,7 @@ export class Pages extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<PagePullResult> {
 		return this._client.query<PagePullResult>(
-			"page.pull",
+			{ method: "pages.pull", procedure: "page.pull" },
 			{
 				...pageRef(idOrSlug),
 				...(params?.version ? { version: params.version } : {}),
@@ -174,7 +178,7 @@ export class Pages extends APIResource {
 			);
 		}
 		return this._client.mutation<PagePublishResult>(
-			"page.publish",
+			{ method: "pages.publish", procedure: "page.publish" },
 			{
 				content: base64Utf8(params.html),
 				contentType: "text/html",

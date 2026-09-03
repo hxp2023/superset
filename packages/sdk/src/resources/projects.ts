@@ -58,7 +58,7 @@ export class Projects extends APIResource {
 			: { kind: "importLocal" as const, repoPath: params.import as string };
 		return this._client.hostMutation<ProjectCreateResult>(
 			params.hostId,
-			"project.create",
+			{ method: "projects.create", procedure: "project.create" },
 			{ name: params.name, mode },
 			options,
 		);
@@ -97,7 +97,7 @@ export class Projects extends APIResource {
 				: undefined;
 		return this._client.hostMutation<ProjectSetupResult>(
 			params.hostId,
-			"project.setup",
+			{ method: "projects.setup", procedure: "project.setup" },
 			{ projectId: params.projectId, origin, mode },
 			options,
 		);

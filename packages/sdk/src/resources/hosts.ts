@@ -29,7 +29,7 @@ export class Hosts extends APIResource {
 		options?: RequestOptions,
 	): APIPromise<HostSetWakeCommandResult> {
 		return this._client.mutation<HostSetWakeCommandResult>(
-			"host.setWakeCommand",
+			{ method: "hosts.setWakeCommand", procedure: "host.setWakeCommand" },
 			{
 				organizationId: this._requireOrgId(),
 				machineId: params.hostId,
