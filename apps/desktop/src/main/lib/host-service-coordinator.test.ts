@@ -571,13 +571,30 @@ describe("HostServiceCoordinator single-flight / adoption", () => {
 		expect(conn.port).toBe(60000);
 	});
 
+	/** A live process that looks like the host-service that wrote the manifest. */
+	function stubHolderIdentity(
+		identity: { elapsedMs: number; command: string } | null = {
+			elapsedMs: 30_000,
+			command:
+				"/Applications/Superset.app/Contents/MacOS/Superset /app/host-service.js",
+		},
+	): void {
+		(
+			coordinator as unknown as {
+				inspectProcess: (pid: number) => typeof identity;
+			}
+		).inspectProcess = () => identity;
+	}
+
 	test("reaps an alive-but-unhealthy manifest holder started this boot before spawning", async () => {
 		manifestStore.current = {
 			...baseManifest(4321, "http://127.0.0.1:55555"),
-			startedAt: Date.now(),
+			startedAt: Date.now() - 20_000,
 		};
 		pollHealthCheckMock.mockImplementation(() => Promise.resolve(false));
-		isProcessAliveMock.mockImplementation(() => true);
+		// Alive until SIGKILLed, so the post-kill wait returns promptly.
+		isProcessAliveMock.mockImplementation(() => killedPids.length === 0);
+		stubHolderIdentity();
 
 		const conn = await coordinator.start("org-1", spawnConfig);
 
@@ -586,6 +603,90 @@ describe("HostServiceCoordinator single-flight / adoption", () => {
 		expect(manifestStore.current).toBeNull();
 		expect(spawnMock).toHaveBeenCalledTimes(1);
 		expect(conn.port).toBe(60000);
+	});
+
+	test("reap leaves a manifest another instance claimed after the kill", async () => {
+		manifestStore.current = {
+			...baseManifest(4321, "http://127.0.0.1:55555"),
+			startedAt: Date.now() - 20_000,
+		};
+		pollHealthCheckMock.mockImplementation(() => Promise.resolve(false));
+		isProcessAliveMock.mockImplementation(() => killedPids.length === 0);
+		stubHolderIdentity();
+		killProcessMock.mockImplementationOnce((pid, signal) => {
+			killedPids.push({ pid, signal });
+			// A peer claims the manifest between our kill and our removal.
+			manifestStore.current = baseManifest(9999, "http://127.0.0.1:55556");
+		});
+
+		await coordinator.start("org-1", spawnConfig);
+
+		expect(removeManifestMock).not.toHaveBeenCalled();
+		expect(manifestStore.current?.pid).toBe(9999);
+	});
+
+	test("does not reap when the live pid is not a host-service (same-boot pid recycling)", async () => {
+		manifestStore.current = {
+			...baseManifest(4321, "http://127.0.0.1:55555"),
+			startedAt: Date.now() - 20_000,
+		};
+		pollHealthCheckMock.mockImplementation(() => Promise.resolve(false));
+		isProcessAliveMock.mockImplementation(() => true);
+		stubHolderIdentity({ elapsedMs: 5_000, command: "/usr/bin/vim notes.md" });
+
+		await coordinator.start("org-1", spawnConfig);
+
+		expect(killedPids).toHaveLength(0);
+		expect(removeManifestMock).not.toHaveBeenCalled();
+		expect(spawnMock).toHaveBeenCalledTimes(1);
+	});
+
+	test("does not reap a host-service that started after the manifest was written (recycled onto another host-service)", async () => {
+		manifestStore.current = {
+			...baseManifest(4321, "http://127.0.0.1:55555"),
+			startedAt: Date.now() - 30 * 60_000,
+		};
+		pollHealthCheckMock.mockImplementation(() => Promise.resolve(false));
+		isProcessAliveMock.mockImplementation(() => true);
+		// Started 10 s ago; the manifest is 30 min old.
+		stubHolderIdentity({
+			elapsedMs: 10_000,
+			command:
+				"/Applications/Superset.app/Contents/MacOS/Superset /app/host-service.js",
+		});
+
+		await coordinator.start("org-1", spawnConfig);
+
+		expect(killedPids).toHaveLength(0);
+	});
+
+	test("does not reap when the pid cannot be inspected", async () => {
+		manifestStore.current = {
+			...baseManifest(4321, "http://127.0.0.1:55555"),
+			startedAt: Date.now() - 20_000,
+		};
+		pollHealthCheckMock.mockImplementation(() => Promise.resolve(false));
+		isProcessAliveMock.mockImplementation(() => true);
+		stubHolderIdentity(null);
+
+		await coordinator.start("org-1", spawnConfig);
+
+		expect(killedPids).toHaveLength(0);
+	});
+
+	test("does not reap a manifest whose endpoint was never probed (unparsable)", async () => {
+		manifestStore.current = {
+			...baseManifest(4321, "not a url"),
+			startedAt: Date.now() - 20_000,
+		};
+		isProcessAliveMock.mockImplementation(() => true);
+		stubHolderIdentity();
+
+		await coordinator.start("org-1", spawnConfig);
+
+		expect(pollHealthCheckMock).not.toHaveBeenCalled();
+		expect(killedPids).toHaveLength(0);
+		expect(spawnMock).toHaveBeenCalledTimes(1);
 	});
 
 	test("does not reap a manifest holder whose pid is dead", async () => {
@@ -1199,6 +1300,17 @@ describe("HostServiceCoordinator.stop SIGKILL escalation", () => {
 
 		expect(killedPids).toHaveLength(0);
 		expect(pendingTimers).toHaveLength(0);
+	});
+});
+
+describe("parseEtime", () => {
+	test("parses ps's [[dd-]hh:]mm:ss elapsed column", async () => {
+		const { parseEtime } = await import("./host-service-coordinator");
+		expect(parseEtime("00:05")).toBe(5_000);
+		expect(parseEtime("01:02:03")).toBe((3600 + 120 + 3) * 1000);
+		expect(parseEtime("2-01:02:03")).toBe((2 * 86400 + 3600 + 120 + 3) * 1000);
+		expect(parseEtime("garbage")).toBeNull();
+		expect(parseEtime("")).toBeNull();
 	});
 });
 

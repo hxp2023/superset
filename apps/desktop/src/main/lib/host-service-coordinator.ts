@@ -125,6 +125,25 @@ const ADOPT_WAIT_INTERVAL_MS = 250;
 const STOP_KILL_ESCALATION_MS = 5_000;
 
 /**
+ * Startup reap identity window. `ps` reports process age at 1 s granularity
+ * and the manifest's `startedAt` is written after createApp() (migrations
+ * included), so the process is somewhat older than the manifest, never
+ * younger. A process that started after the manifest cannot have written it.
+ */
+const REAP_IDENTITY_MAX_OLDER_MS = 10 * 60_000;
+const REAP_IDENTITY_MAX_YOUNGER_MS = 60_000;
+
+/** After SIGKILLing a wedged holder, wait this long for its port to free. */
+const REAP_EXIT_WAIT_MS = 1_000;
+const REAP_EXIT_POLL_MS = 25;
+
+/** What `ps` reports for a live pid; null when the pid cannot be inspected. */
+interface ProcessIdentity {
+	elapsedMs: number;
+	command: string;
+}
+
+/**
  * A Node abort dumps ~5KB of native + JS backtrace on the way down, so a
  * smaller window would evict the assertion line and every app log before it.
  */
@@ -160,6 +179,39 @@ function getStablePortForOrganization(organizationId: string): number {
 		hash = Math.imul(hash, 16_777_619);
 	}
 	return STABLE_PORT_BASE + ((hash >>> 0) % STABLE_PORT_COUNT);
+}
+
+/**
+ * `ps -o etime=,command=` for one pid. Returns null on Windows (no `ps`),
+ * for a pid that is gone, or for output we cannot parse; callers treat null
+ * as "unknown", never as "safe to kill".
+ */
+function inspectProcessWithPs(pid: number): ProcessIdentity | null {
+	if (process.platform === "win32") return null;
+	const result = childProcess.spawnSync(
+		"ps",
+		["-o", "etime=,command=", "-p", String(pid)],
+		{ encoding: "utf8", timeout: 2_000 },
+	);
+	if (result.status !== 0) return null;
+	const line = result.stdout.trim().split("\n")[0]?.trim();
+	const match = line ? /^(\S+)\s+(.*)$/.exec(line) : null;
+	if (!match) return null;
+	const elapsedMs = parseEtime(match[1] ?? "");
+	if (elapsedMs == null) return null;
+	return { elapsedMs, command: match[2] ?? "" };
+}
+
+/** Parse ps's `[[dd-]hh:]mm:ss` elapsed-time column into milliseconds. */
+export function parseEtime(etime: string): number | null {
+	const match = /^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+)$/.exec(etime.trim());
+	if (!match) return null;
+	const [, days = "0", hours = "0", minutes, seconds] = match;
+	return (
+		(((Number(days) * 24 + Number(hours)) * 60 + Number(minutes)) * 60 +
+			Number(seconds)) *
+		1000
+	);
 }
 
 function isValidPort(port: number | null | undefined): port is number {
@@ -205,6 +257,12 @@ export class HostServiceCoordinator extends EventEmitter {
 		delayMs: number,
 	) => ReturnType<typeof setTimeout> = (run, delayMs) =>
 		setTimeout(run, delayMs);
+	/**
+	 * Seam for the startup reap's identity check. Production shells out to
+	 * `ps`; tests hand back a canned identity for their fake pids.
+	 */
+	private inspectProcess: (pid: number) => ProcessIdentity | null =
+		inspectProcessWithPs;
 
 	/**
 	 * Supplies fresh spawn config for automatic respawns. A respawn must not
@@ -646,7 +704,7 @@ export class HostServiceCoordinator extends EventEmitter {
 					// attempt and taking the lock — re-check before spawning.
 					const raced = await this.tryAdopt(organizationId, isStartAllowed);
 					if (raced) return raced;
-					this.reapWedgedManifestHolder(organizationId);
+					await this.reapWedgedManifestHolder(organizationId);
 					return await this.spawn(
 						organizationId,
 						config,
@@ -1234,12 +1292,44 @@ export class HostServiceCoordinator extends EventEmitter {
 	 * lock, right after the under-lock adopt miss, so the probe verdict is
 	 * fresh. A pid started before this boot is skipped: pids recycle across
 	 * reboots, and a pre-boot `startedAt` can name any process at all.
+	 *
+	 * Pids recycle within a boot too, and `kill(pid, 0)` only proves *a*
+	 * process exists. So before SIGKILL the live process must look like the
+	 * host-service that wrote the manifest: our script on its command line and
+	 * an age consistent with `startedAt`. Anything else, including a pid `ps`
+	 * cannot inspect, is left alone.
 	 */
-	private reapWedgedManifestHolder(organizationId: string): void {
+	private async reapWedgedManifestHolder(
+		organizationId: string,
+	): Promise<void> {
 		const manifest = readManifest(organizationId);
 		if (!manifest || !isProcessAlive(manifest.pid)) return;
+		// tryAdopt() returns null without probing when the endpoint is
+		// unparsable; only a probed miss is evidence of a wedge.
+		let port: number | null = null;
+		try {
+			port = Number(new URL(manifest.endpoint).port);
+		} catch {}
+		if (!isValidPort(port)) return;
 		const bootedAt = Date.now() - os.uptime() * 1000;
 		if (manifest.startedAt < bootedAt) return;
+
+		const identity = this.inspectProcess(manifest.pid);
+		const processStartedAt =
+			identity == null ? null : Date.now() - identity.elapsedMs;
+		const looksLikeHolder =
+			identity != null &&
+			processStartedAt != null &&
+			identity.command.includes(path.basename(this.scriptPath)) &&
+			processStartedAt >= manifest.startedAt - REAP_IDENTITY_MAX_OLDER_MS &&
+			processStartedAt <= manifest.startedAt + REAP_IDENTITY_MAX_YOUNGER_MS;
+		if (!looksLikeHolder) {
+			log.warn(
+				`[host-service:${organizationId}] manifest pid=${manifest.pid} is alive but unhealthy and does not look like the host-service that wrote the manifest (${identity ? `"${identity.command}", age ${Math.round(identity.elapsedMs / 1000)}s` : "not inspectable"}); leaving it alone`,
+			);
+			return;
+		}
+
 		log.warn(
 			`[host-service:${organizationId}] manifest pid=${manifest.pid} at ${manifest.endpoint} is alive but unhealthy; SIGKILLing it before spawning`,
 		);
@@ -1251,7 +1341,25 @@ export class HostServiceCoordinator extends EventEmitter {
 				error,
 			);
 		}
-		removeManifest(organizationId);
+		// SIGKILL is asynchronous: give the kernel a moment to tear the process
+		// down so spawn()'s findFreePort sees its preferred port free instead
+		// of falling back to a random one.
+		const exited = await this.waitForExit(manifest.pid, REAP_EXIT_WAIT_MS);
+		if (!exited) {
+			log.warn(
+				`[host-service:${organizationId}] reap: pid=${manifest.pid} still alive ${REAP_EXIT_WAIT_MS}ms after SIGKILL`,
+			);
+		}
+		this.removeManifestIfHeldBy(organizationId, manifest.pid);
+	}
+
+	private async waitForExit(pid: number, timeoutMs: number): Promise<boolean> {
+		const deadline = Date.now() + timeoutMs;
+		while (isProcessAlive(pid)) {
+			if (Date.now() >= deadline) return false;
+			await new Promise((r) => setTimeout(r, REAP_EXIT_POLL_MS));
+		}
+		return true;
 	}
 
 	/**

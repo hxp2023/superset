@@ -594,6 +594,9 @@ export class Server {
 					c.subscriptions.delete(session.id);
 				}
 				c.pausedSessions.delete(session.id);
+				// This conn holds nothing paused now; a later congestion episode
+				// must get a fresh deadline, not the remainder of this one.
+				if (c.pausedSessions.size === 0) this.clearPauseTimer(c);
 			}
 			// Delete the session immediately. Without this, every closed
 			// terminal pane left a row in the store forever — list-reply
