@@ -8554,7 +8554,7 @@ msgstr "Proje ekle"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.clearFilter"
-msgstr ""
+msgstr "Filtreyi temizle"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8569,12 +8569,12 @@ msgstr "Yeni proje oluştur"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterPlaceholder"
-msgstr ""
+msgstr "Projeleri filtrele…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterProjects"
-msgstr ""
+msgstr "Projeleri filtrele"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8595,7 +8595,7 @@ msgstr "Bu depoyu birden fazla proje kullanıyor ({0}). Bu cihazda kurmak için 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/DashboardSidebar.tsx
 msgid "dashboard.sidebar.workspacesHeader.noProjectsMatch"
-msgstr ""
+msgstr "\"{trimmedFilterQuery}\" ile eşleşen proje yok"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8615,37 +8615,37 @@ msgstr "Proje hazır — kenar çubuğundan açın."
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortBy"
-msgstr ""
+msgstr "Sıralama ölçütü"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDateCreated"
-msgstr ""
+msgstr "Oluşturulma tarihi"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDragHint"
-msgstr ""
+msgstr "Manuel sıralamada yeniden düzenlemek için sürükleyin"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortLastActive"
-msgstr ""
+msgstr "Son etkinlik"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortManual"
-msgstr ""
+msgstr "Manuel sıralama"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjects"
-msgstr ""
+msgstr "Projeleri sırala ({currentLabel})"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjectsAriaLabel"
-msgstr ""
+msgstr "Projeleri sırala"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx

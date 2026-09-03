@@ -8554,7 +8554,7 @@ msgstr "Přidat projekt"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.clearFilter"
-msgstr ""
+msgstr "Zrušit filtr"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8569,12 +8569,12 @@ msgstr "Vytvořit nový projekt"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterPlaceholder"
-msgstr ""
+msgstr "Filtrovat projekty…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterProjects"
-msgstr ""
+msgstr "Filtrovat projekty"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8595,7 +8595,7 @@ msgstr "Tento repozitář používá více projektů ({0}). Vyberte v nastavení
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/DashboardSidebar.tsx
 msgid "dashboard.sidebar.workspacesHeader.noProjectsMatch"
-msgstr ""
+msgstr "Dotazu „{trimmedFilterQuery}“ neodpovídají žádné projekty"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8615,37 +8615,37 @@ msgstr "Projekt je připravený — otevřete ho v postranním panelu."
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortBy"
-msgstr ""
+msgstr "Řadit podle"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDateCreated"
-msgstr ""
+msgstr "Datum vytvoření"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDragHint"
-msgstr ""
+msgstr "Přetažením změníte pořadí v ručním řazení"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortLastActive"
-msgstr ""
+msgstr "Poslední aktivita"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortManual"
-msgstr ""
+msgstr "Ruční řazení"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjects"
-msgstr ""
+msgstr "Seřadit projekty ({currentLabel})"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjectsAriaLabel"
-msgstr ""
+msgstr "Seřadit projekty"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx

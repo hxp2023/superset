@@ -8554,7 +8554,7 @@ msgstr "Añadir proyecto"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.clearFilter"
-msgstr ""
+msgstr "Borrar filtro"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8569,12 +8569,12 @@ msgstr "Crear un proyecto nuevo"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterPlaceholder"
-msgstr ""
+msgstr "Filtrar proyectos…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterProjects"
-msgstr ""
+msgstr "Filtrar proyectos"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8595,7 +8595,7 @@ msgstr "Varios proyectos usan este repositorio ({0}). Elige el proyecto en la co
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/DashboardSidebar.tsx
 msgid "dashboard.sidebar.workspacesHeader.noProjectsMatch"
-msgstr ""
+msgstr "Ningún proyecto coincide con «{trimmedFilterQuery}»"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8615,37 +8615,37 @@ msgstr "Proyecto listo: ábrelo desde la barra lateral."
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortBy"
-msgstr ""
+msgstr "Ordenar por"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDateCreated"
-msgstr ""
+msgstr "Fecha de creación"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDragHint"
-msgstr ""
+msgstr "Arrastra para reordenar en Orden manual"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortLastActive"
-msgstr ""
+msgstr "Última actividad"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortManual"
-msgstr ""
+msgstr "Orden manual"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjects"
-msgstr ""
+msgstr "Ordenar proyectos ({currentLabel})"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjectsAriaLabel"
-msgstr ""
+msgstr "Ordenar proyectos"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx

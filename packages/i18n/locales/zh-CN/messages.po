@@ -8554,7 +8554,7 @@ msgstr "添加项目"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.clearFilter"
-msgstr ""
+msgstr "清除筛选"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8569,12 +8569,12 @@ msgstr "新建项目"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterPlaceholder"
-msgstr ""
+msgstr "筛选项目…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsFilterInput/DashboardSidebarProjectsFilterInput.tsx
 msgid "dashboard.sidebar.workspacesHeader.filterProjects"
-msgstr ""
+msgstr "筛选项目"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8595,7 +8595,7 @@ msgstr "有多个项目使用此仓库（{0}）。请在设置中选择项目，
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/DashboardSidebar.tsx
 msgid "dashboard.sidebar.workspacesHeader.noProjectsMatch"
-msgstr ""
+msgstr "没有与 \"{trimmedFilterQuery}\" 匹配的项目"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
@@ -8615,37 +8615,37 @@ msgstr "项目已就绪，可从侧边栏打开。"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortBy"
-msgstr ""
+msgstr "排序方式"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDateCreated"
-msgstr ""
+msgstr "创建日期"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortDragHint"
-msgstr ""
+msgstr "在手动排序下可拖拽重新排列"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortLastActive"
-msgstr ""
+msgstr "最近活跃"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortManual"
-msgstr ""
+msgstr "手动排序"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjects"
-msgstr ""
+msgstr "项目排序（{currentLabel}）"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/components/DashboardSidebarProjectsSortMenu/DashboardSidebarProjectsSortMenu.tsx
 msgid "dashboard.sidebar.workspacesHeader.sortProjectsAriaLabel"
-msgstr ""
+msgstr "项目排序"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspacesHeader/DashboardSidebarWorkspacesHeader.tsx
