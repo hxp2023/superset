@@ -41,7 +41,7 @@ interface ChangesTabContentProps {
 	onOpenInEditor?: (path: string) => void;
 	onFilterChange: (filter: ChangesFilter) => void;
 	onViewModeChange: (viewMode: ChangesViewMode) => void;
-	onBaseBranchChange: (branchName: string) => void;
+	onBaseBranchChange: (branchName: string | null) => void;
 	onRenameBranch: (newName: string) => void;
 	canRenameBranch: boolean;
 }
@@ -123,7 +123,15 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 					onToggleFold={toggleFold}
 					baseBranch={baseBranch ?? status.data.defaultBranch.name}
 					branches={branches.data?.branches ?? []}
-					onBaseBranchChange={onBaseBranchChange}
+					// Picking the repo default clears the override (null) instead of
+					// pinning it, so the workspace follows a later default change.
+					onBaseBranchChange={(branchName) =>
+						onBaseBranchChange(
+							branchName === status.data?.defaultBranch.name
+								? null
+								: branchName,
+						)
+					}
 					currentBranchName={status.data.currentBranch.name}
 					canRenameBranch={canRenameBranch}
 					onRenameBranch={onRenameBranch}

@@ -225,7 +225,10 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 		if (!file) return;
 		// The same path can sit in several sections (staged + unstaged); only
 		// the section holding the selected change echoes the focus, or every
-		// section's copy would light up.
+		// section's copy would light up. A section that previously held the
+		// focus keeps Pierre's row highlight until something else in it is
+		// focused — the FileTree model exposes focusPath but no deselect, so
+		// the stale highlight can't be cleared without remounting the tree.
 		if (
 			selectedChangeKey != null &&
 			getChangesetFileKey(file) !== selectedChangeKey

@@ -20944,12 +20944,12 @@ msgstr "Tipografi"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx
 msgid "settings.behavior.changesOpenTarget.hint"
-msgstr "Pilih cara tampilan perubahan terbuka dari bilah atas"
+msgstr "Pilih cara membuka tampilan perubahan dari bilah atas"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx
 msgid "settings.behavior.changesOpenTarget.label"
-msgstr "Target buka perubahan"
+msgstr "Tempat membuka perubahan"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx

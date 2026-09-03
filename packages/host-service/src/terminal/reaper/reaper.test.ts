@@ -165,6 +165,7 @@ describe("planStaleActiveRows", () => {
 		status: string;
 		originWorkspaceId: string | null;
 		createdAt?: number;
+		disposeRequestedAt?: number | null;
 	}
 
 	it("marks active rows the daemon no longer owns", () => {
@@ -183,7 +184,7 @@ describe("planStaleActiveRows", () => {
 			isLive: () => false,
 			now: NOW,
 		});
-		expect(stale).toEqual(["t-dead"]);
+		expect(stale).toEqual({ exited: ["t-dead"], disposed: [] });
 	});
 
 	it("skips rows that are not active", () => {
@@ -199,7 +200,7 @@ describe("planStaleActiveRows", () => {
 			isLive: () => false,
 			now: NOW,
 		});
-		expect(stale).toEqual([]);
+		expect(stale).toEqual({ exited: [], disposed: [] });
 	});
 
 	it("respects the in-memory live guard against a racy daemon list", () => {
@@ -214,7 +215,7 @@ describe("planStaleActiveRows", () => {
 			isLive: (id) => id === "t-attached",
 			now: NOW,
 		});
-		expect(stale).toEqual([]);
+		expect(stale).toEqual({ exited: [], disposed: [] });
 	});
 
 	it("leaves freshly created rows alone during the spawn grace window", () => {
@@ -233,7 +234,7 @@ describe("planStaleActiveRows", () => {
 			isLive: () => false,
 			now: NOW,
 		});
-		expect(stale).toEqual(["t-old"]);
+		expect(stale).toEqual({ exited: ["t-old"], disposed: [] });
 	});
 
 	it("marks everything stale when the daemon answers with zero sessions", () => {
@@ -245,6 +246,30 @@ describe("planStaleActiveRows", () => {
 			isLive: () => false,
 			now: NOW,
 		});
-		expect(stale).toEqual(["t-1"]);
+		expect(stale).toEqual({ exited: ["t-1"], disposed: [] });
+	});
+
+	it("preserves dispose intent: daemon-lost rows with a pending dispose become disposed", () => {
+		const stale = planStaleActiveRows({
+			aliveIds: new Set(),
+			rowsById: rows([
+				[
+					"t-disposing",
+					{
+						status: "active",
+						originWorkspaceId: "ws",
+						createdAt: OLD,
+						disposeRequestedAt: NOW - 30_000,
+					},
+				],
+				[
+					"t-crashed",
+					{ status: "active", originWorkspaceId: "ws", createdAt: OLD },
+				],
+			]),
+			isLive: () => false,
+			now: NOW,
+		});
+		expect(stale).toEqual({ exited: ["t-crashed"], disposed: ["t-disposing"] });
 	});
 });

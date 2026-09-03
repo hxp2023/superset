@@ -20944,7 +20944,7 @@ msgstr "Typografie"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx
 msgid "settings.behavior.changesOpenTarget.hint"
-msgstr "Kies hoe de wijzigingenweergave opent vanaf de bovenbalk"
+msgstr "Kies hoe de weergave Wijzigingen vanuit de bovenbalk wordt geopend"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx

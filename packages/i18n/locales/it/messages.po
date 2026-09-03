@@ -20949,7 +20949,7 @@ msgstr "Scegli come si apre la vista delle modifiche dalla barra superiore"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx
 msgid "settings.behavior.changesOpenTarget.label"
-msgstr "Destinazione apertura modifiche"
+msgstr "Destinazione di apertura delle modifiche"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx

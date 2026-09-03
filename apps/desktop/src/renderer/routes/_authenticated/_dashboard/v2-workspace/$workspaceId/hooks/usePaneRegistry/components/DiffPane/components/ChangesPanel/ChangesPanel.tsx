@@ -120,7 +120,7 @@ export function ChangesPanel({
 	});
 
 	const setBaseBranch = useCallback(
-		(branchName: string) => {
+		(branchName: string | null) => {
 			setBaseBranchMutation.mutate({ workspaceId, baseBranch: branchName });
 		},
 		[setBaseBranchMutation, workspaceId],

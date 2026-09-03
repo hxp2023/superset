@@ -186,7 +186,7 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 				{showFileOpenMode && (
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
-							<Label className="text-sm font-medium">
+							<Label htmlFor="file-open-mode" className="text-sm font-medium">
 								<HighlightText
 									text={t({
 										id: "settings.behavior.fileOpenMode.label",
@@ -208,7 +208,7 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 							}
 							disabled={isFileOpenModeLoading || setFileOpenMode.isPending}
 						>
-							<SelectTrigger className="w-[180px]">
+							<SelectTrigger id="file-open-mode" className="w-[180px]">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -230,7 +230,10 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 				{showChangesOpenTarget && (
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
-							<Label className="text-sm font-medium">
+							<Label
+								htmlFor="changes-open-target"
+								className="text-sm font-medium"
+							>
 								<HighlightText
 									text={t({
 										id: "settings.behavior.changesOpenTarget.label",
@@ -251,7 +254,7 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 								updateSetting("changesOpenTarget", value as ChangesOpenTarget)
 							}
 						>
-							<SelectTrigger className="w-[180px]">
+							<SelectTrigger id="changes-open-target" className="w-[180px]">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>

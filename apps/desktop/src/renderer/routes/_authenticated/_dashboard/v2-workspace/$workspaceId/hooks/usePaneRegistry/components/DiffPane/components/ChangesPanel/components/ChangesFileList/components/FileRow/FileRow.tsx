@@ -42,6 +42,7 @@ import {
 } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
 import { useFileDrag } from "../../hooks/useFileDrag";
+import { DiffStatText } from "../DiffStatText";
 import { PathActionsMenuItems } from "../PathActionsMenuItems";
 
 function splitPath(path: string): { dir: string; basename: string } {
@@ -154,13 +155,10 @@ export const FileRow = memo(function FileRow({
 				<span className="ml-auto flex shrink-0 items-center gap-1.5 group-hover:invisible">
 					{(file.additions > 0 || file.deletions > 0) && (
 						<span className="text-[10px] text-muted-foreground">
-							{file.additions > 0 && (
-								<span className="text-green-400">+{file.additions}</span>
-							)}
-							{file.additions > 0 && file.deletions > 0 && " "}
-							{file.deletions > 0 && (
-								<span className="text-red-400">-{file.deletions}</span>
-							)}
+							<DiffStatText
+								additions={file.additions}
+								deletions={file.deletions}
+							/>
 						</span>
 					)}
 					<StatusIndicator status={file.status} />

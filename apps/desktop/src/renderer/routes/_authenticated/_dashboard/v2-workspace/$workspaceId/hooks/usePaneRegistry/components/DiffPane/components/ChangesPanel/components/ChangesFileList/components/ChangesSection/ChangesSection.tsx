@@ -17,6 +17,7 @@ import {
 	useV2ChangesSectionsStore,
 	type V2ChangesSectionKey,
 } from "renderer/stores/v2-changes-sections";
+import { DiffStatText } from "../DiffStatText";
 
 type SectionKind = "unstaged" | "staged";
 
@@ -186,13 +187,7 @@ export function ChangesSection({
 					</span>
 					{(additions > 0 || deletions > 0) && (
 						<span className="ml-auto shrink-0 pl-2 text-[10px] tabular-nums">
-							{additions > 0 && (
-								<span className="text-green-400/90">+{additions}</span>
-							)}
-							{additions > 0 && deletions > 0 && " "}
-							{deletions > 0 && (
-								<span className="text-red-400/90">−{deletions}</span>
-							)}
+							<DiffStatText additions={additions} deletions={deletions} />
 						</span>
 					)}
 				</CollapsibleTrigger>

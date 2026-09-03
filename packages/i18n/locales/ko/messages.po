@@ -20954,7 +20954,7 @@ msgstr "변경 사항 열기 대상"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx
 msgid "settings.behavior.changesOpenTarget.pane"
-msgstr "현재 탭의 창"
+msgstr "현재 탭의 패널"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/behavior/components/BehaviorSettings/BehaviorSettings.tsx

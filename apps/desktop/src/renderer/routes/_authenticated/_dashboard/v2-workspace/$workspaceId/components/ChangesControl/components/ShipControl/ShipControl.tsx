@@ -140,7 +140,11 @@ export function ShipControl({
 	// A second push mutation with no global toasts: the create-PR flow runs
 	// its own labeled toast sequence, and reusing `pushMutation` there popped
 	// a stray "Pushed" toast mid-flow (and a duplicate, mislabeled error).
-	const flowPushMutation = workspaceTrpc.git.push.useMutation();
+	// It still refreshes on success so a push that lands right before a
+	// failed PR create is reflected without waiting out the 10s poll.
+	const flowPushMutation = workspaceTrpc.git.push.useMutation({
+		onSuccess: () => onRefresh(),
+	});
 	const createPrMutation =
 		workspaceTrpc.pullRequests.createForWorkspace.useMutation();
 

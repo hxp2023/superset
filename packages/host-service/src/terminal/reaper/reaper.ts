@@ -61,16 +61,22 @@ export function planStaleActiveRows({
 	isLive: (terminalId: string) => boolean;
 	now: number;
 	graceMs?: number;
-}): string[] {
-	const stale: string[] = [];
+}): { exited: string[]; disposed: string[] } {
+	const exited: string[] = [];
+	const disposed: string[] = [];
 	for (const [id, row] of rowsById) {
 		if (row.status !== "active") continue;
 		if (aliveIds.has(id)) continue;
 		if (isLive(id)) continue;
 		if (row.createdAt != null && now - row.createdAt < graceMs) continue;
-		stale.push(id);
+		// A pending dispose intent must survive daemon loss as "disposed", not
+		// "exited": exited-under-an-agent is what makes a session resumable,
+		// and one the user explicitly killed must not come back as a resume
+		// candidate.
+		if (row.disposeRequestedAt != null) disposed.push(id);
+		else exited.push(id);
 	}
-	return stale;
+	return { exited, disposed };
 }
 
 /**
@@ -180,20 +186,27 @@ function markStaleActiveRows(
 		isLive: isLiveTerminalSession,
 		now: Date.now(),
 	});
-	if (stale.length === 0) return 0;
-	db.update(terminalSessions)
-		.set({ status: "exited", endedAt: Date.now() })
-		.where(
-			and(
-				inArray(terminalSessions.id, stale),
-				eq(terminalSessions.status, "active"),
-			),
-		)
-		.run();
+	const total = stale.exited.length + stale.disposed.length;
+	if (total === 0) return 0;
+	for (const [ids, status] of [
+		[stale.exited, "exited"],
+		[stale.disposed, "disposed"],
+	] as const) {
+		if (ids.length === 0) continue;
+		db.update(terminalSessions)
+			.set({ status, endedAt: Date.now() })
+			.where(
+				and(
+					inArray(terminalSessions.id, ids),
+					eq(terminalSessions.status, "active"),
+				),
+			)
+			.run();
+	}
 	console.log(
-		`[host-service] terminal reaper: marked ${stale.length} daemon-lost session(s) exited`,
+		`[host-service] terminal reaper: marked ${total} daemon-lost session(s) ended (${stale.exited.length} exited, ${stale.disposed.length} disposed)`,
 	);
-	return stale.length;
+	return total;
 }
 
 // Port scanning is best-effort: a port-manager error must not propagate to the
