@@ -38,7 +38,19 @@ export function diffCardUnsafeCss(
 		border-bottom: none;
 		border-top-left-radius: 0.75rem;
 		border-top-right-radius: 0.75rem;
-		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+		/* Two shadows: the card's drop shadow, then — listed last, so it
+		 * paints beneath — a hard copy of the header's shape shifted up by
+		 * the corner radius in the pane background. Every header carries
+		 * data-sticky from first render (confirmed live) and pins while the
+		 * code column scrolls behind it; the rounded top corners cut a notch
+		 * out of its own background, and whatever's scrolled behind shows
+		 * through that notch as a stray border/text sliver. The shifted copy
+		 * covers exactly the notches — its straight edges run under the whole
+		 * box from the top edge down — without reaching below the header,
+		 * so the corners can stay rounded like the card's bottom ones. */
+		box-shadow:
+			0 1px 2px 0 rgb(0 0 0 / 0.05),
+			0 -0.75rem 0 0 var(--background);
 		/* Pushes [data-metadata] (the +/- count) to the card's right edge
 		 * instead of leaving it flush against the filename — matches the
 		 * PR list row's own diff-stat placement. Overrides the shared
@@ -48,18 +60,6 @@ export function diffCardUnsafeCss(
 		 * of the Files pill above it (px-2 on the toolbar row, 8px) — cut to
 		 * match so the two rows read as left-aligned. */
 		padding-left: 8px;
-	}
-	/* Every header carries data-sticky from first render (confirmed live —
-	 * it's there even scrolled to the very top), since position: sticky
-	 * pins it while the code column scrolls behind it, not clipped away.
-	 * Rounded top corners cut a notch out of the header's own background,
-	 * and whatever's scrolled behind shows through that notch as a stray
-	 * border/text sliver. Squaring the top only (the diff body below,
-	 * [data-diff], keeps its rounded bottom) removes the notch entirely —
-	 * reads as a flat toolbar cap on a rounded card, not a broken corner. */
-	[data-diffs-header='default'][data-sticky] {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
 	}
 	/* Pierre renders the full relative path as one plain-text node here;
 	 * replaced by our own filename/directory split rendered through
