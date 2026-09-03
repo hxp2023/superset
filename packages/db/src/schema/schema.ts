@@ -607,6 +607,58 @@ export const environmentSecrets = pgTable(
 	],
 );
 
+export const proxyCredentialProvider = pgEnum("proxy_credential_provider", [
+	"anthropic",
+	"openai",
+	"custom",
+]);
+
+/**
+ * A secret the sandbox uses but never reads: the egress proxy injects it into
+ * requests to `destinations`, and the sandbox holds only a placeholder in
+ * `placeholder_env`. The value is encrypted with the row id as its key.
+ */
+export const environmentProxyCredentials = pgTable(
+	"environment_proxy_credentials",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		environmentId: uuid("environment_id")
+			.notNull()
+			.references(() => environments.id, { onDelete: "cascade" }),
+		provider: proxyCredentialProvider().notNull(),
+		name: text().notNull(),
+		placeholderEnv: text("placeholder_env").notNull(),
+		destinations: text().array().notNull(),
+		header: text().notNull(),
+		valueTemplate: text("value_template").notNull(),
+		encryptedValue: text("encrypted_value").notNull(),
+		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		unique(
+			"environment_proxy_credentials_environment_id_organization_id_name_unique",
+		).on(table.environmentId, table.organizationId, table.name),
+		index("environment_proxy_credentials_environment_id_idx").on(
+			table.environmentId,
+		),
+		index("environment_proxy_credentials_organization_id_idx").on(
+			table.organizationId,
+		),
+	],
+);
+
 export const cloudWorkspaces = pgTable(
 	"cloud_workspaces",
 	{

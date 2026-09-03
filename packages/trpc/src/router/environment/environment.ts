@@ -10,6 +10,7 @@ import { z } from "zod";
 import { promoteSandboxToEnvironment } from "../../lib/blaxel";
 import { assertInternal, assertMember } from "../../lib/cloud-guards";
 import { jwtProcedure, userError } from "../../trpc";
+import { proxyCredentialsRouter } from "./proxy-credentials";
 import { secretsRouter } from "./secrets";
 
 export async function loadEnvironment(id: string, organizationIds: string[]) {
@@ -60,6 +61,7 @@ function assertOwned(row: { organizationId: string }): void {
 
 export const environmentRouter = {
 	secrets: secretsRouter,
+	proxyCredentials: proxyCredentialsRouter,
 
 	list: jwtProcedure
 		.input(z.object({ organizationId: z.string().uuid() }))

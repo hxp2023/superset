@@ -22034,9 +22034,181 @@ msgid "settings.environments.new"
 msgstr "Neue Umgebung"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.add"
+msgstr "Proxy-Credential hinzufügen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.added"
+msgstr "Hinzugefügt"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.cancel"
+msgstr "Abbrechen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.delete"
+msgstr "Löschen"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: credential.name
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.deleteConfirm"
+msgstr "Proxy-Credential \"{0}\" löschen?"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.deleteFailed"
+msgstr "Löschen des Proxy-Credentials fehlgeschlagen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.proxy.description"
+msgstr "Schlüssel, die die Sandbox nutzen, aber nie lesen kann. Der Edge injiziert jeden davon in Anfragen an die von dir angegebenen Hosts; in der Sandbox sieht das Tool nur einen Platzhalter."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.destinations"
+msgstr "Hosts"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.discard"
+msgstr "Verwerfen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.discardDescription"
+msgstr "Dieses Proxy-Credential wurde nicht gespeichert. Möchtest du wirklich schließen?"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.discardTitle"
+msgstr "Nicht gespeicherte Änderungen verwerfen?"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.empty"
+msgstr "Noch keine Proxy-Credentials"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.proxy.forkNote"
+msgstr "Diese Umgebung startet aus einem Fork, der den Proxy noch nicht unterstützen kann. Diese gelten, sobald sie aus einem Image startet."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.header"
+msgstr "Header"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep1"
+msgstr "In der Sandbox liest das Tool"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep2"
+msgstr "Eine Anfrage an"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep2b"
+msgstr "verlässt die Sandbox mit diesem Platzhalter in"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep3"
+msgstr "Am Edge wird der Header zu"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep3b"
+msgstr "und der echte Wert gelangt nie in die Sandbox."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howTitle"
+msgstr "So funktioniert es"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.name"
+msgstr "Name"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.namePlaceholder"
+msgstr "Stripe Secret Key"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.placeholderEnv"
+msgstr "Variable, die das Tool liest"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.provider"
+msgstr "Anbieter"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.save"
+msgstr "Speichern"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: rule.name
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.saved"
+msgstr "{0} hinzugefügt"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.saveFailed"
+msgstr "Speichern des Proxy-Credentials fehlgeschlagen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.saving"
+msgstr "Wird gespeichert..."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.secret"
+msgstr "Secret"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.sheetDescription"
+msgstr "Wird am Edge in Anfragen an die unten genannten Hosts injiziert. Die Sandbox sieht nur einen Platzhalter, sodass ein Agent den Schlüssel nutzen, aber nie lesen kann."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.sheetTitle"
+msgstr "Proxy-Credential hinzufügen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.template"
+msgstr "Header-Wert"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.proxy.title"
+msgstr "Proxy-Credentials"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.title"
 msgstr "Umgebungen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.variables.title"
+msgstr "Variablen"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/experimental/components/ExperimentalSettings/ExperimentalSettings.tsx

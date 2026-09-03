@@ -1,7 +1,13 @@
 import { db } from "@superset/db/client";
-import { environmentSecrets, environments } from "@superset/db/schema";
+import {
+	environmentProxyCredentials,
+	environmentSecrets,
+	environments,
+} from "@superset/db/schema";
+import type { ProxyCredentialRule } from "@superset/shared/environment-proxy-credentials";
 import { isReservedKey } from "@superset/shared/environment-secrets";
 import { and, eq } from "drizzle-orm";
+import { proxyCredentialSecretKey } from "./proxy-credentials/secret-key";
 import { decryptSecret } from "./secrets/utils/crypto";
 
 export interface ResolvedEnvironment {
@@ -10,6 +16,12 @@ export interface ResolvedEnvironment {
 	sourceKind: "image" | "fork";
 	sourceRef: string;
 	envs: Record<string, string>;
+	/** Injected at the edge; the sandbox only holds each rule's placeholder. */
+	proxyCredentials: ResolvedProxyCredential[];
+}
+
+export interface ResolvedProxyCredential extends ProxyCredentialRule {
+	value: string;
 }
 
 export async function resolveEnvironment(
@@ -44,11 +56,40 @@ export async function resolveEnvironment(
 		});
 	}
 
+	const credentialRows = await db
+		.select({
+			id: environmentProxyCredentials.id,
+			placeholderEnv: environmentProxyCredentials.placeholderEnv,
+			destinations: environmentProxyCredentials.destinations,
+			header: environmentProxyCredentials.header,
+			valueTemplate: environmentProxyCredentials.valueTemplate,
+			encryptedValue: environmentProxyCredentials.encryptedValue,
+		})
+		.from(environmentProxyCredentials)
+		.where(
+			and(
+				eq(environmentProxyCredentials.environmentId, environmentId),
+				eq(environmentProxyCredentials.organizationId, organizationId),
+			),
+		);
+	const proxyCredentials = credentialRows.map((credential) => ({
+		placeholderEnv: credential.placeholderEnv,
+		destinations: credential.destinations,
+		header: credential.header,
+		valueTemplate: credential.valueTemplate,
+		value: decryptSecret(credential.encryptedValue, {
+			environmentId,
+			organizationId,
+			key: proxyCredentialSecretKey(credential.id),
+		}),
+	}));
+
 	return {
 		id: row.id,
 		provider: row.provider,
 		sourceKind: row.sourceKind,
 		sourceRef: row.sourceRef,
 		envs,
+		proxyCredentials,
 	};
 }

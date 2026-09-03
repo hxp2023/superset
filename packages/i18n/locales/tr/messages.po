@@ -22034,9 +22034,181 @@ msgid "settings.environments.new"
 msgstr "Yeni ortam"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.add"
+msgstr "Proxy kimlik bilgisi ekle"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.added"
+msgstr "Eklendi"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.cancel"
+msgstr "İptal"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.delete"
+msgstr "Sil"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: credential.name
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.deleteConfirm"
+msgstr "\"{0}\" proxy kimlik bilgisi silinsin mi?"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.deleteFailed"
+msgstr "Proxy kimlik bilgisi silinemedi"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.proxy.description"
+msgstr "Sandbox'ın kullanabileceği ancak asla okuyamayacağı anahtarlar. Edge, belirttiğiniz hostlara giden isteklere her birini enjekte eder; sandbox içinde araç yalnızca bir yer tutucu görür."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.destinations"
+msgstr "Hostlar"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.discard"
+msgstr "Vazgeç"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.discardDescription"
+msgstr "Bu proxy kimlik bilgisi kaydedilmedi. Kapatmak istediğinizden emin misiniz?"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.discardTitle"
+msgstr "Kaydedilmemiş değişikliklerden vazgeçilsin mi?"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.empty"
+msgstr "Henüz proxy kimlik bilgisi yok"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.proxy.forkNote"
+msgstr "Bu ortam bir fork'tan başlıyor ve fork henüz proxy taşıyamıyor. Bunlar, ortam bir imajdan başladığında geçerli olur."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.header"
+msgstr "Header"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep1"
+msgstr "Sandbox içinde araç şunu okur:"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep2"
+msgstr "Şuraya giden bir istek:"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep2b"
+msgstr "sandbox'tan bu yer tutucuyla çıkar:"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep3"
+msgstr "Edge'de header şuna dönüşür:"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howStep3b"
+msgstr "ve gerçek değer asla sandbox'a girmez."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.howTitle"
+msgstr "Nasıl çalışır"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.name"
+msgstr "Ad"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.namePlaceholder"
+msgstr "Stripe gizli anahtarı"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.placeholderEnv"
+msgstr "Aracın okuduğu değişken"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.provider"
+msgstr "Sağlayıcı"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.save"
+msgstr "Kaydet"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: rule.name
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.saved"
+msgstr "{0} eklendi"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.saveFailed"
+msgstr "Proxy kimlik bilgisi kaydedilemedi"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.saving"
+msgstr "Kaydediliyor..."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.secret"
+msgstr "Gizli değer"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.sheetDescription"
+msgstr "Aşağıdaki hostlara giden isteklere edge'de enjekte edilir. Sandbox yalnızca bir yer tutucu görür; böylece bir aracı anahtarı kullanabilir ama asla okuyamaz."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.sheetTitle"
+msgstr "Proxy kimlik bilgisi ekle"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
+msgid "settings.environments.proxy.template"
+msgstr "Header değeri"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.proxy.title"
+msgstr "Proxy kimlik bilgileri"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.title"
 msgstr "Ortamlar"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.variables.title"
+msgstr "Değişkenler"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/experimental/components/ExperimentalSettings/ExperimentalSettings.tsx

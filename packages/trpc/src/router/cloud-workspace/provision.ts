@@ -104,6 +104,7 @@ export async function provisionCloudWorkspace(
 			provisionSandbox({
 				name: providerSandboxId,
 				environment,
+				proxyCredentials: environment.proxyCredentials,
 				workspaceEnv: {
 					...environment.envs,
 					ORGANIZATION_ID: row.organizationId,

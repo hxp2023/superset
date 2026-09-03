@@ -1,10 +1,13 @@
+import { Trans } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { useCallback, useState } from "react";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
+import { AddProxyCredentialSheet } from "./components/AddProxyCredentialSheet";
 import { AddSecretSheet } from "./components/AddSecretSheet";
 import { EditSecretDialog } from "./components/EditSecretDialog";
 import { EnvironmentVariablesList } from "./components/EnvironmentVariablesList";
+import { ProxyCredentialsList } from "./components/ProxyCredentialsList";
 
 interface EnvironmentSecretsProps {
 	environmentId: string;
@@ -23,6 +26,8 @@ export function EnvironmentSecrets({
 	onBack,
 }: EnvironmentSecretsProps) {
 	const [isAddOpen, setIsAddOpen] = useState(false);
+	const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
+	const [proxyReloadKey, setProxyReloadKey] = useState(0);
 	const [editing, setEditing] = useState<EditingSecret | null>(null);
 	const [reloadKey, setReloadKey] = useState(0);
 	const { data: environment } = cloudTrpc.environment.get.useQuery({
@@ -30,6 +35,10 @@ export function EnvironmentSecrets({
 	});
 
 	const reload = useCallback(() => setReloadKey((key) => key + 1), []);
+	const reloadProxy = useCallback(
+		() => setProxyReloadKey((key) => key + 1),
+		[],
+	);
 
 	return (
 		<div className="p-6 max-w-4xl w-full">
@@ -50,11 +59,14 @@ export function EnvironmentSecrets({
 						{environment?.name ?? "\u00A0"}
 					</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Variables set on every sandbox started from this environment.
+						What every sandbox started from this environment carries.
 					</p>
 				</div>
 			</div>
 
+			<h3 className="text-base font-semibold mb-4">
+				<Trans id="settings.environments.variables.title">Variables</Trans>
+			</h3>
 			<EnvironmentVariablesList
 				environmentId={environmentId}
 				onAdd={() => setIsAddOpen(true)}
@@ -69,11 +81,48 @@ export function EnvironmentSecrets({
 				}
 			/>
 
+			<div className="mt-10">
+				<div className="mb-4">
+					<h3 className="text-base font-semibold">
+						<Trans id="settings.environments.proxy.title">
+							Proxy credentials
+						</Trans>
+					</h3>
+					<p className="text-sm text-muted-foreground mt-1 max-w-prose">
+						<Trans id="settings.environments.proxy.description">
+							Keys the sandbox can use but never read. The edge injects each one
+							into requests to the hosts you name; inside the sandbox the tool
+							only sees a placeholder.
+						</Trans>
+					</p>
+					{environment?.sourceKind === "fork" && (
+						<p className="text-sm text-muted-foreground mt-2 max-w-prose">
+							<Trans id="settings.environments.proxy.forkNote">
+								This environment starts from a fork, which cannot carry the
+								proxy yet. These apply once it starts from an image.
+							</Trans>
+						</p>
+					)}
+				</div>
+				<ProxyCredentialsList
+					environmentId={environmentId}
+					onAdd={() => setIsAddProxyOpen(true)}
+					refreshToken={proxyReloadKey}
+				/>
+			</div>
+
 			<AddSecretSheet
 				environmentId={environmentId}
 				onOpenChange={setIsAddOpen}
 				onSaved={reload}
 				open={isAddOpen}
+			/>
+
+			<AddProxyCredentialSheet
+				environmentId={environmentId}
+				onOpenChange={setIsAddProxyOpen}
+				onSaved={reloadProxy}
+				open={isAddProxyOpen}
 			/>
 
 			{editing && (

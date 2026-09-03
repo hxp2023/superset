@@ -11,6 +11,10 @@
 import { SandboxInstance, settings, updateSandbox } from "@blaxel/core";
 import { CLOUD_AGENT_LAUNCH_ENV_NAMES } from "@superset/shared/cloud-agent-launch";
 import { SANDBOX_CREDENTIAL_PLACEHOLDER } from "@superset/shared/constants";
+import {
+	PROXY_SECRET_TOKEN,
+	type ProxyCredentialRule,
+} from "@superset/shared/environment-proxy-credentials";
 import { env } from "../../env";
 import { userError } from "../../i18n-error";
 
@@ -51,6 +55,55 @@ function agentCredentialRoutes(): {
 		},
 	];
 
+	return { envs, routing };
+}
+
+/**
+ * An environment's own proxy credentials, as routes. Each secret is scoped
+ * to its rule, and a rule for a host the org defaults also cover replaces
+ * the default: the environment's key is the one its owner chose.
+ */
+function environmentCredentialRoutes(
+	credentials: Array<ProxyCredentialRule & { value: string }>,
+	defaults: {
+		envs: Array<{ name: string; value: string }>;
+		routing: ProxyRoute[];
+	},
+): {
+	envs: Array<{ name: string; value: string }>;
+	routing: ProxyRoute[];
+} {
+	const covered = new Set(
+		credentials.flatMap((credential) => credential.destinations),
+	);
+	const routing = defaults.routing.filter(
+		(route) =>
+			!route.destinations.some((destination) => covered.has(destination)),
+	);
+	const envs = defaults.envs.filter(
+		(entry) =>
+			routing.some((route) => route.secrets && route.destinations.length > 0) &&
+			!credentials.some(
+				(credential) => credential.placeholderEnv === entry.name,
+			),
+	);
+	credentials.forEach((credential, index) => {
+		const secretName = `environment-${index}`;
+		routing.push({
+			destinations: credential.destinations,
+			headers: {
+				[credential.header]: credential.valueTemplate.replace(
+					PROXY_SECRET_TOKEN,
+					`{{SECRET:${secretName}}}`,
+				),
+			},
+			secrets: { [secretName]: credential.value },
+		});
+		envs.push({
+			name: credential.placeholderEnv,
+			value: SANDBOX_CREDENTIAL_PLACEHOLDER,
+		});
+	});
 	return { envs, routing };
 }
 
@@ -121,19 +174,30 @@ export async function provisionSandbox(args: {
 	 * has nothing to run inside it afterwards.
 	 */
 	workspaceEnv: Record<string, string>;
+	/**
+	 * The environment's proxy credentials. Only an image sandbox can carry
+	 * them: the proxy exists from creation or not at all, and a fork is
+	 * created without it (docs/cloud-sandbox-mismatches.md).
+	 */
+	proxyCredentials?: Array<ProxyCredentialRule & { value: string }>;
 	memoryMb?: number;
 	region?: string;
 }): Promise<ProvisionedSandbox> {
 	configureBlaxel();
 	const memoryMb = args.memoryMb ?? 8192;
 	const region = args.region ?? env.BLAXEL_REGION;
-	const { envs: credentialEnvs, routing } = agentCredentialRoutes();
+	const { envs: credentialEnvs, routing } = environmentCredentialRoutes(
+		args.proxyCredentials ?? [],
+		agentCredentialRoutes(),
+	);
+	// A placeholder for a proxied host wins over a variable of the same name:
+	// the edge would overwrite the header anyway, so the env says so.
+	const proxied = new Set(credentialEnvs.map((entry) => entry.name));
 	const envs = [
+		...Object.entries(args.workspaceEnv)
+			.filter(([name]) => !proxied.has(name))
+			.map(([name, value]) => ({ name, value })),
 		...credentialEnvs,
-		...Object.entries(args.workspaceEnv).map(([name, value]) => ({
-			name,
-			value,
-		})),
 	];
 
 	const sandbox =

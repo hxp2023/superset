@@ -743,6 +743,13 @@
       "when": 1788319505909,
       "tag": "0105_drop_cloud_workspace_project",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1788394998757,
+      "tag": "0106_environment_proxy_credentials",
+      "breakpoints": true
     }
   ]
 }

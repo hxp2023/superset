@@ -44,10 +44,11 @@ export function EnvironmentsSettings({
 		SETTING_ITEM_ID.ENVIRONMENTS_LIST,
 		visibleItems,
 	);
-	const showSecrets = isItemVisible(
-		SETTING_ITEM_ID.ENVIRONMENTS_SECRETS,
-		visibleItems,
-	);
+	// The detail view holds both the variables and the proxy credentials, so a
+	// search that matches either has to reach it.
+	const showSecrets =
+		isItemVisible(SETTING_ITEM_ID.ENVIRONMENTS_SECRETS, visibleItems) ||
+		isItemVisible(SETTING_ITEM_ID.ENVIRONMENTS_PROXY_CREDENTIALS, visibleItems);
 
 	const {
 		data: environments,

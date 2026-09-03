@@ -20,6 +20,10 @@
 			"types": "./src/environment-secrets.ts",
 			"default": "./src/environment-secrets.ts"
 		},
+		"./environment-proxy-credentials": {
+			"types": "./src/environment-proxy-credentials.ts",
+			"default": "./src/environment-proxy-credentials.ts"
+		},
 		"./automation-triggers": {
 			"types": "./src/automation-triggers.ts",
 			"default": "./src/automation-triggers.ts"
