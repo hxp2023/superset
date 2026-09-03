@@ -203,10 +203,13 @@ export function DashboardSidebar({
 	const isDragDisabled = sortMode !== "manual" || isFilterActive;
 
 	// Sorted but unfiltered, so ⌘1–⌘9 targets stay put while typing a query.
+	// The filtered view expands matches through derived objects, so a jump
+	// must not toggle the persisted collapse state while it is active.
 	const workspaceShortcutLabels = useDashboardSidebarShortcuts(
 		sortedGroups,
 		sessionWorkspaces,
 		sessionChildren,
+		{ revealCollapsed: !isFilterActive },
 	);
 	// Scoped to what the filter actually shows — select-all and range-select
 	// must not reach rows the filter is hiding.

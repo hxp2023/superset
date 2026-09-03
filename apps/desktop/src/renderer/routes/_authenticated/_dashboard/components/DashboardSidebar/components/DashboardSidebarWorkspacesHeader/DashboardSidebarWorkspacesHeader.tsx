@@ -8,6 +8,7 @@ import {
 import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import {
 	VscFolderOpened,
 	VscGithubAlt,
@@ -58,6 +59,17 @@ export function DashboardSidebarWorkspacesHeader({
 		// Filtering a hidden list is useless — reveal it when the search opens.
 		if (expanded && isSectionCollapsed) toggleSectionCollapsed("workspaces");
 	};
+	// The converse: collapsing the section while the input is open would leave
+	// a filter running against a hidden list (and no chevron to say the rows
+	// are merely collapsed), so a collapse closes the filter.
+	const wasSectionCollapsedRef = useRef(isSectionCollapsed);
+	useEffect(() => {
+		if (isSectionCollapsed && !wasSectionCollapsedRef.current) {
+			onFilterQueryChange("");
+			setIsFilterExpanded(false);
+		}
+		wasSectionCollapsedRef.current = isSectionCollapsed;
+	}, [isSectionCollapsed, onFilterQueryChange, setIsFilterExpanded]);
 	const openEmptyProject = useOpenEmptyProjectModal();
 	const openNewProject = useOpenNewProjectModal();
 	const openTemplateGallery = useOpenTemplateGalleryModal();

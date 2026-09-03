@@ -108,9 +108,13 @@ ephemeral React state in `DashboardSidebar` (`utils/filterDashboardSidebarProjec
   objects; the persisted collapse state is never written, so Escape restores
   it exactly.
 - Expanding the filter while the Projects section is collapsed un-collapses
-  the section. Collapsing the sidebar to the icon rail clears the query, since
-  the header is hidden there and an invisible filter would silently hide
-  projects.
+  the section, and collapsing the section closes the filter. Collapsing the
+  sidebar to the icon rail clears the query too, since the header is hidden
+  there and an invisible filter would silently hide projects. The header
+  keeps the "Projects" accessible name while the input takes its row.
+- ⌘1–⌘9 skip the "expand the collapsed project/folder" step while a filter
+  is active: the filtered view already shows matches expanded, and the
+  toggle would rewrite the persisted collapse state.
 - Sort applies first, then filter. ⌘1–⌘9 labels come from the sorted but
   unfiltered list so targets do not shift while typing. Bulk selection's
   selectable set comes from the displayed list so select-all cannot reach

@@ -248,8 +248,9 @@ export function applyWorkspaceChangedEvent(
 		tags: snapshot.tags ?? existing?.tags,
 		createdAt: new Date(snapshot.createdAt),
 		updatedAt: new Date(snapshot.updatedAt),
-		// Same runtime-optionality as tags: an older host's events omit it.
-		lastActivityAt: snapshot.lastActivityAt ?? null,
+		// Same runtime-optionality as tags: an older host's events omit it, so
+		// keep the row's last known stamp rather than wiping it.
+		lastActivityAt: snapshot.lastActivityAt ?? existing?.lastActivityAt ?? null,
 		worktreePath: snapshot.worktreePath,
 		// A host broadcasting created/updated just acted on the worktree;
 		// keep a known value over assuming.

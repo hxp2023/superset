@@ -95,6 +95,30 @@ describe("applyWorkspaceChangedEvent lastActivityAt", () => {
 		);
 		expect(rows?.[0]?.lastActivityAt).toBeNull();
 	});
+
+	it("keeps the cached stamp when an older host's update omits the field", () => {
+		const initial = applyWorkspaceChangedEvent(
+			undefined,
+			{ eventType: "created", workspace: makeSnapshot({ id: "w1" }) },
+			HOST,
+			"w1",
+		);
+		const legacy = makeSnapshot({ id: "w1" }) as unknown as Record<
+			string,
+			unknown
+		>;
+		delete legacy.lastActivityAt;
+		const updated = applyWorkspaceChangedEvent(
+			initial,
+			{
+				eventType: "updated",
+				workspace: legacy as unknown as WorkspaceSnapshotPayload,
+			},
+			HOST,
+			"w1",
+		);
+		expect(updated?.[0]?.lastActivityAt).toBe(1_700_000_050_000);
+	});
 });
 
 describe("toHostWorkspaceItem", () => {
