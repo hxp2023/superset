@@ -10,9 +10,11 @@ import type { HostServiceContext } from "../../../types";
 import { getHostWorkerPool } from "../../../workers/host-worker-pool";
 import {
 	gitCommitFilesTask,
+	gitCommitTask,
 	gitDiffBulkTask,
 	gitDiffPatchTask,
 	gitFetchBaseRefTask,
+	gitPushTask,
 	gitStatusSnapshotTask,
 } from "../../../workers/tasks/git";
 import { protectedProcedure, queryProcedure, router } from "../../index";
@@ -576,25 +578,24 @@ export const gitRouter = router({
 		)
 		.mutation(async ({ ctx, input }) => {
 			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
-			const git = await ctx.git(worktreePath);
-			if (input.stageAll) {
-				await git.raw(["add", "-A"]);
-			}
-			// Read the staged file list instead of `--quiet` exit codes:
-			// simple-git treats a non-zero exit with empty stderr as success, so
-			// `diff --quiet`'s exit-1 signal never surfaces as a rejection.
-			const staged = (
-				await git.raw(["diff", "--cached", "--name-only"])
-			).trim();
-			if (!staged) {
+			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
+			const result = await getHostWorkerPool().run(
+				gitCommitTask,
+				{
+					worktreePath,
+					message: input.message,
+					stageAll: input.stageAll,
+					gitEnv,
+				},
+				{ timeoutMs: 60_000 },
+			);
+			if (!result.ok) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
 					message: "Nothing to commit",
 				});
 			}
-			await git.raw(["commit", "-m", input.message]);
-			const hash = (await git.revparse(["HEAD"])).trim();
-			return { success: true, hash };
+			return { success: true, hash: result.hash };
 		}),
 
 	push: protectedProcedure
@@ -602,60 +603,8 @@ export const gitRouter = router({
 		.input(z.object({ workspaceId: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
-			const git = await ctx.git(worktreePath);
-			const branch = (
-				await git.revparse(["--abbrev-ref", "HEAD"]).catch(() => "")
-			).trim();
-			if (!branch || branch === "HEAD") {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message: "Cannot push with a detached HEAD",
-				});
-			}
-			// Workspace branches fork from the base branch, so git's
-			// autoSetupMerge usually leaves them tracking e.g. origin/main — a
-			// plain `git push` refuses that name mismatch, and honoring it would
-			// mean pushing to main. But a different-name upstream is deliberate
-			// for PR-checkout workspaces (local alice/feature-x tracking the PR
-			// head feature-x), so the linked PR's head branch decides: matching
-			// upstream → push to it; anything else → publish under the branch's
-			// own name and re-point the upstream there (v1's push flow).
-			const upstreamRef = await git
-				.raw(["rev-parse", "--abbrev-ref", "@{upstream}"])
-				.then(
-					(ref) => ref.trim(),
-					() => null,
-				);
-			// `branch.<name>.remote` distinguishes remote tracking from tracking
-			// a local branch ("."), where @{upstream} prints a bare branch name
-			// that must never be mistaken for a remote.
-			const configuredRemote = (
-				await git.raw(["config", `branch.${branch}.remote`]).catch(() => "")
-			).trim();
-			const hasRemoteUpstream =
-				upstreamRef != null && !!configuredRemote && configuredRemote !== ".";
-			const upstreamBranch = !hasRemoteUpstream
-				? null
-				: upstreamRef.startsWith(`${configuredRemote}/`)
-					? upstreamRef.slice(configuredRemote.length + 1)
-					: upstreamRef.split("/").slice(1).join("/");
-
-			if (hasRemoteUpstream && upstreamBranch === branch) {
-				await git.raw(["push"]);
-				return { success: true };
-			}
-
-			const remotes = await git.getRemotes(false).catch(() => []);
-			const fallbackRemote =
-				remotes.find((r) => r.name === "origin")?.name ?? remotes[0]?.name;
-			const remote = hasRemoteUpstream ? configuredRemote : fallbackRemote;
-			if (!remote) {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message: "No git remote to push to",
-				});
-			}
-
+			// The linked PR lookup stays on-loop (sync db reads); the git work
+			// itself — upstream resolution and the push — runs in the pool.
 			const workspace = ctx.db.query.workspaces
 				.findFirst({ where: eq(workspaces.id, input.workspaceId) })
 				.sync();
@@ -664,26 +613,25 @@ export const gitRouter = router({
 						.findFirst({ where: eq(pullRequests.id, workspace.pullRequestId) })
 						.sync()
 				: null;
-
-			if (
-				hasRemoteUpstream &&
-				upstreamBranch != null &&
-				linkedPr?.headBranch === upstreamBranch
-			) {
-				// PR checkout: the upstream deliberately points at the PR's head
-				// under a different local name. Push there and keep the tracking.
-				await git.raw(["push", remote, `HEAD:refs/heads/${upstreamBranch}`]);
-				return { success: true };
+			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
+			const result = await getHostWorkerPool().run(
+				gitPushTask,
+				{
+					worktreePath,
+					linkedPrHeadBranch: linkedPr?.headBranch ?? null,
+					gitEnv,
+				},
+				{ timeoutMs: 120_000 },
+			);
+			if (!result.ok) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						result.reason === "detached-head"
+							? "Cannot push with a detached HEAD"
+							: "No git remote to push to",
+				});
 			}
-
-			// HEAD refspec avoids resolving the branch name as a local ref —
-			// more reliable in worktrees (mirrors v1's pushWithSetUpstream).
-			await git.raw([
-				"push",
-				"--set-upstream",
-				remote,
-				`HEAD:refs/heads/${branch}`,
-			]);
 			return { success: true };
 		}),
 

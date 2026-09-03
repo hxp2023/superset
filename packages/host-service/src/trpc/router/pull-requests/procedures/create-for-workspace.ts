@@ -2,8 +2,10 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { workspaces } from "../../../../db/schema";
+import { createGitEnvResolver } from "../../../../runtime/git";
+import { getHostWorkerPool } from "../../../../workers/host-worker-pool";
+import { gitPrHeadBaseTask } from "../../../../workers/tasks/git";
 import { protectedProcedure } from "../../../index";
-import { getDefaultBranchName } from "../../git/utils/git-helpers";
 import { resolveWorktreePath } from "../../git/utils/resolve-worktree";
 import { actionRejectionError } from "../../github/github";
 import { resolveGithubRepo } from "../../workspace-creation/shared/project-helpers";
@@ -36,22 +38,21 @@ export const createForWorkspace = protectedProcedure
 			});
 		}
 		const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
-		const git = await ctx.git(worktreePath);
-
-		const head = (
-			await git.revparse(["--abbrev-ref", "HEAD"]).catch(() => "")
-		).trim();
-		if (!head || head === "HEAD") {
+		const gitEnv = await createGitEnvResolver(ctx.credentials)(worktreePath);
+		const refs = await getHostWorkerPool().run(
+			gitPrHeadBaseTask,
+			{ worktreePath, gitEnv },
+			{ timeoutMs: 15_000 },
+		);
+		const head = refs.head;
+		if (!head) {
 			throw new TRPCError({
 				code: "BAD_REQUEST",
 				message: "Cannot create a pull request from a detached HEAD",
 			});
 		}
 
-		const configuredBase = (
-			await git.raw(["config", `branch.${head}.base`]).catch(() => "")
-		).trim();
-		const base = (configuredBase || (await getDefaultBranchName(git)) || "")
+		const base = (refs.configuredBase || refs.defaultBranch || "")
 			.replace(/^origin\//, "")
 			.trim();
 		if (!base) {

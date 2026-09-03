@@ -37,6 +37,10 @@ function createCaller(
 			},
 		},
 		git: async (path: string) => simpleGit(path),
+		credentials: {
+			getCredentials: async () => ({ env: {} }),
+			getToken: async () => null,
+		},
 	} as unknown as HostServiceContext;
 	return gitRouter.createCaller(ctx);
 }
