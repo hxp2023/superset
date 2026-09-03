@@ -2,6 +2,7 @@ import * as childProcess from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import path from "node:path";
 import { i18n } from "@superset/i18n";
 import { organizations, settings } from "@superset/local-db";
@@ -116,6 +117,14 @@ const START_OR_ADOPT_DEADLINE_MS = SPAWN_LOCK_STALE_MS + HEALTH_POLL_TIMEOUT_MS;
 const ADOPT_WAIT_INTERVAL_MS = 250;
 
 /**
+ * How long a SIGTERMed child gets to exit on its own before SIGKILL. The
+ * child's own shutdown budget (grace + dispose deadline in
+ * `host-service/shutdown.ts`) is ~5s, so this only fires for a child whose
+ * signal handler never ran at all.
+ */
+const STOP_KILL_ESCALATION_MS = 5_000;
+
+/**
  * A Node abort dumps ~5KB of native + JS backtrace on the way down, so a
  * smaller window would evict the assertion line and every app log before it.
  */
@@ -178,6 +187,12 @@ export class HostServiceCoordinator extends EventEmitter {
 	private devReloadWatcher: fs.FSWatcher | null = null;
 	private respawns = new Map<string, RespawnState>();
 	private desiredOrganizationIds = new Set<string>();
+	/**
+	 * SIGKILL escalations pending for SIGTERMed children, by pid. Cancelled by
+	 * `handleChildExit` so a pid the kernel has since recycled is never
+	 * signalled.
+	 */
+	private killEscalations = new Map<number, ReturnType<typeof setTimeout>>();
 	private startGeneration = 0;
 	private configProvider: (() => Promise<SpawnConfig | null>) | null = null;
 	/**
@@ -333,7 +348,10 @@ export class HostServiceCoordinator extends EventEmitter {
 		// drop our local reference below; never SIGTERM it or remove its manifest.
 		if (instance.owned) {
 			try {
-				if (instance.pid > 0) killProcess(instance.pid, "SIGTERM");
+				if (instance.pid > 0) {
+					killProcess(instance.pid, "SIGTERM");
+					this.scheduleKillEscalation(organizationId, instance.pid);
+				}
 			} catch {}
 			this.removeManifestIfHeldBy(organizationId, instance.pid);
 		}
@@ -628,6 +646,7 @@ export class HostServiceCoordinator extends EventEmitter {
 					// attempt and taking the lock — re-check before spawning.
 					const raced = await this.tryAdopt(organizationId, isStartAllowed);
 					if (raced) return raced;
+					this.reapWedgedManifestHolder(organizationId);
 					return await this.spawn(
 						organizationId,
 						config,
@@ -971,8 +990,9 @@ export class HostServiceCoordinator extends EventEmitter {
 		signal: NodeJS.Signals | null,
 	): void {
 		log.info(
-			`[host-service:${organizationId}] exited with code ${code} signal ${signal}`,
+			`[host-service:${organizationId}] pid=${childPid} exited with code ${code} signal ${signal}`,
 		);
+		this.cancelKillEscalation(childPid);
 		const current = this.instances.get(organizationId);
 		if (!current || current.pid !== childPid || current.status === "stopped")
 			return;
@@ -1163,6 +1183,75 @@ export class HostServiceCoordinator extends EventEmitter {
 		if (state.timer) clearTimeout(state.timer);
 		if (state.stableTimer) clearTimeout(state.stableTimer);
 		this.respawns.delete(organizationId);
+	}
+
+	/**
+	 * SIGTERM is a request the child can fail to honour: a host-worker wedged
+	 * in native code leaves `process.exit()` blocked joining it, and the child
+	 * then ignores every later SIGTERM. Follow up with SIGKILL after a grace.
+	 * Unref'd on purpose: on quit the parent must not wait around for this,
+	 * and the startup reap in `reapWedgedManifestHolder` covers a child that
+	 * outlives us.
+	 */
+	private scheduleKillEscalation(organizationId: string, pid: number): void {
+		this.cancelKillEscalation(pid);
+		const timer = this.scheduleRespawnTimer(() => {
+			// A cancelled escalation (the child exited, `handleChildExit` ran) is
+			// no longer the registered one; never signal a pid we know is gone.
+			if (this.killEscalations.get(pid) !== timer) return;
+			this.killEscalations.delete(pid);
+			if (!isProcessAlive(pid)) return;
+			log.warn(
+				`[host-service:${organizationId}] pid=${pid} still alive ${STOP_KILL_ESCALATION_MS}ms after SIGTERM; escalating to SIGKILL`,
+			);
+			try {
+				killProcess(pid, "SIGKILL");
+			} catch (error) {
+				log.warn(
+					`[host-service:${organizationId}] SIGKILL of pid=${pid} failed`,
+					error,
+				);
+			}
+		}, STOP_KILL_ESCALATION_MS);
+		timer.unref?.();
+		this.killEscalations.set(pid, timer);
+	}
+
+	private cancelKillEscalation(pid: number): void {
+		const timer = this.killEscalations.get(pid);
+		if (!timer) return;
+		clearTimeout(timer);
+		this.killEscalations.delete(pid);
+	}
+
+	/**
+	 * Kill a manifest holder that is alive but failed the adopt health probe
+	 * before spawning beside it. That holder is a wedged host-service: in
+	 * practice an orphan of a Squirrel auto-update relaunch whose exit hung
+	 * joining a stuck worker. Left alone it keeps the port (the replacement
+	 * ends up on a fallback port) and its pty-daemon subscriptions, which
+	 * freezes those terminals for the replacement too. Runs under the spawn
+	 * lock, right after the under-lock adopt miss, so the probe verdict is
+	 * fresh. A pid started before this boot is skipped: pids recycle across
+	 * reboots, and a pre-boot `startedAt` can name any process at all.
+	 */
+	private reapWedgedManifestHolder(organizationId: string): void {
+		const manifest = readManifest(organizationId);
+		if (!manifest || !isProcessAlive(manifest.pid)) return;
+		const bootedAt = Date.now() - os.uptime() * 1000;
+		if (manifest.startedAt < bootedAt) return;
+		log.warn(
+			`[host-service:${organizationId}] manifest pid=${manifest.pid} at ${manifest.endpoint} is alive but unhealthy; SIGKILLing it before spawning`,
+		);
+		try {
+			killProcess(manifest.pid, "SIGKILL");
+		} catch (error) {
+			log.warn(
+				`[host-service:${organizationId}] reap: SIGKILL of pid=${manifest.pid} failed`,
+				error,
+			);
+		}
+		removeManifest(organizationId);
 	}
 
 	/**
