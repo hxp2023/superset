@@ -828,10 +828,23 @@ export function useAccessibleV2Workspaces(
 		);
 	}, [searchFiltered]);
 
-	// Like projectOptions: derived from the search-filtered rows so counts
-	// track what's visible, keyed by the creator's user id.
+	// Anchored on org members, not the visible rows: a teammate must be
+	// filterable even while every one of their workspaces lives on a device
+	// this client can't currently reach (rows are host-served, so an offline
+	// device — or any remote device in a dev stack — contributes nothing to
+	// searchFiltered). Counts still track what's visible; row creators who
+	// have left the org keep an entry so their rows stay filterable.
 	const creatorOptions = useMemo<V2WorkspaceCreatorOption[]>(() => {
 		const byCreator = new Map<string, V2WorkspaceCreatorOption>();
+		for (const creator of creatorRows) {
+			byCreator.set(creator.id, {
+				userId: creator.id,
+				name: creator.name,
+				image: creator.image,
+				isCurrentUser: creator.id === currentUserId,
+				count: 0,
+			});
+		}
 		for (const workspace of searchFiltered) {
 			if (workspace.createdByUserId === null) continue;
 			const existing = byCreator.get(workspace.createdByUserId);
@@ -851,7 +864,7 @@ export function useAccessibleV2Workspaces(
 			if (a.isCurrentUser !== b.isCurrentUser) return a.isCurrentUser ? -1 : 1;
 			return a.name.localeCompare(b.name);
 		});
-	}, [searchFiltered]);
+	}, [creatorRows, currentUserId, searchFiltered]);
 
 	const hostsById = useMemo(() => {
 		const map = new Map<
