@@ -10,8 +10,11 @@ import type { HostServiceContext } from "../../../types";
 import { getHostWorkerPool } from "../../../workers/host-worker-pool";
 import {
 	gitCommitFilesTask,
+	gitCommitTask,
 	gitDiffBulkTask,
+	gitDiffPatchTask,
 	gitFetchBaseRefTask,
+	gitPushTask,
 	gitStatusSnapshotTask,
 } from "../../../workers/tasks/git";
 import { protectedProcedure, queryProcedure, router } from "../../index";
@@ -563,6 +566,75 @@ export const gitRouter = router({
 			return { success: true };
 		}),
 
+	commit: protectedProcedure
+		// Commit hooks (lint-staged etc.) run here and can be slow.
+		.meta({ timeoutMs: 60_000 })
+		.input(
+			z.object({
+				workspaceId: z.string(),
+				message: z.string().trim().min(1),
+				stageAll: z.boolean().default(true),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
+			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
+			const result = await getHostWorkerPool().run(
+				gitCommitTask,
+				{
+					worktreePath,
+					message: input.message,
+					stageAll: input.stageAll,
+					gitEnv,
+				},
+				{ timeoutMs: 60_000 },
+			);
+			if (!result.ok) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Nothing to commit",
+				});
+			}
+			return { success: true, hash: result.hash };
+		}),
+
+	push: protectedProcedure
+		.meta({ timeoutMs: 120_000 })
+		.input(z.object({ workspaceId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
+			// The linked PR lookup stays on-loop (sync db reads); the git work
+			// itself — upstream resolution and the push — runs in the pool.
+			const workspace = ctx.db.query.workspaces
+				.findFirst({ where: eq(workspaces.id, input.workspaceId) })
+				.sync();
+			const linkedPr = workspace?.pullRequestId
+				? ctx.db.query.pullRequests
+						.findFirst({ where: eq(pullRequests.id, workspace.pullRequestId) })
+						.sync()
+				: null;
+			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
+			const result = await getHostWorkerPool().run(
+				gitPushTask,
+				{
+					worktreePath,
+					linkedPrHeadBranch: linkedPr?.headBranch ?? null,
+					gitEnv,
+				},
+				{ timeoutMs: 120_000 },
+			);
+			if (!result.ok) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						result.reason === "detached-head"
+							? "Cannot push with a detached HEAD"
+							: "No git remote to push to",
+				});
+			}
+			return { success: true };
+		}),
+
 	getDiff: queryProcedure
 		.meta({ timeoutMs: 30_000 })
 		.input(getDiffInputShape)
@@ -611,6 +683,45 @@ export const gitRouter = router({
 					worktreePath,
 					paths: input.paths,
 					category: input.category,
+					baseBranch: input.baseBranch,
+					commitHash: input.commitHash,
+					fromHash: input.fromHash,
+					gitEnv,
+				},
+				{ timeoutMs: 60_000 },
+			);
+		}),
+
+	// Patch-shaped sibling of `getDiff`: one `git diff` for a whole category
+	// instead of two `git show` blobs per file. The renderer parses it into
+	// per-file metadata and calls `getDiff` later, only for the files somebody
+	// expands or edits — so an untouched changeset never moves whole files.
+	getDiffPatch: queryProcedure
+		.meta({ timeoutMs: 60_000 })
+		.input(
+			z.object({
+				workspaceId: z.string(),
+				category: z.enum(["against-base", "staged", "unstaged", "commit"]),
+				paths: z.array(z.string()).max(MAX_DIFF_BULK_PATHS).optional(),
+				untrackedPaths: z.array(z.string()).max(MAX_DIFF_BULK_PATHS).optional(),
+				baseBranch: z.string().optional(),
+				commitHash: z.string().optional(),
+				fromHash: z.string().optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			for (const path of input.paths ?? []) assertSafeRelativePath(path);
+			for (const path of input.untrackedPaths ?? [])
+				assertSafeRelativePath(path);
+			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
+			const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
+			return getHostWorkerPool().run(
+				gitDiffPatchTask,
+				{
+					worktreePath,
+					category: input.category,
+					paths: input.paths,
+					untrackedPaths: input.untrackedPaths,
 					baseBranch: input.baseBranch,
 					commitHash: input.commitHash,
 					fromHash: input.fromHash,

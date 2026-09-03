@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
 import { useCloudWorkspaces } from "renderer/hooks/useCloudWorkspaces";
@@ -28,6 +29,7 @@ export function DashboardSidebarCloudSection({
 	isCollapsed?: boolean;
 	onWorkspaceHover?: (workspaceId: string) => void | Promise<void>;
 }) {
+	const { t } = useLingui();
 	const { workspaces: cloudWorkspaces } = useCloudWorkspaces();
 	const { workspaces: hostWorkspaces } = useHostWorkspaces();
 	const isSectionCollapsed = useSidebarSectionsCollapseStore(
@@ -84,6 +86,9 @@ export function DashboardSidebarCloudSection({
 					// behind it to report on.
 					hostIsOnline: null,
 					accentColor: null,
+					// The sandbox host stamps this like any other host; null until
+					// its list has answered.
+					lastActivityAt: served?.lastActivityAt ?? null,
 					name: cloud.name,
 					branch: served?.branch ?? cloud.branch,
 					pullRequest: null,
@@ -134,12 +139,16 @@ export function DashboardSidebarCloudSection({
 
 	return (
 		<div className="mt-3 pb-1 first:mt-0">
-			<DashboardSidebarSectionHeader label="Cloud" section="cloud" />
+			<DashboardSidebarSectionHeader
+				label={t({ id: "dashboard.sidebar.sectionCloud", message: "Cloud" })}
+				section="cloud"
+			/>
 			{!isSectionCollapsed &&
 				rows.map((workspace) => (
 					<DashboardSidebarWorkspaceItem
 						key={workspace.id}
 						workspace={workspace}
+						indentation="top-level"
 						onHoverCardOpen={onWorkspaceHover}
 					/>
 				))}

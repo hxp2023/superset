@@ -14,11 +14,14 @@ type EventType =
 	| "fs:events"
 	| "git:changed"
 	| "agent:lifecycle"
+	| "agent:bindings-changed"
 	| "terminal:lifecycle"
 	| "port:changed"
 	| "workspace:changed"
 	| "workspace:create-settled"
-	| "project:changed";
+	| "project:changed"
+	| "tag-folders:changed"
+	| "page-watch:changed";
 
 interface FsEventsPayload {
 	events: FsWatchEvent[];
@@ -37,6 +40,10 @@ export interface AgentLifecyclePayload {
 	terminalId: string;
 	// Absent when the hook ran without `SUPERSET_AGENT_ID` set.
 	agent?: AgentIdentity;
+	occurredAt: number;
+}
+
+export interface AgentBindingsChangedPayload {
 	occurredAt: number;
 }
 
@@ -99,26 +106,50 @@ export interface ProjectChangedPayload {
 	occurredAt: number;
 }
 
+export interface PageWatchChangedPayload {
+	occurredAt: number;
+}
+
+type TagFoldersChangedMessage = Extract<
+	ServerMessage,
+	{ type: "tag-folders:changed" }
+>;
+
+export interface TagFoldersChangedPayload {
+	/** The scope's full set after the change — empty when all were removed. */
+	settings: TagFoldersChangedMessage["settings"];
+	occurredAt: TagFoldersChangedMessage["occurredAt"];
+}
+
 type EventListener<T extends EventType> = T extends "fs:events"
 	? (workspaceId: string, payload: FsEventsPayload) => void
 	: T extends "git:changed"
 		? (workspaceId: string, payload: GitChangedPayload) => void
 		: T extends "agent:lifecycle"
 			? (workspaceId: string, payload: AgentLifecyclePayload) => void
-			: T extends "terminal:lifecycle"
-				? (workspaceId: string, payload: TerminalLifecyclePayload) => void
-				: T extends "port:changed"
-					? (workspaceId: string, payload: PortChangedPayload) => void
-					: T extends "workspace:changed"
-						? (workspaceId: string, payload: WorkspaceChangedPayload) => void
-						: T extends "workspace:create-settled"
-							? (
-									workspaceId: string,
-									payload: WorkspaceCreateSettledPayload,
-								) => void
-							: T extends "project:changed"
-								? (projectId: string, payload: ProjectChangedPayload) => void
-								: never;
+			: T extends "agent:bindings-changed"
+				? (workspaceId: string, payload: AgentBindingsChangedPayload) => void
+				: T extends "terminal:lifecycle"
+					? (workspaceId: string, payload: TerminalLifecyclePayload) => void
+					: T extends "port:changed"
+						? (workspaceId: string, payload: PortChangedPayload) => void
+						: T extends "workspace:changed"
+							? (workspaceId: string, payload: WorkspaceChangedPayload) => void
+							: T extends "workspace:create-settled"
+								? (
+										workspaceId: string,
+										payload: WorkspaceCreateSettledPayload,
+									) => void
+								: T extends "project:changed"
+									? (projectId: string, payload: ProjectChangedPayload) => void
+									: T extends "tag-folders:changed"
+										? (scope: string, payload: TagFoldersChangedPayload) => void
+										: T extends "page-watch:changed"
+											? (
+													workspaceId: string,
+													payload: PageWatchChangedPayload,
+												) => void
+											: never;
 
 interface ListenerEntry {
 	type: EventType;
@@ -171,6 +202,15 @@ function fileWatchKey(workspaceId: string, absolutePath: string): string {
 	return `${workspaceId}\0${absolutePath}`;
 }
 
+function probesEqual(
+	left: RelayAffinityProbe | null,
+	right: RelayAffinityProbe | null,
+): boolean {
+	if (left === right) return true;
+	if (left === null || right === null) return false;
+	return left.status === right.status && left.region === right.region;
+}
+
 function setConnectionStatus(
 	state: ConnectionState,
 	next: { state?: HostConnectionState; probe?: RelayAffinityProbe | null },
@@ -178,12 +218,20 @@ function setConnectionStatus(
 	const current = state.status;
 	const nextState = next.state ?? current.state;
 	const nextProbe = "probe" in next ? (next.probe ?? null) : current.probe;
-	if (nextState === current.state && nextProbe === current.probe) return;
+	// Value-compare probes: the preflight allocates a fresh result object per
+	// dial, so identity comparison republished an unchanged 503 on every
+	// backoff attempt — fanning a no-op "transition" out to every status
+	// subscriber (and their React commits) for as long as a host stayed down.
+	if (nextState === current.state && probesEqual(nextProbe, current.probe)) {
+		return;
+	}
 
 	state.status = {
 		state: nextState,
 		since: nextState === current.state ? current.since : Date.now(),
-		probe: nextProbe,
+		// Keep the old probe object when only the state moved, so subscribers
+		// keying on probe identity don't re-derive from an equal value.
+		probe: probesEqual(nextProbe, current.probe) ? current.probe : nextProbe,
 	};
 	for (const listener of state.statusListeners) listener(state.status);
 }
@@ -220,14 +268,18 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 			message.type === "fs:events" ||
 			message.type === "git:changed" ||
 			message.type === "agent:lifecycle" ||
+			message.type === "agent:bindings-changed" ||
 			message.type === "terminal:lifecycle" ||
 			message.type === "port:changed" ||
 			message.type === "workspace:changed" ||
-			message.type === "workspace:create-settled"
+			message.type === "workspace:create-settled" ||
+			message.type === "page-watch:changed"
 				? message.workspaceId
 				: message.type === "project:changed"
 					? message.projectId
-					: null;
+					: message.type === "tag-folders:changed"
+						? message.scope
+						: null;
 
 		if (
 			workspaceId &&
@@ -255,6 +307,11 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 					occurredAt: message.occurredAt,
 				},
 			);
+		} else if (message.type === "agent:bindings-changed") {
+			(entry.callback as EventListener<"agent:bindings-changed">)(
+				message.workspaceId,
+				{ occurredAt: message.occurredAt },
+			);
 		} else if (message.type === "terminal:lifecycle") {
 			(entry.callback as EventListener<"terminal:lifecycle">)(
 				message.workspaceId,
@@ -265,6 +322,11 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 					signal: message.signal,
 					occurredAt: message.occurredAt,
 				},
+			);
+		} else if (message.type === "page-watch:changed") {
+			(entry.callback as EventListener<"page-watch:changed">)(
+				message.workspaceId,
+				{ occurredAt: message.occurredAt },
 			);
 		} else if (message.type === "port:changed") {
 			(entry.callback as EventListener<"port:changed">)(message.workspaceId, {
@@ -292,6 +354,11 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 			(entry.callback as EventListener<"project:changed">)(message.projectId, {
 				eventType: message.eventType,
 				project: message.project,
+				occurredAt: message.occurredAt,
+			});
+		} else if (message.type === "tag-folders:changed") {
+			(entry.callback as EventListener<"tag-folders:changed">)(message.scope, {
+				settings: message.settings,
 				occurredAt: message.occurredAt,
 			});
 		}
@@ -380,6 +447,23 @@ function getOrCreateConnection(
 
 	connections.set(key, state);
 	return state;
+}
+
+/**
+ * Dial the existing connection for `hostUrl` now, if there is one and it
+ * isn't open. For the moment a client learns the host's endpoint or
+ * credentials changed (a host-service restart handing out a fresh port or
+ * secret): the socket may be mid-backoff, or its last dial may have lost the
+ * race against the credential update and been auth-rejected — either way the
+ * next scheduled attempt is seconds out, and this collapses that wait.
+ * Deliberately never creates a connection: with no established consumers
+ * there is nothing to recover.
+ */
+export function reconnectEventBusIfDown(hostUrl: string): void {
+	const state = connections.get(hostUrl);
+	if (!state || state.status.state === "open") return;
+	state.socket.reconnect(1000, "endpoint or credentials refreshed");
+	setConnectionStatus(state, { state: "connecting" });
 }
 
 function maybeCleanupConnection(hostUrl: string): void {

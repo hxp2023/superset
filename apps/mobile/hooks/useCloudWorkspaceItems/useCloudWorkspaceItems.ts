@@ -66,15 +66,19 @@ function itemFromCloudRow(
 	return {
 		id: cloud.id,
 		organizationId: cloud.organizationId,
-		projectId: cloud.projectId,
+		// Cloud workspaces have no project; the row shape still wants one.
+		projectId: "",
 		hostId: cloud.id,
 		name: cloud.name,
 		branch: served?.branch ?? cloud.branch,
 		type: "main",
 		createdByUserId: cloud.createdByUserId ?? null,
 		taskId: null,
+		tags: served?.tags ?? [],
 		createdAt: cloud.createdAt,
 		updatedAt: served?.updatedAt ?? cloud.updatedAt,
+		// Agent activity is stamped by the sandbox host; unknown until it serves.
+		lastActivityAt: served?.lastActivityAt ?? null,
 		worktreePath: served?.worktreePath ?? "",
 		worktreeExists: served ? served.worktreeExists : true,
 		projectName: served?.projectName ?? null,

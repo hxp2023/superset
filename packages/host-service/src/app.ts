@@ -10,10 +10,14 @@ import { createApiClient } from "./api";
 import { createChatV3Mount, registerChatV3Routes } from "./chat-v3";
 import { createDb, type HostDb } from "./db";
 import { EventBus, GitWatcher, registerEventBusRoute } from "./events";
+import { agentIsBusy, PageWatchManager } from "./page-watch/index.ts";
+import { registerForwardMuxRoute } from "./ports/forward-mux-route";
+import { portManager } from "./ports/port-manager";
 import type { ApiAuthProvider } from "./providers/auth";
 import type { HostAuthProvider } from "./providers/host-auth";
 import { runArchivedWorkspaceReconcile } from "./runtime/archived-workspace-reconcile";
 import { registerBrowserCdpRoute } from "./runtime/browser-bridge/browser-cdp-route";
+import { registerDesktopRoute } from "./runtime/desktop";
 import { WorkspaceFilesystemManager } from "./runtime/filesystem";
 import type { GitCredentialProvider } from "./runtime/git";
 import { createGitEnvResolver, createGitFactory } from "./runtime/git";
@@ -21,10 +25,15 @@ import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
 import { runProjectBackfill } from "./runtime/project-backfill";
 import { PullRequestRuntimeManager } from "./runtime/pull-requests";
 import {
+	launchSandboxAgentOnce,
 	readSandboxIdentity,
 	runSandboxSelfSeed,
 } from "./runtime/sandbox-self-seed";
-import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
+import {
+	isLiveTerminalSession,
+	registerWorkspaceTerminalRoute,
+	writeFramedInputToSession,
+} from "./terminal/terminal";
 import {
 	SqliteTerminalAgentBindingPersistence,
 	TerminalAgentStore,
@@ -35,7 +44,11 @@ import {
 	execGh as defaultExecGh,
 	type ExecGh,
 } from "./trpc/router/workspace-creation/utils/exec-gh";
-import type { ApiClient, BrowserBridgeConfig } from "./types";
+import type {
+	ApiClient,
+	BrowserBridgeConfig,
+	HostServiceContext,
+} from "./types";
 import { getHostWorkerPool } from "./workers/host-worker-pool";
 import { gitWorkspaceRefsTask } from "./workers/tasks/git";
 
@@ -74,6 +87,12 @@ export interface CreateAppResult {
 	api: ApiClient;
 	db: HostDb;
 	eventBus: EventBus;
+	/**
+	 * In a sandbox, runs the agent the workspace was created with. Call once
+	 * the server is listening; a no-op everywhere else and on every boot after
+	 * the first.
+	 */
+	launchSandboxAgent: () => Promise<void>;
 	dispose: () => Promise<void>;
 }
 
@@ -100,8 +119,10 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 				// this classification.
 				throw new TRPCError({
 					code: "PRECONDITION_FAILED",
-					message:
-						"No GitHub token available. Set GITHUB_TOKEN/GH_TOKEN or authenticate via git credential manager.",
+					message: providers.credentials.credentialRemedy(
+						"github.com",
+						"missing",
+					),
 					cause: { kind: "NO_GITHUB_TOKEN" },
 				});
 			}
@@ -151,11 +172,6 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	// pane on the `chat-v3` PostHog flag.
 	const chatV3 = createChatV3Mount({ db, dbPath: config.dbPath });
 
-	const runtime = {
-		auth: chatService,
-		filesystem,
-		pullRequests: pullRequestRuntime,
-	};
 	const app = new Hono();
 	const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
@@ -174,9 +190,9 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 
 	const eventBus = new EventBus({ db, filesystem, gitWatcher });
 	eventBus.start();
-	// Post-construction wiring (the runtime is built before the EventBus):
-	// newly created workspaces get their first branch/upstream sync + PR link
-	// immediately instead of waiting for the 5-min safety net.
+	// Post-construction wiring (pullRequestRuntime is built before the
+	// EventBus): newly created workspaces get their first branch/upstream sync
+	// + PR link immediately instead of waiting for the 5-min safety net.
 	pullRequestRuntime.subscribeToWorkspaceEvents(eventBus);
 
 	const terminalAgentPersistence = new SqliteTerminalAgentBindingPersistence(
@@ -193,6 +209,44 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		);
 	}
 	const terminalAgentStore = new TerminalAgentStore(terminalAgentPersistence);
+
+	const pageWatch = new PageWatchManager({
+		api: {
+			listThreads: (pageId) => api.pageComment.list.query({ pageId }),
+			setWatch: async (pageId, agentId) => {
+				await api.page.setWatch.mutate({ id: pageId, agentId });
+			},
+			clearWatch: async (pageId) => {
+				await api.page.clearWatch.mutate({ id: pageId });
+			},
+		},
+		sendToTerminal: async ({ workspaceId, terminalId, text }) => {
+			const result = await writeFramedInputToSession({
+				terminalId,
+				workspaceId,
+				text,
+				submit: true,
+				db,
+				eventBus,
+			});
+			if ("error" in result) throw new Error(result.error);
+		},
+		isTerminalAlive: isLiveTerminalSession,
+		isAgentBusy: (terminalId) =>
+			agentIsBusy(terminalAgentStore.get(terminalId)?.lastEventType),
+		hasAgent: (terminalId) => {
+			const binding = terminalAgentStore.get(terminalId);
+			return binding !== undefined && binding.endedAt === undefined;
+		},
+	});
+	pageWatch.subscribeToTerminalEvents(eventBus);
+
+	const runtime = {
+		auth: chatService,
+		filesystem,
+		pullRequests: pullRequestRuntime,
+		pageWatch,
+	};
 
 	// Startup sweeps run in the background so they don't block server
 	// startup. Ordering matters: the project backfill fills identity fields
@@ -260,12 +314,21 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	app.use("/events", wsAuth);
 	app.use("/chat-v3/*", wsAuth);
 	app.use("/browser/*", wsAuth);
+	app.use("/desktop/*", wsAuth);
+	app.use("/fwd", wsAuth);
 
 	registerEventBusRoute({ app, eventBus, upgradeWebSocket });
 	registerBrowserCdpRoute({
 		app,
 		upgradeWebSocket,
 		getBridge: () => config.browserBridge,
+	});
+	registerDesktopRoute({ app, upgradeWebSocket });
+	registerForwardMuxRoute({
+		app,
+		upgradeWebSocket,
+		getPortsByWorkspace: (workspaceId) =>
+			portManager.getPortsByWorkspace(workspaceId),
 	});
 	registerWorkspaceTerminalRoute({
 		app,
@@ -280,7 +343,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		trpcServer({
 			router: appRouter,
 			// Renderer clients send every request (including queries) as POST —
-			// see WorkspaceClientProvider/host-service-client's methodOverride —
+			// see createHostServiceLinks in @superset/workspace-client —
 			// so a query with a large input (e.g. git.getDiffBulk's file-path
 			// list, or a same-tick batch across many workspaces) doesn't produce
 			// a GET URL long enough to blow past the header-size limit. Without
@@ -320,6 +383,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 			console.warn("[host-service] pullRequestRuntime.stop failed:", err);
 		}
 		try {
+			pageWatch.stop();
+		} catch (err) {
+			console.warn("[host-service] pageWatch.stop failed:", err);
+		}
+		try {
 			await chatV3.dispose();
 		} catch (err) {
 			console.warn("[host-service] chatV3.dispose failed:", err);
@@ -343,5 +411,34 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		}
 	};
 
-	return { app, injectWebSocket, api, db, eventBus, dispose };
+	const launchSandboxAgent = async () => {
+		if (!sandboxIdentity?.launch) return;
+		await launchSandboxAgentOnce(
+			{
+				git,
+				credentials: providers.credentials,
+				github,
+				execGh,
+				api,
+				db,
+				runtime,
+				eventBus,
+				terminalAgentStore,
+				organizationId: config.organizationId,
+				isAuthenticated: true,
+				browserBridge: config.browserBridge,
+			} as HostServiceContext,
+			sandboxIdentity,
+		);
+	};
+
+	return {
+		app,
+		injectWebSocket,
+		api,
+		db,
+		eventBus,
+		launchSandboxAgent,
+		dispose,
+	};
 }

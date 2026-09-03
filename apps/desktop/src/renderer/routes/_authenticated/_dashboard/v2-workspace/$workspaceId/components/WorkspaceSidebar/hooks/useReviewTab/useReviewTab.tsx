@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import type { AppRouter } from "@superset/host-service";
 import { workspaceTrpc } from "@superset/workspace-client";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -7,7 +8,7 @@ import type { CommentPaneData, DiffFocusSide } from "../../../../types";
 import {
 	coerceCheckStatus,
 	computeChecksRollup,
-} from "../../components/PRActionHeader/utils/computeChecksStatus";
+} from "../../../../utils/computeChecksStatus";
 import type { SidebarTabDefinition } from "../../types";
 import { ReviewTabContent } from "./components/ReviewTabContent";
 import type { NormalizedComment, NormalizedPR } from "./types";
@@ -31,6 +32,7 @@ export function useReviewTab({
 	onOpenComment,
 	onOpenInDiff,
 }: UseReviewTabParams): SidebarTabDefinition {
+	const { t } = useLingui();
 	const prQuery = workspaceTrpc.git.getPullRequest.useQuery(
 		{ workspaceId },
 		{
@@ -98,7 +100,7 @@ export function useReviewTab({
 
 	return {
 		id: "review",
-		label: "Review",
+		label: t({ id: "workspace.reviewTab.label", message: "Review" }),
 		icon: LuMessageSquare,
 		badge: openReviewCount > 0 ? openReviewCount : undefined,
 		content,

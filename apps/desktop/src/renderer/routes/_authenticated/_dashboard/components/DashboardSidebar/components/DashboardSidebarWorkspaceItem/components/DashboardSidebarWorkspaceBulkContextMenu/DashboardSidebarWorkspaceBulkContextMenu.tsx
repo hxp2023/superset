@@ -1,3 +1,4 @@
+import { Plural, Trans } from "@lingui/react/macro";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -16,11 +17,10 @@ import {
 	LuTrash2,
 	LuX,
 } from "react-icons/lu";
-import { useBulkWorkspaceDeleteDialog } from "../../../../hooks/useBulkWorkspaceDeleteDialog";
 import { useBulkWorkspaceMoveActions } from "../../../../hooks/useBulkWorkspaceMoveActions";
 import { useDashboardSidebarHoverActions } from "../../../../providers/DashboardSidebarHoverProvider";
 import { useDashboardSidebarSelection } from "../../../../providers/DashboardSidebarSelectionProvider";
-import { DashboardSidebarBulkDeleteDialog } from "../../../DashboardSidebarBulkDeleteDialog";
+import { useBulkDeleteWorkspacesIntent } from "../../../../stores/bulkDeleteWorkspacesIntent";
 import { useWorkspaceBulkMenuScope } from "../WorkspaceBulkMenuScope";
 
 interface DashboardSidebarWorkspaceBulkContextMenuProps {
@@ -32,8 +32,7 @@ export function DashboardSidebarWorkspaceBulkContextMenu({
 }: DashboardSidebarWorkspaceBulkContextMenuProps) {
 	const scope = useWorkspaceBulkMenuScope();
 	const { setContextMenuOpen } = useDashboardSidebarHoverActions();
-	const { clearSelection, removeSelectedWorkspaces } =
-		useDashboardSidebarSelection();
+	const { clearSelection } = useDashboardSidebarSelection();
 	const {
 		createGroupFromSelection,
 		groupedWorkspaceIds,
@@ -47,80 +46,90 @@ export function DashboardSidebarWorkspaceBulkContextMenu({
 		workspacesById: scope?.workspacesById ?? new Map(),
 		sectionIdByWorkspaceId: scope?.sectionIdByWorkspaceId ?? new Map(),
 	});
-	const { deleteDialogProps, openDeleteDialog } = useBulkWorkspaceDeleteDialog({
-		selectedWorkspaces,
-		onDeleted: removeSelectedWorkspaces,
-	});
+	const openDeleteDialog = () =>
+		useBulkDeleteWorkspacesIntent.getState().request(selectedWorkspaces);
 
 	if (!scope) return children;
 
 	const count = selectedWorkspaces.length;
-	const workspaceLabel = count === 1 ? "Workspace" : "Workspaces";
 
 	return (
-		<>
-			<ContextMenu onOpenChange={setContextMenuOpen}>
-				<ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-				<ContextMenuContent
-					onCloseAutoFocus={(event) => event.preventDefault()}
-				>
-					<ContextMenuSub>
-						<ContextMenuSubTrigger>
-							<LuArrowRightLeft className="size-4 mr-2" />
+		<ContextMenu onOpenChange={setContextMenuOpen}>
+			<ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+			<ContextMenuContent onCloseAutoFocus={(event) => event.preventDefault()}>
+				<ContextMenuSub>
+					<ContextMenuSubTrigger>
+						<LuArrowRightLeft className="size-4 mr-2" />
+						<Trans id="dashboard.sidebar.workspaceBulkMenu.moveToGroup">
 							Move {count} to Group
-						</ContextMenuSubTrigger>
-						<ContextMenuSubContent>
-							<ContextMenuItem onSelect={createGroupFromSelection}>
-								<LuFolderPlus className="size-4 mr-2" />
+						</Trans>
+					</ContextMenuSubTrigger>
+					<ContextMenuSubContent>
+						<ContextMenuItem onSelect={createGroupFromSelection}>
+							<LuFolderPlus className="size-4 mr-2" />
+							<Trans id="dashboard.sidebar.workspaceBulkMenu.newGroup">
 								New group
-							</ContextMenuItem>
-							{sectionMenuState === "populated" && <ContextMenuSeparator />}
-							{sections?.map((section) => (
-								<ContextMenuItem
-									key={section.id}
-									onSelect={() => moveSelectionToSection(section.id)}
-								>
-									{section.color && (
-										<span
-											className="size-2 shrink-0 rounded-full mr-2"
-											style={{ backgroundColor: section.color }}
-										/>
-									)}
-									{section.name}
-								</ContextMenuItem>
-							))}
-							{sectionMenuState !== "populated" && (
-								<ContextMenuItem disabled>
-									{sectionMenuState === "empty"
-										? "No groups yet"
-										: "Loading groups…"}
-								</ContextMenuItem>
-							)}
-						</ContextMenuSubContent>
-					</ContextMenuSub>
-					{groupedWorkspaceIds.length > 0 && (
-						<ContextMenuItem onSelect={ungroupSelection}>
-							<LuArrowUp className="size-4 mr-2" />
-							Ungroup
+							</Trans>
 						</ContextMenuItem>
-					)}
-					<ContextMenuSeparator />
-					<ContextMenuItem
-						onSelect={openDeleteDialog}
-						className="text-destructive focus:text-destructive"
-					>
-						<LuTrash2 className="size-4 mr-2 text-destructive" />
-						Delete {count} {workspaceLabel}
+						{sectionMenuState === "populated" && <ContextMenuSeparator />}
+						{sections?.map((section) => (
+							<ContextMenuItem
+								key={section.id}
+								onSelect={() => moveSelectionToSection(section.id)}
+							>
+								{section.color && (
+									<span
+										className="size-2 shrink-0 rounded-full mr-2"
+										style={{ backgroundColor: section.color }}
+									/>
+								)}
+								{section.name}
+							</ContextMenuItem>
+						))}
+						{sectionMenuState !== "populated" && (
+							<ContextMenuItem disabled>
+								{sectionMenuState === "empty" ? (
+									<Trans id="dashboard.sidebar.workspaceBulkMenu.noGroupsYet">
+										No groups yet
+									</Trans>
+								) : (
+									<Trans id="dashboard.sidebar.workspaceBulkMenu.loadingGroups">
+										Loading groups…
+									</Trans>
+								)}
+							</ContextMenuItem>
+						)}
+					</ContextMenuSubContent>
+				</ContextMenuSub>
+				{groupedWorkspaceIds.length > 0 && (
+					<ContextMenuItem onSelect={ungroupSelection}>
+						<LuArrowUp className="size-4 mr-2" />
+						<Trans id="dashboard.sidebar.workspaceBulkMenu.ungroup">
+							Ungroup
+						</Trans>
 					</ContextMenuItem>
-					<ContextMenuSeparator />
-					<ContextMenuItem onSelect={clearSelection}>
-						<LuX className="size-4 mr-2" />
+				)}
+				<ContextMenuSeparator />
+				<ContextMenuItem
+					onSelect={openDeleteDialog}
+					className="text-destructive focus:text-destructive"
+				>
+					<LuTrash2 className="size-4 mr-2 text-destructive" />
+					<Plural
+						id="dashboard.sidebar.workspaceBulkMenu.deleteCount"
+						value={count}
+						one="Delete # Workspace"
+						other="Delete # Workspaces"
+					/>
+				</ContextMenuItem>
+				<ContextMenuSeparator />
+				<ContextMenuItem onSelect={clearSelection}>
+					<LuX className="size-4 mr-2" />
+					<Trans id="dashboard.sidebar.workspaceBulkMenu.clearSelection">
 						Clear Selection
-					</ContextMenuItem>
-				</ContextMenuContent>
-			</ContextMenu>
-
-			<DashboardSidebarBulkDeleteDialog {...deleteDialogProps} />
-		</>
+					</Trans>
+				</ContextMenuItem>
+			</ContextMenuContent>
+		</ContextMenu>
 	);
 }
