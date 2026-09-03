@@ -1,6 +1,6 @@
 import type { AppRouter } from "@superset/host-service";
 import type { LayoutNode, Tab, WorkspaceState } from "@superset/panes";
-import { SESSIONS_TAG_SCOPE } from "@superset/shared/workspace-tags";
+import { tagFolderScopeInputSchema } from "@superset/shared/workspace-tags";
 import type { inferRouterInputs } from "@trpc/server";
 import { z } from "zod";
 
@@ -222,7 +222,7 @@ export const dashboardSidebarSectionSchema = z.object({
 	sectionId: z.string().min(1),
 	// A project id, or the Sessions tag scope: the Sessions lane stores its
 	// folder rows (order, collapse) under that scope since it has no project.
-	projectId: z.union([z.string().uuid(), z.literal(SESSIONS_TAG_SCOPE)]),
+	projectId: tagFolderScopeInputSchema,
 	name: z.string().trim().min(1),
 	createdAt: persistedDateSchema,
 	tabOrder: z.number().int().default(0),

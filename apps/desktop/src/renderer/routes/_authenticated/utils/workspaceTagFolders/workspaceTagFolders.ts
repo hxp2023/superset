@@ -2,6 +2,7 @@ import {
 	normalizeWorkspaceTag,
 	normalizeWorkspaceTags,
 	SESSIONS_TAG_SCOPE,
+	tagFolderScope,
 	WORKSPACE_TAG_MAX_LENGTH,
 } from "@superset/shared/workspace-tags";
 
@@ -55,7 +56,10 @@ export interface TagFolderSectionInput {
  */
 export interface TagFolderWorkspaceInput {
 	id: string;
-	/** Null for project-less "session" workspaces — never groupable. */
+	/**
+	 * Null for project-less "session" workspaces; their folders are keyed by
+	 * SESSIONS_TAG_SCOPE (see the shared `tagFolderScope`).
+	 */
 	projectId: string | null;
 	tags?: readonly string[] | null;
 }
@@ -133,15 +137,10 @@ export function deriveSessionTagFolders(
 /** `${projectId}:${tag}` — addressable without a stored row; the tag is
  * recoverable from the key alone. `tag` must already be normalized. */
 /**
- * Folder rows are keyed by a scope: the project id, or the Sessions tag scope
- * for project-less sessions. Workspaces keep `projectId: null` for the
- * Sessions lane; only folders (and their host settings) use the scope.
+ * Inverse of the shared `tagFolderScope`: the projectId the lane's workspace
+ * rows carry (null for the Sessions lane). Folder rows and host tag settings
+ * are keyed by the scope; workspaces never are.
  */
-export function sectionScopeForProject(projectId: string | null): string {
-	return projectId ?? SESSIONS_TAG_SCOPE;
-}
-
-/** Inverse of {@link sectionScopeForProject}: the lane's workspace projectId. */
 export function laneProjectIdForScope(scope: string): string | null {
 	return scope === SESSIONS_TAG_SCOPE ? null : scope;
 }
@@ -224,7 +223,7 @@ export function deriveTagFolders(
 
 	const uncoveredTagsByProjectId = new Map<string, Set<string>>();
 	for (const workspace of workspaces) {
-		const scope = sectionScopeForProject(workspace.projectId);
+		const scope = tagFolderScope(workspace.projectId);
 		for (const tag of normalizeWorkspaceTags(workspace.tags)) {
 			if (coveredTagsByProjectId.get(scope)?.has(tag)) continue;
 			let uncovered = uncoveredTagsByProjectId.get(scope);

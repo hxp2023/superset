@@ -3,6 +3,7 @@ import {
 	normalizeWorkspaceTag,
 	normalizeWorkspaceTags,
 	SESSIONS_TAG_SCOPE,
+	tagFolderScope,
 } from "@superset/shared/workspace-tags";
 import { useCallback } from "react";
 import { useHostProjects } from "renderer/hooks/host-projects/useHostProjects";
@@ -33,7 +34,6 @@ import {
 	mintFolderTag,
 	parseSidebarFolderKey,
 	resolveWorkspaceSectionId,
-	sectionScopeForProject,
 	type TagFolderContext,
 	type TagFolderRef,
 	type TagFolderWorkspaceInput,
@@ -79,7 +79,7 @@ function getProjectTopLevelItems(
 	projectId: string | null,
 	options: { excludeWorkspaceId?: string; excludeSectionId?: string } = {},
 ): ProjectTopLevelItem[] {
-	const scope = sectionScopeForProject(projectId);
+	const scope = tagFolderScope(projectId);
 	const folderIndex = getProjectFolderTagIndex(
 		deriveTagFolders(
 			Array.from(collections.v2SidebarSections.state.values()),
@@ -137,7 +137,7 @@ function getProjectFolderIndex(
 			hostWorkspaces,
 			tagFolderContext,
 		),
-		sectionScopeForProject(projectId),
+		tagFolderScope(projectId),
 	);
 }
 

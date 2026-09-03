@@ -13,7 +13,6 @@ export {
 	resolveWorkspaceFolder,
 	resolveWorkspaceSectionId,
 	type SessionTagFolder,
-	sectionScopeForProject,
 	type TagFolderContext,
 	type TagFolderRef,
 	type TagFolderSection,
