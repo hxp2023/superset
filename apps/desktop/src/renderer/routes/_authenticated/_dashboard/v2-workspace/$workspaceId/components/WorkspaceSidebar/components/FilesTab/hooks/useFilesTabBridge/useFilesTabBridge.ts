@@ -14,6 +14,14 @@ interface UseFilesTabBridgeOptions {
 	model: FileTree;
 	workspaceId: string;
 	rootPath: string;
+	/**
+	 * Called for every listed entry before it's added to Pierre; return false
+	 * to keep an excluded/gitignored entry out of the tree entirely. Read via
+	 * ref internally so toggling the underlying filter doesn't change
+	 * fetchDir/doRefresh identity — callers must invoke `doRefresh()` after
+	 * changing the filter to re-apply it to already-loaded directories.
+	 */
+	shouldIncludeEntry: (relPath: string, isDirectory: boolean) => boolean;
 }
 
 export interface FilesTabBridge {
@@ -71,6 +79,7 @@ export function useFilesTabBridge({
 	model,
 	workspaceId,
 	rootPath,
+	shouldIncludeEntry,
 }: UseFilesTabBridgeOptions): FilesTabBridge {
 	const utils = workspaceTrpc.useUtils();
 	const [isRefreshing, setIsRefreshing] = useState(false);
@@ -82,6 +91,11 @@ export function useFilesTabBridge({
 	const loadedDirsRef = useRef(new Set<string>());
 	const loadingDirsRef = useRef(new Set<string>());
 	const pendingCreatesRef = useRef(new Map<string, "file" | "folder">());
+
+	// Latest-closure indirection so fetchDir/doRefresh keep a stable identity
+	// across renders even as the filter changes (see option doc above).
+	const shouldIncludeEntryRef = useRef(shouldIncludeEntry);
+	shouldIncludeEntryRef.current = shouldIncludeEntry;
 
 	// Bumped on workspace/root change so async listings started against an
 	// old workspace can detect they're stale and bail out before mutating.
@@ -103,7 +117,9 @@ export function useFilesTabBridge({
 				const ops: { type: "add"; path: string }[] = [];
 				for (const entry of result.entries) {
 					const rel = toRel(rootPath, entry.absolutePath);
-					const treePath = entry.kind === "directory" ? `${rel}/` : rel;
+					const isDirectory = entry.kind === "directory";
+					if (!shouldIncludeEntryRef.current(rel, isDirectory)) continue;
+					const treePath = isDirectory ? `${rel}/` : rel;
 					if (knownPathsRef.current.has(treePath)) continue;
 					knownPathsRef.current.add(treePath);
 					ops.push({ type: "add", path: treePath });
@@ -142,7 +158,9 @@ export function useFilesTabBridge({
 					if (versionRef.current !== startVersion) return;
 					for (const entry of result.entries) {
 						const rel = toRel(rootPath, entry.absolutePath);
-						freshPaths.add(entry.kind === "directory" ? `${rel}/` : rel);
+						const isDirectory = entry.kind === "directory";
+						if (!shouldIncludeEntryRef.current(rel, isDirectory)) continue;
+						freshPaths.add(isDirectory ? `${rel}/` : rel);
 					}
 					loadedDirsRef.current.add(dir);
 				} catch (error) {
@@ -254,7 +272,7 @@ export function useFilesTabBridge({
 						}
 						addKnownPath(model, knownPathsRef.current, newKey);
 					}
-				} else {
+				} else if (shouldIncludeEntryRef.current(rel, isFolder)) {
 					addKnownPath(model, knownPathsRef.current, newKey);
 				}
 				return;
@@ -277,6 +295,7 @@ export function useFilesTabBridge({
 
 			if (event.kind === "create") {
 				const isFolder = event.isDirectory ?? false;
+				if (!shouldIncludeEntryRef.current(rel, isFolder)) return;
 				const key = isFolder ? `${rel}/` : rel;
 				addKnownPath(model, knownPathsRef.current, key);
 				return;

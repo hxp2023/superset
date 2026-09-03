@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	DEFAULT_V2_USER_PREFERENCES,
+	type FileExplorerFilter,
 	type LinkTierMap,
 	V2_USER_PREFERENCES_ID,
 	type V2UserPreferencesRow,
@@ -21,6 +22,11 @@ export interface V2UserPreferencesApi {
 	setRightSidebarWidth: (next: number) => void;
 	setDeleteLocalBranch: (next: boolean) => void;
 	setShowPresetsBar: (next: boolean) => void;
+	setFileExplorerFilter: (
+		next:
+			| FileExplorerFilter
+			| ((prev: FileExplorerFilter) => FileExplorerFilter),
+	) => void;
 }
 
 export function useV2UserPreferences(): V2UserPreferencesApi {
@@ -169,6 +175,33 @@ export function useV2UserPreferences(): V2UserPreferencesApi {
 		[collections],
 	);
 
+	const setFileExplorerFilter = useCallback(
+		(
+			next:
+				| FileExplorerFilter
+				| ((prev: FileExplorerFilter) => FileExplorerFilter),
+		) => {
+			const existing = collections.v2UserPreferences.get(
+				V2_USER_PREFERENCES_ID,
+			);
+			const prev =
+				existing?.fileExplorerFilter ??
+				DEFAULT_V2_USER_PREFERENCES.fileExplorerFilter;
+			const value = typeof next === "function" ? next(prev) : next;
+			if (!existing) {
+				collections.v2UserPreferences.insert({
+					...DEFAULT_V2_USER_PREFERENCES,
+					fileExplorerFilter: value,
+				});
+				return;
+			}
+			collections.v2UserPreferences.update(V2_USER_PREFERENCES_ID, (draft) => {
+				draft.fileExplorerFilter = value;
+			});
+		},
+		[collections],
+	);
+
 	return {
 		preferences,
 		setFileLinks,
@@ -179,5 +212,6 @@ export function useV2UserPreferences(): V2UserPreferencesApi {
 		setRightSidebarWidth,
 		setDeleteLocalBranch,
 		setShowPresetsBar,
+		setFileExplorerFilter,
 	};
 }

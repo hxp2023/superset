@@ -198,6 +198,33 @@ const DEFAULT_SIDEBAR_FILE_LINKS: LinkTierMap = {
 	metaShift: "external",
 };
 
+// Folder/file basenames hidden by default in the v2 explorer. Mirrors the VS
+// Code convention: hide build artefacts and SCM internals, but leave dotfiles
+// like .env, .gitignore, .eslintrc visible so they remain searchable.
+export const DEFAULT_FILE_EXPLORER_EXCLUDES = [
+	"node_modules",
+	".git",
+	".turbo",
+	".next",
+	"dist",
+	"build",
+	".DS_Store",
+] as const;
+
+const fileExplorerFilterSchema = z.object({
+	excludeNames: z
+		.array(z.string())
+		.default([...DEFAULT_FILE_EXPLORER_EXCLUDES]),
+	hideGitignored: z.boolean().default(false),
+});
+
+export type FileExplorerFilter = z.infer<typeof fileExplorerFilterSchema>;
+
+const DEFAULT_FILE_EXPLORER_FILTER: FileExplorerFilter = {
+	excludeNames: [...DEFAULT_FILE_EXPLORER_EXCLUDES],
+	hideGitignored: false,
+};
+
 export const v2UserPreferencesSchema = z.object({
 	id: z.literal("preferences"),
 	fileLinks: linkTierMapSchema.default(DEFAULT_LINK_TIER_MAP),
@@ -208,6 +235,9 @@ export const v2UserPreferencesSchema = z.object({
 	rightSidebarWidth: z.number().default(340),
 	deleteLocalBranch: z.boolean().default(false),
 	showPresetsBar: z.boolean().default(true),
+	fileExplorerFilter: fileExplorerFilterSchema.default(
+		DEFAULT_FILE_EXPLORER_FILTER,
+	),
 });
 
 export type V2UserPreferencesRow = z.infer<typeof v2UserPreferencesSchema>;
@@ -224,6 +254,7 @@ export const DEFAULT_V2_USER_PREFERENCES: V2UserPreferencesRow = {
 	rightSidebarWidth: 340,
 	deleteLocalBranch: false,
 	showPresetsBar: true,
+	fileExplorerFilter: DEFAULT_FILE_EXPLORER_FILTER,
 };
 
 /**

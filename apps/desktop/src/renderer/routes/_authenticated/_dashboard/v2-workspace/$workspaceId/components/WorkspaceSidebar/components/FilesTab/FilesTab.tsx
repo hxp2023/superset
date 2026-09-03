@@ -23,9 +23,10 @@ import {
 	Loader2,
 	RefreshCw,
 } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FileStatus } from "renderer/hooks/host-service/useGitStatusMap";
 import { useGitStatusMap } from "renderer/hooks/host-service/useGitStatusMap";
+import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import {
 	folderIntentFor,
 	ShadowClickHint,
@@ -38,6 +39,7 @@ import {
 	TREE_INDENT,
 } from "renderer/screens/main/components/WorkspaceView/RightSidebar/FilesView/constants";
 import { FileMenuItems } from "./components/FileMenuItems";
+import { FilesTabFilterBar } from "./components/FilesTabFilterBar";
 import { FolderMenuItems } from "./components/FolderMenuItems";
 import { RowContextMenu } from "./components/RowContextMenu";
 import { useFilesTabBridge } from "./hooks/useFilesTabBridge";
@@ -160,6 +162,11 @@ export function FilesTab({
 	const { fileStatusByPath, folderStatusByPath, ignoredPaths } =
 		useGitStatusMap(gitStatus);
 
+	const { preferences } = useV2UserPreferences();
+	const { excludeNames, hideGitignored } = preferences.fileExplorerFilter;
+	const excludeSet = useMemo(() => new Set(excludeNames), [excludeNames]);
+	const [query, setQuery] = useState("");
+
 	// Pierre's `gitStatus` is consumed only at construction; live updates
 	// flow via model.setGitStatus in an effect below.
 	const initialGitStatusEntriesRef = useRef(
@@ -188,7 +195,10 @@ export function FilesTab({
 	const { model } = usePierreFileTree({
 		paths: [],
 		initialExpansion: "closed",
+		// Pierre's own search input stays off — FilesTabFilterBar drives the
+		// same search session headlessly via model.setSearch below.
 		search: false,
+		fileTreeSearchMode: "hide-non-matches",
 		renaming: {
 			onRename: (event) => handlersRef.current.onRename(event),
 			onError: (message) => toast.error(message),
@@ -209,7 +219,45 @@ export function FilesTab({
 		renderRowDecoration: (ctx) => handlersRef.current.renderRowDecoration(ctx),
 	});
 
-	const bridge = useFilesTabBridge({ model, workspaceId, rootPath });
+	// Keeps a stable identity across renders (see the option doc in
+	// useFilesTabBridge) — excludeSet/hideGitignored/ignoredPaths changes are
+	// read live via the ref the bridge maintains internally.
+	const shouldIncludeEntry = useCallback(
+		(relPath: string, _isDirectory: boolean): boolean => {
+			if (excludeSet.has(basename(relPath))) return false;
+			if (hideGitignored && ignoredPaths.has(relPath)) return false;
+			return true;
+		},
+		[excludeSet, hideGitignored, ignoredPaths],
+	);
+
+	const bridge = useFilesTabBridge({
+		model,
+		workspaceId,
+		rootPath,
+		shouldIncludeEntry,
+	});
+
+	// Re-apply the exclude/gitignore filter to already-loaded directories
+	// whenever the user changes it — skip the mount run since there's nothing
+	// loaded yet. Paths a relaxed filter newly allows are picked up here too.
+	const skipFilterRefreshRef = useRef(true);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: excludeSet/hideGitignored aren't read in the body — they're the trigger for re-running doRefresh, which reads the current filter via the bridge's internal ref.
+	useEffect(() => {
+		if (skipFilterRefreshRef.current) {
+			skipFilterRefreshRef.current = false;
+			return;
+		}
+		void bridge.doRefresh();
+	}, [excludeSet, hideGitignored, bridge.doRefresh]);
+
+	// Drive Pierre's native search session from our own search input instead
+	// of its built-in one (kept off via `search: false` above). Only matches
+	// against paths already loaded into the tree — same lazy-load limitation
+	// the rest of the tree has; a full-repo search lives elsewhere.
+	useEffect(() => {
+		model.setSearch(query.trim() ? query : null);
+	}, [model, query]);
 
 	// Push live git status updates into Pierre.
 	useEffect(() => {
@@ -632,6 +680,7 @@ export function FilesTab({
 			className="flex h-full min-h-0 flex-col overflow-hidden"
 			onClickCapture={handleClickCapture}
 		>
+			<FilesTabFilterBar query={query} onQueryChange={setQuery} />
 			<ShadowClickHint hint={filePolicy.hint} findRow={findFileRow}>
 				<PierreFileTree
 					model={model}
