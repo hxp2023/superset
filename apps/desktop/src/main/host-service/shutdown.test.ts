@@ -92,8 +92,8 @@ function createHarness(
 }
 
 describe("createShutdown", () => {
-	test("exits immediately when the server never bound", () => {
-		const h = createHarness({ hasServer: false });
+	test("exits 0 without a drain window when the server never bound and there is nothing to dispose", () => {
+		const h = createHarness({ hasServer: false, dispose: null });
 
 		h.shutdown("SIGTERM");
 
@@ -101,6 +101,35 @@ describe("createShutdown", () => {
 		expect(h.exit).toHaveBeenCalledWith(0);
 		expect(h.hardExit).not.toHaveBeenCalled();
 		expect(h.timers).toHaveLength(0);
+	});
+
+	test("server never bound but createApp ran: disposes under the deadline, no drain window", async () => {
+		const dispose = mock(async () => {});
+		const h = createHarness({ hasServer: false, dispose });
+
+		h.shutdown("SIGTERM");
+		expect(dispose).toHaveBeenCalledTimes(1);
+		expect(h.server.close).not.toHaveBeenCalled();
+		expect(h.timers).toHaveLength(1);
+		expect(h.timers[0]?.delayMs).toBe(DISPOSE_TIMEOUT_MS);
+
+		await h.settle();
+		expect(h.exit).toHaveBeenCalledWith(0);
+		expect(h.hardExit).not.toHaveBeenCalled();
+	});
+
+	test("server never bound and dispose wedged: hard-exits at the deadline", async () => {
+		const h = createHarness({
+			hasServer: false,
+			dispose: () => new Promise<void>(() => {}),
+		});
+
+		h.shutdown("SIGTERM");
+		await h.settle();
+		expect(h.exit).not.toHaveBeenCalled();
+
+		h.fireNextTimer();
+		expect(h.hardExit).toHaveBeenCalledTimes(1);
 	});
 
 	test("closes the server, then after the grace tears sockets down, disposes and exits 0", async () => {

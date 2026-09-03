@@ -115,7 +115,10 @@ export function createShutdown(deps: ShutdownDeps): (reason: string) => void {
 		log(`[host-service] shutdown (${reason}), draining connections`);
 		const server = getServer();
 		if (!server) {
-			exit(0);
+			// Nothing listening yet, so there is nothing to drain. Workers may
+			// already exist though (createApp() runs before serve()), so exit
+			// through the same bounded dispose rather than a bare process.exit().
+			disposeThenExit();
 			return;
 		}
 		server.close();
