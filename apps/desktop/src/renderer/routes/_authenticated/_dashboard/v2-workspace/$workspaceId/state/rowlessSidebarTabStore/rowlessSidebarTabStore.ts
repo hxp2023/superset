@@ -5,6 +5,8 @@ interface RowlessSidebarTabStore {
 	/** Active sidebar tab by workspace id, for workspaces without a local row. */
 	tabs: Record<string, WorkspaceSidebarTab>;
 	setTab: (workspaceId: string, tab: WorkspaceSidebarTab) => void;
+	/** Drop a workspace's entry once its choice has moved into a real row. */
+	clearTab: (workspaceId: string) => void;
 }
 
 /**
@@ -19,5 +21,11 @@ export const useRowlessSidebarTabStore = create<RowlessSidebarTabStore>()(
 		tabs: {},
 		setTab: (workspaceId, tab) =>
 			set((state) => ({ tabs: { ...state.tabs, [workspaceId]: tab } })),
+		clearTab: (workspaceId) =>
+			set((state) => {
+				if (!(workspaceId in state.tabs)) return state;
+				const { [workspaceId]: _dropped, ...tabs } = state.tabs;
+				return { tabs };
+			}),
 	}),
 );
