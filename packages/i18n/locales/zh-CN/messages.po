@@ -8693,6 +8693,10 @@ msgid "dashboard.workspaces.row.creatorYou"
 msgstr "你"
 
 #. js-lingui-explicit-id
+msgid "dashboard.workspaces.row.deviceOffline"
+msgstr "离线"
+
+#. js-lingui-explicit-id
 #. placeholder {0}: new Date(workspace.lastAgentEventAt).toLocaleString()
 msgid "dashboard.workspaces.row.lastAgentActivity"
 msgstr "最近智能体活动{0}"

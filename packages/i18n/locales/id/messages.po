@@ -8693,6 +8693,10 @@ msgid "dashboard.workspaces.row.creatorYou"
 msgstr "Anda"
 
 #. js-lingui-explicit-id
+msgid "dashboard.workspaces.row.deviceOffline"
+msgstr "Offline"
+
+#. js-lingui-explicit-id
 #. placeholder {0}: new Date(workspace.lastAgentEventAt).toLocaleString()
 msgid "dashboard.workspaces.row.lastAgentActivity"
 msgstr "Aktivitas agen terakhir {0}"

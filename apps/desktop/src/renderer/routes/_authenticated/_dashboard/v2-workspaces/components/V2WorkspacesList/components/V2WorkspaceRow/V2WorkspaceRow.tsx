@@ -235,10 +235,19 @@ export const V2WorkspaceRow = memo(function V2WorkspaceRow({
 							{workspace.hostName}
 						</span>
 						{isDeviceOffline ? (
-							<span
-								aria-hidden
-								className="inline-block size-1.5 shrink-0 rounded-full bg-muted-foreground/40"
-							/>
+							<>
+								<span
+									aria-hidden
+									className="inline-block size-1.5 shrink-0 rounded-full bg-muted-foreground/40"
+								/>
+								{/* The dot is the only visual offline cue; screen readers
+								    need the word. */}
+								<span className="sr-only">
+									<Trans id="dashboard.workspaces.row.deviceOffline">
+										Offline
+									</Trans>
+								</span>
+							</>
 						) : null}
 					</span>
 

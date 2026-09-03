@@ -224,8 +224,12 @@ function V2WorkspacesPage() {
 
 	// Re-rendering hundreds of rows takes hundreds of ms; deferring keeps
 	// filter menus and checkboxes painting instantly while the list catches
-	// up at background priority.
+	// up at background priority. isReady must lag with the rows — both
+	// deferred values flip in the same background render, whereas a sync
+	// isReady=true against still-empty deferred rows would flash the empty
+	// state while the first rows are being rendered.
 	const deferredWorkspaces = useDeferredValue(all);
+	const deferredIsReady = useDeferredValue(isReady);
 
 	return (
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
@@ -237,9 +241,15 @@ function V2WorkspacesPage() {
 				projectsById={projectsById}
 			/>
 			{viewMode === "board" ? (
-				<V2WorkspacesBoard workspaces={deferredWorkspaces} isReady={isReady} />
+				<V2WorkspacesBoard
+					workspaces={deferredWorkspaces}
+					isReady={deferredIsReady}
+				/>
 			) : (
-				<V2WorkspacesList workspaces={deferredWorkspaces} isReady={isReady} />
+				<V2WorkspacesList
+					workspaces={deferredWorkspaces}
+					isReady={deferredIsReady}
+				/>
 			)}
 		</div>
 	);
