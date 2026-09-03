@@ -32,7 +32,7 @@ import {
 	type HeadersLike,
 	type NullableHeaders,
 } from "./internal/headers";
-import type { APIResponseProps } from "./internal/parse";
+import { type APIResponseProps, defaultParseResponse } from "./internal/parse";
 import type {
 	FinalRequestOptions,
 	RequestOptions,
@@ -500,12 +500,12 @@ export class Superset {
 		input?: unknown,
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
-		return this._trackedRequest<TRPCEnvelope<Rsp>>(call, "cloud", {
+		return this._trackedRequest<Rsp>(call, "cloud", {
 			method: "post",
 			path: `/api/trpc/${call.procedure}`,
 			body: { json: input ?? null },
 			...options,
-		})._thenUnwrap((r) => r.result.data.json);
+		});
 	}
 
 	/**
@@ -521,12 +521,12 @@ export class Superset {
 		if (input !== undefined) {
 			queryParams.input = JSON.stringify({ json: input });
 		}
-		return this._trackedRequest<TRPCEnvelope<Rsp>>(call, "cloud", {
+		return this._trackedRequest<Rsp>(call, "cloud", {
 			method: "get",
 			path: `/api/trpc/${call.procedure}`,
 			query: queryParams,
 			...options,
-		})._thenUnwrap((r) => r.result.data.json);
+		});
 	}
 
 	/**
@@ -565,11 +565,7 @@ export class Superset {
 				]),
 			}),
 		);
-		return this._trackedRequest<TRPCEnvelope<Rsp>>(
-			call,
-			"host",
-			optsPromise,
-		)._thenUnwrap((r) => r.result.data.json);
+		return this._trackedRequest<Rsp>(call, "host", optsPromise);
 	}
 
 	/**
@@ -603,20 +599,18 @@ export class Superset {
 				]),
 			}),
 		);
-		return this._trackedRequest<TRPCEnvelope<Rsp>>(
-			call,
-			"host",
-			optsPromise,
-		)._thenUnwrap((r) => r.result.data.json);
+		return this._trackedRequest<Rsp>(call, "host", optsPromise);
 	}
 
 	/**
-	 * Issue the request behind a public resource method and, once it settles,
-	 * report the call to `analytics.captureEvent`. The report hangs off a
-	 * branch of the response promise, never the promise handed back to the
-	 * caller: it cannot delay, fail, or retry the user's call. The capture
-	 * request goes through `post`, not `mutation`, so it is not itself
-	 * reported.
+	 * Issue the request behind a public resource method, unwrap the tRPC
+	 * envelope, and report the call to `analytics.captureEvent` once the
+	 * caller's promise settles: success only after the body parsed and the
+	 * envelope unwrapped, failure on transport, HTTP, or parse errors. The
+	 * report never sits in the caller's chain, so it cannot delay, fail, or
+	 * retry the user's call, and it does not force a parse on callers that
+	 * only want `asResponse()`. The capture request goes through `post`, not
+	 * `mutation`, so it is not itself reported.
 	 */
 	private _trackedRequest<Rsp>(
 		call: TRPCCall,
@@ -625,13 +619,27 @@ export class Superset {
 	): APIPromise<Rsp> {
 		const startedAt = Date.now();
 		const responsePromise = this.makeRequest(options, null, undefined);
-		if (this._telemetryEnabled) {
-			responsePromise.then(
-				() => this._captureMethodCalled(call, target, true, startedAt),
-				() => this._captureMethodCalled(call, target, false, startedAt),
-			);
-		}
-		return new APIPromise(this, responsePromise);
+		let reported = false;
+		const report = (success: boolean) => {
+			if (reported || !this._telemetryEnabled) return;
+			reported = true;
+			this._captureMethodCalled(call, target, success, startedAt);
+		};
+		responsePromise.then(undefined, () => report(false));
+		return new APIPromise(this, responsePromise, async (client, props) => {
+			try {
+				const envelope = await defaultParseResponse<TRPCEnvelope<Rsp>>(
+					client,
+					props,
+				);
+				const data = envelope.result.data.json;
+				report(true);
+				return data;
+			} catch (error) {
+				report(false);
+				throw error;
+			}
+		});
 	}
 
 	private _captureMethodCalled(
