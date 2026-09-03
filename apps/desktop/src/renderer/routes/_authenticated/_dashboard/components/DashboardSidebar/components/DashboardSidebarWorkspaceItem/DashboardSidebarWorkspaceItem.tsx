@@ -128,6 +128,7 @@ export function DashboardSidebarWorkspaceItem({
 		workspaceName: name,
 		branch,
 		pullRequestUrl: pullRequest?.url ?? null,
+		isCloudWorkspace: hostType === "cloud",
 		isMainWorkspace,
 		isPinned: workspace.isPinned,
 	});

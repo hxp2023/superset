@@ -46,6 +46,8 @@ interface UseDashboardSidebarWorkspaceItemActionsOptions {
 	branch: string;
 	/** The chip currently shown, so "Remove PR link" knows which PR to hide. */
 	pullRequestUrl?: string | null;
+	/** Cloud rows source their chip from the cloud table, not their host. */
+	isCloudWorkspace?: boolean;
 	isMainWorkspace?: boolean;
 	isPinned?: boolean;
 }
@@ -57,6 +59,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 	workspaceName,
 	branch,
 	pullRequestUrl = null,
+	isCloudWorkspace = false,
 	isMainWorkspace = false,
 	isPinned = false,
 }: UseDashboardSidebarWorkspaceItemActionsOptions) {
@@ -285,12 +288,12 @@ export function useDashboardSidebarWorkspaceItemActions({
 	};
 
 	const handleRemovePullRequest = async () => {
-		// Local state hides the chip at once; the host keeps its own copy when reachable.
-		if (pullRequestUrl) {
+		// A cloud row's chip is local state; its sandbox is told too when open.
+		if (isCloudWorkspace && pullRequestUrl) {
 			setWorkspaceSuppressedPullRequest(workspaceId, projectId, pullRequestUrl);
 		}
 		if (!workspaceHostUrl) {
-			if (!pullRequestUrl) {
+			if (!isCloudWorkspace) {
 				showHostServiceUnavailableToast(hostService, {
 					action: "removePrLink",
 				});
