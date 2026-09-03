@@ -425,10 +425,8 @@ export function useDashboardSidebarData() {
 		sidebarWorkspaces,
 	]);
 
-	// Pull-request chips come from the cloud table, matched on the project's
-	// repository and the row's branch: one request for every row on screen,
-	// and no host — or sandbox — asked. A workspace whose project has no
-	// GitHub remote has nothing to match on and gets no chip from here.
+	// Chips come from the cloud table, matched on the project's repository and
+	// the row's branch — one request for every row on screen, no host asked.
 	const repoFullNameByProjectId = useMemo(
 		() =>
 			new Map(
@@ -454,8 +452,7 @@ export function useDashboardSidebarData() {
 		[repoFullNameByProjectId, visibleSidebarWorkspaces],
 	);
 	const cloudPullRequests = useSidebarCloudPullRequests(cloudPullRequestRefs);
-	// Only an organization without the GitHub App falls back to asking each
-	// host; a host it cannot reach keeps its cached chips either way.
+	// Only an organization without the GitHub App falls back to asking each host.
 	const useHostPullRequests = cloudPullRequests.hasInstallation === false;
 
 	const pullRequestQueryTargets = useMemo<PullRequestQueryTarget[]>(
@@ -512,7 +509,6 @@ export function useDashboardSidebarData() {
 						headBranch: workspace.branch,
 					}),
 				);
-				// "Remove PR link" hides that one PR; a different PR still shows.
 				if (
 					!pullRequest ||
 					pullRequest.url === workspace.suppressedPullRequestUrl
