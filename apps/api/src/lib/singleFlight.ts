@@ -18,6 +18,13 @@ export type SingleFlightResult<T> = { ran: true; result: T } | { ran: false };
  * releases it as soon as Postgres rolls that transaction back. Batch work
  * should run on the transaction handed to `fn`, which keeps the lock and the
  * statement on one connection.
+ *
+ * Batch jobs take the lock per batch rather than around their whole loop.
+ * That keeps every transaction one statement long, which is what their batch
+ * sizes were chosen for, and still bounds the job to one batch in flight: a
+ * second invocation that lands between two batches wins the next lock, and
+ * the first then sees `ran: false` on its own next attempt and exits. One
+ * runner either way, never two.
  */
 export async function singleFlight<T>(
 	job: string,
