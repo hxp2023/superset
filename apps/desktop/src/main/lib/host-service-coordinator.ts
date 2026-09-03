@@ -186,15 +186,22 @@ function getStablePortForOrganization(organizationId: string): number {
  * for a pid that is gone, or for output we cannot parse; callers treat null
  * as "unknown", never as "safe to kill".
  */
-function inspectProcessWithPs(pid: number): ProcessIdentity | null {
+async function inspectProcessWithPs(
+	pid: number,
+): Promise<ProcessIdentity | null> {
 	if (process.platform === "win32") return null;
-	const result = childProcess.spawnSync(
-		"ps",
-		["-o", "etime=,command=", "-p", String(pid)],
-		{ encoding: "utf8", timeout: 2_000 },
-	);
-	if (result.status !== 0) return null;
-	const line = result.stdout.trim().split("\n")[0]?.trim();
+	// Async on purpose: a synchronous subprocess here would stall the whole
+	// main process (every IPC reply queues behind it) for as long as `ps` takes.
+	const stdout = await new Promise<string | null>((resolve) => {
+		childProcess.execFile(
+			"ps",
+			["-o", "etime=,command=", "-p", String(pid)],
+			{ encoding: "utf8", timeout: 2_000 },
+			(error, out) => resolve(error ? null : out),
+		);
+	});
+	if (stdout == null) return null;
+	const line = stdout.trim().split("\n")[0]?.trim();
 	const match = line ? /^(\S+)\s+(.*)$/.exec(line) : null;
 	if (!match) return null;
 	const elapsedMs = parseEtime(match[1] ?? "");
@@ -261,7 +268,7 @@ export class HostServiceCoordinator extends EventEmitter {
 	 * Seam for the startup reap's identity check. Production shells out to
 	 * `ps`; tests hand back a canned identity for their fake pids.
 	 */
-	private inspectProcess: (pid: number) => ProcessIdentity | null =
+	private inspectProcess: (pid: number) => Promise<ProcessIdentity | null> =
 		inspectProcessWithPs;
 
 	/**
@@ -1314,7 +1321,7 @@ export class HostServiceCoordinator extends EventEmitter {
 		const bootedAt = Date.now() - os.uptime() * 1000;
 		if (manifest.startedAt < bootedAt) return;
 
-		const identity = this.inspectProcess(manifest.pid);
+		const identity = await this.inspectProcess(manifest.pid);
 		const processStartedAt =
 			identity == null ? null : Date.now() - identity.elapsedMs;
 		const looksLikeHolder =

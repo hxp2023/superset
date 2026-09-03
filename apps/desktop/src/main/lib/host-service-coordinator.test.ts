@@ -581,9 +581,9 @@ describe("HostServiceCoordinator single-flight / adoption", () => {
 	): void {
 		(
 			coordinator as unknown as {
-				inspectProcess: (pid: number) => typeof identity;
+				inspectProcess: (pid: number) => Promise<typeof identity>;
 			}
-		).inspectProcess = () => identity;
+		).inspectProcess = async () => identity;
 	}
 
 	test("reaps an alive-but-unhealthy manifest holder started this boot before spawning", async () => {
