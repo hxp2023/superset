@@ -48,7 +48,8 @@ export const PROXY_CREDENTIAL_PRESETS: Record<
 };
 
 export const MAX_PROXY_DESTINATIONS = 20;
-const DESTINATION_PATTERN = /^(\*\.)?([a-z0-9-]+\.)+[a-z]{2,}$/i;
+const DESTINATION_PATTERN =
+	/^(\*\.)?([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
 const HEADER_PATTERN = /^[A-Za-z0-9-]{1,64}$/;
 const MAX_TEMPLATE_LENGTH = 256;
 const MAX_NAME_LENGTH = 80;

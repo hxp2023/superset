@@ -58,7 +58,7 @@ export async function resolveEnvironment(
 
 	const credentialRows = await db
 		.select({
-			id: environmentProxyCredentials.id,
+			name: environmentProxyCredentials.name,
 			placeholderEnv: environmentProxyCredentials.placeholderEnv,
 			destinations: environmentProxyCredentials.destinations,
 			header: environmentProxyCredentials.header,
@@ -80,7 +80,7 @@ export async function resolveEnvironment(
 		value: decryptSecret(credential.encryptedValue, {
 			environmentId,
 			organizationId,
-			key: proxyCredentialSecretKey(credential.id),
+			key: proxyCredentialSecretKey(credential.name),
 		}),
 	}));
 

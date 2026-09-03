@@ -1,4 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
 import { SANDBOX_CREDENTIAL_PLACEHOLDER } from "@superset/shared/constants";
 import {
 	PROXY_CREDENTIAL_PRESETS,
@@ -96,9 +97,10 @@ export function AddProxyCredentialSheet({
 		onSuccess: async (_result, variables) => {
 			await utils.environment.proxyCredentials.list.invalidate();
 			toast.success(
-				t({
-					id: "settings.environments.proxy.saved",
-					message: `Added ${variables.name}`,
+				i18n._({
+					id: "settings.environments.proxy.savedNamed",
+					message: "Saved {name}",
+					values: { name: variables.name },
 				}),
 			);
 			onOpenChange(false);

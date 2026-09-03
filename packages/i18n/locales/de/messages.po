@@ -22029,6 +22029,11 @@ msgid "settings.environments.description"
 msgstr "Der Ausgangspunkt, von dem ein Cloud-Arbeitsbereich startet — ein Basis-Image oder eine Sandbox, die du konfiguriert hast und forken möchtest."
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.detailDescription"
+msgstr "Was jede aus dieser Umgebung gestartete Sandbox mitbringt."
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.empty"
 msgstr "Noch keine Umgebungen. Erstelle eine, um daraus einen Cloud-Arbeitsbereich zu starten."
@@ -22059,6 +22064,11 @@ msgid "settings.environments.new"
 msgstr "Neue Umgebung"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.actions"
+msgstr "Aktionen für Proxy-Zugangsdaten"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
 msgid "settings.environments.proxy.add"
 msgstr "Proxy-Credential hinzufügen"
@@ -22079,10 +22089,9 @@ msgid "settings.environments.proxy.delete"
 msgstr "Löschen"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: credential.name
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
-msgid "settings.environments.proxy.deleteConfirm"
-msgstr "Proxy-Credential \"{0}\" löschen?"
+msgid "settings.environments.proxy.deleteConfirmNamed"
+msgstr "Proxy-Zugangsdaten \"{name}\" löschen?"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
@@ -22160,6 +22169,11 @@ msgid "settings.environments.proxy.howTitle"
 msgstr "So funktioniert es"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.loadFailed"
+msgstr "Proxy-Zugangsdaten konnten nicht geladen werden"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
 msgid "settings.environments.proxy.name"
 msgstr "Name"
@@ -22180,15 +22194,19 @@ msgid "settings.environments.proxy.provider"
 msgstr "Anbieter"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.retry"
+msgstr "Erneut versuchen"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
 msgid "settings.environments.proxy.save"
 msgstr "Speichern"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: rule.name
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
-msgid "settings.environments.proxy.saved"
-msgstr "{0} hinzugefügt"
+msgid "settings.environments.proxy.savedNamed"
+msgstr "{name} gespeichert"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx

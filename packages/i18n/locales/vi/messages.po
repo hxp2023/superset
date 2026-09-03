@@ -22029,6 +22029,11 @@ msgid "settings.environments.description"
 msgstr "Điểm khởi đầu mà một workspace cloud boot lên — một base image, hoặc một sandbox bạn đã cấu hình và muốn fork."
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/EnvironmentSecrets.tsx
+msgid "settings.environments.detailDescription"
+msgstr "Những gì mọi sandbox khởi chạy từ môi trường này sẽ mang theo."
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/EnvironmentsSettings.tsx
 msgid "settings.environments.empty"
 msgstr "Chưa có environment nào. Tạo một cái để khởi động workspace cloud từ đó."
@@ -22059,6 +22064,11 @@ msgid "settings.environments.new"
 msgstr "Environment mới"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
+msgid "settings.environments.proxy.actions"
+msgstr "Thao tác thông tin xác thực proxy"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
 msgid "settings.environments.proxy.add"
 msgstr "Thêm thông tin xác thực proxy"
@@ -22079,10 +22089,9 @@ msgid "settings.environments.proxy.delete"
 msgstr "Xóa"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: credential.name
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
-msgid "settings.environments.proxy.deleteConfirm"
-msgstr "Xóa thông tin xác thực proxy \"{0}\"?"
+msgid "settings.environments.proxy.deleteConfirmNamed"
+msgstr "Xóa thông tin xác thực proxy \"{name}\"?"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/components/ProxyCredentialRow/ProxyCredentialRow.tsx
@@ -22160,6 +22169,11 @@ msgid "settings.environments.proxy.howTitle"
 msgstr "Cách hoạt động"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.loadFailed"
+msgstr "Không thể tải thông tin xác thực proxy"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
 msgid "settings.environments.proxy.name"
 msgstr "Tên"
@@ -22180,15 +22194,19 @@ msgid "settings.environments.proxy.provider"
 msgstr "Nhà cung cấp"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/ProxyCredentialsList/ProxyCredentialsList.tsx
+msgid "settings.environments.proxy.retry"
+msgstr "Thử lại"
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
 msgid "settings.environments.proxy.save"
 msgstr "Lưu"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: rule.name
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx
-msgid "settings.environments.proxy.saved"
-msgstr "Đã thêm {0}"
+msgid "settings.environments.proxy.savedNamed"
+msgstr "Đã lưu {name}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/settings/environments/components/EnvironmentsSettings/components/EnvironmentSecrets/components/AddProxyCredentialSheet/AddProxyCredentialSheet.tsx

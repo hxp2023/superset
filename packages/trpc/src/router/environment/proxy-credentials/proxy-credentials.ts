@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { db, dbWs } from "@superset/db/client";
 import { environmentProxyCredentials, users } from "@superset/db/schema";
 import {
@@ -113,39 +112,34 @@ export const proxyCredentialsRouter = {
 				});
 			}
 
-			// Same name replaces the row in place, so a rotated key keeps its id
-			// and the ciphertext stays bound to that id.
-			const existing = await db.query.environmentProxyCredentials.findFirst({
-				where: and(
-					eq(environmentProxyCredentials.environmentId, input.environmentId),
-					eq(environmentProxyCredentials.organizationId, organizationId),
-					eq(environmentProxyCredentials.name, rule.name),
-				),
-			});
-			const id = existing?.id ?? randomUUID();
+			// Same name replaces the row in place: one upsert, so two creates
+			// racing on a new name cannot both pass an existence check.
 			const encryptedValue = encryptSecret(input.value, {
 				environmentId: input.environmentId,
 				organizationId,
-				key: proxyCredentialSecretKey(id),
+				key: proxyCredentialSecretKey(rule.name),
 			});
 			const provider = input.provider as "anthropic" | "openai" | "custom";
-			if (existing) {
-				await dbWs
-					.update(environmentProxyCredentials)
-					.set({ ...rule, provider, encryptedValue })
-					.where(eq(environmentProxyCredentials.id, id));
-			} else {
-				await dbWs.insert(environmentProxyCredentials).values({
-					id,
+			const [row] = await dbWs
+				.insert(environmentProxyCredentials)
+				.values({
 					environmentId: input.environmentId,
 					organizationId,
 					provider,
 					...rule,
 					encryptedValue,
 					createdByUserId: ctx.userId,
-				});
-			}
-			return { id };
+				})
+				.onConflictDoUpdate({
+					target: [
+						environmentProxyCredentials.environmentId,
+						environmentProxyCredentials.organizationId,
+						environmentProxyCredentials.name,
+					],
+					set: { ...rule, provider, encryptedValue },
+				})
+				.returning({ id: environmentProxyCredentials.id });
+			return { id: row?.id };
 		}),
 
 	remove: jwtProcedure

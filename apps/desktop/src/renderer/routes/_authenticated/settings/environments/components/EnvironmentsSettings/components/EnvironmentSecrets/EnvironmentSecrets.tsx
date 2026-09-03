@@ -54,7 +54,9 @@ export function EnvironmentSecrets({
 						{environment?.name ?? "\u00A0"}
 					</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						What every sandbox started from this environment carries.
+						<Trans id="settings.environments.detailDescription">
+							What every sandbox started from this environment carries.
+						</Trans>
 					</p>
 				</div>
 			</div>
@@ -100,6 +102,7 @@ export function EnvironmentSecrets({
 					)}
 				</div>
 				<ProxyCredentialsList
+					addDisabled={environment?.sourceKind === "fork"}
 					environmentId={environmentId}
 					onAdd={() => setIsAddProxyOpen(true)}
 				/>

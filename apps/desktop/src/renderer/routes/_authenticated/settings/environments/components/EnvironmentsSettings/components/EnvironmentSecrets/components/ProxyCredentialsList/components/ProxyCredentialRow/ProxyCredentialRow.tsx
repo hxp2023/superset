@@ -1,4 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
+import { formatDate } from "@superset/i18n/format";
 import { PROXY_SECRET_TOKEN } from "@superset/shared/environment-proxy-credentials";
 import { Avatar } from "@superset/ui/atoms/Avatar";
 import { Button } from "@superset/ui/button";
@@ -10,7 +12,6 @@ import {
 } from "@superset/ui/dropdown-menu";
 import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
-import { format } from "date-fns";
 import { HiEllipsisHorizontal, HiOutlineShieldCheck } from "react-icons/hi2";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
 
@@ -45,7 +46,13 @@ export function ProxyCredentialRow({
 	const { t } = useLingui();
 	const utils = cloudTrpc.useUtils();
 	const remove = cloudTrpc.environment.proxyCredentials.remove.useMutation({
-		onSuccess: () => utils.environment.proxyCredentials.list.invalidate(),
+		onSuccess: async () => {
+			try {
+				await utils.environment.proxyCredentials.list.invalidate();
+			} catch (error) {
+				console.error("[proxy-credentials/list] Failed to refresh:", error);
+			}
+		},
 		onError: (err) => {
 			console.error("[proxy-credentials/delete] Failed to delete:", err);
 			toast.error(
@@ -61,9 +68,10 @@ export function ProxyCredentialRow({
 	const handleDelete = () => {
 		if (
 			!confirm(
-				t({
-					id: "settings.environments.proxy.deleteConfirm",
-					message: `Delete proxy credential "${credential.name}"?`,
+				i18n._({
+					id: "settings.environments.proxy.deleteConfirmNamed",
+					message: 'Delete proxy credential "{name}"?',
+					values: { name: credential.name },
 				}),
 			)
 		)
@@ -105,7 +113,10 @@ export function ProxyCredentialRow({
 			<div className="flex items-center justify-end gap-2 flex-1 basis-0 text-xs text-muted-foreground">
 				<span>
 					<Trans id="settings.environments.proxy.added">Added</Trans>{" "}
-					{format(new Date(credential.createdAt), "MMM d")}
+					{formatDate(new Date(credential.createdAt), {
+						month: "short",
+						day: "numeric",
+					})}
 				</span>
 				{credential.createdBy && (
 					<Avatar
@@ -118,7 +129,15 @@ export function ProxyCredentialRow({
 
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 ml-3">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7 shrink-0 ml-3"
+						aria-label={t({
+							id: "settings.environments.proxy.actions",
+							message: "Proxy credential actions",
+						})}
+					>
 						<HiEllipsisHorizontal className="h-4 w-4" />
 					</Button>
 				</DropdownMenuTrigger>

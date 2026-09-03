@@ -750,6 +750,13 @@
       "when": 1788394998757,
       "tag": "0106_environment_proxy_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1788460588399,
+      "tag": "0107_environment_proxy_credentials_unique_name",
+      "breakpoints": true
     }
   ]
 }

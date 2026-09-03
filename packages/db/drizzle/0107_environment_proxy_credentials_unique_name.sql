@@ -1,0 +1,2 @@
+ALTER TABLE "environment_proxy_credentials" DROP CONSTRAINT "environment_proxy_credentials_environment_id_organization_id_name_unique";--> statement-breakpoint
+ALTER TABLE "environment_proxy_credentials" ADD CONSTRAINT "environment_proxy_credentials_env_org_name_unique" UNIQUE("environment_id","organization_id","name");

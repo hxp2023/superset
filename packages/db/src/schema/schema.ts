@@ -647,9 +647,11 @@ export const environmentProxyCredentials = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
-		unique(
-			"environment_proxy_credentials_environment_id_organization_id_name_unique",
-		).on(table.environmentId, table.organizationId, table.name),
+		unique("environment_proxy_credentials_env_org_name_unique").on(
+			table.environmentId,
+			table.organizationId,
+			table.name,
+		),
 		index("environment_proxy_credentials_environment_id_idx").on(
 			table.environmentId,
 		),
