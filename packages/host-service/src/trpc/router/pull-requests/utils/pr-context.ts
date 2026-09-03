@@ -154,8 +154,14 @@ export function parseNumstat(raw: string): PrContextFile[] {
 	for (let i = 0; i < tokens.length; i++) {
 		const token = tokens[i];
 		if (!token) continue;
-		const [added = "", deleted = "", inlinePath = ""] = token.split("\t");
-		let path = inlinePath;
+		// Only the first two tabs are separators — a filename may contain
+		// tabs of its own, and -z passes them through verbatim.
+		const firstTab = token.indexOf("\t");
+		const secondTab = firstTab === -1 ? -1 : token.indexOf("\t", firstTab + 1);
+		if (firstTab === -1 || secondTab === -1) continue;
+		const added = token.slice(0, firstTab);
+		const deleted = token.slice(firstTab + 1, secondTab);
+		let path = token.slice(secondTab + 1);
 		let previousPath: string | undefined;
 		if (path === "" && i + 2 < tokens.length) {
 			previousPath = tokens[i + 1];
@@ -179,29 +185,26 @@ export function parseNumstat(raw: string): PrContextFile[] {
 /**
  * Pathspec that keeps generated files out of one `git diff` invocation.
  * Excludes are preferred (the include side is usually the long one); when
- * both sides are too long for a sane argv, the patch is skipped rather than
- * risking an E2BIG. `literal` magic so paths with glob characters match
- * themselves.
+ * both sides would exceed the argument cap — counted on the arguments
+ * actually emitted, renames contributing two — the patch is skipped rather
+ * than risking an E2BIG. `literal` magic so paths with glob characters
+ * match themselves.
  */
 export function selectPatchPathspec(files: PrContextFile[]): string[] | null {
 	const generated = files.filter((file) => file.generated);
 	if (generated.length === 0) return ["."];
 	const included = files.filter((file) => !file.generated);
 	if (included.length === 0) return null;
-	if (generated.length <= MAX_PATHSPEC_ARGS) {
-		return [
-			".",
-			...generated.flatMap((file) => [
-				`:(exclude,literal)${file.path}`,
-				...(file.previousPath
-					? [`:(exclude,literal)${file.previousPath}`]
-					: []),
-			]),
-		];
-	}
-	if (included.length <= MAX_PATHSPEC_ARGS) {
-		return included.map((file) => `:(literal)${file.path}`);
-	}
+	const excludes = [
+		".",
+		...generated.flatMap((file) => [
+			`:(exclude,literal)${file.path}`,
+			...(file.previousPath ? [`:(exclude,literal)${file.previousPath}`] : []),
+		]),
+	];
+	if (excludes.length <= MAX_PATHSPEC_ARGS) return excludes;
+	const includes = included.map((file) => `:(literal)${file.path}`);
+	if (includes.length <= MAX_PATHSPEC_ARGS) return includes;
 	return null;
 }
 
@@ -232,7 +235,14 @@ export function slicePatch(
 	const omittedFiles = sections.length - includedFiles;
 	const first = sections[0];
 	if (includedFiles === 0 && first !== undefined) {
-		kept.push(truncateAtLine(first, budget) + TRUNCATION_MARKER);
+		// The marker counts against the budget too; a budget too small to
+		// even hold it gets the bare head.
+		const markerBytes = Buffer.byteLength(TRUNCATION_MARKER, "utf8");
+		const marker = markerBytes <= budget ? TRUNCATION_MARKER : "";
+		kept.push(
+			truncateAtLine(first, budget - Buffer.byteLength(marker, "utf8")) +
+				marker,
+		);
 	}
 	return {
 		text: kept.join(""),

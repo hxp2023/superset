@@ -34524,7 +34524,7 @@ msgstr "PR 생성 중…"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentDispatchFailed"
-msgstr "풀 리퀘스트를 에이전트에 넘기지 못했습니다"
+msgstr "풀 리퀘스트 생성을 에이전트에 맡기지 못했습니다"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
@@ -34554,12 +34554,12 @@ msgstr "에이전트가 풀 리퀘스트를 만들지 못했습니다"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentRunningHeadless"
-msgstr "{label}을(를) 백그라운드에서 실행 중"
+msgstr "백그라운드에서 실행 중: {label}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSentTo"
-msgstr "{label}에 보냈습니다"
+msgstr "전송 대상: {label}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
@@ -34606,7 +34606,7 @@ msgstr "PR 직접 만들기…"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.createPrWithAgentTitle"
-msgstr "{targetLabel}이(가) 풀 리퀘스트 이름과 설명을 작성해 열도록 하기"
+msgstr "풀 리퀘스트의 이름과 설명 작성, 생성을 {targetLabel} 에이전트에 맡기기"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
@@ -34616,7 +34616,7 @@ msgstr "PR 생성 중…"
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.creatingPrWithAgentTitle"
-msgstr "{workingLabel}이(가) 풀 리퀘스트를 만들고 있습니다"
+msgstr "{workingLabel} 에이전트가 풀 리퀘스트를 만들고 있습니다"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx

@@ -27,15 +27,26 @@ const AGENT_FINISHED_GRACE_MS = 12_000;
 /** Hard stop so the control never spins forever. */
 const GIVE_UP_MS = 10 * 60 * 1000;
 
-export interface AgentCreatePrStatus {
-	mode: "terminal" | "headless";
-	terminalId?: string;
-	agentLabel: string;
-	startedAt: number;
-	/** Host-clock `lastEventAt` of the target when dispatched; later hook
-	 * events are the agent reacting to this prompt. Terminal mode only. */
-	dispatchedAfter?: number;
-}
+export type AgentCreatePrStatus =
+	| {
+			mode: "terminal";
+			terminalId: string;
+			agentLabel: string;
+			startedAt: number;
+			/** Host-clock `lastEventAt` of the target when dispatched; later hook
+			 * events are the agent reacting to this prompt. */
+			dispatchedAfter: number;
+			/** Stops to disregard before one counts as "done": one when the
+			 * target was mid-task at dispatch (its next Stop closes that task and
+			 * the prompt runs after), none when it was idle. */
+			stopsToIgnore: number;
+	  }
+	| {
+			mode: "headless";
+			runId: string;
+			agentLabel: string;
+			startedAt: number;
+	  };
 
 export interface UseCreatePrWithAgentResult {
 	/** Hands the PR to an agent. Resolves once dispatched (not once created). */
@@ -57,6 +68,13 @@ function agentLabel(agentId: string): string {
 	);
 }
 
+function isWorking(binding: TerminalAgentBinding): boolean {
+	return (
+		binding.lastEventType === "Start" ||
+		binding.lastEventType === "PermissionRequest"
+	);
+}
+
 /**
  * Which live session gets the prompt: the most recently active agent that
  * is not mid-task, else the most recent one (its TUI queues the message).
@@ -67,13 +85,14 @@ function pickTarget(
 	const sessions = [...bindings.values()].sort(
 		(a, b) => b.lastEventAt - a.lastEventAt,
 	);
-	const idle = sessions.find(
-		(session) =>
-			session.lastEventType !== "Start" &&
-			session.lastEventType !== "PermissionRequest",
-	);
-	return idle ?? sessions[0] ?? null;
+	return sessions.find((session) => !isWorking(session)) ?? sessions[0] ?? null;
 }
+
+/** The terminal target's post-dispatch outcome, read off its binding. */
+type TerminalOutcome =
+	| { kind: "none" }
+	| { kind: "stopped"; at: number }
+	| { kind: "failed"; at: number };
 
 /**
  * Owns the agent-driven Create PR flow for one workspace: picks the target
@@ -101,6 +120,9 @@ export function useCreatePrWithAgent({
 	const { data: configs = [] } = useV2AgentConfigs(hostUrl);
 
 	const [status, setStatus] = useState<AgentCreatePrStatus | null>(null);
+	// Post-dispatch Stop timestamps seen on the terminal target; reset per
+	// dispatch (see the terminal-outcome block below).
+	const [stopsSeen, setStopsSeen] = useState<number[]>([]);
 	const target = useMemo(() => pickTarget(bindings), [bindings]);
 	// The bindings map the dispatch was made against: a *different* map that
 	// lacks the target means the host reported it gone (the map is only
@@ -109,9 +131,6 @@ export function useCreatePrWithAgent({
 	const dispatchBindingsRef = useRef<Map<string, TerminalAgentBinding> | null>(
 		null,
 	);
-	// Whether the target has been seen working since the dispatch; a Stop
-	// before that belongs to whatever it was doing when the prompt queued.
-	const sawStartRef = useRef(false);
 	const headlessConfig = configs[0] ?? null;
 	const targetLabel = target
 		? agentLabel(target.agentId)
@@ -135,41 +154,51 @@ export function useCreatePrWithAgent({
 						? { agent: headlessConfig.id }
 						: {}),
 			});
-			const label =
-				result.mode === "terminal"
-					? agentLabel(result.agentId)
-					: result.agentLabel;
 			dispatchBindingsRef.current = bindings;
-			sawStartRef.current = false;
-			setStatus({
-				mode: result.mode,
-				...(result.mode === "terminal"
-					? {
-							terminalId: result.terminalId,
-							dispatchedAfter: liveTarget?.lastEventAt ?? 0,
-						}
-					: {}),
-				agentLabel: label,
-				startedAt: Date.now(),
-			});
-			toast.info(
-				t({
-					id: "workspace.shipControl.agentCreatingPr",
-					message: "Agent is creating the pull request…",
-				}),
-				{
-					description:
-						result.mode === "terminal"
-							? t({
-									id: "workspace.shipControl.agentSentTo",
-									message: `Sent to ${label}`,
-								})
-							: t({
-									id: "workspace.shipControl.agentRunningHeadless",
-									message: `Running ${label} in the background`,
-								}),
-				},
-			);
+			setStopsSeen([]);
+			if (result.mode === "terminal") {
+				const label = agentLabel(result.agentId);
+				setStatus({
+					mode: "terminal",
+					terminalId: result.terminalId,
+					agentLabel: label,
+					startedAt: Date.now(),
+					dispatchedAfter: liveTarget?.lastEventAt ?? 0,
+					stopsToIgnore: liveTarget && isWorking(liveTarget) ? 1 : 0,
+				});
+				toast.info(
+					t({
+						id: "workspace.shipControl.agentCreatingPr",
+						message: "Agent is creating the pull request…",
+					}),
+					{
+						description: t({
+							id: "workspace.shipControl.agentSentTo",
+							message: `Sent to ${label}`,
+						}),
+					},
+				);
+			} else {
+				const label = result.agentLabel;
+				setStatus({
+					mode: "headless",
+					runId: result.runId,
+					agentLabel: label,
+					startedAt: Date.now(),
+				});
+				toast.info(
+					t({
+						id: "workspace.shipControl.agentCreatingPr",
+						message: "Agent is creating the pull request…",
+					}),
+					{
+						description: t({
+							id: "workspace.shipControl.agentRunningHeadless",
+							message: `Running ${label} in the background`,
+						}),
+					},
+				);
+			}
 		} catch (error) {
 			// The likeliest failure is a target whose pty died while its
 			// session row lagged behind — refetch the bindings so the next
@@ -222,6 +251,13 @@ export function useCreatePrWithAgent({
 				refetchInterval: status?.mode === "headless" ? PR_POLL_MS : false,
 			},
 		);
+	// The query is keyed by workspace, so right after a retry it still holds
+	// the previous run's outcome; only this dispatch's run counts.
+	const headlessRun =
+		status?.mode === "headless" &&
+		headlessStatusQuery.data?.runId === status.runId
+			? headlessStatusQuery.data
+			: null;
 
 	const onPrCreatedRef = useRef(onPrCreated);
 	onPrCreatedRef.current = onPrCreated;
@@ -274,54 +310,60 @@ export function useCreatePrWithAgent({
 		);
 	}, [createdPr, navigate, projectId, t]);
 
-	// Terminal mode: the binding tells us when the agent stopped or died.
+	// Terminal mode: the binding tells us when the agent stopped, failed, or
+	// died. Stops are counted through state (not a ref written mid-render)
+	// keyed on the event timestamp, so each Stop is counted once however
+	// many renders see it, and a Stop that arrives without its Start having
+	// been observed (a fast turn between two refetches) still counts.
 	const targetBinding =
-		status?.mode === "terminal" && status.terminalId
+		status?.mode === "terminal"
 			? (bindings.get(status.terminalId) ?? null)
 			: null;
-	if (
-		status?.mode === "terminal" &&
-		targetBinding &&
-		targetBinding.lastEventType === "Start" &&
-		targetBinding.lastEventAt > (status.dispatchedAfter ?? 0)
-	) {
-		sawStartRef.current = true;
-	}
-	const agentFinishedAt = useMemo(() => {
-		if (!status) return null;
-		if (status.mode === "headless") {
-			const run = headlessStatusQuery.data;
-			return run && run.status !== "running"
-				? (run.finishedAt ?? Date.now())
-				: null;
-		}
-		if (
-			sawStartRef.current &&
-			targetBinding &&
-			targetBinding.lastEventType === "Stop" &&
-			targetBinding.lastEventAt > (status.dispatchedAfter ?? 0)
-		) {
-			return targetBinding.lastEventAt;
-		}
-		return null;
-	}, [headlessStatusQuery.data, status, targetBinding]);
-
-	// Headless failure is definitive — the host saw the process exit non-zero.
-	const headlessError =
-		status?.mode === "headless" && headlessStatusQuery.data?.status === "failed"
-			? (headlessStatusQuery.data.error ?? "")
-			: null;
 	useEffect(() => {
-		if (headlessError === null) return;
+		if (status?.mode !== "terminal" || !targetBinding) return;
+		if (targetBinding.lastEventType !== "Stop") return;
+		const at = targetBinding.lastEventAt;
+		if (at <= status.dispatchedAfter) return;
+		setStopsSeen((seen) => (seen.includes(at) ? seen : [...seen, at]));
+	}, [status, targetBinding]);
+	const terminalOutcome = useMemo<TerminalOutcome>(() => {
+		if (status?.mode !== "terminal" || !targetBinding) return { kind: "none" };
+		if (
+			targetBinding.lastEventType === "Failed" &&
+			targetBinding.lastEventAt > status.dispatchedAfter
+		) {
+			return { kind: "failed", at: targetBinding.lastEventAt };
+		}
+		const settled = stopsSeen[status.stopsToIgnore];
+		return settled === undefined
+			? { kind: "none" }
+			: { kind: "stopped", at: settled };
+	}, [status, stopsSeen, targetBinding]);
+
+	// Definitive failures: the host saw the headless process exit non-zero,
+	// or the live agent's hook reported a failed turn.
+	const failure =
+		headlessRun?.status === "failed"
+			? {
+					key: `headless:${headlessRun.runId}`,
+					description: headlessRun.error ?? "",
+				}
+			: terminalOutcome.kind === "failed"
+				? { key: `terminal:${terminalOutcome.at}`, description: "" }
+				: null;
+	const failureKey = failure?.key ?? null;
+	const failureDescription = failure?.description ?? "";
+	useEffect(() => {
+		if (failureKey === null) return;
 		setStatus(null);
 		toast.error(
 			t({
 				id: "workspace.shipControl.agentHeadlessFailed",
 				message: "The agent couldn't create the pull request",
 			}),
-			{ description: headlessError || undefined },
+			{ description: failureDescription || undefined },
 		);
-	}, [headlessError, t]);
+	}, [failureKey, failureDescription, t]);
 
 	// A dispatched terminal whose binding vanished died under the agent.
 	const targetGone =
@@ -342,13 +384,15 @@ export function useCreatePrWithAgent({
 
 	// The agent said it's done: force a GitHub re-sync, then give the link a
 	// short grace window before reporting a miss.
+	const agentFinishedAt =
+		headlessRun?.status === "succeeded"
+			? (headlessRun.finishedAt ?? headlessRun.startedAt)
+			: terminalOutcome.kind === "stopped"
+				? terminalOutcome.at
+				: null;
 	useEffect(() => {
-		if (agentFinishedAt === null || headlessError !== null) return;
+		if (agentFinishedAt === null || failureKey !== null) return;
 		requestRefresh(true);
-		const remaining = Math.max(
-			0,
-			agentFinishedAt + AGENT_FINISHED_GRACE_MS - Date.now(),
-		);
 		const timer = window.setTimeout(() => {
 			setStatus(null);
 			toast.warning(
@@ -363,9 +407,9 @@ export function useCreatePrWithAgent({
 					}),
 				},
 			);
-		}, remaining);
+		}, AGENT_FINISHED_GRACE_MS);
 		return () => window.clearTimeout(timer);
-	}, [agentFinishedAt, headlessError, requestRefresh, t]);
+	}, [agentFinishedAt, failureKey, requestRefresh, t]);
 
 	// Periodic re-sync while waiting, and a hard give-up.
 	useEffect(() => {

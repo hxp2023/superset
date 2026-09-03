@@ -48,13 +48,20 @@ The skill ships in `plugins/superset/skills/create-pr/SKILL.md` and is provision
 managed skill. It resolves most-specific first, so teams encode their PR conventions once:
 
 1. `<repo>/.agents/skills/create-pr/SKILL.md` (or `.claude/skills/create-pr/SKILL.md`) — per project
-2. `~/.agents/skills/superset-create-pr/SKILL.md` — per user; editing it makes it user-owned, and the
-   provisioner stops overwriting it
+2. `~/.agents/skills/create-pr/SKILL.md` — per user. Unprefixed on purpose: the provisioned
+   `~/.agents/skills/superset-create-pr/SKILL.md` is read next, but it carries the managed marker and
+   is overwritten on every sync unless the marker line is removed
 3. the bundled default
+
+The prompt frames `<pr-context>` as repository data, not instructions — the same trust boundary
+every agent launched in a worktree already lives with (AGENTS.md, project hooks and skills), so a
+project skill is honored in headless runs too.
 
 Headless runs need a permission bypass the catalog's read-only `nonInteractiveCommand` doesn't
 carry; the per-preset commands live in `HEADLESS_TOOL_COMMANDS` (`utils/headless-create-pr.ts`).
-Presets without one report "open an agent terminal" instead of failing silently.
+Presets without one report "open an agent terminal" instead of failing silently. The process gets
+the terminal base-env snapshot plus the agent's account/config env — never the host's own
+`process.env` — and its whole process tree is killed on timeout or host exit.
 
 ## Provider accounts (multi-login)
 

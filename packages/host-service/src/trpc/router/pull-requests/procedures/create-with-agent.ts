@@ -52,6 +52,7 @@ export type CreateWithAgentResult =
 	  }
 	| {
 			mode: "headless";
+			runId: string;
 			presetId: string;
 			agentLabel: string;
 			skillSource: CreatePrSkillSource;
@@ -106,6 +107,22 @@ export async function createPullRequestWithAgent(
 		});
 	}
 
+	// A stale terminal target must surface as NOT_FOUND even when the branch
+	// has nothing to ship yet, so the renderer drops the dead binding either
+	// way — hence checked before the (slower) context and skill reads.
+	const binding = input.terminalId
+		? deps.terminalAgentStore
+				.listByWorkspace(input.workspaceId)
+				.find((candidate) => candidate.terminalId === input.terminalId)
+		: undefined;
+	if (input.terminalId && !binding) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "That agent session is no longer running",
+			cause: { kind: "SESSION_NOT_ACTIVE" },
+		});
+	}
+
 	const result = await deps.readPrContext(input.worktreePath);
 	if (!result.ok) {
 		throw new TRPCError({
@@ -133,17 +150,7 @@ export async function createPullRequestWithAgent(
 		buildCreatePrPrompt({ skill, context, draft: input.draft }),
 	);
 
-	if (input.terminalId) {
-		const binding = deps.terminalAgentStore
-			.listByWorkspace(input.workspaceId)
-			.find((candidate) => candidate.terminalId === input.terminalId);
-		if (!binding) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "That agent session is no longer running",
-				cause: { kind: "SESSION_NOT_ACTIVE" },
-			});
-		}
+	if (input.terminalId && binding) {
 		const sent = await deps.sendToTerminal({
 			workspaceId: input.workspaceId,
 			terminalId: input.terminalId,
@@ -169,16 +176,19 @@ export async function createPullRequestWithAgent(
 	if (!headless) {
 		throw new TRPCError({
 			code: "PRECONDITION_FAILED",
-			message:
-				"No agent is running in this workspace, and the default agent can't run headlessly with git access — open an agent terminal here and try again",
+			message: input.agent
+				? "No agent is running in this workspace, and the selected agent can't run headlessly with git access — open a terminal for it here and try again"
+				: "No agent is running in this workspace, and the default agent can't run headlessly with git access — open an agent terminal here and try again",
 			cause: { kind: "NO_HEADLESS_AGENT" },
 		});
 	}
+	let run: HeadlessCreatePrRun;
 	try {
-		deps.startHeadless({
+		run = await deps.startHeadless({
 			workspaceId: input.workspaceId,
 			presetId: headless.presetId,
 			command: headless.command,
+			env: headless.env,
 			prompt,
 			cwd: input.worktreePath,
 			onFinished: deps.onHeadlessFinished,
@@ -195,6 +205,7 @@ export async function createPullRequestWithAgent(
 	}
 	return {
 		mode: "headless",
+		runId: run.runId,
 		presetId: headless.presetId,
 		agentLabel: headless.label,
 		skillSource: skill.source,
@@ -262,6 +273,7 @@ export const agentCreateStatus = protectedProcedure
 		const run = getHeadlessCreatePrRun(input.workspaceId);
 		if (!run) return null;
 		return {
+			runId: run.runId,
 			status: run.status,
 			presetId: run.presetId,
 			startedAt: run.startedAt,

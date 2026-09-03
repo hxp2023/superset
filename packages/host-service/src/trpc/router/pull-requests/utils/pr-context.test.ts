@@ -103,7 +103,33 @@ describe("parseNumstat", () => {
 	});
 });
 
+describe("parseNumstat", () => {
+	test("keeps tabs inside file names", () => {
+		expect(parseNumstat("1\t0\tsrc/odd\tname.ts\0")).toEqual([
+			{
+				path: "src/odd\tname.ts",
+				additions: 1,
+				deletions: 0,
+				generated: false,
+			},
+		]);
+	});
+});
+
 describe("selectPatchPathspec", () => {
+	test("counts the leading dot and rename pairs against the cap", () => {
+		// 200 renamed generated files = 400 exclude args, plus "." = 401.
+		const renamed = Array.from({ length: 200 }, (_, i) =>
+			file(`locales/${i}/messages.po`, {
+				previousPath: `old/${i}/messages.po`,
+			}),
+		);
+		const result = selectPatchPathspec([...renamed, file("a.ts")]);
+		expect(result).toEqual([":(literal)a.ts"]);
+		const fewer = selectPatchPathspec([...renamed.slice(0, 199), file("a.ts")]);
+		expect(fewer?.length).toBe(1 + 199 * 2);
+	});
+
 	test("whole tree when nothing is generated", () => {
 		expect(selectPatchPathspec([file("a.ts"), file("b.ts")])).toEqual(["."]);
 	});
@@ -173,7 +199,7 @@ describe("slicePatch", () => {
 		expect(result.omittedFiles).toBe(1);
 	});
 
-	test("cuts the first file at a line boundary when nothing fits", () => {
+	test("cuts the first file at a line boundary when nothing fits, marker included in the budget", () => {
 		const big = section("big.ts", 500);
 		const result = slicePatch(big, 200);
 		expect(result.includedFiles).toBe(0);
@@ -182,7 +208,13 @@ describe("slicePatch", () => {
 		expect(result.text).toContain("[... diff truncated by Superset");
 		const cut = result.text.split("\n[... diff truncated")[0] ?? "";
 		expect(cut.endsWith("\n")).toBe(true);
-		expect(Buffer.byteLength(cut, "utf8")).toBeLessThanOrEqual(200);
+		expect(Buffer.byteLength(result.text, "utf8")).toBeLessThanOrEqual(200);
+	});
+
+	test("a budget too small for the marker gets the bare head", () => {
+		const result = slicePatch(section("big.ts", 50), 20);
+		expect(result.text).not.toContain("[... diff truncated");
+		expect(Buffer.byteLength(result.text, "utf8")).toBeLessThanOrEqual(20);
 	});
 
 	test("empty patch", () => {

@@ -358,15 +358,14 @@ export function ShipControl({
 
 	// Menu entries while an agent has the PR: bring its terminal into view
 	// (terminal mode) or drop the wait. Shared by both modes' chevrons.
+	const agentTerminalId =
+		agentPr.status?.mode === "terminal" ? agentPr.status.terminalId : null;
 	const agentWaitItems = agentPr.status ? (
 		<>
-			{agentPr.status.terminalId && onFocusTerminal && (
+			{agentTerminalId && onFocusTerminal && (
 				<DropdownMenuItem
 					className="text-xs"
-					onClick={() => {
-						const terminalId = agentPr.status?.terminalId;
-						if (terminalId) onFocusTerminal(terminalId);
-					}}
+					onClick={() => onFocusTerminal(agentTerminalId)}
 				>
 					<VscTerminal className="size-3.5" />
 					<Trans id="workspace.shipControl.showAgentTerminal">

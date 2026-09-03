@@ -23,6 +23,11 @@ describe("stripSkillFrontmatter", () => {
 	test("leaves a file without frontmatter alone", () => {
 		expect(stripSkillFrontmatter("# Just body\n")).toBe("# Just body");
 	});
+
+	test("handles CRLF files the same way", () => {
+		const content = `---\r\nname: create-pr\r\n---\r\n${MANAGED_SKILL_MARKER}\r\n# Title\r\n\r\nBody\r\n`;
+		expect(stripSkillFrontmatter(content)).toBe("# Title\n\nBody");
+	});
 });
 
 describe("resolveCreatePrSkill", () => {
@@ -60,10 +65,27 @@ describe("resolveCreatePrSkill", () => {
 		});
 	});
 
-	test("the user's provisioned copy beats the bundle", async () => {
+	test("the provisioned copy beats the bundle", async () => {
 		const file = await writeSkill(
 			join(home, ".agents", "skills", "superset-create-pr"),
-			`---\nname: superset-create-pr\n---\n${MANAGED_SKILL_MARKER}\nuser body\n`,
+			`---\nname: superset-create-pr\n---\n${MANAGED_SKILL_MARKER}\nmanaged body\n`,
+		);
+		const skill = await resolveCreatePrSkill({
+			worktreePath: worktree,
+			homeDir: home,
+			bundledPluginDir: bundled,
+		});
+		expect(skill).toEqual({ source: "user", path: file, body: "managed body" });
+	});
+
+	test("the user's own ~/.agents/skills/create-pr beats the provisioned copy", async () => {
+		await writeSkill(
+			join(home, ".agents", "skills", "superset-create-pr"),
+			`${MANAGED_SKILL_MARKER}\nmanaged body\n`,
+		);
+		const file = await writeSkill(
+			join(home, ".agents", "skills", "create-pr"),
+			"user body\n",
 		);
 		const skill = await resolveCreatePrSkill({
 			worktreePath: worktree,
@@ -71,6 +93,20 @@ describe("resolveCreatePrSkill", () => {
 			bundledPluginDir: bundled,
 		});
 		expect(skill).toEqual({ source: "user", path: file, body: "user body" });
+	});
+
+	test("an unreadable override is an error, not a silent fallback", async () => {
+		// A directory where the file should be: readFile fails with EISDIR.
+		await mkdir(join(worktree, ".agents", "skills", "create-pr", "SKILL.md"), {
+			recursive: true,
+		});
+		await expect(
+			resolveCreatePrSkill({
+				worktreePath: worktree,
+				homeDir: home,
+				bundledPluginDir: bundled,
+			}),
+		).rejects.toThrow(/Could not read create-pr skill at .*SKILL\.md/);
 	});
 
 	test("the project's own skill beats both", async () => {
