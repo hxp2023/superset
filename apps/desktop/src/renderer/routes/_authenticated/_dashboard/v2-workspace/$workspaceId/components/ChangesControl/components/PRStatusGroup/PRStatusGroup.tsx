@@ -38,6 +38,8 @@ interface PRStatusGroupProps {
 	onRefresh?: () => void;
 	/** Whether a Changes pane is in view — the face reads as pressed. */
 	isChangesOpen?: boolean;
+	/** Accessible name for the face's toggle ("Open changes" / "Close changes"). */
+	toggleLabel?: string;
 	/**
 	 * Toggles the Changes pane — the badge's main click, since it replaced
 	 * the diff-stat pill as the control's face once a PR exists.
@@ -62,6 +64,7 @@ export function PRStatusGroup({
 	workspaceId,
 	onRefresh,
 	isChangesOpen = false,
+	toggleLabel,
 	onToggleChanges,
 }: PRStatusGroupProps) {
 	const { t } = useLingui();
@@ -238,6 +241,11 @@ export function PRStatusGroup({
 							type="button"
 							className={badgeClass}
 							aria-pressed={isChangesOpen}
+							// The visible text is only the PR number; name the action
+							// and keep the number so the badge is still identifiable.
+							aria-label={
+								toggleLabel ? `${toggleLabel}, #${pr.number}` : undefined
+							}
 							onClick={onToggleChanges}
 						>
 							{badgeContent}

@@ -191,7 +191,9 @@ export function useChangesTab({
 			: undefined;
 
 	// Each path counts once even when it sits in two sections (staged +
-	// unstaged) — the same unique-path total the top-bar Changes control shows.
+	// unstaged). Under the default scope that is the top-bar control's total;
+	// a narrower scope (uncommitted, one commit, a range) counts what the tab
+	// lists instead.
 	const changedPathCount = useMemo(
 		() => new Set(files.map((file) => file.path)).size,
 		[files],

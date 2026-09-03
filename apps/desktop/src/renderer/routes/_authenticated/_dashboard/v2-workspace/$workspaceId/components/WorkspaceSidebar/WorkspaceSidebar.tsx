@@ -12,7 +12,9 @@ import {
 	type WorkspaceSidebarTab,
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
 import { useSettings } from "renderer/stores/settings";
+import { useRowlessSidebarTabStore } from "../../state/rowlessSidebarTabStore";
 import type { CommentPaneData, DiffFocusSide } from "../../types";
+import { setWorkspaceSidebarTab } from "../../utils/setWorkspaceSidebarTab";
 import { FilesTab } from "./components/FilesTab";
 import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
@@ -72,17 +74,17 @@ export function WorkspaceSidebar({
 				.where(({ localState }) => eq(localState.workspaceId, workspaceId)),
 		[collections, workspaceId],
 	);
+	// Workspaces without a local row (auto-included local mains) keep their
+	// tab in the session-only fallback that setWorkspaceSidebarTab writes.
+	const rowlessTab = useRowlessSidebarTabStore((s) => s.tabs[workspaceId]);
 	const activeTab: SidebarTabId =
 		localState && isSidebarTabId(localState.sidebarState.activeTab)
 			? localState.sidebarState.activeTab
-			: "changes";
+			: (rowlessTab ?? "changes");
 
 	function setActiveTab(tab: string) {
 		if (!isSidebarTabId(tab)) return;
-		if (!collections.v2WorkspaceLocalState.get(workspaceId)) return;
-		collections.v2WorkspaceLocalState.update(workspaceId, (draft) => {
-			draft.sidebarState.activeTab = tab;
-		});
+		setWorkspaceSidebarTab(collections, workspaceId, tab);
 	}
 
 	const containerRef = useRef<HTMLDivElement>(null);

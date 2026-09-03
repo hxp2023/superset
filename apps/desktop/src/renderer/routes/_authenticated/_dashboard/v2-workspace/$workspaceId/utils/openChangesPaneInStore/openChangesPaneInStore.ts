@@ -58,7 +58,15 @@ export function findVisibleChangesPane(
 ): { tabId: string; paneId: string } | null {
 	const activeTab = state.tabs.find((tab) => tab.id === state.activeTabId);
 	if (!activeTab) return null;
-	const pane = Object.values(activeTab.panes).find((p) => p.kind === "diff");
+	// The focused pane wins when the tab holds several diff panes (a diff
+	// tab dragged into a split), so a toggle closes the one being looked at.
+	const focused = activeTab.activePaneId
+		? activeTab.panes[activeTab.activePaneId]
+		: undefined;
+	const pane =
+		focused?.kind === "diff"
+			? focused
+			: Object.values(activeTab.panes).find((p) => p.kind === "diff");
 	return pane ? { tabId: activeTab.id, paneId: pane.id } : null;
 }
 

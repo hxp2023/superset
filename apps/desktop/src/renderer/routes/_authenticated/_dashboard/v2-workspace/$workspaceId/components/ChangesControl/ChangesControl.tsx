@@ -97,6 +97,7 @@ export const ChangesControl = memo(function ChangesControl({
 					workspaceId={workspaceId}
 					onRefresh={onRetry}
 					isChangesOpen={isChangesOpen}
+					toggleLabel={label}
 					onToggleChanges={onToggleChanges}
 				/>
 			)}

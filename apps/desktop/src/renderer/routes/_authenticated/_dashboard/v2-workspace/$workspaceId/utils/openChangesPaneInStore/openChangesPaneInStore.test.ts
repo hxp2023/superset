@@ -192,6 +192,43 @@ describe("closeVisibleChangesPane", () => {
 		expect(state.tabs[0]?.activePaneId).toBe("pane-1");
 	});
 
+	it("closes the focused diff pane when the tab holds several", () => {
+		const diffPane = (id: string) => ({
+			id,
+			kind: "diff",
+			data: { path: `src/${id}.ts`, collapsedFiles: [] } as PaneViewerData,
+		});
+		const store = createWorkspaceStore<PaneViewerData>({
+			initialState: {
+				version: 1,
+				activeTabId: "tab-1",
+				tabs: [
+					{
+						id: "tab-1",
+						createdAt: 1,
+						activePaneId: "diff-b",
+						layout: {
+							type: "split",
+							direction: "horizontal",
+							first: paneLayout("diff-a"),
+							second: paneLayout("diff-b"),
+						},
+						panes: {
+							"diff-a": diffPane("diff-a"),
+							"diff-b": diffPane("diff-b"),
+						},
+					},
+				],
+			},
+		});
+
+		expect(findVisibleChangesPane(store.getState())?.paneId).toBe("diff-b");
+		expect(closeVisibleChangesPane(store)).toBe(true);
+		expect(Object.keys(store.getState().tabs[0]?.panes ?? {})).toEqual([
+			"diff-a",
+		]);
+	});
+
 	it("closes a diff-only tab entirely and activates a survivor", () => {
 		const store = storeWith(true);
 		store.getState().setActiveTab("diff-tab");

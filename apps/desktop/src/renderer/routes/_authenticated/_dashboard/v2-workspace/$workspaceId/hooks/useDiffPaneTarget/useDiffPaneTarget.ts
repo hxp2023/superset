@@ -21,6 +21,10 @@ export function useDiffPaneTarget(
 	// Primitive selectors — an object selector would re-render on every store
 	// write. A fresh Changes pane carries an empty path until its first
 	// navigation, which is no target yet.
+	const activeKind = useStore(
+		store,
+		(state) => state.getActivePane()?.pane.kind,
+	);
 	const activePath = useStore(store, (state) => {
 		const active = state.getActivePane();
 		if (active?.pane.kind !== "diff") return undefined;
@@ -38,9 +42,15 @@ export function useDiffPaneTarget(
 	);
 
 	const [target, setTarget] = useState<DiffPaneTarget | undefined>(undefined);
+	// Only a focused diff pane speaks for the target: it sets one when it
+	// navigates and clears one when it releases its path (collapse-all does),
+	// while focus on a terminal or file pane leaves the last target standing.
 	useEffect(() => {
-		if (activePath) setTarget({ path: activePath, changeKey: activeChangeKey });
-	}, [activePath, activeChangeKey]);
+		if (activeKind !== "diff") return;
+		setTarget(
+			activePath ? { path: activePath, changeKey: activeChangeKey } : undefined,
+		);
+	}, [activeKind, activePath, activeChangeKey]);
 	useEffect(() => {
 		if (!hasDiffPane) setTarget(undefined);
 	}, [hasDiffPane]);
