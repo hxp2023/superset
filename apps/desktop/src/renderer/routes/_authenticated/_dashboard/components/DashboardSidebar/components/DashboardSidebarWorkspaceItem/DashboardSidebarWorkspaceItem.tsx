@@ -127,6 +127,7 @@ export function DashboardSidebarWorkspaceItem({
 		isSessionWorkspace,
 		workspaceName: name,
 		branch,
+		pullRequestUrl: pullRequest?.url ?? null,
 		isMainWorkspace,
 		isPinned: workspace.isPinned,
 	});
