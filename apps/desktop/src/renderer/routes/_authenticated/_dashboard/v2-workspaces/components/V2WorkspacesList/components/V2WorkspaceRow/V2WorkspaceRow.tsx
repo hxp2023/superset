@@ -229,8 +229,9 @@ export const V2WorkspaceRow = memo(function V2WorkspaceRow({
 						title={workspace.hostName}
 					>
 						<DeviceIcon className="size-3 shrink-0" />
-						{/* Narrow panes keep the glyph (name stays in the title). */}
-						<span className="min-w-0 truncate @max-2xl:hidden">
+						{/* Narrow panes keep the glyph; sr-only (not hidden) so screen
+						    readers still hear the device name when the text is gone. */}
+						<span className="min-w-0 truncate @max-2xl:sr-only">
 							{workspace.hostName}
 						</span>
 						{isDeviceOffline ? (
