@@ -92,6 +92,14 @@ export function diffCardUnsafeCss(
 		min-width: 0;
 		overflow: hidden;
 	}
+	/* Pierre lays [data-metadata] out as the +/- counts first, then the
+	 * slotted header actions. The actions keep their width while hidden
+	 * (opacity 0 until hover), which parked the counts a couple hundred
+	 * pixels in from the card's right edge. Ordering the slotted actions
+	 * first keeps the counts at the edge; the actions surface to their left. */
+	[data-diffs-header='default'] [data-metadata] slot[name='header-metadata']::slotted(*) {
+		order: -1;
+	}
 	/* Match PullRequestRow's diff-stat colors (the PR list view) instead of
 	 * the shared hook's own green/red, which use a different palette. */
 	[data-diffs-header='default'] [data-additions-count] {
