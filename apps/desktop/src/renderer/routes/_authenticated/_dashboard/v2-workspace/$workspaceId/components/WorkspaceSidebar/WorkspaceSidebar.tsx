@@ -78,15 +78,18 @@ export function WorkspaceSidebar({
 	// tab in the session-only fallback that setWorkspaceSidebarTab writes.
 	const rowlessTab = useRowlessSidebarTabStore((s) => s.tabs[workspaceId]);
 	const clearRowlessTab = useRowlessSidebarTabStore((s) => s.clearTab);
+	// The live query can lag a render when the workspace switches; a row that
+	// still belongs to the previous workspace must not speak for this one.
+	const row = localState?.workspaceId === workspaceId ? localState : undefined;
 	const activeTab: SidebarTabId =
-		localState && isSidebarTabId(localState.sidebarState.activeTab)
-			? localState.sidebarState.activeTab
+		row && isSidebarTabId(row.sidebarState.activeTab)
+			? row.sidebarState.activeTab
 			: (rowlessTab ?? "changes");
 
 	// A row created while a rowless choice is pending (pinning a local main)
 	// starts on the default tab: carry the choice into the row once, then
 	// drop the session entry so it can't resurface if the row goes away.
-	const hasRow = localState != null;
+	const hasRow = row != null;
 	useEffect(() => {
 		if (!hasRow || rowlessTab === undefined) return;
 		setWorkspaceSidebarTab(collections, workspaceId, rowlessTab);
