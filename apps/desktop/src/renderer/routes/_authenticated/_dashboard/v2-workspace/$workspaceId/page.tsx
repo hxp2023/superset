@@ -43,6 +43,7 @@ import { useConsumeOpenUrlRequest } from "./hooks/useConsumeOpenUrlRequest";
 import { useCreatePendingMigratedTerminals } from "./hooks/useCreatePendingMigratedTerminals";
 import { useDefaultContextMenuActions } from "./hooks/useDefaultContextMenuActions";
 import { useDefaultPaneActions } from "./hooks/useDefaultPaneActions";
+import { useDiffPaneTarget } from "./hooks/useDiffPaneTarget";
 import { usePagePaneIntentOpener } from "./hooks/usePagePaneIntentOpener";
 import { usePaneRegistry } from "./hooks/usePaneRegistry";
 import { renderBrowserTabIcon } from "./hooks/usePaneRegistry/components/BrowserPane";
@@ -198,16 +199,10 @@ function V2WorkspaceContent() {
 		launcher,
 		newTabPresets,
 		executePreset,
+		setRightSidebarOpen,
 	});
-	const openDiffInNewTab = useCallback(
-		(path: string, changeKey?: string) => {
-			openDiffPane(path, true, undefined, undefined, changeKey);
-		},
-		[openDiffPane],
-	);
 	const paneRegistry = usePaneRegistry({
 		onOpenFile: openFilePaneFromTreeClick,
-		onOpenDiffInNewTab: openDiffInNewTab,
 		onRevealPath: revealPath,
 		launcher,
 		store,
@@ -216,6 +211,7 @@ function V2WorkspaceContent() {
 		paneRegistry,
 		launcher,
 	});
+	const diffPaneTarget = useDiffPaneTarget(store);
 
 	usePagePaneIntentOpener({ workspaceId, isLayoutReady, openPagePane });
 	const hostTarget = useWorkspaceHostTarget(workspaceId);
@@ -279,6 +275,7 @@ function V2WorkspaceContent() {
 		matchedPresets,
 		executePreset,
 		addTerminalTab,
+		openChangesPane,
 		paneRegistry,
 		launcher,
 		onBeforeCloseTab,
@@ -441,6 +438,7 @@ function V2WorkspaceContent() {
 								onOpenComment={openCommentPane}
 								onSearch={handleQuickOpen}
 								selectedFilePath={selectedFilePath}
+								selectedDiffTarget={diffPaneTarget}
 								pendingReveal={pendingReveal}
 							/>
 						</ResizablePanel>,

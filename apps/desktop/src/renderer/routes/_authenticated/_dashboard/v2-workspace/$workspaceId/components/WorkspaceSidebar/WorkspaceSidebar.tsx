@@ -16,12 +16,9 @@ import type { CommentPaneData, DiffFocusSide } from "../../types";
 import { FilesTab } from "./components/FilesTab";
 import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
+import { type SelectedDiffTarget, useChangesTab } from "./hooks/useChangesTab";
 import { useReviewTab } from "./hooks/useReviewTab";
 import type { SidebarTabDefinition } from "./types";
-
-// Gates the "Create PR" button only — the chat-driven create flow doesn't
-// exist in v2 yet. The PR status group (link + merge dropdown for an open PR)
-// always renders so users can see PR state and merge once a PR exists.
 
 const LABELLED_TAB_WIDTH = 88;
 const LABEL_HYSTERESIS = 20;
@@ -49,6 +46,8 @@ interface WorkspaceSidebarProps {
 	onOpenComment?: (comment: CommentPaneData) => void;
 	onSearch?: () => void;
 	selectedFilePath?: string;
+	/** The diff pane's current file, highlighted in the Changes tab. */
+	selectedDiffTarget?: SelectedDiffTarget;
 	pendingReveal?: PendingReveal | null;
 	workspaceId: string;
 }
@@ -59,6 +58,7 @@ export function WorkspaceSidebar({
 	onOpenComment,
 	onSearch,
 	selectedFilePath,
+	selectedDiffTarget,
 	pendingReveal,
 	workspaceId,
 }: WorkspaceSidebarProps) {
@@ -75,7 +75,7 @@ export function WorkspaceSidebar({
 	const activeTab: SidebarTabId =
 		localState && isSidebarTabId(localState.sidebarState.activeTab)
 			? localState.sidebarState.activeTab
-			: "files";
+			: "changes";
 
 	function setActiveTab(tab: string) {
 		if (!isSidebarTabId(tab)) return;
@@ -87,6 +87,16 @@ export function WorkspaceSidebar({
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [compact, setCompact] = useState(false);
+
+	const changesTab = useChangesTab({
+		workspaceId,
+		selectedDiffTarget,
+		onSelectFile: onSelectDiffFile
+			? (path, openInNewTab, changeKey) =>
+					onSelectDiffFile(path, openInNewTab, undefined, undefined, changeKey)
+			: undefined,
+		onOpenFile: onSelectFile,
+	});
 
 	// PR review comments are always relative to the base branch, so they map
 	// onto the "against-base" source group — matching the same query (and
@@ -143,7 +153,7 @@ export function WorkspaceSidebar({
 		),
 	};
 
-	const tabs: SidebarTabDefinition[] = [filesTab, reviewTab];
+	const tabs: SidebarTabDefinition[] = [filesTab, changesTab, reviewTab];
 	const activeTabDef = tabs.find((t) => t.id === activeTab) ?? tabs[0];
 
 	const tabCount = tabs.length;

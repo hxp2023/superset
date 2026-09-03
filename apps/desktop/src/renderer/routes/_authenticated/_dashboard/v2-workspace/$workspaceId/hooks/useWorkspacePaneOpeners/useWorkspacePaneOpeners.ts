@@ -1,5 +1,8 @@
 import type { WorkspaceStore } from "@superset/panes";
 import { useCallback } from "react";
+import type { V2UserPreferencesApi } from "renderer/hooks/useV2UserPreferences";
+import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
+import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
 import { useSettings } from "renderer/stores/settings";
 import type { StoreApi } from "zustand/vanilla";
@@ -15,6 +18,7 @@ import type {
 } from "../../types";
 import { openChangesPaneInStore } from "../../utils/openChangesPaneInStore";
 import { openPagePaneInStore } from "../../utils/openPagePaneInStore";
+import { setWorkspaceSidebarTab } from "../../utils/setWorkspaceSidebarTab";
 import { useDefaultBrowserUrl } from "../useDefaultBrowserUrl";
 import type { TerminalLauncher } from "../useV2TerminalLauncher";
 
@@ -23,6 +27,7 @@ export function useWorkspacePaneOpeners({
 	launcher,
 	newTabPresets,
 	executePreset,
+	setRightSidebarOpen,
 }: {
 	store: StoreApi<WorkspaceStore<PaneViewerData>>;
 	launcher: TerminalLauncher;
@@ -31,6 +36,7 @@ export function useWorkspacePaneOpeners({
 		preset: V2TerminalPresetRow,
 		options?: { target?: "new-tab" | "active-tab" },
 	) => void | Promise<void>;
+	setRightSidebarOpen: V2UserPreferencesApi["setRightSidebarOpen"];
 }): {
 	openDiffPane: (
 		filePath: string,
@@ -195,9 +201,16 @@ export function useWorkspacePaneOpeners({
 		[store],
 	);
 
+	const { workspace } = useWorkspace();
+	const collections = useCollections();
+	// The changed-files list lives in the sidebar's Changes tab, so opening
+	// Changes reveals it alongside the pane — with the sidebar closed the pane
+	// alone would have no file picker.
 	const openChangesPane = useCallback(() => {
+		setRightSidebarOpen(true);
+		setWorkspaceSidebarTab(collections, workspace.id, "changes");
 		openChangesPaneInStore(store, useSettings.getState().changesOpenTarget);
-	}, [store]);
+	}, [store, setRightSidebarOpen, collections, workspace.id]);
 
 	const openPagePane = useCallback(
 		(page: PagePaneData) => {
