@@ -260,7 +260,17 @@ export function useDashboardSidebarData() {
 		[collections],
 	);
 
-	const { workspaces: hostWorkspaces } = useHostWorkspaces();
+	const { workspaces: allHostWorkspaces, cache: hostWorkspacesCache } =
+		useHostWorkspaces();
+	// Cloud workspaces render in the Cloud section only, whatever placement
+	// their local-state row carries.
+	const hostWorkspaces = useMemo(
+		() =>
+			allHostWorkspaces.filter(
+				(workspace) => !hostWorkspacesCache.isSandboxHost(workspace.hostId),
+			),
+		[allHostWorkspaces, hostWorkspacesCache],
+	);
 	const hostWorkspacesById = useMemo(
 		() => new Map(hostWorkspaces.map((workspace) => [workspace.id, workspace])),
 		[hostWorkspaces],
@@ -452,8 +462,10 @@ export function useDashboardSidebarData() {
 		[repoFullNameByProjectId, visibleSidebarWorkspaces],
 	);
 	const cloudPullRequests = useSidebarCloudPullRequests(cloudPullRequestRefs);
-	// Only an organization without the GitHub App falls back to asking each host.
-	const useHostPullRequests = cloudPullRequests.hasInstallation === false;
+	// An organization without the GitHub App falls back to asking each host, as
+	// does one whose cloud lookup is failing.
+	const useHostPullRequests =
+		cloudPullRequests.hasInstallation === false || cloudPullRequests.isError;
 
 	const pullRequestQueryTargets = useMemo<PullRequestQueryTarget[]>(
 		() =>
@@ -518,13 +530,23 @@ export function useDashboardSidebarData() {
 			}
 			return rows;
 		}
+		const suppressedUrlByWorkspaceId = new Map(
+			visibleSidebarWorkspaces.map((workspace) => [
+				workspace.id,
+				workspace.suppressedPullRequestUrl,
+			]),
+		);
 		for (const query of pullRequestQueries) {
 			const data = query.data;
 			if (!data) continue;
 			for (const row of data.workspaces) {
+				const suppressedUrl = suppressedUrlByWorkspaceId.get(row.workspaceId);
 				rows.push({
 					workspaceId: row.workspaceId,
-					pullRequest: row.pullRequest,
+					pullRequest:
+						row.pullRequest && row.pullRequest.url === suppressedUrl
+							? null
+							: row.pullRequest,
 				});
 			}
 		}

@@ -14,9 +14,9 @@ function toCheckStatus(check: {
 	if (check.status.toLowerCase() !== "completed") return "pending";
 	switch (check.conclusion?.toLowerCase()) {
 		case "success":
-		case "neutral":
 			return "success";
 		case "skipped":
+		case "neutral":
 			return "skipped";
 		case "cancelled":
 			return "cancelled";

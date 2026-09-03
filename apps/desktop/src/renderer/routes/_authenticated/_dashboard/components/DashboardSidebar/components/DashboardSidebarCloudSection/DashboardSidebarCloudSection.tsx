@@ -68,7 +68,8 @@ export function DashboardSidebarCloudSection({
 		{ organizationId: organizationId ?? "" },
 		{
 			enabled: organizationId !== null && cloudWorkspaces.length > 0,
-			staleTime: Number.POSITIVE_INFINITY,
+			// Finite so an App installed mid-session is picked up.
+			staleTime: 5 * 60_000,
 		},
 	);
 	const cloudRepoFullName = cloudRepo

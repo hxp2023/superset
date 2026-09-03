@@ -5,6 +5,8 @@ import type { DashboardSidebarWorkspacePullRequest } from "../../types";
 import { toSidebarPullRequest } from "./toSidebarPullRequest";
 
 const CLOUD_PULL_REQUESTS_REFETCH_INTERVAL_MS = 30_000;
+/** Matches the procedure's input bound. */
+const MAX_REFS_PER_QUERY = 500;
 
 export interface CloudPullRequestRef {
 	repoFullName: string;
@@ -23,6 +25,7 @@ export interface SidebarCloudPullRequests {
 	 * GitHub App installation, so the cloud table can never know its PRs.
 	 */
 	hasInstallation: boolean | null;
+	isError: boolean;
 	refetch: () => Promise<unknown>;
 }
 
@@ -43,7 +46,8 @@ export function useSidebarCloudPullRequests(
 		}
 		return [...byKey.entries()]
 			.sort(([left], [right]) => left.localeCompare(right))
-			.map(([, ref]) => ref);
+			.map(([, ref]) => ref)
+			.slice(0, MAX_REFS_PER_QUERY);
 	}, [refs]);
 
 	const query = cloudTrpc.integration.github.getByBranches.useQuery(
@@ -52,7 +56,18 @@ export function useSidebarCloudPullRequests(
 			enabled: organizationId !== null,
 			refetchInterval: CLOUD_PULL_REQUESTS_REFETCH_INTERVAL_MS,
 			staleTime: 10_000,
-			placeholderData: (previous) => previous,
+			// Keep chips up while the row set changes, but never carry another
+			// organization's answer across a switch.
+			placeholderData: (previous, previousQuery) => {
+				const previousInput = (
+					previousQuery?.queryKey as
+						| [unknown, { input?: { organizationId?: string } }?]
+						| undefined
+				)?.[1]?.input;
+				return previousInput?.organizationId === organizationId
+					? previous
+					: undefined;
+			},
 		},
 	);
 
@@ -70,6 +85,7 @@ export function useSidebarCloudPullRequests(
 	return {
 		byRef,
 		hasInstallation: query.data?.hasInstallation ?? null,
+		isError: query.isError,
 		refetch: refetchStable,
 	};
 }

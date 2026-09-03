@@ -6,7 +6,7 @@ import {
 } from "@superset/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { Client } from "@upstash/qstash";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../../env";
 import { protectedProcedure, userError } from "../../../trpc";
@@ -225,20 +225,19 @@ export const githubRouter = {
 				repos.map((repo) => [repo.id, repo.fullName]),
 			);
 
-			const wanted = new Set<string>();
-			const repoIds = new Set<string>();
-			const branches = new Set<string>();
+			const pairs = new Map<string, { repoId: string; headBranch: string }>();
 			for (const ref of input.refs) {
 				const repo = repoByFullName.get(ref.repoFullName.toLowerCase());
 				if (!repo) continue;
 				// The table has no head-repository owner, so a fork's `main` would
 				// match a checkout of this repository's default branch.
 				if (ref.headBranch === repo.defaultBranch) continue;
-				wanted.add(`${repo.id}\n${ref.headBranch}`);
-				repoIds.add(repo.id);
-				branches.add(ref.headBranch);
+				pairs.set(`${repo.id}\n${ref.headBranch}`, {
+					repoId: repo.id,
+					headBranch: ref.headBranch,
+				});
 			}
-			if (wanted.size === 0) {
+			if (pairs.size === 0) {
 				return { hasInstallation: true, pullRequests: [] };
 			}
 
@@ -261,8 +260,14 @@ export const githubRouter = {
 				.where(
 					and(
 						eq(githubPullRequests.organizationId, input.organizationId),
-						inArray(githubPullRequests.repositoryId, [...repoIds]),
-						inArray(githubPullRequests.headBranch, [...branches]),
+						// Exact pairs, so no requested ref can be crowded out of the
+						// limit by another ref's rows.
+						sql`(${githubPullRequests.repositoryId}, ${githubPullRequests.headBranch}) IN (${sql.join(
+							[...pairs.values()].map(
+								(pair) => sql`(${pair.repoId}::uuid, ${pair.headBranch})`,
+							),
+							sql`, `,
+						)})`,
 					),
 				)
 				.orderBy(desc(githubPullRequests.updatedAt))
@@ -273,7 +278,6 @@ export const githubRouter = {
 			const bestByRef = new Map<string, (typeof rows)[number]>();
 			for (const row of rows) {
 				const key = `${row.repositoryId}\n${row.headBranch}`;
-				if (!wanted.has(key)) continue;
 				const existing = bestByRef.get(key);
 				if (!existing || (existing.state !== "open" && row.state === "open")) {
 					bestByRef.set(key, row);
