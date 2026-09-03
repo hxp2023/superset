@@ -1,3 +1,4 @@
+import { and, eq, inArray } from "drizzle-orm";
 import type { HostDb } from "../../db/index.ts";
 import { terminalSessions } from "../../db/schema.ts";
 import { portManager } from "../../ports/port-manager.ts";
@@ -29,6 +30,47 @@ interface TerminalRow {
 	status: string;
 	originWorkspaceId: string | null;
 	disposeRequestedAt?: number | null;
+	createdAt?: number;
+}
+
+/**
+ * Newly inserted rows get this long for their daemon pty to spawn before the
+ * stale sweep may touch them — a reap tick can land between the row insert
+ * and the daemon reporting the session.
+ */
+export const STALE_ACTIVE_GRACE_MS = 60_000;
+
+/**
+ * The inverse of the orphan reap: rows stuck `active` whose session the
+ * daemon no longer owns (daemon crash, kill, reboot). Left alone they haunt
+ * every "live sessions" read forever — e.g. the diff comment composer keeps
+ * offering an agent whose pty is gone. Only called once `daemon.list()` has
+ * answered, so the alive set is authoritative; the `isLive` guard keeps a
+ * renderer-attached in-memory session from being marked on a racy list.
+ * Pure so the policy is unit testable.
+ */
+export function planStaleActiveRows({
+	aliveIds,
+	rowsById,
+	isLive,
+	now,
+	graceMs = STALE_ACTIVE_GRACE_MS,
+}: {
+	aliveIds: Set<string>;
+	rowsById: Map<string, TerminalRow>;
+	isLive: (terminalId: string) => boolean;
+	now: number;
+	graceMs?: number;
+}): string[] {
+	const stale: string[] = [];
+	for (const [id, row] of rowsById) {
+		if (row.status !== "active") continue;
+		if (aliveIds.has(id)) continue;
+		if (isLive(id)) continue;
+		if (row.createdAt != null && now - row.createdAt < graceMs) continue;
+		stale.push(id);
+	}
+	return stale;
 }
 
 /**
@@ -114,10 +156,44 @@ function loadTerminalRowsById(db: HostDb): Map<string, TerminalRow> {
 			status: terminalSessions.status,
 			originWorkspaceId: terminalSessions.originWorkspaceId,
 			disposeRequestedAt: terminalSessions.disposeRequestedAt,
+			createdAt: terminalSessions.createdAt,
 		})
 		.from(terminalSessions)
 		.all();
 	return new Map(rows.map((row) => [row.id, row]));
+}
+
+/** Flip daemon-lost `active` rows to `exited` so live-session reads (agent
+ * bindings, resume candidates) stop offering ptys that no longer exist. */
+function markStaleActiveRows(
+	db: HostDb,
+	liveSessions: { id: string }[],
+	rowById: Map<string, TerminalRow>,
+): number {
+	const rowsById =
+		rowById.size > 0 || liveSessions.length > 0
+			? rowById
+			: loadTerminalRowsById(db);
+	const stale = planStaleActiveRows({
+		aliveIds: new Set(liveSessions.map((session) => session.id)),
+		rowsById,
+		isLive: isLiveTerminalSession,
+		now: Date.now(),
+	});
+	if (stale.length === 0) return 0;
+	db.update(terminalSessions)
+		.set({ status: "exited", endedAt: Date.now() })
+		.where(
+			and(
+				inArray(terminalSessions.id, stale),
+				eq(terminalSessions.status, "active"),
+			),
+		)
+		.run();
+	console.log(
+		`[host-service] terminal reaper: marked ${stale.length} daemon-lost session(s) exited`,
+	);
+	return stale.length;
 }
 
 // Port scanning is best-effort: a port-manager error must not propagate to the
@@ -189,6 +265,15 @@ async function reapOrphanedSessions(
 	// Sync the port scanner before the empty-list short-circuit below so an idle
 	// daemon still drops stale scans.
 	const { liveSessions, rowById } = await syncPortScans(db);
+
+	// The daemon answered (syncPortScans would have thrown otherwise), so its
+	// list is authoritative: reconcile rows stuck `active` for sessions it no
+	// longer owns. Best-effort — a failure here must not block the orphan reap.
+	try {
+		markStaleActiveRows(db, liveSessions, rowById);
+	} catch (err) {
+		console.warn("[host-service] stale-session sweep failed:", err);
+	}
 
 	if (liveSessions.length === 0) {
 		rowlessPendingSecondPass.clear();
