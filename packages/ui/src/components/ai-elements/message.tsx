@@ -1,7 +1,6 @@
 "use client";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import { mermaid } from "@streamdown/mermaid";
 import type { FileUIPart, UIMessage } from "ai";
 import {
 	ChevronLeftIcon,
@@ -11,8 +10,8 @@ import {
 } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
-import type { PluginConfig } from "streamdown";
 import { Streamdown } from "streamdown";
+import { mermaidConfig, mermaidPlugins } from "../../lib/mermaid";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { ButtonGroup, ButtonGroupText } from "../ui/button-group";
@@ -23,9 +22,6 @@ import {
 	TooltipTrigger,
 } from "../ui/tooltip";
 
-const streamdownPlugins: PluginConfig = {
-	mermaid: mermaid as unknown as PluginConfig["mermaid"],
-};
 const defaultMessageAnimation = {
 	animation: "blurIn",
 	sep: "char",
@@ -342,7 +338,13 @@ export const TOOL_CALL_MD_CLASSNAME =
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 export const MessageResponse = memo(
-	({ className, animated, isAnimating, ...props }: MessageResponseProps) => (
+	({
+		className,
+		animated,
+		isAnimating,
+		mermaid,
+		...props
+	}: MessageResponseProps) => (
 		<Streamdown
 			animated={animated ?? defaultMessageAnimation}
 			className={cn(
@@ -352,8 +354,9 @@ export const MessageResponse = memo(
 			controls={{ table: false }}
 			isAnimating={isAnimating}
 			linkSafety={{ enabled: false }}
+			mermaid={{ ...mermaid, ...mermaidConfig(mermaid?.config) }}
 			mode="streaming"
-			plugins={isAnimating ? undefined : streamdownPlugins}
+			plugins={isAnimating ? undefined : mermaidPlugins}
 			{...props}
 		/>
 	),
