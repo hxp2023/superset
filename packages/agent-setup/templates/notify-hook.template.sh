@@ -78,6 +78,25 @@ fi
 # a false completion notification.
 [ -z "$EVENT_TYPE" ] && exit 0
 
+# Tool activity for the sidebar's "what is it doing" line. Claude-schema
+# agents put tool_name at the top level and the tool's arguments under
+# tool_input; the first of these keys is the one worth showing. Values are
+# JSON string literals: unescape, drop control characters, and cap the
+# length so a heredoc command can't bloat the payload. Absent for agents
+# without tool hooks — the host keeps the line blank for them.
+json_string_field() {
+  printf '%s' "$INPUT" | grep -oE "\"$1\"[[:space:]]*:[[:space:]]*\"([^\"\\\\]|\\\\.)*\"" | head -1 | sed -e 's/^"[^"]*"[[:space:]]*:[[:space:]]*"//' -e 's/"$//'
+}
+TOOL_NAME=$(json_string_field tool_name)
+TOOL_DETAIL=""
+if [ -n "$TOOL_NAME" ]; then
+  for DETAIL_KEY in file_path command pattern url description; do
+    TOOL_DETAIL=$(json_string_field "$DETAIL_KEY")
+    [ -n "$TOOL_DETAIL" ] && break
+  done
+  TOOL_DETAIL=$(printf '%s' "$TOOL_DETAIL" | sed -e 's/\\[nrt]/ /g' -e 's/\\"/"/g' -e 's/\\\\/\\/g' | tr -d '\000-\037' | cut -c1-400)
+fi
+
 DEBUG_HOOKS_ENABLED="0"
 if [ -n "$SUPERSET_DEBUG_HOOKS" ]; then
   case "$SUPERSET_DEBUG_HOOKS" in
@@ -121,7 +140,11 @@ json_escape() {
 # then every org manifest's endpoint. Only the host that owns this terminal
 # answers "ignored":false; probing the other orgs' hosts is a harmless no-op.
 if [ -n "$SUPERSET_TERMINAL_ID" ]; then
-  PAYLOAD="{\"json\":{\"terminalId\":\"$(json_escape "$SUPERSET_TERMINAL_ID")\",\"eventType\":\"$(json_escape "$EVENT_TYPE")\",\"agent\":{\"agentId\":\"$(json_escape "$SUPERSET_AGENT_ID")\",\"sessionId\":\"$(json_escape "$SESSION_ID")\"}}}"
+  ACTIVITY_JSON=""
+  if [ -n "$TOOL_NAME" ]; then
+    ACTIVITY_JSON=",\"activity\":{\"tool\":\"$(json_escape "$TOOL_NAME")\",\"detail\":\"$(json_escape "$TOOL_DETAIL")\"}"
+  fi
+  PAYLOAD="{\"json\":{\"terminalId\":\"$(json_escape "$SUPERSET_TERMINAL_ID")\",\"eventType\":\"$(json_escape "$EVENT_TYPE")\",\"agent\":{\"agentId\":\"$(json_escape "$SUPERSET_AGENT_ID")\",\"sessionId\":\"$(json_escape "$SESSION_ID")\"}$ACTIVITY_JSON}}"
 
   HOOK_CANDIDATE_URLS="$SUPERSET_HOST_AGENT_HOOK_URL"
   for MANIFEST_FILE in "${SUPERSET_HOME_DIR:-$HOME/.superset}"/host/*/manifest.json; do

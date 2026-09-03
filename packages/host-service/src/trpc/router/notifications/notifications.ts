@@ -1,3 +1,4 @@
+import os from "node:os";
 import type { AgentIdentity } from "@superset/shared/agent-identity";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -16,10 +17,23 @@ const agentIdentityInput = z
 	})
 	.optional();
 
+// The hook script caps `detail` before sending; the caps here are the
+// display budget, applied after paths are shortened.
+const ACTIVITY_TOOL_MAX_LENGTH = 40;
+const ACTIVITY_DETAIL_MAX_LENGTH = 160;
+
+const activityInput = z
+	.object({
+		tool: z.string().optional(),
+		detail: z.string().optional(),
+	})
+	.optional();
+
 const hookInput = z.object({
 	terminalId: z.string().optional(),
 	eventType: z.string().optional(),
 	agent: agentIdentityInput,
+	activity: activityInput,
 });
 
 function trimOrUndefined(value: string | undefined): string | undefined {
@@ -43,6 +57,36 @@ function normalizeAgentIdentity(
 	};
 }
 
+/**
+ * Shorten paths so the sidebar line reads "src/a.ts", not the worktree's
+ * absolute path: strip the workspace root first, then the home directory.
+ * Applies to commands too, which routinely embed absolute paths.
+ */
+export function normalizeAgentActivity(
+	activity: z.infer<typeof activityInput>,
+	options: { worktreePath?: string; homeDir?: string },
+): { tool: string; detail?: string } | undefined {
+	const tool = trimOrUndefined(activity?.tool)?.slice(
+		0,
+		ACTIVITY_TOOL_MAX_LENGTH,
+	);
+	if (!tool) return undefined;
+
+	let detail = trimOrUndefined(activity?.detail);
+	if (detail) {
+		const worktreePath = options.worktreePath?.replace(/\/+$/, "");
+		if (worktreePath) {
+			detail = detail.replaceAll(`${worktreePath}/`, "");
+		}
+		const homeDir = options.homeDir?.replace(/\/+$/, "");
+		if (homeDir) {
+			detail = detail.replaceAll(`${homeDir}/`, "~/");
+		}
+		detail = detail.slice(0, ACTIVITY_DETAIL_MAX_LENGTH);
+	}
+	return { tool, ...(detail ? { detail } : {}) };
+}
+
 // Tasks already nudged to "started" this process. `Start` fires on every
 // agent turn and tool use, so gate the cloud call to once per task per
 // process — `task.start` is idempotent and forward-only server-side, so a
@@ -51,15 +95,8 @@ const startedTaskIds = new Set<string>();
 
 function markLinkedTaskStarted(
 	ctx: HostServiceContext,
-	workspaceId: string,
+	taskId: string | null | undefined,
 ): void {
-	const workspace = ctx.db.query.workspaces
-		.findFirst({
-			where: eq(workspaces.id, workspaceId),
-			columns: { taskId: true },
-		})
-		.sync();
-	const taskId = workspace?.taskId;
 	if (!taskId || startedTaskIds.has(taskId)) return;
 	startedTaskIds.add(taskId);
 	void ctx.api.task.start.mutate({ id: taskId }).catch((err) => {
@@ -103,7 +140,18 @@ export const notificationsRouter = router({
 			return { success: true, ignored: true as const };
 		}
 
+		const workspace = ctx.db.query.workspaces
+			.findFirst({
+				where: eq(workspaces.id, terminalSession.originWorkspaceId),
+				columns: { taskId: true, worktreePath: true },
+			})
+			.sync();
+
 		const agent = normalizeAgentIdentity(input.agent);
+		const activity = normalizeAgentActivity(input.activity, {
+			worktreePath: workspace?.worktreePath,
+			homeDir: os.homedir(),
+		});
 		const occurredAt = Date.now();
 
 		ctx.eventBus.broadcastAgentLifecycle({
@@ -121,13 +169,14 @@ export const notificationsRouter = router({
 			...(agent?.agentId ? { agentId: agent.agentId } : {}),
 			...(agent?.sessionId ? { agentSessionId: agent.sessionId } : {}),
 			...(agent?.definitionId ? { definitionId: agent.definitionId } : {}),
+			...(activity ? { activity } : {}),
 			occurredAt,
 		});
 
 		// An agent began working in this workspace — nudge the linked task
 		// to In Progress.
 		if (eventType === "Start") {
-			markLinkedTaskStarted(ctx, terminalSession.originWorkspaceId);
+			markLinkedTaskStarted(ctx, workspace?.taskId);
 		}
 
 		return { success: true, ignored: false as const };

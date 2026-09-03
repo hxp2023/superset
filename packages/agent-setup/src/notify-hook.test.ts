@@ -70,7 +70,13 @@ async function runNotifyHookAsync(
 
 /** Fake host-service answering notifications.hook like the real router. */
 function fakeHostService(ignored: boolean) {
-	const requests: Array<{ json: { terminalId?: string } }> = [];
+	const requests: Array<{
+		json: {
+			terminalId?: string;
+			eventType?: string;
+			activity?: { tool: string; detail: string };
+		};
+	}> = [];
 	const server = Bun.serve({
 		port: 0,
 		fetch: async (req) => {
@@ -104,7 +110,7 @@ function writeHookManifest(home: string, orgId: string, endpoint: string) {
 
 describe("getNotifyScriptContent", () => {
 	it("bumps the notify hook marker when hook semantics change", () => {
-		expect(NOTIFY_SCRIPT_MARKER).toBe("# Superset agent notification hook v9");
+		expect(NOTIFY_SCRIPT_MARKER).toBe("# Superset agent notification hook v10");
 	});
 
 	it("ignores hooks fired inside a subagent (agent_id present)", () => {
@@ -144,7 +150,7 @@ describe("getNotifyScriptContent", () => {
 
 		expect(script).toContain('HOOK_SESSION_ID=$(echo "$INPUT"');
 		expect(script).toContain(
-			'PAYLOAD="{\\"json\\":{\\"terminalId\\":\\"$(json_escape "$SUPERSET_TERMINAL_ID")\\",\\"eventType\\":\\"$(json_escape "$EVENT_TYPE")\\",\\"agent\\":{\\"agentId\\":\\"$(json_escape "$SUPERSET_AGENT_ID")\\",\\"sessionId\\":\\"$(json_escape "$SESSION_ID")\\"}}}"',
+			'PAYLOAD="{\\"json\\":{\\"terminalId\\":\\"$(json_escape "$SUPERSET_TERMINAL_ID")\\",\\"eventType\\":\\"$(json_escape "$EVENT_TYPE")\\",\\"agent\\":{\\"agentId\\":\\"$(json_escape "$SUPERSET_AGENT_ID")\\",\\"sessionId\\":\\"$(json_escape "$SESSION_ID")\\"}$ACTIVITY_JSON}}"',
 		);
 		expect(script).toContain(
 			"event=$EVENT_TYPE terminalId=$SUPERSET_TERMINAL_ID agentId=$SUPERSET_AGENT_ID sessionId=$SESSION_ID hookSessionId=$HOOK_SESSION_ID resourceId=$RESOURCE_ID paneId=$SUPERSET_PANE_ID tabId=$SUPERSET_TAB_ID workspaceId=$SUPERSET_WORKSPACE_ID",
@@ -246,6 +252,83 @@ describe("getNotifyScriptContent", () => {
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stderr.toString()).toBe("");
+	});
+});
+
+describe("tool activity", () => {
+	it("forwards the tool name and its main argument to the host", async () => {
+		const live = fakeHostService(false);
+		const home = mkdtempSync(path.join(tmpdir(), "notify-hook-home-"));
+		writeHookManifest(home, "org-a", live.url);
+		try {
+			const result = await runNotifyHookAsync(
+				{
+					hook_event_name: "PostToolUse",
+					session_id: "main-session",
+					tool_name: "Bash",
+					tool_input: {
+						command: 'echo "hi"\nbun test',
+						description: "Say hi",
+					},
+					tool_response: { stdout: "hi" },
+				},
+				{ SUPERSET_HOME_DIR: home },
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(live.requests).toHaveLength(1);
+			expect(live.requests[0]?.json.eventType).toBe("PostToolUse");
+			expect(live.requests[0]?.json.activity).toEqual({
+				tool: "Bash",
+				detail: 'echo "hi" bun test',
+			});
+		} finally {
+			live.stop();
+		}
+	});
+
+	it("prefers the file path over other arguments", async () => {
+		const live = fakeHostService(false);
+		const home = mkdtempSync(path.join(tmpdir(), "notify-hook-home-"));
+		writeHookManifest(home, "org-a", live.url);
+		try {
+			await runNotifyHookAsync(
+				{
+					hook_event_name: "PermissionRequest",
+					session_id: "main-session",
+					tool_name: "Write",
+					tool_input: {
+						content: '{"file_path":"decoy"}',
+						file_path: "/repo/src/a.ts",
+					},
+				},
+				{ SUPERSET_HOME_DIR: home },
+			);
+
+			expect(live.requests[0]?.json.activity).toEqual({
+				tool: "Write",
+				detail: "/repo/src/a.ts",
+			});
+		} finally {
+			live.stop();
+		}
+	});
+
+	it("sends no activity for events without a tool", async () => {
+		const live = fakeHostService(false);
+		const home = mkdtempSync(path.join(tmpdir(), "notify-hook-home-"));
+		writeHookManifest(home, "org-a", live.url);
+		try {
+			await runNotifyHookAsync(
+				{ hook_event_name: "Stop", session_id: "main-session" },
+				{ SUPERSET_HOME_DIR: home },
+			);
+
+			expect(live.requests).toHaveLength(1);
+			expect(live.requests[0]?.json).not.toHaveProperty("activity");
+		} finally {
+			live.stop();
+		}
 	});
 });
 

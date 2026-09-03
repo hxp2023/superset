@@ -597,3 +597,138 @@ describe("TerminalAgentStore", () => {
 		expect(lateArrival.persisted.has("t1")).toBe(true);
 	});
 });
+
+describe("TerminalAgentStore activity", () => {
+	let store: TerminalAgentStore;
+
+	beforeEach(() => {
+		store = new TerminalAgentStore();
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Attached",
+			agentId: "claude",
+			agentSessionId: "s1",
+			occurredAt: 100,
+		});
+	});
+
+	it("records the latest tool call and exposes it on every read path", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			activity: { tool: "Edit", detail: "src/a.ts" },
+			occurredAt: 200,
+		});
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			activity: { tool: "Bash", detail: "bun test" },
+			occurredAt: 300,
+		});
+
+		const expected = { tool: "Bash", detail: "bun test", at: 300 };
+		expect(store.get("t1")?.activity).toEqual(expected);
+		expect(store.listByWorkspace(WORKSPACE)[0]?.activity).toEqual(expected);
+		expect(store.list()[0]?.activity).toEqual(expected);
+		expect(store.findActive(WORKSPACE, "claude")?.activity).toEqual(expected);
+	});
+
+	it("keeps the last tool through Stop, Failed, and PermissionRequest", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			activity: { tool: "Bash", detail: "bun test" },
+			occurredAt: 200,
+		});
+		for (const eventType of ["PermissionRequest", "Failed", "Stop"]) {
+			store.recordEvent({
+				terminalId: "t1",
+				workspaceId: WORKSPACE,
+				eventType,
+				occurredAt: 300,
+			});
+			expect(store.get("t1")?.activity?.tool).toBe("Bash");
+		}
+	});
+
+	it("clears the line on a new prompt and on a new session", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			activity: { tool: "Bash", detail: "bun test" },
+			occurredAt: 200,
+		});
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			occurredAt: 300,
+		});
+		expect(store.get("t1")?.activity).toBeUndefined();
+
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			activity: { tool: "Read", detail: "README.md" },
+			occurredAt: 400,
+		});
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Attached",
+			agentId: "claude",
+			agentSessionId: "s2",
+			occurredAt: 500,
+		});
+		expect(store.get("t1")?.activity).toBeUndefined();
+	});
+
+	it("drops the line when the binding ends", () => {
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			activity: { tool: "Bash", detail: "bun test" },
+			occurredAt: 200,
+		});
+		store.markTerminalExited("t1");
+		store.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Attached",
+			agentId: "claude",
+			agentSessionId: "s3",
+			occurredAt: 400_000,
+		});
+		expect(store.get("t1")?.activity).toBeUndefined();
+	});
+
+	it("never hands activity to persistence", () => {
+		const upserts: TerminalAgentBinding[] = [];
+		const persistence: TerminalAgentBindingPersistence = {
+			load: () => [],
+			upsert: (binding) => {
+				upserts.push(binding);
+			},
+			delete: () => {},
+		};
+		const persisted = new TerminalAgentStore(persistence);
+		persisted.recordEvent({
+			terminalId: "t1",
+			workspaceId: WORKSPACE,
+			eventType: "Start",
+			agentId: "claude",
+			activity: { tool: "Bash", detail: "bun test" },
+			occurredAt: 200,
+		});
+		expect(upserts).toHaveLength(1);
+		expect(upserts[0]).not.toHaveProperty("activity");
+		expect(persisted.get("t1")?.activity?.tool).toBe("Bash");
+	});
+});

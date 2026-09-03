@@ -3,7 +3,7 @@ import type { AgentIdentity } from "@superset/shared/agent-identity";
 import type { AgentLifecycleEventType } from "../../../events";
 import { TerminalAgentStore } from "../../../terminal-agents";
 import type { HostServiceContext } from "../../../types";
-import { notificationsRouter } from "./notifications";
+import { normalizeAgentActivity, notificationsRouter } from "./notifications";
 
 interface BroadcastedAgentLifecycleEvent {
 	workspaceId: string;
@@ -15,7 +15,7 @@ interface BroadcastedAgentLifecycleEvent {
 
 function createContext(
 	originWorkspaceId: string | null,
-	options?: { taskId?: string | null },
+	options?: { taskId?: string | null; worktreePath?: string },
 ): {
 	ctx: HostServiceContext;
 	broadcastAgentLifecycle: ReturnType<
@@ -39,7 +39,10 @@ function createContext(
 					},
 	}));
 	const workspaceFindFirst = mock(() => ({
-		sync: () => ({ taskId: options?.taskId ?? null }),
+		sync: () => ({
+			taskId: options?.taskId ?? null,
+			worktreePath: options?.worktreePath ?? "/tmp/worktree",
+		}),
 	}));
 	const taskStart = mock((_input: { id: string }) => Promise.resolve({}));
 	const terminalAgentStore = new TerminalAgentStore();
@@ -276,5 +279,65 @@ describe("notificationsRouter.hook", () => {
 
 		const broadcast = broadcastAgentLifecycle.mock.calls[0]?.[0];
 		expect(broadcast?.agent).toBeUndefined();
+	});
+});
+
+describe("normalizeAgentActivity", () => {
+	it("drops activity without a tool name", () => {
+		expect(normalizeAgentActivity(undefined, {})).toBeUndefined();
+		expect(
+			normalizeAgentActivity({ tool: "  ", detail: "x" }, {}),
+		).toBeUndefined();
+	});
+
+	it("shortens worktree and home paths, in that order", () => {
+		expect(
+			normalizeAgentActivity(
+				{
+					tool: "Bash",
+					detail:
+						"cp /home/me/repo/src/a.ts /home/me/backup/a.ts && ls /home/me/other",
+				},
+				{ worktreePath: "/home/me/repo/", homeDir: "/home/me" },
+			),
+		).toEqual({
+			tool: "Bash",
+			detail: "cp src/a.ts ~/backup/a.ts && ls ~/other",
+		});
+	});
+
+	it("caps the display length and omits an empty detail", () => {
+		const result = normalizeAgentActivity(
+			{ tool: "T".repeat(80), detail: "d".repeat(500) },
+			{},
+		);
+		expect(result?.tool).toHaveLength(40);
+		expect(result?.detail).toHaveLength(160);
+		expect(normalizeAgentActivity({ tool: "Read", detail: " " }, {})).toEqual({
+			tool: "Read",
+		});
+	});
+});
+
+describe("notificationsRouter.hook activity", () => {
+	it("records the tool call on the binding with worktree-relative paths", async () => {
+		const { ctx, terminalAgentStore } = createContext("workspace-1", {
+			worktreePath: "/srv/wt",
+		});
+		const caller = notificationsRouter.createCaller(ctx);
+
+		await caller.hook({
+			terminalId: "terminal-1",
+			eventType: "PostToolUse",
+			agent: { agentId: "claude", sessionId: "session-abc" },
+			activity: { tool: "Edit", detail: "/srv/wt/src/a.ts" },
+		});
+
+		const binding = terminalAgentStore.get("terminal-1");
+		expect(binding?.lastEventType).toBe("Start");
+		expect(binding?.activity).toMatchObject({
+			tool: "Edit",
+			detail: "src/a.ts",
+		});
 	});
 });

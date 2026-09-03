@@ -7267,6 +7267,36 @@ msgstr "Ouvrir"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
+msgid "dashboard.sidebar.agentHoverRow.activity.delegate"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
+msgid "dashboard.sidebar.agentHoverRow.activity.edit"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
+msgid "dashboard.sidebar.agentHoverRow.activity.fetch"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
+msgid "dashboard.sidebar.agentHoverRow.activity.read"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
+msgid "dashboard.sidebar.agentHoverRow.activity.run"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
+msgid "dashboard.sidebar.agentHoverRow.activity.search"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarExpandedWorkspaceRow/components/DashboardSidebarWorkspaceChips/components/DashboardSidebarAgentsChip/components/DashboardSidebarAgentHoverRow/DashboardSidebarAgentHoverRow.tsx
 msgid "dashboard.sidebar.agentHoverRow.idle"
 msgstr "Inactif"
 

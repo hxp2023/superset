@@ -1,13 +1,20 @@
 import { useLingui } from "@lingui/react/macro";
+import { formatCompactRelativeTime } from "@superset/i18n/format";
 import { cn } from "@superset/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
+import { useNow } from "renderer/hooks/useNow";
 import { navigateToV2Workspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { getStatusTooltip } from "renderer/screens/main/components/StatusIndicator";
 import type {
 	DashboardSidebarRunningAgent,
+	RunningAgentActivity,
 	RunningAgentStatus,
 } from "../../../../hooks/useDashboardSidebarWorkspaceRunningAgents";
 import { DashboardSidebarAgentAvatar } from "../DashboardSidebarAgentAvatar";
+import {
+	type AgentActivityVerb,
+	describeAgentActivity,
+} from "./utils/describeAgentActivity";
 
 const STATUS_TEXT_CLASS: Record<RunningAgentStatus, string> = {
 	idle: "text-muted-foreground",
@@ -51,7 +58,12 @@ export function DashboardSidebarAgentHoverRow({
 				className="flex min-w-0 flex-1 items-center gap-1.5 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 			>
 				<DashboardSidebarAgentAvatar agent={agent} />
-				<span className="min-w-0 truncate text-xs">{agent.label}</span>
+				<span className="flex min-w-0 flex-1 flex-col">
+					<span className="min-w-0 truncate text-xs">{agent.label}</span>
+					{agent.activity ? (
+						<DashboardSidebarAgentActivityLine activity={agent.activity} />
+					) : null}
+				</span>
 			</button>
 			<span
 				className={cn("shrink-0 text-[10px]", STATUS_TEXT_CLASS[agent.status])}
@@ -59,5 +71,62 @@ export function DashboardSidebarAgentHoverRow({
 				{statusLabel}
 			</span>
 		</div>
+	);
+}
+
+/**
+ * One line for the agent's latest tool call: "Edit · src/a.ts · 3s ago".
+ * The elapsed time ticks while the card is open so a stale line reads as
+ * stale instead of live.
+ */
+function DashboardSidebarAgentActivityLine({
+	activity,
+}: {
+	activity: RunningAgentActivity;
+}) {
+	const { t } = useLingui();
+	const now = useNow();
+	const { verb, tool, detail } = describeAgentActivity(activity);
+
+	const verbLabels: Record<AgentActivityVerb, string> = {
+		edit: t({
+			id: "dashboard.sidebar.agentHoverRow.activity.edit",
+			message: "Edit",
+		}),
+		read: t({
+			id: "dashboard.sidebar.agentHoverRow.activity.read",
+			message: "Read",
+		}),
+		run: t({
+			id: "dashboard.sidebar.agentHoverRow.activity.run",
+			message: "Run",
+		}),
+		search: t({
+			id: "dashboard.sidebar.agentHoverRow.activity.search",
+			message: "Search",
+		}),
+		fetch: t({
+			id: "dashboard.sidebar.agentHoverRow.activity.fetch",
+			message: "Fetch",
+		}),
+		delegate: t({
+			id: "dashboard.sidebar.agentHoverRow.activity.delegate",
+			message: "Subagent",
+		}),
+	};
+	const label = verb ? verbLabels[verb] : tool;
+	const text = detail ? `${label} · ${detail}` : label;
+
+	return (
+		<span
+			className="min-w-0 truncate text-[10px] text-muted-foreground"
+			title={text}
+		>
+			{text}
+			<span className="text-muted-foreground/70">
+				{" · "}
+				{formatCompactRelativeTime(activity.at, now)}
+			</span>
+		</span>
 	);
 }

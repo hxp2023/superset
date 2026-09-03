@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { AgentDefinitionId } from "@superset/shared/agent-catalog";
 import type {
+	TerminalAgentActivity,
 	TerminalAgentBinding,
 	TerminalAgentEndReason,
 	TerminalAgentId,
@@ -14,6 +15,8 @@ interface RecordEventInput {
 	agentSessionId?: string;
 	definitionId?: AgentDefinitionId;
 	occurredAt: number;
+	/** The tool call behind this event, when the hook carried one. */
+	activity?: Omit<TerminalAgentActivity, "at">;
 }
 
 export interface TerminalAgentBindingListFilter {
@@ -82,6 +85,15 @@ export interface TerminalAgentBindingPersistence {
  */
 export class TerminalAgentStore extends EventEmitter {
 	private readonly byTerminal = new Map<string, TerminalAgentBinding>();
+	/**
+	 * Latest tool call per terminal. Kept beside the bindings rather than on
+	 * them because reads are served from persistence when present, and this
+	 * is deliberately never written to disk.
+	 */
+	private readonly activityByTerminal = new Map<
+		string,
+		TerminalAgentActivity
+	>();
 	private readonly persistence: TerminalAgentBindingPersistence | undefined;
 
 	constructor(persistence?: TerminalAgentBindingPersistence) {
@@ -102,6 +114,7 @@ export class TerminalAgentStore extends EventEmitter {
 			agentSessionId,
 			definitionId,
 			occurredAt,
+			activity,
 		} = input;
 
 		const endReason = END_EVENT_REASONS.get(eventType);
@@ -170,7 +183,43 @@ export class TerminalAgentStore extends EventEmitter {
 
 		this.byTerminal.set(terminalId, next);
 		this.persistence?.upsert(next);
+		this.recordActivity(terminalId, eventType, occurredAt, {
+			activity,
+			sessionChanged: prior === undefined || sessionChanged,
+		});
 		this.emit("change", workspaceId);
+	}
+
+	/**
+	 * A tool event replaces the line. A bare `Start` (a new prompt, no tool)
+	 * clears it — the previous turn's last tool is not what the agent is
+	 * doing now. Stop/Failed/PermissionRequest without a tool keep it, so an
+	 * idle row still says what the agent last did.
+	 */
+	private recordActivity(
+		terminalId: string,
+		eventType: string,
+		occurredAt: number,
+		input: {
+			activity: Omit<TerminalAgentActivity, "at"> | undefined;
+			sessionChanged: boolean;
+		},
+	): void {
+		if (input.activity) {
+			this.activityByTerminal.set(terminalId, {
+				...input.activity,
+				at: occurredAt,
+			});
+			return;
+		}
+		if (input.sessionChanged || eventType === "Start") {
+			this.activityByTerminal.delete(terminalId);
+		}
+	}
+
+	private withActivity(binding: TerminalAgentBinding): TerminalAgentBinding {
+		const activity = this.activityByTerminal.get(binding.terminalId);
+		return activity ? { ...binding, activity } : binding;
 	}
 
 	markTerminalExited(terminalId: string): void {
@@ -210,7 +259,8 @@ export class TerminalAgentStore extends EventEmitter {
 	}
 
 	get(terminalId: string): TerminalAgentBinding | undefined {
-		return this.byTerminal.get(terminalId);
+		const binding = this.byTerminal.get(terminalId);
+		return binding ? this.withActivity(binding) : undefined;
 	}
 
 	listByWorkspace(
@@ -218,7 +268,9 @@ export class TerminalAgentStore extends EventEmitter {
 		filter?: TerminalAgentBindingListFilter,
 	): TerminalAgentBinding[] {
 		if (this.persistence?.listLiveByWorkspace) {
-			return this.persistence.listLiveByWorkspace(workspaceId, filter);
+			return this.persistence
+				.listLiveByWorkspace(workspaceId, filter)
+				.map((binding) => this.withActivity(binding));
 		}
 		const out: TerminalAgentBinding[] = [];
 		for (const binding of this.byTerminal.values()) {
@@ -226,16 +278,20 @@ export class TerminalAgentStore extends EventEmitter {
 			if (filter?.agentId && binding.agentId !== filter.agentId) continue;
 			if (filter?.definitionId && binding.definitionId !== filter.definitionId)
 				continue;
-			out.push(binding);
+			out.push(this.withActivity(binding));
 		}
 		return out;
 	}
 
 	list(): TerminalAgentBinding[] {
 		if (this.persistence?.listLive) {
-			return this.persistence.listLive();
+			return this.persistence
+				.listLive()
+				.map((binding) => this.withActivity(binding));
 		}
-		return [...this.byTerminal.values()];
+		return [...this.byTerminal.values()].map((binding) =>
+			this.withActivity(binding),
+		);
 	}
 
 	findActive(
@@ -244,11 +300,12 @@ export class TerminalAgentStore extends EventEmitter {
 		definitionId?: AgentDefinitionId,
 	): TerminalAgentBinding | undefined {
 		if (this.persistence?.findLiveActive) {
-			return this.persistence.findLiveActive(
+			const found = this.persistence.findLiveActive(
 				workspaceId,
 				agentId,
 				definitionId,
 			);
+			return found ? this.withActivity(found) : undefined;
 		}
 		let best: TerminalAgentBinding | undefined;
 		for (const binding of this.byTerminal.values()) {
@@ -260,7 +317,7 @@ export class TerminalAgentStore extends EventEmitter {
 				best = binding;
 			}
 		}
-		return best;
+		return best ? this.withActivity(best) : undefined;
 	}
 
 	/**
@@ -275,6 +332,7 @@ export class TerminalAgentStore extends EventEmitter {
 	): void {
 		const existing = this.byTerminal.get(terminalId);
 		this.byTerminal.delete(terminalId);
+		this.activityByTerminal.delete(terminalId);
 
 		let marked: { workspaceId: string } | undefined;
 		if (this.persistence?.markEnded) {

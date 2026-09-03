@@ -23,6 +23,17 @@ export type TerminalAgentEndReason =
 	| "disposed";
 
 /**
+ * The agent's most recent tool call, as reported by its tool hooks: the tool
+ * name plus the argument worth showing (a path, a command, a pattern). One
+ * line, latest wins — the sidebar's "what is it doing" hint, not a log.
+ */
+export interface TerminalAgentActivity {
+	tool: string;
+	detail?: string;
+	at: number;
+}
+
+/**
  * One agent process bound to a terminal. Created on the first hook event we
  * receive for the terminal. When the agent or terminal ends the row is kept
  * with `endedAt`/`endReason` set (so `agentSessionId` survives for resume)
@@ -40,4 +51,9 @@ export interface TerminalAgentBinding {
 	lastEventType: string;
 	endedAt?: number;
 	endReason?: TerminalAgentEndReason;
+	/**
+	 * Held in memory only (not persisted): it is worthless after a restart
+	 * and changes on every tool call.
+	 */
+	activity?: TerminalAgentActivity;
 }
