@@ -44,7 +44,7 @@ import { AgentCommentComposer } from "../AgentCommentComposer";
 import { CommentThread } from "./components/CommentThread";
 import { DeferredDiffPlaceholder } from "./components/DeferredDiffPlaceholder";
 import { DiffHeaderMetadata } from "./components/DiffHeaderMetadata";
-import { DiffSectionBar } from "./components/DiffSectionBar";
+import { DiffSectionLabel } from "./components/DiffSectionLabel";
 import { useDiffActiveSection } from "./hooks/useDiffActiveSection";
 import {
 	type DiffAnnotationMetadata,
@@ -419,9 +419,9 @@ export function DiffPane({
 		clearTargetAndCollapse(files.map((f) => getChangesetFileKey(f)));
 	}, [updateData, areAllFilesCollapsed, files, clearTargetAndCollapse]);
 
-	// The section bar lives outside the scroller: Pierre pins one header at a
-	// time within its own box, so a body-less in-flow section item couldn't stay
-	// pinned across its group.
+	// The section label lives in the toolbar, outside the scroller: Pierre pins
+	// one header at a time within its own box, so a body-less in-flow section
+	// item couldn't stay pinned across its group.
 	const { currentSection, onScroll } = useDiffActiveSection({
 		codeViewRef,
 		items,
@@ -773,13 +773,14 @@ export function DiffPane({
 					onPrev: commentNav.goToPrevComment,
 					onNext: commentNav.goToNextComment,
 				}}
-			/>
-			{currentSection ? (
-				<DiffSectionBar
-					kind={currentSection.kind}
-					count={currentSection.count}
-				/>
-			) : null}
+			>
+				{currentSection ? (
+					<DiffSectionLabel
+						kind={currentSection.kind}
+						count={currentSection.count}
+					/>
+				) : null}
+			</DiffViewToolbar>
 			{files.length === 0 ? (
 				// The toolbar stays up while the current filter yields nothing;
 				// the sidebar's Changes tab holds the filter/branch controls.

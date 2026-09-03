@@ -32055,22 +32055,22 @@ msgid "workspace.builtinPresetBarItem.runScript"
 msgstr "Run script"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupAgainstBase"
 msgstr "Against base"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupCommitted"
 msgstr "Committed"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupStaged"
 msgstr "Staged"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupUnstaged"
 msgstr "Unstaged"
 

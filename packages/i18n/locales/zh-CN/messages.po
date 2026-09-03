@@ -32054,22 +32054,22 @@ msgid "workspace.builtinPresetBarItem.runScript"
 msgstr "运行脚本"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupAgainstBase"
 msgstr "对比基准分支"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupCommitted"
 msgstr "已提交"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupStaged"
 msgstr "已暂存"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupUnstaged"
 msgstr "未暂存"
 

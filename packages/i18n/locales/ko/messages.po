@@ -32055,22 +32055,22 @@ msgid "workspace.builtinPresetBarItem.runScript"
 msgstr "스크립트 실행"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupAgainstBase"
 msgstr "기준 대비"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupCommitted"
 msgstr "커밋됨"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupStaged"
 msgstr "스테이징됨"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupUnstaged"
 msgstr "스테이징 안 됨"
 

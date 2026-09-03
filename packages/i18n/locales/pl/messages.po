@@ -32055,22 +32055,22 @@ msgid "workspace.builtinPresetBarItem.runScript"
 msgstr "Uruchom skrypt"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupAgainstBase"
 msgstr "Względem bazy"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupCommitted"
 msgstr "Zacommitowane"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupStaged"
 msgstr "Zaindeksowane"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionBar/DiffSectionBar.tsx
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/components/DiffSectionLabel/DiffSectionLabel.tsx
 msgid "workspace.changes.groupUnstaged"
 msgstr "Niezaindeksowane"
 

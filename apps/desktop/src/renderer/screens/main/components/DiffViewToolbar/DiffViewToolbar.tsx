@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
+import type { ReactNode } from "react";
 import {
 	LuChevronDown,
 	LuChevronUp,
@@ -35,6 +36,8 @@ interface DiffViewToolbarProps {
 	onToggleCollapseAll: () => void;
 	/** Prev/next review-comment cluster; hidden when null or total is 0. */
 	commentNav?: DiffViewToolbarCommentNav | null;
+	/** Rendered after the left-hand controls — the DiffPane's section label. */
+	children?: ReactNode;
 }
 
 /**
@@ -55,6 +58,7 @@ export function DiffViewToolbar({
 	areAllFilesCollapsed,
 	onToggleCollapseAll,
 	commentNav,
+	children,
 }: DiffViewToolbarProps) {
 	const { t } = useLingui();
 	const diffStyle = useSettings((s) => s.diffStyle);
@@ -147,6 +151,12 @@ export function DiffViewToolbar({
 						)}
 					</TooltipContent>
 				</Tooltip>
+				{children != null && (
+					<>
+						<div className="mx-0.5 h-4 w-px bg-border" />
+						{children}
+					</>
+				)}
 			</div>
 			<div className="flex items-center gap-1">
 				{commentNav != null && commentNav.total > 0 && (
