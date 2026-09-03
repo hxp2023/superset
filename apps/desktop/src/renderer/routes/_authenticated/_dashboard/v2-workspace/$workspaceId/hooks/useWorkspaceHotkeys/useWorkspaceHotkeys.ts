@@ -11,6 +11,7 @@ import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { useHotkey } from "renderer/hotkeys";
 import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
 import { useRightSidebarToggleIntent } from "renderer/stores/right-sidebar-toggle-intent";
+import { useSettings } from "renderer/stores/settings";
 import type { StoreApi } from "zustand";
 import type {
 	BrowserPaneData,
@@ -80,7 +81,7 @@ export function useWorkspaceHotkeys({
 	});
 
 	useHotkey("OPEN_DIFF_VIEWER", () => {
-		openChangesPaneInStore(store);
+		openChangesPaneInStore(store, useSettings.getState().changesOpenTarget);
 	});
 
 	// --- Tab management ---

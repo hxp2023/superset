@@ -1,6 +1,7 @@
 import type { WorkspaceStore } from "@superset/panes";
 import { useCallback } from "react";
 import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
+import { useSettings } from "renderer/stores/settings";
 import type { StoreApi } from "zustand/vanilla";
 import type {
 	BrowserPaneData,
@@ -195,7 +196,7 @@ export function useWorkspacePaneOpeners({
 	);
 
 	const openChangesPane = useCallback(() => {
-		openChangesPaneInStore(store);
+		openChangesPaneInStore(store, useSettings.getState().changesOpenTarget);
 	}, [store]);
 
 	const openPagePane = useCallback(
