@@ -82,12 +82,23 @@ export function ShipControl({
 	// The branch's commits ahead of its base: prefills the PR title from the
 	// latest subject, and gates Create PR — GitHub rejects a PR with no
 	// commits between base and head, so the action disables instead of
-	// surfacing that as a failure toast. Same 10s cadence as the PR/sync
-	// queries so committing (here or in a terminal) enables it promptly.
-	const commitsQuery = workspaceTrpc.git.listCommits.useQuery(
+	// surfacing that as a failure toast. Counted against the configured
+	// branch.<name>.base (the base createForWorkspace actually opens
+	// against) — measuring against the repo default gets stacked branches
+	// exactly backwards. Same 10s cadence as the PR/sync queries so
+	// committing (here or in a terminal) enables it promptly; both queries
+	// dedupe with ChangesPanel's identical ones.
+	const baseBranchQuery = workspaceTrpc.git.getBaseBranch.useQuery(
 		{ workspaceId },
+		{ enabled: canCreatePr, staleTime: Number.POSITIVE_INFINITY },
+	);
+	const commitsQuery = workspaceTrpc.git.listCommits.useQuery(
 		{
-			enabled: canCreatePr,
+			workspaceId,
+			baseBranch: baseBranchQuery.data?.baseBranch ?? undefined,
+		},
+		{
+			enabled: canCreatePr && baseBranchQuery.isSuccess,
 			refetchInterval: 10_000,
 			refetchOnWindowFocus: true,
 			staleTime: 10_000,
@@ -364,11 +375,22 @@ export function ShipControl({
 									</DropdownMenuItem>
 								)}
 								{canCreatePr && (
+									// Not `disabled` when there are no commits ahead: a disabled
+									// menu item is pointer-events-none, so its title tooltip can
+									// never show — instead the greyed item stays clickable and
+									// explains itself with a toast.
 									<DropdownMenuItem
-										className="text-xs"
-										disabled={!hasCommitsAhead || isShipping}
-										title={hasCommitsAhead ? undefined : noCommitsTooltip}
+										className={
+											hasCommitsAhead
+												? "text-xs"
+												: "text-xs text-muted-foreground focus:text-muted-foreground"
+										}
+										disabled={isShipping}
 										onClick={() => {
+											if (!hasCommitsAhead) {
+												toast.info(noCommitsTooltip);
+												return;
+											}
 											pendingViewRef.current = "pr";
 										}}
 									>
