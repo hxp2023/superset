@@ -25,6 +25,9 @@
 //                      corner) | plain (legacy glow, no shader) |
 //                      random (seeded pick)
 //   --glow <n>         glow backdrop strength 0-1 (default 0.4)
+//   --transparent      drop the backdrop entirely and write a PNG with alpha
+//                      (window + shadow only), for compositing over video or
+//                      an animated glow. Uses the style's layout.
 //   --accent <hex>     custom shader ink color, overrides the preset hue
 //   --seed <n>         vary the dither pattern phase/placement deterministically;
 //                      same seed = same output. Use different seeds across one
@@ -118,6 +121,7 @@ if (!usePlain && !PRESETS[bgName]) {
 }
 const accent = flags.get("accent") ?? PRESETS[bgName] ?? PRESETS.flame;
 const glowStrength = Number(flags.get("glow") ?? "0.4") || 0.4;
+const transparent = flags.has("transparent");
 const shape = flags.get("shape") ?? "warp";
 const pxSize = Number(flags.get("px") ?? "3.5") || 3.5;
 const bgOpacity = Number(flags.get("bg-opacity") ?? "0.34") || 0.34;
@@ -285,6 +289,10 @@ const html = `<!doctype html><html><head><meta charset="utf8"><style>
     radial-gradient(ellipse 42% 38% at 50% 34%, rgba(232,128,74,${glowStrength}), rgba(232,128,74,${(glowStrength * 0.3).toFixed(3)}) 55%, transparent 78%); }
   body.emberstage .floor { position:absolute; inset:0; pointer-events:none; background:
     linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,.35)); }
+  /* --transparent: no stage at all, only the window and its shadow */
+  body.transparent, body.transparent .stage { background:transparent; }
+  body.transparent .sheen, body.transparent .ember, body.transparent #dither, body.transparent .tint,
+  body.transparent .vignette, body.transparent .glow, body.transparent .floor, body.transparent .fade { display:none; }
   /* corner: pin the window top-left and let it run off right and bottom */
   body.corner .stage { align-items:flex-start; justify-content:flex-start; }
   body.corner .frame { flex:none; margin-left:${Math.round(CANVAS_W * 0.065)}px; margin-top:${Math.round(CANVAS_H * 0.13)}px; }
@@ -318,7 +326,7 @@ const html = `<!doctype html><html><head><meta charset="utf8"><style>
                 0 0 22px 2px ${accent}66,
                 inset 0 0 14px ${accent}22;
   }
-</style></head><body class="${[isCard ? "card" : "", isCorner ? "corner" : "", isGlow ? "emberstage" : ""].join(" ").trim()}">
+</style></head><body class="${[isCard ? "card" : "", isCorner ? "corner" : "", isGlow ? "emberstage" : "", transparent ? "transparent" : ""].join(" ").trim()}">
   <div class="stage">
     <div class="sheen"></div>
     <div class="ember"></div>
@@ -352,6 +360,7 @@ const proc = Bun.spawnSync(
 		"--disable-extensions",
 		"--disable-background-networking",
 		"--virtual-time-budget=4000",
+		...(transparent ? ["--default-background-color=00000000"] : []),
 		`--force-device-scale-factor=${SCALE}`,
 		`--window-size=${CANVAS_W},${CANVAS_H}`,
 		`--user-data-dir=${profile}`,
