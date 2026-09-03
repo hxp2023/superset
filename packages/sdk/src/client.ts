@@ -121,6 +121,12 @@ import {
 	WorkspaceListResponse,
 	Workspaces,
 } from "./resources/workspaces";
+import {
+	buildMethodCalledEvent,
+	isTelemetryEnabled,
+	type TelemetryTarget,
+	type TRPCCall,
+} from "./lib/telemetry";
 import { VERSION } from "./version";
 
 export interface ClientOptions {
@@ -253,6 +259,7 @@ export class Superset {
 	private _relayUrlExplicit = false;
 	private _relayUrlCache: { url: string; expiresAt: number } | null = null;
 	private _relayUrlInflight: Promise<string> | null = null;
+	private _telemetryEnabled = isTelemetryEnabled();
 
 	/**
 	 * API Client for interfacing with the Superset API.
@@ -489,11 +496,13 @@ export class Superset {
 	 * `{ result: { data: { json: ... } } }`.
 	 */
 	mutation<Rsp>(
-		procedurePath: string,
+		call: TRPCCall,
 		input?: unknown,
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
-		return this.post<TRPCEnvelope<Rsp>>(`/api/trpc/${procedurePath}`, {
+		return this._trackedRequest<TRPCEnvelope<Rsp>>(call, "cloud", {
+			method: "post",
+			path: `/api/trpc/${call.procedure}`,
 			body: { json: input ?? null },
 			...options,
 		})._thenUnwrap((r) => r.result.data.json);
@@ -504,7 +513,7 @@ export class Superset {
 	 * `?input=<json>` query param when provided, and unwraps the response.
 	 */
 	query<Rsp>(
-		procedurePath: string,
+		call: TRPCCall,
 		input?: unknown,
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
@@ -512,7 +521,9 @@ export class Superset {
 		if (input !== undefined) {
 			queryParams.input = JSON.stringify({ json: input });
 		}
-		return this.get<TRPCEnvelope<Rsp>>(`/api/trpc/${procedurePath}`, {
+		return this._trackedRequest<TRPCEnvelope<Rsp>>(call, "cloud", {
+			method: "get",
+			path: `/api/trpc/${call.procedure}`,
 			query: queryParams,
 			...options,
 		})._thenUnwrap((r) => r.result.data.json);
@@ -528,7 +539,7 @@ export class Superset {
 	 */
 	hostMutation<Rsp>(
 		hostId: string,
-		procedurePath: string,
+		call: TRPCCall,
 		input?: unknown,
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
@@ -545,7 +556,7 @@ export class Superset {
 				// JWT or replace the tRPC envelope.
 				...options,
 				method: "post" as const,
-				path: `${relayUrl}/hosts/${routingKey}/trpc/${procedurePath}`,
+				path: `${relayUrl}/hosts/${routingKey}/trpc/${call.procedure}`,
 				body: { json: input ?? null },
 				headers: buildHeaders([
 					options?.headers,
@@ -554,9 +565,11 @@ export class Superset {
 				]),
 			}),
 		);
-		return this.request<TRPCEnvelope<Rsp>>(optsPromise)._thenUnwrap(
-			(r) => r.result.data.json,
-		);
+		return this._trackedRequest<TRPCEnvelope<Rsp>>(
+			call,
+			"host",
+			optsPromise,
+		)._thenUnwrap((r) => r.result.data.json);
 	}
 
 	/**
@@ -564,7 +577,7 @@ export class Superset {
 	 */
 	hostQuery<Rsp>(
 		hostId: string,
-		procedurePath: string,
+		call: TRPCCall,
 		input?: unknown,
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
@@ -582,7 +595,7 @@ export class Superset {
 			([jwt, relayUrl]) => ({
 				...options,
 				method: "get" as const,
-				path: `${relayUrl}/hosts/${routingKey}/trpc/${procedurePath}`,
+				path: `${relayUrl}/hosts/${routingKey}/trpc/${call.procedure}`,
 				query: queryParams,
 				headers: buildHeaders([
 					options?.headers,
@@ -590,9 +603,60 @@ export class Superset {
 				]),
 			}),
 		);
-		return this.request<TRPCEnvelope<Rsp>>(optsPromise)._thenUnwrap(
-			(r) => r.result.data.json,
-		);
+		return this._trackedRequest<TRPCEnvelope<Rsp>>(
+			call,
+			"host",
+			optsPromise,
+		)._thenUnwrap((r) => r.result.data.json);
+	}
+
+	/**
+	 * Issue the request behind a public resource method and, once it settles,
+	 * report the call to `analytics.captureEvent`. The report hangs off a
+	 * branch of the response promise, never the promise handed back to the
+	 * caller: it cannot delay, fail, or retry the user's call. The capture
+	 * request goes through `post`, not `mutation`, so it is not itself
+	 * reported.
+	 */
+	private _trackedRequest<Rsp>(
+		call: TRPCCall,
+		target: TelemetryTarget,
+		options: PromiseOrValue<FinalRequestOptions>,
+	): APIPromise<Rsp> {
+		const startedAt = Date.now();
+		const responsePromise = this.makeRequest(options, null, undefined);
+		if (this._telemetryEnabled) {
+			responsePromise.then(
+				() => this._captureMethodCalled(call, target, true, startedAt),
+				() => this._captureMethodCalled(call, target, false, startedAt),
+			);
+		}
+		return new APIPromise(this, responsePromise);
+	}
+
+	private _captureMethodCalled(
+		call: TRPCCall,
+		target: TelemetryTarget,
+		success: boolean,
+		startedAt: number,
+	): void {
+		try {
+			const event = buildMethodCalledEvent({
+				method: call.method,
+				target,
+				success,
+				durationMs: Date.now() - startedAt,
+			});
+			this.post("/api/trpc/analytics.captureEvent", {
+				body: { json: event },
+				maxRetries: 0,
+				timeout: 10_000,
+			}).catch(() => {
+				// Telemetry is best-effort; never surface failures to the caller.
+			});
+		} catch {
+			// Same: a bug in telemetry must not reach the caller.
+		}
 	}
 
 	/**
@@ -1087,6 +1151,7 @@ export class Superset {
 			{
 				Accept: "application/json",
 				"User-Agent": this.getUserAgent(),
+				"x-superset-client": `sdk/${VERSION}`,
 				"X-Stainless-Retry-Count": String(retryCount),
 				...(options.timeout
 					? {
