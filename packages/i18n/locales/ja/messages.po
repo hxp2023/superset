@@ -8325,19 +8325,14 @@ msgstr "ブランチ名のコピーに失敗しました: {0}"
 #. js-lingui-explicit-id
 #. placeholder {0}: errorMessage(error, "Unknown error")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
-msgid "dashboard.sidebar.workspaceActions.copyIdFailed"
-msgstr "IDのコピーに失敗しました: {0}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: errorMessage(error, "Unknown error")
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
 msgid "dashboard.sidebar.workspaceActions.copyPathFailed"
 msgstr "パスのコピーに失敗しました: {0}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: errorMessage(error, "Unknown error")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
-msgid "dashboard.sidebar.workspaceActions.idCopied"
-msgstr "IDをコピーしました"
+msgid "dashboard.sidebar.workspaceActions.copyWorkspaceIdFailed"
+msgstr "ワークスペースIDのコピーに失敗しました: {0}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: errorMessage(error, "Unknown error")
@@ -8360,6 +8355,11 @@ msgstr "ワークスペースのパスは利用できません"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
 msgid "dashboard.sidebar.workspaceActions.removePrLinkFailed"
 msgstr "PRリンクの削除に失敗しました: {0}"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
+msgid "dashboard.sidebar.workspaceActions.workspaceIdCopied"
+msgstr "ワークスペースIDをコピーしました"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceBulkContextMenu/DashboardSidebarWorkspaceBulkContextMenu.tsx
@@ -8473,13 +8473,13 @@ msgstr "ブランチ名をコピー"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
-msgid "dashboard.sidebar.workspaceMenu.copyId"
-msgstr "IDをコピー"
+msgid "dashboard.sidebar.workspaceMenu.copyPath"
+msgstr "パスをコピー"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
-msgid "dashboard.sidebar.workspaceMenu.copyPath"
-msgstr "パスをコピー"
+msgid "dashboard.sidebar.workspaceMenu.copyWorkspaceId"
+msgstr "ワークスペースIDをコピー"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx

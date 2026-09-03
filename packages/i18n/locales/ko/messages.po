@@ -8325,19 +8325,14 @@ msgstr "브랜치 이름을 복사하지 못했습니다: {0}"
 #. js-lingui-explicit-id
 #. placeholder {0}: errorMessage(error, "Unknown error")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
-msgid "dashboard.sidebar.workspaceActions.copyIdFailed"
-msgstr "ID를 복사하지 못했습니다: {0}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: errorMessage(error, "Unknown error")
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
 msgid "dashboard.sidebar.workspaceActions.copyPathFailed"
 msgstr "경로를 복사하지 못했습니다: {0}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: errorMessage(error, "Unknown error")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
-msgid "dashboard.sidebar.workspaceActions.idCopied"
-msgstr "ID 복사됨"
+msgid "dashboard.sidebar.workspaceActions.copyWorkspaceIdFailed"
+msgstr "워크스페이스 ID를 복사하지 못했습니다: {0}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: errorMessage(error, "Unknown error")
@@ -8360,6 +8355,11 @@ msgstr "워크스페이스 경로를 사용할 수 없습니다"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
 msgid "dashboard.sidebar.workspaceActions.removePrLinkFailed"
 msgstr "PR 링크를 제거하지 못했습니다: {0}"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
+msgid "dashboard.sidebar.workspaceActions.workspaceIdCopied"
+msgstr "워크스페이스 ID 복사됨"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceBulkContextMenu/DashboardSidebarWorkspaceBulkContextMenu.tsx
@@ -8473,13 +8473,13 @@ msgstr "브랜치 이름 복사"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
-msgid "dashboard.sidebar.workspaceMenu.copyId"
-msgstr "ID 복사"
+msgid "dashboard.sidebar.workspaceMenu.copyPath"
+msgstr "경로 복사"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
-msgid "dashboard.sidebar.workspaceMenu.copyPath"
-msgstr "경로 복사"
+msgid "dashboard.sidebar.workspaceMenu.copyWorkspaceId"
+msgstr "워크스페이스 ID 복사"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx

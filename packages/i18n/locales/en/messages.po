@@ -8325,19 +8325,14 @@ msgstr "Failed to copy branch name: {0}"
 #. js-lingui-explicit-id
 #. placeholder {0}: errorMessage(error, "Unknown error")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
-msgid "dashboard.sidebar.workspaceActions.copyIdFailed"
-msgstr "Failed to copy ID: {0}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: errorMessage(error, "Unknown error")
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
 msgid "dashboard.sidebar.workspaceActions.copyPathFailed"
 msgstr "Failed to copy path: {0}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: errorMessage(error, "Unknown error")
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
-msgid "dashboard.sidebar.workspaceActions.idCopied"
-msgstr "ID copied"
+msgid "dashboard.sidebar.workspaceActions.copyWorkspaceIdFailed"
+msgstr "Failed to copy workspace ID: {0}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: errorMessage(error, "Unknown error")
@@ -8360,6 +8355,11 @@ msgstr "Workspace path is not available"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
 msgid "dashboard.sidebar.workspaceActions.removePrLinkFailed"
 msgstr "Failed to remove PR link: {0}"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/hooks/useDashboardSidebarWorkspaceItemActions/useDashboardSidebarWorkspaceItemActions.ts
+msgid "dashboard.sidebar.workspaceActions.workspaceIdCopied"
+msgstr "Workspace ID copied"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceBulkContextMenu/DashboardSidebarWorkspaceBulkContextMenu.tsx
@@ -8473,13 +8473,13 @@ msgstr "Copy Branch Name"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
-msgid "dashboard.sidebar.workspaceMenu.copyId"
-msgstr "Copy ID"
+msgid "dashboard.sidebar.workspaceMenu.copyPath"
+msgstr "Copy Path"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx
-msgid "dashboard.sidebar.workspaceMenu.copyPath"
-msgstr "Copy Path"
+msgid "dashboard.sidebar.workspaceMenu.copyWorkspaceId"
+msgstr "Copy Workspace ID"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarWorkspaceItem/components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu.tsx

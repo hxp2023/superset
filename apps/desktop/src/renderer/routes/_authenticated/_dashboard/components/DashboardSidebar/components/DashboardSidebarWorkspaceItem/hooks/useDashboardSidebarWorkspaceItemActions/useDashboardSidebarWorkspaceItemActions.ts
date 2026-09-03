@@ -334,23 +334,18 @@ export function useDashboardSidebarWorkspaceItemActions({
 		}
 	};
 
-	const handleCopyId = async () => {
-		try {
-			await copyToClipboard(workspaceId);
-			toast.success(
+	const handleCopyWorkspaceId = () => {
+		toast.promise(copyToClipboard(workspaceId), {
+			success: t({
+				id: "dashboard.sidebar.workspaceActions.workspaceIdCopied",
+				message: "Workspace ID copied",
+			}),
+			error: (error) =>
 				t({
-					id: "dashboard.sidebar.workspaceActions.idCopied",
-					message: "ID copied",
+					id: "dashboard.sidebar.workspaceActions.copyWorkspaceIdFailed",
+					message: `Failed to copy workspace ID: ${errorMessage(error, "Unknown error")}`,
 				}),
-			);
-		} catch (error) {
-			toast.error(
-				t({
-					id: "dashboard.sidebar.workspaceActions.copyIdFailed",
-					message: `Failed to copy ID: ${errorMessage(error, "Unknown error")}`,
-				}),
-			);
-		}
+		});
 	};
 
 	return {
@@ -359,7 +354,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 		handleClick,
 		handleCopyPath,
 		handleCopyBranchName,
-		handleCopyId,
+		handleCopyWorkspaceId,
 		handleCreateSection,
 		handleMoveToSection,
 		handleOpenInFinder,
