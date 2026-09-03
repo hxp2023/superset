@@ -119,13 +119,12 @@ function DashboardSidebarAgentActivityLine({
 
 	return (
 		<span
-			className="min-w-0 truncate text-[10px] text-muted-foreground"
+			className="flex min-w-0 items-baseline text-[10px] text-muted-foreground"
 			title={text}
 		>
-			{text}
-			<span className="text-muted-foreground/70">
-				{" · "}
-				{formatCompactRelativeTime(activity.at, now)}
+			<span className="min-w-0 truncate">{text}</span>
+			<span className="ml-1 shrink-0 text-muted-foreground/70">
+				· {formatCompactRelativeTime(activity.at, now)}
 			</span>
 		</span>
 	);
