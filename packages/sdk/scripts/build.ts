@@ -8,6 +8,10 @@
  *
  * Strategy: bun bundles src/index.ts → dist/index.{js,cjs}; tsc emits the
  * .d.ts hierarchy into dist/. dist/package.json points at the bundled output.
+ *
+ * Releasing: bump "version" in package.json, run this script, publish from
+ * dist/. src/version.ts is stamped from package.json here and is never
+ * hand-edited; commit the regenerated file with the release.
  */
 
 import { execSync } from "node:child_process";
