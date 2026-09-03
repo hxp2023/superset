@@ -26,6 +26,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const DIST = join(ROOT, "dist");
 
+const pkg = JSON.parse(
+	readFileSync(join(ROOT, "package.json"), "utf-8"),
+) as Record<string, unknown>;
+
+console.log(`> stamping src/version.ts with ${pkg.version}`);
+writeFileSync(
+	join(ROOT, "src", "version.ts"),
+	`// Stamped from package.json by scripts/build.ts. Do not edit.\nexport const VERSION = "${pkg.version}";\n`,
+);
+
 console.log(`> cleaning ${DIST}`);
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
@@ -55,9 +65,6 @@ for (const f of ["LICENSE", "README.md", "api.md"]) {
 }
 
 console.log("> writing dist/package.json");
-const pkg = JSON.parse(
-	readFileSync(join(ROOT, "package.json"), "utf-8"),
-) as Record<string, unknown>;
 const publishName =
 	(pkg.publishConfig as { name?: string } | undefined)?.name ??
 	(pkg.name as string);
