@@ -14,7 +14,10 @@ import {
 import { useSettings } from "renderer/stores/settings";
 import { useRowlessSidebarTabStore } from "../../state/rowlessSidebarTabStore";
 import type { CommentPaneData, DiffFocusSide } from "../../types";
-import { setWorkspaceSidebarTab } from "../../utils/setWorkspaceSidebarTab";
+import {
+	DEFAULT_WORKSPACE_SIDEBAR_TAB,
+	setWorkspaceSidebarTab,
+} from "../../utils/setWorkspaceSidebarTab";
 import { FilesTab } from "./components/FilesTab";
 import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
@@ -84,7 +87,7 @@ export function WorkspaceSidebar({
 	const activeTab: SidebarTabId =
 		row && isSidebarTabId(row.sidebarState.activeTab)
 			? row.sidebarState.activeTab
-			: (rowlessTab ?? "changes");
+			: (rowlessTab ?? DEFAULT_WORKSPACE_SIDEBAR_TAB);
 
 	// A row created while a rowless choice is pending (pinning a local main)
 	// starts on the default tab: carry the choice into the row once, then
