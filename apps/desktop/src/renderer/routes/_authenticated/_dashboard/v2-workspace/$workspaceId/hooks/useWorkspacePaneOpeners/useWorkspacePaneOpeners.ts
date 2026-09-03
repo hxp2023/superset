@@ -16,7 +16,10 @@ import type {
 	PaneViewerData,
 	TerminalPaneData,
 } from "../../types";
-import { openChangesPaneInStore } from "../../utils/openChangesPaneInStore";
+import {
+	closeVisibleChangesPane,
+	openChangesPaneInStore,
+} from "../../utils/openChangesPaneInStore";
 import { openPagePaneInStore } from "../../utils/openPagePaneInStore";
 import { setWorkspaceSidebarTab } from "../../utils/setWorkspaceSidebarTab";
 import { useDefaultBrowserUrl } from "../useDefaultBrowserUrl";
@@ -49,6 +52,8 @@ export function useWorkspacePaneOpeners({
 	addChatV3Tab: () => void;
 	addBrowserTab: () => void;
 	openChangesPane: () => void;
+	/** Close the visible Changes pane, or open/focus one when none is showing. */
+	toggleChangesPane: () => void;
 	openCommentPane: (comment: CommentPaneData) => void;
 	openPagePane: (page: PagePaneData) => void;
 } {
@@ -212,6 +217,13 @@ export function useWorkspacePaneOpeners({
 		openChangesPaneInStore(store, useSettings.getState().changesOpenTarget);
 	}, [store, setRightSidebarOpen, collections, workspace.id]);
 
+	// Closing leaves the sidebar as it is — the file list stays useful on
+	// its own — while opening reveals it like every other entry point.
+	const toggleChangesPane = useCallback(() => {
+		if (closeVisibleChangesPane(store)) return;
+		openChangesPane();
+	}, [store, openChangesPane]);
+
 	const openPagePane = useCallback(
 		(page: PagePaneData) => {
 			openPagePaneInStore(store, page);
@@ -225,6 +237,7 @@ export function useWorkspacePaneOpeners({
 		addChatV3Tab,
 		addBrowserTab,
 		openChangesPane,
+		toggleChangesPane,
 		openCommentPane,
 		openPagePane,
 	};

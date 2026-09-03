@@ -32111,6 +32111,11 @@ msgstr "Belum di-stage"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
+msgid "workspace.changesPill.closeChanges"
+msgstr "Tutup perubahan"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
 msgid "workspace.changesPill.openChanges"
 msgstr "Buka perubahan"
 

@@ -32111,6 +32111,11 @@ msgstr "Non in stage"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
+msgid "workspace.changesPill.closeChanges"
+msgstr "Chiudi le modifiche"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
 msgid "workspace.changesPill.openChanges"
 msgstr "Apri le modifiche"
 

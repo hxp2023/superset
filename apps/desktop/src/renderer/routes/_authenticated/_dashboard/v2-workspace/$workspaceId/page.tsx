@@ -24,6 +24,7 @@ import {
 	COLLAPSED_WORKSPACE_SIDEBAR_WIDTH,
 	useWorkspaceSidebarStore,
 } from "renderer/stores/workspace-sidebar-state";
+import { useStore } from "zustand";
 import { StateScreenShell } from "../components/StateScreenShell";
 import { useWorkspace } from "../providers/WorkspaceProvider";
 import { AddTabMenu } from "./components/AddTabMenu";
@@ -59,6 +60,7 @@ import { useWorkspacePaneOpeners } from "./hooks/useWorkspacePaneOpeners";
 import { WorkspaceGitStatusProvider } from "./providers/WorkspaceGitStatusProvider";
 import { FileDocumentStoreProvider } from "./state/fileDocumentStore";
 import type { PaneViewerData } from "./types";
+import { findVisibleChangesPane } from "./utils/openChangesPaneInStore";
 import type { V2WorkspaceUrlOpenTarget } from "./utils/openUrlInV2Workspace";
 
 interface WorkspaceSearch {
@@ -192,6 +194,7 @@ function V2WorkspaceContent() {
 		addChatV3Tab,
 		addBrowserTab,
 		openChangesPane,
+		toggleChangesPane,
 		openCommentPane,
 		openPagePane,
 	} = useWorkspacePaneOpeners({
@@ -212,6 +215,10 @@ function V2WorkspaceContent() {
 		launcher,
 	});
 	const diffPaneTarget = useDiffPaneTarget(store);
+	const isChangesPaneOpen = useStore(
+		store,
+		(state) => findVisibleChangesPane(state) != null,
+	);
 
 	usePagePaneIntentOpener({ workspaceId, isLayoutReady, openPagePane });
 	const hostTarget = useWorkspaceHostTarget(workspaceId);
@@ -395,7 +402,8 @@ function V2WorkspaceContent() {
 									{isLayoutReady && (
 										<ChangesControl
 											workspaceId={workspaceId}
-											onOpenChanges={openChangesPane}
+											isChangesOpen={isChangesPaneOpen}
+											onToggleChanges={toggleChangesPane}
 										/>
 									)}
 									{workspaceRunButton}

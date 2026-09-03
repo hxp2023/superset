@@ -32111,6 +32111,11 @@ msgstr "Chưa stage"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
+msgid "workspace.changesPill.closeChanges"
+msgstr "Đóng thay đổi"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
 msgid "workspace.changesPill.openChanges"
 msgstr "Mở thay đổi"
 

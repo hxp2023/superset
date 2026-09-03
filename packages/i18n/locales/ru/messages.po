@@ -32111,6 +32111,11 @@ msgstr "Не проиндексировано"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
+msgid "workspace.changesPill.closeChanges"
+msgstr "Закрыть изменения"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/ChangesControl.tsx
 msgid "workspace.changesPill.openChanges"
 msgstr "Открыть изменения"
 
