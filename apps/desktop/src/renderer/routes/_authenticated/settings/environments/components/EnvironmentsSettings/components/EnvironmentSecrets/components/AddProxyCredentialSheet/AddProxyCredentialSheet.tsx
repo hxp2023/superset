@@ -195,7 +195,7 @@ export function AddProxyCredentialSheet({
 
 	const firstHost = parseDestinations(draft.destinations)[0] ?? "the host";
 	const placeholderEnv = draft.placeholderEnv.trim() || "THE_ENV_VAR";
-	const injectedValue = draft.valueTemplate.replace(
+	const injectedValue = draft.valueTemplate.replaceAll(
 		PROXY_SECRET_TOKEN,
 		maskedSecret(draft.value.trim()),
 	);

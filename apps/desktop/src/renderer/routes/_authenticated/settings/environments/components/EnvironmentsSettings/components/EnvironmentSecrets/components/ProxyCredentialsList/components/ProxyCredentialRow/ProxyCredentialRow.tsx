@@ -71,7 +71,7 @@ export function ProxyCredentialRow({
 		remove.mutate({ environmentId, id: credential.id });
 	};
 
-	const injected = credential.valueTemplate.replace(
+	const injected = credential.valueTemplate.replaceAll(
 		PROXY_SECRET_TOKEN,
 		"••••••••",
 	);

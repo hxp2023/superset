@@ -34,77 +34,80 @@ interface ProxyRoute {
  * authenticates with. Secrets are scoped to their own rule — a key declared
  * here cannot be resolved by any other destination.
  */
-function agentCredentialRoutes(): {
-	envs: Array<{ name: string; value: string }>;
-	routing: ProxyRoute[];
-} {
-	const envs = [
-		{ name: "ANTHROPIC_API_KEY", value: SANDBOX_CREDENTIAL_PLACEHOLDER },
-		{ name: "OPENAI_API_KEY", value: SANDBOX_CREDENTIAL_PLACEHOLDER },
-	];
-	const routing: ProxyRoute[] = [
+function agentCredentialRoutes(): CredentialRoute[] {
+	return [
 		{
-			destinations: ["api.anthropic.com"],
-			headers: { "x-api-key": "{{SECRET:anthropic-api-key}}" },
-			secrets: { "anthropic-api-key": env.ANTHROPIC_API_KEY },
+			env: { name: "ANTHROPIC_API_KEY", value: SANDBOX_CREDENTIAL_PLACEHOLDER },
+			route: {
+				destinations: ["api.anthropic.com"],
+				headers: { "x-api-key": "{{SECRET:anthropic-api-key}}" },
+				secrets: { "anthropic-api-key": env.ANTHROPIC_API_KEY },
+			},
 		},
 		{
-			destinations: ["api.openai.com"],
-			headers: { Authorization: "Bearer {{SECRET:openai-api-key}}" },
-			secrets: { "openai-api-key": env.OPENAI_API_KEY },
+			env: { name: "OPENAI_API_KEY", value: SANDBOX_CREDENTIAL_PLACEHOLDER },
+			route: {
+				destinations: ["api.openai.com"],
+				headers: { Authorization: "Bearer {{SECRET:openai-api-key}}" },
+				secrets: { "openai-api-key": env.OPENAI_API_KEY },
+			},
 		},
 	];
+}
 
-	return { envs, routing };
+/** A placeholder in the sandbox env and the edge rule that makes it work. */
+interface CredentialRoute {
+	env: { name: string; value: string };
+	route: ProxyRoute;
+}
+
+/** `*.example.com` covers `api.example.com`; a bare host covers itself. */
+function destinationCovers(pattern: string, host: string): boolean {
+	if (pattern === host) return true;
+	if (pattern.startsWith("*.")) return host.endsWith(pattern.slice(1));
+	if (host.startsWith("*.")) return pattern.endsWith(host.slice(1));
+	return false;
 }
 
 /**
  * An environment's own proxy credentials, as routes. Each secret is scoped
  * to its rule, and a rule for a host the org defaults also cover replaces
- * the default: the environment's key is the one its owner chose.
+ * the default (placeholder and route together): the environment's key is
+ * the one its owner chose.
  */
 function environmentCredentialRoutes(
 	credentials: Array<ProxyCredentialRule & { value: string }>,
-	defaults: {
-		envs: Array<{ name: string; value: string }>;
-		routing: ProxyRoute[];
-	},
-): {
-	envs: Array<{ name: string; value: string }>;
-	routing: ProxyRoute[];
-} {
-	const covered = new Set(
-		credentials.flatMap((credential) => credential.destinations),
-	);
-	const routing = defaults.routing.filter(
-		(route) =>
-			!route.destinations.some((destination) => covered.has(destination)),
-	);
-	const envs = defaults.envs.filter(
-		(entry) =>
-			routing.some((route) => route.secrets && route.destinations.length > 0) &&
-			!credentials.some(
-				(credential) => credential.placeholderEnv === entry.name,
+	defaults: CredentialRoute[],
+): CredentialRoute[] {
+	const covered = (host: string) =>
+		credentials.some((credential) =>
+			credential.destinations.some((pattern) =>
+				destinationCovers(pattern, host),
 			),
+		);
+	const kept = defaults.filter(
+		(entry) => !entry.route.destinations.some(covered),
 	);
-	credentials.forEach((credential, index) => {
+	const own = credentials.map((credential, index) => {
 		const secretName = `environment-${index}`;
-		routing.push({
-			destinations: credential.destinations,
-			headers: {
-				[credential.header]: credential.valueTemplate.replace(
-					PROXY_SECRET_TOKEN,
-					`{{SECRET:${secretName}}}`,
-				),
+		return {
+			env: {
+				name: credential.placeholderEnv,
+				value: SANDBOX_CREDENTIAL_PLACEHOLDER,
 			},
-			secrets: { [secretName]: credential.value },
-		});
-		envs.push({
-			name: credential.placeholderEnv,
-			value: SANDBOX_CREDENTIAL_PLACEHOLDER,
-		});
+			route: {
+				destinations: credential.destinations,
+				headers: {
+					[credential.header]: credential.valueTemplate.replaceAll(
+						PROXY_SECRET_TOKEN,
+						`{{SECRET:${secretName}}}`,
+					),
+				},
+				secrets: { [secretName]: credential.value },
+			},
+		};
 	});
-	return { envs, routing };
+	return [...kept, ...own];
 }
 
 function configureBlaxel(): void {
@@ -186,23 +189,32 @@ export async function provisionSandbox(args: {
 	configureBlaxel();
 	const memoryMb = args.memoryMb ?? 8192;
 	const region = args.region ?? env.BLAXEL_REGION;
-	const { envs: credentialEnvs, routing } = environmentCredentialRoutes(
+	// Every proxy credential lands in two places of the create call: its
+	// placeholder in `envs`, so the tool inside thinks it is configured, and
+	// its rule in `network.proxy.routing`, where the edge swaps the placeholder
+	// for the secret on requests to the rule's hosts. The org's model keys are
+	// the same shape, so they are merged here and replaced host by host.
+	const credentials = environmentCredentialRoutes(
 		args.proxyCredentials ?? [],
 		agentCredentialRoutes(),
 	);
-	// A placeholder for a proxied host wins over a variable of the same name:
-	// the edge would overwrite the header anyway, so the env says so.
-	const proxied = new Set(credentialEnvs.map((entry) => entry.name));
+	const placeholders = new Set(credentials.map((entry) => entry.env.name));
 	const envs = [
+		// A variable with a placeholder's name loses: the edge would overwrite
+		// the header anyway, so the env says so rather than pretending.
 		...Object.entries(args.workspaceEnv)
-			.filter(([name]) => !proxied.has(name))
+			.filter(([name]) => !placeholders.has(name))
 			.map(([name, value]) => ({ name, value })),
-		...credentialEnvs,
+		...credentials.map((entry) => entry.env),
 	];
+	const routing = credentials.map((entry) => entry.route);
 
 	const sandbox =
 		args.environment.sourceKind === "fork"
-			? await forkSandbox(
+			? // A fork copies the source's files and env but is created without
+				// the proxy, which can only exist from creation, so neither the
+				// placeholders nor the routing can reach it.
+				await forkSandbox(
 					args.name,
 					args.environment.sourceRef,
 					args.workspaceEnv,
