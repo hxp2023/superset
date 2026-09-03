@@ -27,7 +27,6 @@ export function EnvironmentSecrets({
 }: EnvironmentSecretsProps) {
 	const [isAddOpen, setIsAddOpen] = useState(false);
 	const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
-	const [proxyReloadKey, setProxyReloadKey] = useState(0);
 	const [editing, setEditing] = useState<EditingSecret | null>(null);
 	const [reloadKey, setReloadKey] = useState(0);
 	const { data: environment } = cloudTrpc.environment.get.useQuery({
@@ -35,10 +34,6 @@ export function EnvironmentSecrets({
 	});
 
 	const reload = useCallback(() => setReloadKey((key) => key + 1), []);
-	const reloadProxy = useCallback(
-		() => setProxyReloadKey((key) => key + 1),
-		[],
-	);
 
 	return (
 		<div className="p-6 max-w-4xl w-full">
@@ -107,7 +102,6 @@ export function EnvironmentSecrets({
 				<ProxyCredentialsList
 					environmentId={environmentId}
 					onAdd={() => setIsAddProxyOpen(true)}
-					refreshToken={proxyReloadKey}
 				/>
 			</div>
 
@@ -121,7 +115,6 @@ export function EnvironmentSecrets({
 			<AddProxyCredentialSheet
 				environmentId={environmentId}
 				onOpenChange={setIsAddProxyOpen}
-				onSaved={reloadProxy}
 				open={isAddProxyOpen}
 			/>
 

@@ -28,13 +28,12 @@ import {
 } from "@superset/ui/sheet";
 import { toast } from "@superset/ui/sonner";
 import { useEffect, useState } from "react";
-import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { cloudTrpc } from "renderer/lib/cloud-trpc";
 
 interface AddProxyCredentialSheetProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	environmentId: string;
-	onSaved: () => void;
 }
 
 interface Draft {
@@ -86,14 +85,35 @@ export function AddProxyCredentialSheet({
 	open,
 	onOpenChange,
 	environmentId,
-	onSaved,
 }: AddProxyCredentialSheetProps) {
 	const { t } = useLingui();
+	const utils = cloudTrpc.useUtils();
 	const [draft, setDraft] = useState<Draft>(() => draftFor("anthropic"));
 	const [error, setError] = useState<{ field: string; message: string } | null>(
 		null,
 	);
-	const [isSaving, setIsSaving] = useState(false);
+	const create = cloudTrpc.environment.proxyCredentials.create.useMutation({
+		onSuccess: async (_result, variables) => {
+			await utils.environment.proxyCredentials.list.invalidate();
+			toast.success(
+				t({
+					id: "settings.environments.proxy.saved",
+					message: `Added ${variables.name}`,
+				}),
+			);
+			onOpenChange(false);
+		},
+		onError: (err) => {
+			console.error("[proxy-credentials/create] Failed to save:", err);
+			toast.error(
+				err.message ||
+					t({
+						id: "settings.environments.proxy.saveFailed",
+						message: "Failed to save proxy credential",
+					}),
+			);
+		},
+	});
 
 	useEffect(() => {
 		if (open) {
@@ -147,7 +167,7 @@ export function AddProxyCredentialSheet({
 		setDraft((prev) => ({ ...prev, [field]: value }));
 	};
 
-	const handleSave = async () => {
+	const handleSave = () => {
 		const rule = {
 			name: draft.name.trim(),
 			placeholderEnv: draft.placeholderEnv.trim(),
@@ -165,35 +185,12 @@ export function AddProxyCredentialSheet({
 			setError({ field: "value", message: value.error });
 			return;
 		}
-		setIsSaving(true);
-		try {
-			await apiTrpcClient.environment.proxyCredentials.create.mutate({
-				environmentId,
-				provider: draft.provider,
-				value: draft.value.trim(),
-				...rule,
-			});
-			toast.success(
-				t({
-					id: "settings.environments.proxy.saved",
-					message: `Added ${rule.name}`,
-				}),
-			);
-			onSaved();
-			onOpenChange(false);
-		} catch (err) {
-			console.error("[proxy-credentials/create] Failed to save:", err);
-			toast.error(
-				err instanceof Error
-					? err.message
-					: t({
-							id: "settings.environments.proxy.saveFailed",
-							message: "Failed to save proxy credential",
-						}),
-			);
-		} finally {
-			setIsSaving(false);
-		}
+		create.mutate({
+			environmentId,
+			provider: draft.provider,
+			value: draft.value.trim(),
+			...rule,
+		});
 	};
 
 	const firstHost = parseDestinations(draft.destinations)[0] ?? "the host";
@@ -396,9 +393,9 @@ export function AddProxyCredentialSheet({
 				<div className="flex items-center justify-end border-t px-6 py-4">
 					<Button
 						onClick={handleSave}
-						disabled={isSaving || !draft.value.trim()}
+						disabled={create.isPending || !draft.value.trim()}
 					>
-						{isSaving ? (
+						{create.isPending ? (
 							<Trans id="settings.environments.proxy.saving">Saving...</Trans>
 						) : (
 							<Trans id="settings.environments.proxy.save">Save</Trans>

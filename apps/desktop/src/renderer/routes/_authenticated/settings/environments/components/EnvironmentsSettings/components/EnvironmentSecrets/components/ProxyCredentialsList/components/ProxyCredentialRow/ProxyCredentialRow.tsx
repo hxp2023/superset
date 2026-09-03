@@ -11,9 +11,8 @@ import {
 import { toast } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
 import { format } from "date-fns";
-import { useCallback, useState } from "react";
 import { HiEllipsisHorizontal, HiOutlineShieldCheck } from "react-icons/hi2";
-import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { cloudTrpc } from "renderer/lib/cloud-trpc";
 
 export interface ProxyCredential {
 	id: string;
@@ -37,18 +36,29 @@ const PROVIDER_LABELS: Record<ProxyCredential["provider"], string> = {
 interface ProxyCredentialRowProps {
 	environmentId: string;
 	credential: ProxyCredential;
-	onDeleted: () => void;
 }
 
 export function ProxyCredentialRow({
 	environmentId,
 	credential,
-	onDeleted,
 }: ProxyCredentialRowProps) {
 	const { t } = useLingui();
-	const [isDeleting, setIsDeleting] = useState(false);
+	const utils = cloudTrpc.useUtils();
+	const remove = cloudTrpc.environment.proxyCredentials.remove.useMutation({
+		onSuccess: () => utils.environment.proxyCredentials.list.invalidate(),
+		onError: (err) => {
+			console.error("[proxy-credentials/delete] Failed to delete:", err);
+			toast.error(
+				err.message ||
+					t({
+						id: "settings.environments.proxy.deleteFailed",
+						message: "Failed to delete proxy credential",
+					}),
+			);
+		},
+	});
 
-	const handleDelete = useCallback(async () => {
+	const handleDelete = () => {
 		if (
 			!confirm(
 				t({
@@ -58,27 +68,8 @@ export function ProxyCredentialRow({
 			)
 		)
 			return;
-		setIsDeleting(true);
-		try {
-			await apiTrpcClient.environment.proxyCredentials.remove.mutate({
-				environmentId,
-				id: credential.id,
-			});
-			onDeleted();
-		} catch (err) {
-			console.error("[proxy-credentials/delete] Failed to delete:", err);
-			toast.error(
-				err instanceof Error
-					? err.message
-					: t({
-							id: "settings.environments.proxy.deleteFailed",
-							message: "Failed to delete proxy credential",
-						}),
-			);
-		} finally {
-			setIsDeleting(false);
-		}
-	}, [credential.id, credential.name, environmentId, onDeleted, t]);
+		remove.mutate({ environmentId, id: credential.id });
+	};
 
 	const injected = credential.valueTemplate.replace(
 		PROXY_SECRET_TOKEN,
@@ -89,7 +80,7 @@ export function ProxyCredentialRow({
 		<div
 			className={cn(
 				"flex items-center px-4 py-4 border-b last:border-b-0 group hover:bg-accent/30 transition-colors",
-				isDeleting && "opacity-50 pointer-events-none",
+				remove.isPending && "opacity-50 pointer-events-none",
 			)}
 		>
 			<div className="flex items-center justify-center size-9 rounded-full border bg-background shrink-0">
