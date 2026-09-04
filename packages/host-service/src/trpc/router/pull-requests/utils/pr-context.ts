@@ -30,6 +30,13 @@ export interface PrContextPatch {
 	truncated: boolean;
 }
 
+/** Changes not committed yet — staged, unstaged, and untracked — which the
+ * agent commits before opening the PR. Empty when the tree is clean. */
+export interface PrContextWorkingTree {
+	files: PrContextFile[];
+	patch: PrContextPatch;
+}
+
 export interface PrContext {
 	head: string;
 	base: {
@@ -42,8 +49,19 @@ export interface PrContext {
 	files: PrContextFile[];
 	patch: PrContextPatch;
 	hasUncommitted: boolean;
+	workingTree: PrContextWorkingTree;
 	/** Commits not on the upstream; null when the branch has no upstream. */
 	unpushedCommits: number | null;
+}
+
+export const EMPTY_WORKING_TREE: PrContextWorkingTree = {
+	files: [],
+	patch: { text: "", includedFiles: 0, omittedFiles: 0, truncated: false },
+};
+
+/** Whether the branch has anything a PR could be opened from. */
+export function hasSomethingToShip(context: PrContext): boolean {
+	return context.commits.length > 0 || context.hasUncommitted;
 }
 
 /** Bytes of patch the prompt carries. ~30KB keeps the whole dispatch well
@@ -266,6 +284,55 @@ function formatBytes(bytes: number): string {
 	return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 }
 
+/** The diffstat and patch of one change set, committed or working-tree. */
+function formatChangeSet(
+	heading: string,
+	files: PrContextFile[],
+	patch: PrContextPatch,
+	diffRef: string,
+): string[] {
+	const lines: string[] = [];
+	const generated = files.filter((file) => file.generated);
+	const additions = files.reduce((n, f) => n + (f.additions ?? 0), 0);
+	const deletions = files.reduce((n, f) => n + (f.deletions ?? 0), 0);
+	const generatedNote =
+		generated.length > 0
+			? `; ${generated.length} generated file${generated.length === 1 ? "" : "s"} marked [generated] and left out of the patch`
+			: "";
+	lines.push(
+		`## ${heading} (${files.length}, +${additions} −${deletions}${generatedNote})`,
+	);
+	for (const file of files) {
+		const rename = file.previousPath
+			? ` (renamed from ${file.previousPath})`
+			: "";
+		const tag = file.generated ? " [generated]" : "";
+		lines.push(
+			`- ${file.path}${rename}  ${formatCount(file.additions, "+")} ${formatCount(file.deletions, "−")}${tag}`,
+		);
+	}
+	lines.push("");
+
+	const total = patch.includedFiles + patch.omittedFiles;
+	if (patch.text.length === 0) {
+		lines.push(
+			total === 0
+				? "Patch: no non-generated files changed"
+				: `Patch: omitted (too many files to diff in one pass) — read the diff with \`git diff ${diffRef}\``,
+		);
+		return lines;
+	}
+	const coverage =
+		patch.omittedFiles > 0
+			? `${patch.includedFiles} of ${total} files, ${formatBytes(Buffer.byteLength(patch.text, "utf8"))}; ${patch.omittedFiles} left out to fit — run \`git diff ${diffRef} -- <path>\` for those`
+			: `${patch.includedFiles} file${patch.includedFiles === 1 ? "" : "s"}, ${formatBytes(Buffer.byteLength(patch.text, "utf8"))}`;
+	lines.push(`Patch (${coverage}):`);
+	lines.push("```diff");
+	lines.push(patch.text.replace(/\n$/, ""));
+	lines.push("```");
+	return lines;
+}
+
 /**
  * Renders the gathered context as the `<pr-context>` block the agent reads.
  * Plain text and a fenced diff, no markup the agent has to strip.
@@ -277,7 +344,13 @@ export function formatPrContext(context: PrContext): string {
 		`Base: ${context.base.name} (measured against ${context.base.ref})`,
 	);
 	lines.push(
-		`Uncommitted changes: ${context.hasUncommitted ? "yes — commit them first" : "none"}`,
+		`Uncommitted changes: ${
+			context.hasUncommitted
+				? context.commits.length === 0
+					? "yes — they are the whole change; commit them first (see below)"
+					: "yes — commit them first (see below)"
+				: "none"
+		}`,
 	);
 	lines.push(
 		context.unpushedCommits === null
@@ -289,7 +362,9 @@ export function formatPrContext(context: PrContext): string {
 	lines.push("");
 
 	lines.push(
-		`## Commits ahead of ${context.base.name} (${context.commits.length}, newest first)`,
+		context.commits.length === 0
+			? `## Commits ahead of ${context.base.name}: none yet`
+			: `## Commits ahead of ${context.base.name} (${context.commits.length}, newest first)`,
 	);
 	for (const commit of context.commits) {
 		lines.push(`- ${commit.shortHash} ${commit.subject}`);
@@ -301,44 +376,28 @@ export function formatPrContext(context: PrContext): string {
 	}
 	lines.push("");
 
-	const generated = context.files.filter((file) => file.generated);
-	const additions = context.files.reduce((n, f) => n + (f.additions ?? 0), 0);
-	const deletions = context.files.reduce((n, f) => n + (f.deletions ?? 0), 0);
-	const generatedNote =
-		generated.length > 0
-			? `; ${generated.length} generated file${generated.length === 1 ? "" : "s"} marked [generated] and left out of the patch`
-			: "";
-	lines.push(
-		`## Files changed (${context.files.length}, +${additions} −${deletions}${generatedNote})`,
-	);
-	for (const file of context.files) {
-		const rename = file.previousPath
-			? ` (renamed from ${file.previousPath})`
-			: "";
-		const tag = file.generated ? " [generated]" : "";
+	if (context.commits.length > 0) {
 		lines.push(
-			`- ${file.path}${rename}  ${formatCount(file.additions, "+")} ${formatCount(file.deletions, "−")}${tag}`,
+			...formatChangeSet(
+				"Files changed",
+				context.files,
+				context.patch,
+				context.base.ref,
+			),
 		);
 	}
-	lines.push("");
 
-	const { patch } = context;
-	const total = patch.includedFiles + patch.omittedFiles;
-	if (patch.text.length === 0) {
+	if (context.hasUncommitted) {
+		lines.push("");
 		lines.push(
-			total === 0
-				? "## Patch: no non-generated files changed"
-				: "## Patch: omitted (too many files to diff in one pass) — read the diff with `git diff <base>...HEAD`",
+			...formatChangeSet(
+				"Uncommitted changes",
+				context.workingTree.files,
+				context.workingTree.patch,
+				"HEAD",
+			),
 		);
-		return lines.join("\n");
 	}
-	const coverage =
-		patch.omittedFiles > 0
-			? `${patch.includedFiles} of ${total} files, ${formatBytes(Buffer.byteLength(patch.text, "utf8"))}; ${patch.omittedFiles} left out to fit — run \`git diff ${context.base.ref}...HEAD -- <path>\` for those`
-			: `${patch.includedFiles} file${patch.includedFiles === 1 ? "" : "s"}, ${formatBytes(Buffer.byteLength(patch.text, "utf8"))}`;
-	lines.push(`## Patch (${coverage})`);
-	lines.push("```diff");
-	lines.push(patch.text.replace(/\n$/, ""));
-	lines.push("```");
+
 	return lines.join("\n");
 }

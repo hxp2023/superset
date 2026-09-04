@@ -31263,6 +31263,7 @@ msgid "workspace.addTabMenu.terminal"
 msgstr "Terminal"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.activeSessions"
 msgstr "Sesi aktif"
@@ -31323,6 +31324,7 @@ msgid "workspace.agentCommentComposer.sending"
 msgstr "Mengirim…"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.startNewSession"
 msgstr "Mulai sesi baru"
@@ -34626,6 +34628,11 @@ msgstr "Buat PR secara manual…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.createPrWithAgentDirtyTitle"
+msgstr "Biarkan {targetLabel} meng-commit perubahan, lalu menamai, mendeskripsikan, dan membuka pull request"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.createPrWithAgentTitle"
 msgstr "Biarkan {targetLabel} menamai, mendeskripsikan, dan membuka pull request"
 
@@ -34643,6 +34650,17 @@ msgstr "{workingLabel} sedang membuat pull request"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.draft"
 msgstr "Draf"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: config.label
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.newSessionTargetLabel"
+msgstr "sesi {0} baru"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.noAgentTooltip"
+msgstr "Tidak ada agen untuk menerimanya — tambahkan di Pengaturan → Agen"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
@@ -34704,6 +34722,16 @@ msgstr "Push gagal: {0}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.pushing"
 msgstr "Melakukan push…"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.sendTo"
+msgstr "Kirim ke…"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.sendToTarget"
+msgstr "Kirim ke {targetLabel}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx

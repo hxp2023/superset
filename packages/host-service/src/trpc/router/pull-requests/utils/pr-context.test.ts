@@ -250,6 +250,10 @@ describe("formatPrContext", () => {
 			truncated: false,
 		},
 		hasUncommitted: false,
+		workingTree: {
+			files: [],
+			patch: { text: "", includedFiles: 0, omittedFiles: 0, truncated: false },
+		},
 		unpushedCommits: null,
 	};
 
@@ -263,9 +267,39 @@ describe("formatPrContext", () => {
 		expect(text).toContain("1 generated file marked [generated]");
 		expect(text).toContain("- bun.lock  +100 −100 [generated]");
 		expect(text).toContain("- src/x.ts  +10 −2\n");
-		expect(text).toContain("## Patch (1 file, ");
+		expect(text).toContain("Patch (1 file, ");
 		expect(text).toContain("```diff\ndiff --git a/src/x.ts");
 		expect(text.endsWith("```")).toBe(true);
+	});
+
+	test("renders uncommitted changes as their own change set", () => {
+		const text = formatPrContext({
+			...base,
+			commits: [],
+			files: [],
+			patch: { text: "", includedFiles: 0, omittedFiles: 0, truncated: false },
+			hasUncommitted: true,
+			workingTree: {
+				files: [
+					file("src/new.ts", { additions: 4, deletions: 0 }),
+					file("bun.lock", { additions: 9, deletions: 9 }),
+				],
+				patch: {
+					text: section("src/new.ts", 4),
+					includedFiles: 1,
+					omittedFiles: 0,
+					truncated: false,
+				},
+			},
+		});
+		expect(text).toContain("they are the whole change; commit them first");
+		expect(text).toContain("## Commits ahead of main: none yet");
+		expect(text).not.toContain("## Files changed");
+		expect(text).toContain(
+			"## Uncommitted changes (2, +13 −9; 1 generated file",
+		);
+		expect(text).toContain("- src/new.ts  +4 −0\n");
+		expect(text).toContain("```diff\ndiff --git a/src/new.ts");
 	});
 
 	test("explains a truncated or omitted patch", () => {
@@ -278,12 +312,12 @@ describe("formatPrContext", () => {
 		expect(truncated).toContain("Uncommitted changes: yes — commit them first");
 		expect(truncated).toContain("Upstream: 2 commits not pushed yet");
 		expect(truncated).toContain("1 of 4 files");
-		expect(truncated).toContain("git diff origin/main...HEAD -- <path>");
+		expect(truncated).toContain("git diff origin/main -- <path>");
 
 		const omitted = formatPrContext({
 			...base,
 			patch: { text: "", includedFiles: 0, omittedFiles: 5, truncated: true },
 		});
-		expect(omitted).toContain("## Patch: omitted (too many files");
+		expect(omitted).toContain("Patch: omitted (too many files");
 	});
 });

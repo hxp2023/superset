@@ -13,6 +13,10 @@ const context: PrContext = {
 	files: [],
 	patch: { text: "", includedFiles: 0, omittedFiles: 0, truncated: false },
 	hasUncommitted: false,
+	workingTree: {
+		files: [],
+		patch: { text: "", includedFiles: 0, omittedFiles: 0, truncated: false },
+	},
 	unpushedCommits: 0,
 };
 
@@ -180,12 +184,23 @@ describe("createPullRequestWithAgent", () => {
 		);
 	});
 
-	test("gates on commits ahead of the base and on a usable HEAD", async () => {
+	test("a dirty tree with no commits still dispatches — the agent commits first", async () => {
+		const { deps, launched } = makeDeps({
+			prContext: {
+				ok: true,
+				context: { ...context, commits: [], hasUncommitted: true },
+			},
+		});
+		await createPullRequestWithAgent(deps, input);
+		expect(launched).toHaveLength(1);
+	});
+
+	test("gates on something to ship and on a usable HEAD", async () => {
 		const empty = makeDeps({
 			prContext: { ok: true, context: { ...context, commits: [] } },
 		});
 		await expect(createPullRequestWithAgent(empty.deps, input)).rejects.toThrow(
-			"No commits ahead of main",
+			"Nothing to open a pull request from",
 		);
 		const detached = makeDeps({
 			prContext: { ok: false, reason: "detached-head" },

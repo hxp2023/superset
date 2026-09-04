@@ -14,6 +14,10 @@ const context: PrContext = {
 		truncated: false,
 	},
 	hasUncommitted: false,
+	workingTree: {
+		files: [],
+		patch: { text: "", includedFiles: 0, omittedFiles: 0, truncated: false },
+	},
 	unpushedCommits: 0,
 };
 

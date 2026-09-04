@@ -1,9 +1,17 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { AGENT_IDENTITY_LABELS } from "@superset/shared/agent-catalog";
 import { Checkbox } from "@superset/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import { Input } from "@superset/ui/input";
@@ -22,9 +30,20 @@ import {
 	VscGitPullRequestCreate,
 	VscLoading,
 	VscRepoPush,
+	VscSend,
 	VscTerminal,
 } from "react-icons/vsc";
+import { usePresetIcon } from "renderer/assets/app-icons/preset-icons";
+import { useTerminalAgentBindings } from "renderer/hooks/host-service/useTerminalAgentBindings";
+import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHostUrl";
+import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
 import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
+import {
+	type AgentSessionPlacement,
+	EXISTING_PREFIX,
+	NEW_PREFIX,
+	useDiffCommentTarget,
+} from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { useWorkspaceGitStatus } from "../../../../providers/WorkspaceGitStatusProvider";
 import type { BranchSyncStatus } from "../../utils/getPRFlowState";
@@ -40,23 +59,29 @@ interface ShipControlProps {
 	 */
 	compact?: boolean;
 	/** Brings a terminal pane into view: opens a freshly launched agent's
-	 * pane on dispatch, and backs "Show agent terminal" while it works. */
-	onFocusTerminal?: (terminalId: string) => void;
+	 * pane on dispatch (at `placement`), and backs "Show agent terminal"
+	 * while it works. */
+	onOpenTerminal?: (
+		terminalId: string,
+		placement?: AgentSessionPlacement,
+	) => void;
 }
 
 /**
  * The no-PR half of the top-bar Changes control: walks the branch to a pull
- * request. Full mode shows one progressive face — Commit (message popover)
- * while the tree is dirty, then Create PR, then Push. Compact mode (diff
- * stats own the face) folds the same actions into the chevron menu.
+ * request. Full mode shows one face; compact mode (diff stats own the face)
+ * folds the same actions into the chevron menu.
  *
- * Create PR hands the branch to an agent (`useCreatePrWithAgent`): a live
- * agent terminal in the workspace, else a new agent terminal launched with
- * the prompt — the diff composer's target model. The face shows "Creating
- * PR…" until the PR is confirmed (the control then flips to its PR badge),
- * the agent finishes without one, or the wait times out. "Create PR manually…" in the chevron keeps the old
- * title/description popover — which pushes first when the branch is
- * unpublished or ahead — as the by-hand path.
+ * Create PR hands the branch to an agent (`useCreatePrWithAgent`) and is the
+ * face whenever the project can open PRs — the agent commits a dirty tree
+ * first, so Commit and Push become chevron entries. The target is the diff
+ * composer's model, picked and remembered by `useDiffCommentTarget` and
+ * shown in the chevron's "Send to" submenu: a live agent terminal in the
+ * workspace, or a new agent terminal launched with the prompt. The face
+ * shows "Creating PR…" until the PR is confirmed (the control then flips to
+ * its PR badge), the agent finishes without one, or the wait times out.
+ * "Create PR manually…" keeps today's title/description popover (which
+ * pushes first when the branch is unpublished or ahead) as the by-hand path.
  *
  * Session workspaces (null projectId) can't create PRs — the PR route and
  * repo resolution are project-scoped — so they only ever see Commit/Push.
@@ -66,7 +91,7 @@ export function ShipControl({
 	sync,
 	onRefresh,
 	compact = false,
-	onFocusTerminal,
+	onOpenTerminal,
 }: ShipControlProps) {
 	const { t } = useLingui();
 	const navigate = useNavigate();
@@ -205,20 +230,65 @@ export function ShipControl({
 		id: "workspace.shipControl.noCommitsTooltip",
 		message: "No commits to open a pull request from",
 	});
+	const noAgentTooltip = t({
+		id: "workspace.shipControl.noAgentTooltip",
+		message: "No agent to send this to — add one in Settings → Agents",
+	});
+
+	// The agent target — same picker state as the diff comment composer, so
+	// the remembered session/config and placement are shared.
+	const bindings = useTerminalAgentBindings(workspaceId, {
+		enabled: canCreatePr,
+	});
+	const sessions = useMemo(
+		() => [...bindings.values()].sort((a, b) => b.lastEventAt - a.lastEventAt),
+		[bindings],
+	);
+	const hostUrl = useWorkspaceHostUrl(workspaceId);
+	const { data: configs = [] } = useV2AgentConfigs(
+		canCreatePr ? hostUrl : null,
+	);
+	const agentTarget = useDiffCommentTarget({ sessions, configs });
+	const targetLabel = useMemo(() => {
+		const resolved = agentTarget.resolved;
+		if (!resolved) return null;
+		if (resolved.kind === "existing") {
+			const session = sessions.find(
+				(s) => s.terminalId === resolved.terminalId,
+			);
+			return session ? sessionLabel(session.agentId, session.terminalId) : null;
+		}
+		const config = configs.find((c) => c.id === resolved.configId);
+		return config
+			? t({
+					id: "workspace.shipControl.newSessionTargetLabel",
+					message: `a new ${config.label} session`,
+				})
+			: null;
+	}, [agentTarget.resolved, configs, sessions, t]);
 
 	const agentPr = useCreatePrWithAgent({
 		workspaceId,
 		projectId,
+		target: agentTarget.resolved,
+		placement: agentTarget.placement,
 		onPrCreated: onRefresh,
-		onOpenTerminal: onFocusTerminal,
+		onOpenTerminal,
 	});
 	const agentBusy = agentPr.status !== null || agentPr.isDispatching;
+	// A dirty tree is enough for the agent (it commits first); the manual
+	// popover still needs commits, since GitHub rejects an empty PR.
+	const hasSomethingToShip = hasCommitsAhead || needsCommit;
+	const canDispatch = hasSomethingToShip && agentTarget.resolved !== null;
 	// Plain identifiers so Lingui names the placeholders for translators.
 	const workingLabel = agentPr.status?.agentLabel;
-	const targetLabel = agentPr.targetLabel;
 	const handleCreatePrWithAgent = () => {
-		if (!hasCommitsAhead) {
+		if (!hasSomethingToShip) {
 			toast.info(noCommitsTooltip);
+			return;
+		}
+		if (!agentTarget.resolved) {
+			toast.info(noAgentTooltip);
 			return;
 		}
 		void agentPr.dispatch();
@@ -334,7 +404,9 @@ export function ShipControl({
 		}
 	};
 
-	const showCreatePr = !needsCommit && canCreatePr;
+	// Create PR is the face whenever the project can open PRs — the agent
+	// commits a dirty tree itself, so Commit moves into the chevron.
+	const showCreatePr = canCreatePr;
 	if (!needsCommit && !showCreatePr && !needsPush) return null;
 
 	// enabled: on the hover so a disabled button stays hoverable (pointer
@@ -363,10 +435,10 @@ export function ShipControl({
 	const agentTerminalId = agentPr.status?.terminalId ?? null;
 	const agentWaitItems = agentPr.status ? (
 		<>
-			{agentTerminalId && onFocusTerminal && (
+			{agentTerminalId && onOpenTerminal && (
 				<DropdownMenuItem
 					className="text-xs"
-					onClick={() => onFocusTerminal(agentTerminalId)}
+					onClick={() => onOpenTerminal(agentTerminalId)}
 				>
 					<VscTerminal className="size-3.5" />
 					<Trans id="workspace.shipControl.showAgentTerminal">
@@ -380,6 +452,93 @@ export function ShipControl({
 			</DropdownMenuItem>
 		</>
 	) : null;
+	// Where the prompt goes — the diff composer's picker as a submenu, so the
+	// choice (and that a new session would be started) is visible before
+	// clicking, and switchable.
+	const targetSubmenu = (
+		<DropdownMenuSub>
+			<DropdownMenuSubTrigger className="text-xs">
+				<VscSend className="mr-2 size-3.5" />
+				<span className="truncate">
+					{targetLabel
+						? t({
+								id: "workspace.shipControl.sendToTarget",
+								message: `Send to ${targetLabel}`,
+							})
+						: t({ id: "workspace.shipControl.sendTo", message: "Send to…" })}
+				</span>
+			</DropdownMenuSubTrigger>
+			<DropdownMenuSubContent className="w-56">
+				<DropdownMenuRadioGroup
+					value={agentTarget.value ?? undefined}
+					onValueChange={agentTarget.onValueChange}
+				>
+					{sessions.length > 0 && (
+						<DropdownMenuLabel className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground/70">
+							<Trans id="workspace.agentCommentComposer.activeSessions">
+								Active sessions
+							</Trans>
+						</DropdownMenuLabel>
+					)}
+					{sessions.map((session) => (
+						<DropdownMenuRadioItem
+							key={session.terminalId}
+							value={`${EXISTING_PREFIX}${session.terminalId}`}
+							className="text-xs"
+						>
+							<TargetOption
+								presetId={session.agentId}
+								label={sessionLabel(session.agentId, session.terminalId)}
+							/>
+						</DropdownMenuRadioItem>
+					))}
+					{sessions.length > 0 && configs.length > 0 && (
+						<DropdownMenuSeparator />
+					)}
+					{configs.length > 0 && (
+						<DropdownMenuLabel className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground/70">
+							<Trans id="workspace.agentCommentComposer.startNewSession">
+								Start new session
+							</Trans>
+						</DropdownMenuLabel>
+					)}
+					{configs.map((config) => (
+						<DropdownMenuRadioItem
+							key={config.id}
+							value={`${NEW_PREFIX}${config.id}`}
+							className="text-xs"
+						>
+							<TargetOption presetId={config.presetId} label={config.label} />
+						</DropdownMenuRadioItem>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuSubContent>
+		</DropdownMenuSub>
+	);
+	// The manual steps, one level down now that the agent commits and pushes
+	// by default.
+	const commitItem = (
+		<DropdownMenuItem
+			className="text-xs"
+			disabled={commitMutation.isPending}
+			onClick={() => {
+				pendingViewRef.current = "commit";
+			}}
+		>
+			<VscGitCommit className="size-3.5" />
+			<Trans id="workspace.shipControl.commit">Commit</Trans>
+		</DropdownMenuItem>
+	);
+	const pushItem = (
+		<DropdownMenuItem
+			className="text-xs"
+			disabled={pushMutation.isPending}
+			onClick={() => pushMutation.mutate({ workspaceId })}
+		>
+			<VscRepoPush className="size-3.5" />
+			<Trans id="workspace.shipControl.push">Push</Trans>
+		</DropdownMenuItem>
+	);
 	// The by-hand path: today's title/description popover, kept one menu
 	// level down so the default click stays the agent dispatch.
 	const manualCreatePrItem = (
@@ -421,7 +580,7 @@ export function ShipControl({
 							<DropdownMenuTrigger asChild>{chevronButton}</DropdownMenuTrigger>
 							<DropdownMenuContent
 								align="end"
-								className="w-48"
+								className="w-52"
 								onCloseAutoFocus={(event) => {
 									const pending = pendingViewRef.current;
 									if (pending) {
@@ -432,27 +591,10 @@ export function ShipControl({
 									}
 								}}
 							>
-								{needsCommit && (
-									<DropdownMenuItem
-										className="text-xs"
-										disabled={commitMutation.isPending}
-										onClick={() => {
-											pendingViewRef.current = "commit";
-										}}
-									>
-										<VscGitCommit className="size-3.5" />
-										<Trans id="workspace.shipControl.commit">Commit</Trans>
-									</DropdownMenuItem>
-								)}
-								{needsPush && (
-									<DropdownMenuItem
-										className="text-xs"
-										disabled={pushMutation.isPending}
-										onClick={() => pushMutation.mutate({ workspaceId })}
-									>
-										<VscRepoPush className="size-3.5" />
-										<Trans id="workspace.shipControl.push">Push</Trans>
-									</DropdownMenuItem>
+								{needsCommit && commitItem}
+								{needsPush && pushItem}
+								{canCreatePr && (needsCommit || needsPush) && (
+									<DropdownMenuSeparator />
 								)}
 								{canCreatePr && agentBusy ? (
 									<>
@@ -466,13 +608,13 @@ export function ShipControl({
 									</>
 								) : canCreatePr ? (
 									<>
-										{/* Not `disabled` when there are no commits ahead: a
-										    disabled menu item is pointer-events-none, so its title
-										    tooltip can never show — instead the greyed item stays
-										    clickable and explains itself with a toast. */}
+										{/* Not `disabled` when there is nothing to ship: a disabled
+										    menu item is pointer-events-none, so its title tooltip can
+										    never show — instead the greyed item stays clickable and
+										    explains itself with a toast. */}
 										<DropdownMenuItem
 											className={
-												hasCommitsAhead
+												canDispatch
 													? "text-xs"
 													: "text-xs text-muted-foreground focus:text-muted-foreground"
 											}
@@ -484,6 +626,7 @@ export function ShipControl({
 												Create PR
 											</Trans>
 										</DropdownMenuItem>
+										{targetSubmenu}
 										{manualCreatePrItem}
 									</>
 								) : null}
@@ -491,7 +634,7 @@ export function ShipControl({
 						</DropdownMenu>
 					) : (
 						<>
-							{needsCommit ? (
+							{needsCommit && !showCreatePr ? (
 								<button
 									type="button"
 									className={mainButtonClass}
@@ -508,21 +651,26 @@ export function ShipControl({
 								<button
 									type="button"
 									className={mainButtonClass}
-									disabled={!hasCommitsAhead || agentBusy}
+									disabled={!canDispatch || agentBusy}
 									title={
 										workingLabel
 											? t({
 													id: "workspace.shipControl.creatingPrWithAgentTitle",
 													message: `${workingLabel} is creating the pull request`,
 												})
-											: hasCommitsAhead
-												? targetLabel
-													? t({
-															id: "workspace.shipControl.createPrWithAgentTitle",
-															message: `Have ${targetLabel} name, describe, and open the pull request`,
-														})
-													: undefined
-												: noCommitsTooltip
+											: !hasSomethingToShip
+												? noCommitsTooltip
+												: !targetLabel
+													? noAgentTooltip
+													: needsCommit
+														? t({
+																id: "workspace.shipControl.createPrWithAgentDirtyTitle",
+																message: `Have ${targetLabel} commit the changes, then name, describe, and open the pull request`,
+															})
+														: t({
+																id: "workspace.shipControl.createPrWithAgentTitle",
+																message: `Have ${targetLabel} name, describe, and open the pull request`,
+															})
 									}
 									onClick={handleCreatePrWithAgent}
 								>
@@ -563,7 +711,7 @@ export function ShipControl({
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
 											align="end"
-											className="w-48"
+											className="w-52"
 											onCloseAutoFocus={(event) => {
 												const pending = pendingViewRef.current;
 												if (pending) {
@@ -574,18 +722,20 @@ export function ShipControl({
 												}
 											}}
 										>
-											{needsPush && (
-												<DropdownMenuItem
-													className="text-xs"
-													disabled={pushMutation.isPending}
-													onClick={() => pushMutation.mutate({ workspaceId })}
-												>
-													<VscRepoPush className="size-3.5" />
-													<Trans id="workspace.shipControl.push">Push</Trans>
-												</DropdownMenuItem>
+											{showCreatePr && needsCommit && commitItem}
+											{needsPush && pushItem}
+											{showCreatePr && (needsCommit || needsPush) && (
+												<DropdownMenuSeparator />
 											)}
 											{showCreatePr &&
-												(agentBusy ? agentWaitItems : manualCreatePrItem)}
+												(agentBusy ? (
+													agentWaitItems
+												) : (
+													<>
+														{targetSubmenu}
+														{manualCreatePrItem}
+													</>
+												))}
 										</DropdownMenuContent>
 									</DropdownMenu>
 								</>
@@ -674,5 +824,35 @@ export function ShipControl({
 				)}
 			</PopoverContent>
 		</Popover>
+	);
+}
+
+function sessionLabel(agentId: string, terminalId: string): string {
+	const label =
+		(AGENT_IDENTITY_LABELS as Record<string, string | undefined>)[agentId] ??
+		agentId;
+	return `${label} · ${terminalId.slice(0, 6)}`;
+}
+
+function TargetOption({
+	presetId,
+	label,
+}: {
+	presetId: string;
+	label: string;
+}) {
+	const iconSrc = usePresetIcon(presetId);
+	return (
+		<span className="inline-flex min-w-0 items-center gap-1.5">
+			{iconSrc ? (
+				<img
+					src={iconSrc}
+					alt=""
+					className="size-3 shrink-0"
+					draggable={false}
+				/>
+			) : null}
+			<span className="truncate">{label}</span>
+		</span>
 	);
 }

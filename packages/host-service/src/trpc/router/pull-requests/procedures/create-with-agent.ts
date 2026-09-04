@@ -23,6 +23,7 @@ import {
 	type CreatePrSkillSource,
 	resolveCreatePrSkill,
 } from "../utils/create-pr-skill";
+import { hasSomethingToShip } from "../utils/pr-context";
 
 const createWithAgentInput = z.object({
 	workspaceId: z.string(),
@@ -128,10 +129,12 @@ export async function createPullRequestWithAgent(
 		});
 	}
 	const { context } = result;
-	if (context.commits.length === 0) {
+	// Unlike the manual path (GitHub needs commits between base and head),
+	// a dirty tree is enough here: the skill commits it before opening.
+	if (!hasSomethingToShip(context)) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: `No commits ahead of ${context.base.name} to open a pull request from`,
+			message: `Nothing to open a pull request from — no commits ahead of ${context.base.name} and no uncommitted changes`,
 		});
 	}
 

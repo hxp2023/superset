@@ -14,7 +14,10 @@ import {
 } from "../../runtime/pull-requests/utils/workspace-refs.ts";
 import type { ChangedFile } from "../../trpc/router/git/types.ts";
 import type { BaseRefFetchTarget } from "../../trpc/router/git/utils/base-ref-freshness.ts";
-import { buildDiffPatch } from "../../trpc/router/git/utils/diff-patch.ts";
+import {
+	buildDiffPatch,
+	untrackedPatches,
+} from "../../trpc/router/git/utils/diff-patch.ts";
 import {
 	type DiffCategory,
 	getChangedFilesForDiff,
@@ -27,8 +30,13 @@ import {
 import type { GitStatusSnapshotComputation } from "../../trpc/router/git/utils/git-status.ts";
 import { getGitStatusSnapshot } from "../../trpc/router/git/utils/git-status.ts";
 import {
+	DEFAULT_PATCH_BYTE_BUDGET,
+	EMPTY_WORKING_TREE,
+	isGeneratedPath,
 	type PrContext,
+	type PrContextFile,
 	type PrContextPatch,
+	type PrContextWorkingTree,
 	parseCommitLog,
 	parseNumstat,
 	selectPatchPathspec,
@@ -540,6 +548,16 @@ export const gitPrContextTask = defineWorkerTask<
 		}
 
 		const status = await git.raw(["status", "--porcelain"]).catch(() => "");
+		const hasUncommitted = status.trim().length > 0;
+		// The working tree shares the byte budget, after the committed patch:
+		// with commits it is usually a small tail; with none it is the change.
+		const workingTree = hasUncommitted
+			? await readWorkingTree(
+					git,
+					(patchByteBudget ?? DEFAULT_PATCH_BYTE_BUDGET) -
+						Buffer.byteLength(patch.text, "utf8"),
+				)
+			: EMPTY_WORKING_TREE;
 		const unpushed = await git
 			.raw(["rev-list", "--count", "@{upstream}..HEAD"])
 			.then((raw) => Number.parseInt(raw.trim(), 10))
@@ -553,13 +571,105 @@ export const gitPrContextTask = defineWorkerTask<
 				commits,
 				files,
 				patch,
-				hasUncommitted: status.trim().length > 0,
+				hasUncommitted,
+				workingTree,
 				unpushedCommits:
 					unpushed !== null && Number.isFinite(unpushed) ? unpushed : null,
 			},
 		};
 	},
 });
+
+/** Untracked files beyond this many are listed but not diffed — each one
+ * is its own `git diff --no-index` spawn. */
+const MAX_UNTRACKED_PATCHES = 100;
+
+/**
+ * Staged, unstaged, and untracked changes as one change set: tracked paths
+ * from `diff HEAD`, untracked ones from `ls-files --others`, each with its
+ * own numstat and (non-generated) patch. Nothing here stages or touches the
+ * index — the agent commits, not the host.
+ */
+async function readWorkingTree(
+	git: Parameters<typeof getGitStatusSnapshot>[0]["git"],
+	byteBudget: number,
+): Promise<PrContextWorkingTree> {
+	const tracked = parseNumstat(
+		await git
+			.raw(["diff", "HEAD", "--numstat", "-z", "--find-renames"])
+			.catch(() => ""),
+	);
+	const untrackedPaths = (
+		await git
+			.raw(["ls-files", "--others", "--exclude-standard", "-z"])
+			.catch(() => "")
+	)
+		.split("\0")
+		.filter((path) => path.length > 0);
+	const untrackedFiles: PrContextFile[] = await mapWithConcurrency(
+		untrackedPaths,
+		8,
+		async (path): Promise<PrContextFile> => {
+			const generated = isGeneratedPath(path);
+			// `--no-index` exits 1 when the file differs from /dev/null (always),
+			// which simple-git surfaces as a rejection carrying stdout.
+			const numstat = generated
+				? ""
+				: await git
+						.raw(["diff", "--numstat", "--no-index", "--", "/dev/null", path])
+						.catch((error: { stdout?: string }) => error.stdout ?? "");
+			const [added = "-", deleted = "-"] = numstat.split("\t");
+			const additions = Number.parseInt(added, 10);
+			return {
+				path,
+				additions: Number.isFinite(additions) ? additions : null,
+				deletions: Number.isFinite(Number.parseInt(deleted, 10)) ? 0 : null,
+				generated,
+			};
+		},
+	);
+	const files = [...tracked, ...untrackedFiles];
+
+	const pathspec = selectPatchPathspec(tracked);
+	const trackedPatch =
+		pathspec === null || tracked.length === 0
+			? ""
+			: await git
+					.raw([
+						"diff",
+						"HEAD",
+						"--no-color",
+						"--no-ext-diff",
+						"--find-renames",
+						"--unified=3",
+						"--",
+						...pathspec,
+					])
+					.catch(() => "");
+	const diffableUntracked = untrackedFiles
+		.filter((file) => !file.generated)
+		.slice(0, MAX_UNTRACKED_PATCHES)
+		.map((file) => file.path);
+	const untracked = await untrackedPatches(git, diffableUntracked);
+	const patch = slicePatch(
+		[trackedPatch, ...untracked].filter(Boolean).join(""),
+		Math.max(0, byteBudget),
+	);
+	const skippedUntracked =
+		untrackedFiles.filter((file) => !file.generated).length -
+		diffableUntracked.length;
+	return {
+		files,
+		patch:
+			skippedUntracked > 0
+				? {
+						...patch,
+						omittedFiles: patch.omittedFiles + skippedUntracked,
+						truncated: true,
+					}
+				: patch,
+	};
+}
 
 export const gitTasks = [
 	gitStatusSnapshotTask,

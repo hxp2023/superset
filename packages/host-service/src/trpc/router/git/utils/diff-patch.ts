@@ -49,7 +49,7 @@ function diffArgsForCategory(
  * so each one gets its own `--no-index` patch against /dev/null. Exit code 1
  * just means "differences found", which simple-git surfaces as a rejection
  * carrying the patch on stdout. */
-async function untrackedPatches(
+export async function untrackedPatches(
 	git: SimpleGit,
 	paths: string[],
 ): Promise<string[]> {

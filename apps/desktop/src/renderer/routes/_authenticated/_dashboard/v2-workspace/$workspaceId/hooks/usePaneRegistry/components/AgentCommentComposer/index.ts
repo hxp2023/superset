@@ -4,4 +4,8 @@ export type {
 } from "./AgentCommentComposer";
 export { AgentCommentComposer } from "./AgentCommentComposer";
 export { AgentPickerSelect } from "./components/AgentPickerSelect";
-export { useDiffCommentTarget } from "./hooks/useDiffCommentTarget";
+export {
+	EXISTING_PREFIX,
+	NEW_PREFIX,
+	useDiffCommentTarget,
+} from "./hooks/useDiffCommentTarget";

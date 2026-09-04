@@ -158,6 +158,38 @@ describe("gitPrContextTask", () => {
 		expect(result.context.patch.text).not.toContain("diff --git a/big.txt");
 	});
 
+	test("reports the working tree — staged, unstaged, untracked — as its own change set", async () => {
+		await git.checkoutBranch("feature", "main");
+		await git.raw(["config", "branch.feature.base", "main"]);
+		// Nothing committed on the branch: the dirty tree is the whole change.
+		await writeFile(join(repo, "base.txt"), "base\nchanged\n");
+		await mkdir(join(repo, "src"), { recursive: true });
+		await writeFile(join(repo, "src/new.ts"), "export const n = 1;\n");
+		await writeFile(join(repo, "bun.lock"), "lock\n");
+		await git.raw(["add", "src/new.ts"]);
+
+		const result = await run(repo);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		const { context } = result;
+		expect(context.commits).toEqual([]);
+		expect(context.hasUncommitted).toBe(true);
+		expect(
+			context.workingTree.files.map((f) => [f.path, f.additions, f.generated]),
+		).toEqual([
+			["base.txt", 1, false],
+			["src/new.ts", 1, false],
+			["bun.lock", null, true],
+		]);
+		expect(context.workingTree.patch.includedFiles).toBe(2);
+		expect(context.workingTree.patch.text).toContain("diff --git a/base.txt");
+		expect(context.workingTree.patch.text).toContain("+++ b/src/new.ts");
+		expect(context.workingTree.patch.text).not.toContain("bun.lock");
+		// The index is untouched: the agent stages, not the host.
+		const staged = (await git.raw(["diff", "--cached", "--name-only"])).trim();
+		expect(staged).toBe("src/new.ts");
+	});
+
 	test("skips the patch when only generated files changed", async () => {
 		await git.checkoutBranch("feature", "main");
 		await git.raw(["config", "branch.feature.base", "main"]);

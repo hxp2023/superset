@@ -11,9 +11,11 @@ import {
 	type TerminalAgentBinding,
 	useTerminalAgentBindings,
 } from "renderer/hooks/host-service/useTerminalAgentBindings";
-import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHostUrl";
-import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
 import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
+import type {
+	AgentSessionPlacement,
+	AgentTarget,
+} from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer";
 
 /** Poll cadence for the PR link while an agent is working on it. */
 const PR_POLL_MS = 3_000;
@@ -52,16 +54,12 @@ export interface AgentCreatePrStatus {
 }
 
 export interface UseCreatePrWithAgentResult {
-	/** Hands the PR to an agent. Resolves once dispatched (not once created). */
+	/** Hands the PR to the current target. Resolves once dispatched (not once created). */
 	dispatch: () => Promise<void>;
 	/** Drops the in-progress state without touching the agent. */
 	stopWaiting: () => void;
 	status: AgentCreatePrStatus | null;
 	isDispatching: boolean;
-	/** The live session the next dispatch would target, if any. */
-	target: TerminalAgentBinding | null;
-	/** Label for the agent the next dispatch would use (live or new). */
-	targetLabel: string | null;
 }
 
 function agentLabel(agentId: string): string {
@@ -76,19 +74,6 @@ function isWorking(binding: TerminalAgentBinding): boolean {
 		binding.lastEventType === "Start" ||
 		binding.lastEventType === "PermissionRequest"
 	);
-}
-
-/**
- * Which live session gets the prompt: the most recently active agent that
- * is not mid-task, else the most recent one (its TUI queues the message).
- */
-function pickTarget(
-	bindings: Map<string, TerminalAgentBinding>,
-): TerminalAgentBinding | null {
-	const sessions = [...bindings.values()].sort(
-		(a, b) => b.lastEventAt - a.lastEventAt,
-	);
-	return sessions.find((session) => !isWorking(session)) ?? sessions[0] ?? null;
 }
 
 /** Last PR number in a screen's text — `gh pr create` echoes the URL and
@@ -109,36 +94,42 @@ type TerminalOutcome =
 	| { kind: "failed"; at: number };
 
 /**
- * Owns the agent-driven Create PR flow for one workspace — the same target
- * model as the diff composer: a live agent terminal in the workspace, else
- * a new agent terminal launched with the prompt as its first turn. Dispatch
- * goes through `pullRequests.createWithAgent`; then this watches the
- * agent's binding for the outcome. Success is the PR link appearing, or the
- * PR URL on the agent's screen once it stops — the latter keeps the flow
- * honest when the link sync (a GitHub call that can be rate-limited) is
- * failing.
+ * Owns the agent-driven Create PR flow for one workspace. The target is the
+ * diff composer's model, picked by the caller: a live agent terminal in the
+ * workspace, or a new agent terminal launched with the prompt as its first
+ * turn. Dispatch goes through `pullRequests.createWithAgent`; then this
+ * watches the agent's binding for the outcome. Success is the PR link
+ * appearing, or the PR URL on the agent's screen once it stops — the latter
+ * keeps the flow honest when the link sync (a GitHub call that can be
+ * rate-limited) is failing.
  */
 export function useCreatePrWithAgent({
 	workspaceId,
 	projectId,
+	target,
+	placement,
 	onPrCreated,
 	onOpenTerminal,
 }: {
 	workspaceId: string;
 	projectId: string | null;
+	/** Where the prompt goes; null while sessions/configs are still loading. */
+	target: AgentTarget | null;
+	/** Where a new session's pane opens. */
+	placement: AgentSessionPlacement;
 	/** Fired once the PR link appears so the control flips to its PR face. */
 	onPrCreated: () => void;
-	/** Brings a terminal pane into view — a freshly launched agent's pane
-	 * is opened through this right after dispatch. */
-	onOpenTerminal?: (terminalId: string) => void;
+	/** Opens a freshly launched agent's pane right after dispatch. */
+	onOpenTerminal?: (
+		terminalId: string,
+		placement: AgentSessionPlacement,
+	) => void;
 }): UseCreatePrWithAgentResult {
 	const { t } = useLingui();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const trpcUtils = workspaceTrpc.useUtils();
 	const bindings = useTerminalAgentBindings(workspaceId);
-	const hostUrl = useWorkspaceHostUrl(workspaceId);
-	const { data: configs = [] } = useV2AgentConfigs(hostUrl);
 
 	const [status, setStatus] = useState<AgentCreatePrStatus | null>(null);
 	// Post-dispatch Stop timestamps seen on the target, and whether its
@@ -148,7 +139,6 @@ export function useCreatePrWithAgent({
 	const [seenBinding, setSeenBinding] = useState(false);
 	// PR number read off the agent's screen once it stops; reset per dispatch.
 	const [reportedPrNumber, setReportedPrNumber] = useState<number | null>(null);
-	const target = useMemo(() => pickTarget(bindings), [bindings]);
 	// The bindings map the dispatch was made against: a *different* map that
 	// lacks the target means the host reported it gone (the map is only
 	// rebuilt when the query data changes), whereas an unchanged map says
@@ -156,10 +146,6 @@ export function useCreatePrWithAgent({
 	const dispatchBindingsRef = useRef<Map<string, TerminalAgentBinding> | null>(
 		null,
 	);
-	const newSessionConfig = configs[0] ?? null;
-	const targetLabel = target
-		? agentLabel(target.agentId)
-		: (newSessionConfig?.label ?? null);
 
 	const createMutation =
 		workspaceTrpc.pullRequests.createWithAgent.useMutation();
@@ -169,15 +155,17 @@ export function useCreatePrWithAgent({
 	const stopWaiting = useCallback(() => setStatus(null), []);
 
 	const dispatch = useCallback(async () => {
-		const liveTarget = target;
+		if (!target) return;
+		const liveTarget =
+			target.kind === "existing"
+				? (bindings.get(target.terminalId) ?? null)
+				: null;
 		try {
 			const result = await createMutation.mutateAsync({
 				workspaceId,
-				...(liveTarget
-					? { terminalId: liveTarget.terminalId }
-					: newSessionConfig
-						? { agent: newSessionConfig.id }
-						: {}),
+				...(target.kind === "existing"
+					? { terminalId: target.terminalId }
+					: { agent: target.configId }),
 			});
 			dispatchBindingsRef.current = bindings;
 			setStopsSeen([]);
@@ -199,7 +187,9 @@ export function useCreatePrWithAgent({
 						? 1
 						: 0,
 			});
-			if (result.mode === "new-session") onOpenTerminal?.(result.terminalId);
+			if (result.mode === "new-session") {
+				onOpenTerminal?.(result.terminalId, placement);
+			}
 			toast.info(
 				t({
 					id: "workspace.shipControl.agentCreatingPr",
@@ -246,8 +236,8 @@ export function useCreatePrWithAgent({
 	}, [
 		bindings,
 		createMutation,
-		newSessionConfig,
 		onOpenTerminal,
+		placement,
 		queryClient,
 		t,
 		target,
@@ -530,7 +520,5 @@ export function useCreatePrWithAgent({
 		stopWaiting,
 		status,
 		isDispatching: createMutation.isPending,
-		target,
-		targetLabel,
 	};
 }

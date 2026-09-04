@@ -206,10 +206,19 @@ function V2WorkspaceContent() {
 		},
 		[openDiffPane],
 	);
-	// The Changes control's "Show agent terminal": same focus-or-open the
-	// pane registry uses for agent chips.
-	const focusTerminalPane = useCallback(
-		(terminalId: string) => {
+	// The Changes control's agent terminal: a freshly launched session opens
+	// at the composer's remembered placement (split into the active tab, or
+	// a new tab); "Show agent terminal" focuses or re-opens an existing pane.
+	const openTerminalPane = useCallback(
+		(terminalId: string, placement?: "split-pane" | "new-tab") => {
+			const state = store.getState();
+			if (placement === "split-pane" && state.activeTabId) {
+				state.addPane({
+					tabId: state.activeTabId,
+					pane: { kind: "terminal", data: { terminalId } as PaneViewerData },
+				});
+				return;
+			}
 			focusOrAddTerminalPane(store, terminalId);
 		},
 		[store],
@@ -408,7 +417,7 @@ function V2WorkspaceContent() {
 										<ChangesControl
 											workspaceId={workspaceId}
 											onOpenChanges={openChangesPane}
-											onFocusTerminal={focusTerminalPane}
+											onOpenTerminal={openTerminalPane}
 										/>
 									)}
 									{workspaceRunButton}
