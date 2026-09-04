@@ -34523,8 +34523,23 @@ msgstr "Создание PR…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentDidNotStart"
+msgstr "Агент не запустился"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentDidNotStartHint"
+msgstr "Проверьте ошибку запуска в его терминале"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentDispatchFailed"
 msgstr "Не удалось поручить агенту создание пул-реквеста"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFailed"
+msgstr "Агент не смог создать пул-реквест"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
@@ -34538,6 +34553,17 @@ msgstr "Проверьте, что он сообщил, или создайте 
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFinishedUnconfirmed"
+msgstr "Агент завершил работу, но пул-реквест не удалось подтвердить"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: errorMessage(refreshError)
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFinishedUnconfirmedHint"
+msgstr "Синхронизация с GitHub не удалась: {0}. Проверьте, что сообщил агент; пул-реквест уже может существовать"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentGaveUp"
 msgstr "Пул-реквеста от агента всё ещё нет"
 
@@ -34548,16 +34574,6 @@ msgstr "Ожидание прекращено через 10 минут — пр�
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
-msgid "workspace.shipControl.agentHeadlessFailed"
-msgstr "Агент не смог создать пул-реквест"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
-msgid "workspace.shipControl.agentRunningHeadless"
-msgstr "{label} выполняется в фоне"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSentTo"
 msgstr "Отправлено агенту {label}"
 
@@ -34565,6 +34581,11 @@ msgstr "Отправлено агенту {label}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSessionEnded"
 msgstr "Сессия агента завершилась до создания пул-реквеста"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentStartedNewSession"
+msgstr "{label} запущен в новом терминале"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
@@ -34645,8 +34666,8 @@ msgid "workspace.shipControl.prBodyPlaceholder"
 msgstr "Описание (необязательно)"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: String(createdPrNumber)
 #. placeholder {0}: created.number
-#. placeholder {0}: createdPr.number
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.prCreated"

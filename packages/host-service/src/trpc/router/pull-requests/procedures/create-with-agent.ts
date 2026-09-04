@@ -15,6 +15,7 @@ import {
 	gitPrContextTask,
 } from "../../../../workers/tasks/git";
 import { protectedProcedure } from "../../../index";
+import { type AgentRunResult, runAgentInWorkspace } from "../../agents/agents";
 import { resolveWorktreePath } from "../../git/utils/resolve-worktree";
 import { toTerminalSessionError } from "../../terminal/errors";
 import { buildCreatePrPrompt } from "../utils/create-pr-prompt";
@@ -22,20 +23,13 @@ import {
 	type CreatePrSkillSource,
 	resolveCreatePrSkill,
 } from "../utils/create-pr-skill";
-import {
-	getHeadlessCreatePrRun,
-	HeadlessCreatePrAlreadyRunning,
-	type HeadlessCreatePrCommand,
-	type HeadlessCreatePrRun,
-	resolveHeadlessCreatePrCommand,
-	startHeadlessCreatePr,
-} from "../utils/headless-create-pr";
 
 const createWithAgentInput = z.object({
 	workspaceId: z.string(),
-	/** A live agent terminal to send the prompt to. Omitted → headless run. */
+	/** A live agent terminal to send the prompt to. Omitted → a new agent
+	 * terminal is launched in the workspace with the prompt baked in. */
 	terminalId: z.string().optional(),
-	/** Host agent config (or preset) id for the headless run; defaults to the
+	/** Host agent config (or preset) id for the new session; defaults to the
 	 * first configured agent. Ignored when `terminalId` is set. */
 	agent: z.string().min(1).optional(),
 	draft: z.boolean().default(false),
@@ -51,9 +45,8 @@ export type CreateWithAgentResult =
 			skillSource: CreatePrSkillSource;
 	  }
 	| {
-			mode: "headless";
-			runId: string;
-			presetId: string;
+			mode: "new-session";
+			terminalId: string;
 			agentLabel: string;
 			skillSource: CreatePrSkillSource;
 	  };
@@ -68,10 +61,13 @@ export interface CreateWithAgentDeps {
 		terminalId: string;
 		text: string;
 	}) => Promise<{ success: true } | TerminalSessionError>;
-	resolveHeadlessCommand: (agent: string) => HeadlessCreatePrCommand | null;
-	startHeadless: typeof startHeadlessCreatePr;
-	/** Best-effort PR link refresh once a headless run exits cleanly. */
-	onHeadlessFinished?: (run: HeadlessCreatePrRun) => void;
+	/** Launches a fresh agent terminal with the prompt as its first turn —
+	 * the same path the diff composer's "new session" target takes. */
+	runAgent: (args: {
+		workspaceId: string;
+		agent: string;
+		prompt: string;
+	}) => Promise<AgentRunResult>;
 }
 
 function contextFailure(reason: "detached-head" | "no-base" | "on-base") {
@@ -88,9 +84,10 @@ function contextFailure(reason: "detached-head" | "no-base" | "on-base") {
 /**
  * Dispatches PR creation to an agent: gathers the branch context off-loop,
  * resolves the (overridable) `create-pr` skill, and either pastes the prompt
- * into a live agent terminal or runs the agent CLI headlessly in the
- * worktree. The PR itself surfaces through the usual link sync once the
- * agent has run `gh pr create`.
+ * into a live agent terminal or launches a new agent terminal in the
+ * workspace with the prompt as its opening turn. The PR itself surfaces
+ * through the usual link sync once the agent has run `gh pr create`; the
+ * renderer also reads the agent's screen for the URL it reports.
  */
 export async function createPullRequestWithAgent(
 	deps: CreateWithAgentDeps,
@@ -172,42 +169,23 @@ export async function createPullRequestWithAgent(
 			.from(hostAgentConfigs)
 			.orderBy(asc(hostAgentConfigs.displayOrder))
 			.get()?.id;
-	const headless = agent ? deps.resolveHeadlessCommand(agent) : null;
-	if (!headless) {
+	if (!agent) {
 		throw new TRPCError({
 			code: "PRECONDITION_FAILED",
-			message: input.agent
-				? "No agent is running in this workspace, and the selected agent can't run headlessly with git access — open a terminal for it here and try again"
-				: "No agent is running in this workspace, and the default agent can't run headlessly with git access — open an agent terminal here and try again",
-			cause: { kind: "NO_HEADLESS_AGENT" },
+			message:
+				"No agent is configured on this host — add one in Settings → Agents, then try again",
+			cause: { kind: "NO_AGENT_CONFIGURED" },
 		});
 	}
-	let run: HeadlessCreatePrRun;
-	try {
-		run = await deps.startHeadless({
-			workspaceId: input.workspaceId,
-			presetId: headless.presetId,
-			command: headless.command,
-			env: headless.env,
-			prompt,
-			cwd: input.worktreePath,
-			onFinished: deps.onHeadlessFinished,
-		});
-	} catch (error) {
-		if (error instanceof HeadlessCreatePrAlreadyRunning) {
-			throw new TRPCError({
-				code: "CONFLICT",
-				message:
-					"An agent is already creating a pull request for this workspace",
-			});
-		}
-		throw error;
-	}
+	const launched = await deps.runAgent({
+		workspaceId: input.workspaceId,
+		agent,
+		prompt,
+	});
 	return {
-		mode: "headless",
-		runId: run.runId,
-		presetId: headless.presetId,
-		agentLabel: headless.label,
+		mode: "new-session",
+		terminalId: launched.sessionId,
+		agentLabel: launched.label,
 		skillSource: skill.source,
 	};
 }
@@ -236,22 +214,7 @@ export function buildCreateWithAgentDeps(
 				db: ctx.db,
 				eventBus: ctx.eventBus,
 			}),
-		resolveHeadlessCommand: (agent) =>
-			resolveHeadlessCreatePrCommand(ctx.db, agent),
-		startHeadless: startHeadlessCreatePr,
-		onHeadlessFinished: (run) => {
-			if (run.status !== "succeeded") return;
-			// The PR exists at this point; the background sync would link it
-			// within a pass anyway, so a refresh hiccup is only logged.
-			ctx.runtime.pullRequests
-				.refreshPullRequestsByWorkspaces([run.workspaceId])
-				.catch((error) => {
-					console.warn(
-						"[pull-requests:create-with-agent] headless run finished but PR link refresh failed",
-						{ workspaceId: run.workspaceId, error },
-					);
-				});
-		},
+		runAgent: (args) => runAgentInWorkspace(ctx, args),
 	};
 }
 
@@ -263,21 +226,4 @@ export const createWithAgent = protectedProcedure
 			...input,
 			worktreePath,
 		});
-	});
-
-/** State of the workspace's headless create-PR run, for the renderer's
- * in-progress face. Null when no run is tracked. */
-export const agentCreateStatus = protectedProcedure
-	.input(z.object({ workspaceId: z.string() }))
-	.query(({ input }) => {
-		const run = getHeadlessCreatePrRun(input.workspaceId);
-		if (!run) return null;
-		return {
-			runId: run.runId,
-			status: run.status,
-			presetId: run.presetId,
-			startedAt: run.startedAt,
-			finishedAt: run.finishedAt ?? null,
-			error: run.error ?? null,
-		};
 	});

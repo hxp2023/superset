@@ -34523,8 +34523,23 @@ msgstr "Membuat PR…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentDidNotStart"
+msgstr "Agen tidak bisa dimulai"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentDidNotStartHint"
+msgstr "Periksa terminalnya untuk melihat kesalahan saat memulai"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentDispatchFailed"
 msgstr "Tidak bisa menyerahkan pembuatan pull request ke agen"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFailed"
+msgstr "Agen tidak bisa membuat pull request"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
@@ -34538,6 +34553,17 @@ msgstr "Periksa apa yang dilaporkannya, atau buat PR secara manual"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFinishedUnconfirmed"
+msgstr "Agen selesai, tapi pull request tidak bisa dikonfirmasi"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: errorMessage(refreshError)
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFinishedUnconfirmedHint"
+msgstr "Sinkronisasi GitHub gagal: {0}. Periksa laporan agen; PR mungkin sudah ada"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentGaveUp"
 msgstr "Masih belum ada pull request dari agen"
 
@@ -34548,16 +34574,6 @@ msgstr "Berhenti menunggu setelah 10 menit — periksa agen, atau buat PR secara
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
-msgid "workspace.shipControl.agentHeadlessFailed"
-msgstr "Agen tidak bisa membuat pull request"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
-msgid "workspace.shipControl.agentRunningHeadless"
-msgstr "Menjalankan {label} di latar belakang"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSentTo"
 msgstr "Dikirim ke {label}"
 
@@ -34565,6 +34581,11 @@ msgstr "Dikirim ke {label}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSessionEnded"
 msgstr "Sesi agen berakhir sebelum pull request dibuat"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentStartedNewSession"
+msgstr "{label} dimulai di terminal baru"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
@@ -34645,8 +34666,8 @@ msgid "workspace.shipControl.prBodyPlaceholder"
 msgstr "Deskripsi (opsional)"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: String(createdPrNumber)
 #. placeholder {0}: created.number
-#. placeholder {0}: createdPr.number
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.prCreated"

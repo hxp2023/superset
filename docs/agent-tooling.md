@@ -39,10 +39,12 @@ description matches the task.
 The Changes control's Create PR button hands the branch to an agent instead of a form: the host
 gathers the commits ahead of the configured base (`branch.<name>.base`, else the repo default), a
 per-file diffstat, and a ~30 KB patch with generated files left out, and sends that together with
-the `create-pr` skill to the workspace's live agent terminal — or, with no agent running, to the
-default agent's headless CLI in the worktree (`packages/host-service/src/trpc/router/pull-requests/
-procedures/create-with-agent.ts`). The skill body is inlined in the prompt, so agents that can't
-slash-invoke a skill still follow it.
+the `create-pr` skill to the workspace's live agent terminal — or, with no agent running, launches
+a new agent terminal in the workspace with the prompt as its first turn, the same target model as
+the diff composer (`packages/host-service/src/trpc/router/pull-requests/procedures/
+create-with-agent.ts`). The skill body is inlined in the prompt, so agents that can't slash-invoke
+a skill still follow it. The renderer confirms the PR from the link sync or from the URL the agent
+prints on its screen, so a rate-limited GitHub sync can't misreport a PR that exists.
 
 The skill ships in `plugins/superset/skills/create-pr/SKILL.md` and is provisioned like every other
 managed skill. It resolves most-specific first, so teams encode their PR conventions once:
@@ -54,14 +56,7 @@ managed skill. It resolves most-specific first, so teams encode their PR convent
 3. the bundled default
 
 The prompt frames `<pr-context>` as repository data, not instructions — the same trust boundary
-every agent launched in a worktree already lives with (AGENTS.md, project hooks and skills), so a
-project skill is honored in headless runs too.
-
-Headless runs need a permission bypass the catalog's read-only `nonInteractiveCommand` doesn't
-carry; the per-preset commands live in `HEADLESS_TOOL_COMMANDS` (`utils/headless-create-pr.ts`).
-Presets without one report "open an agent terminal" instead of failing silently. The process gets
-the terminal base-env snapshot plus the agent's account/config env — never the host's own
-`process.env` — and its whole process tree is killed on timeout or host exit.
+every agent launched in a worktree already lives with (AGENTS.md, project hooks and skills).
 
 ## Provider accounts (multi-login)
 

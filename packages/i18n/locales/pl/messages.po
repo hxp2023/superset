@@ -34523,8 +34523,23 @@ msgstr "Tworzenie PR…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentDidNotStart"
+msgstr "Agent się nie uruchomił"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentDidNotStartHint"
+msgstr "Sprawdź błąd uruchomienia w jego terminalu"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentDispatchFailed"
 msgstr "Nie udało się przekazać agentowi utworzenia pull requesta"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFailed"
+msgstr "Agent nie mógł utworzyć pull requesta"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
@@ -34538,6 +34553,17 @@ msgstr "Sprawdź, co zgłosił, albo utwórz PR ręcznie"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFinishedUnconfirmed"
+msgstr "Agent zakończył pracę, ale nie udało się potwierdzić pull requesta"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: errorMessage(refreshError)
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentFinishedUnconfirmedHint"
+msgstr "Synchronizacja z GitHubem nie powiodła się: {0}. Sprawdź, co zgłosił agent; PR może już istnieć"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentGaveUp"
 msgstr "Wciąż brak pull requesta od agenta"
 
@@ -34548,16 +34574,6 @@ msgstr "Przestano czekać po 10 minutach — sprawdź agenta albo utwórz PR rę
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
-msgid "workspace.shipControl.agentHeadlessFailed"
-msgstr "Agent nie mógł utworzyć pull requesta"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
-msgid "workspace.shipControl.agentRunningHeadless"
-msgstr "{label} działa w tle"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSentTo"
 msgstr "Wysłano do {label}"
 
@@ -34565,6 +34581,11 @@ msgstr "Wysłano do {label}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentSessionEnded"
 msgstr "Sesja agenta zakończyła się przed utworzeniem pull requesta"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
+msgid "workspace.shipControl.agentStartedNewSession"
+msgstr "Uruchomiono {label} w nowym terminalu"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
@@ -34645,8 +34666,8 @@ msgid "workspace.shipControl.prBodyPlaceholder"
 msgstr "Opis (opcjonalnie)"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: String(createdPrNumber)
 #. placeholder {0}: created.number
-#. placeholder {0}: createdPr.number
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.prCreated"

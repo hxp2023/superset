@@ -24,29 +24,32 @@ const PR_REFRESH_MS = 15_000;
 /** After the agent reports it finished, how long the PR gets to show up
  * (one forced refresh plus a couple of polls) before we call it a miss. */
 const AGENT_FINISHED_GRACE_MS = 12_000;
+/** A freshly launched agent that never registers a binding in this long
+ * didn't start (bad command, missing binary, shell wedge). */
+const ATTACH_TIMEOUT_MS = 90_000;
 /** Hard stop so the control never spins forever. */
 const GIVE_UP_MS = 10 * 60 * 1000;
+/** Screen lines read back when the agent stops, looking for the PR URL it
+ * reports — the last thing the skill has it print. */
+const SNAPSHOT_LINES = 400;
 
-export type AgentCreatePrStatus =
-	| {
-			mode: "terminal";
-			terminalId: string;
-			agentLabel: string;
-			startedAt: number;
-			/** Host-clock `lastEventAt` of the target when dispatched; later hook
-			 * events are the agent reacting to this prompt. */
-			dispatchedAfter: number;
-			/** Stops to disregard before one counts as "done": one when the
-			 * target was mid-task at dispatch (its next Stop closes that task and
-			 * the prompt runs after), none when it was idle. */
-			stopsToIgnore: number;
-	  }
-	| {
-			mode: "headless";
-			runId: string;
-			agentLabel: string;
-			startedAt: number;
-	  };
+const PR_URL_RE = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/(\d+)/g;
+
+export interface AgentCreatePrStatus {
+	terminalId: string;
+	agentLabel: string;
+	startedAt: number;
+	/** True when the dispatch launched this terminal (no live agent was
+	 * around); its binding appears only once the agent attaches. */
+	fresh: boolean;
+	/** Host-clock `lastEventAt` of the target when dispatched; later hook
+	 * events are the agent reacting to this prompt. */
+	dispatchedAfter: number;
+	/** Stops to disregard before one counts as "done": one when the target
+	 * was mid-task at dispatch (its next Stop closes that task and the
+	 * prompt runs after), none when it was idle or freshly launched. */
+	stopsToIgnore: number;
+}
 
 export interface UseCreatePrWithAgentResult {
 	/** Hands the PR to an agent. Resolves once dispatched (not once created). */
@@ -57,7 +60,7 @@ export interface UseCreatePrWithAgentResult {
 	isDispatching: boolean;
 	/** The live session the next dispatch would target, if any. */
 	target: TerminalAgentBinding | null;
-	/** Label for the agent the next dispatch would use (live or headless). */
+	/** Label for the agent the next dispatch would use (live or new). */
 	targetLabel: string | null;
 }
 
@@ -88,6 +91,17 @@ function pickTarget(
 	return sessions.find((session) => !isWorking(session)) ?? sessions[0] ?? null;
 }
 
+/** Last PR number in a screen's text — `gh pr create` echoes the URL and
+ * the skill has the agent print it again as its final line. */
+export function findReportedPrNumber(text: string): number | null {
+	let last: number | null = null;
+	for (const match of text.matchAll(PR_URL_RE)) {
+		const number = Number(match[1]);
+		if (Number.isFinite(number)) last = number;
+	}
+	return last;
+}
+
 /** The terminal target's post-dispatch outcome, read off its binding. */
 type TerminalOutcome =
 	| { kind: "none" }
@@ -95,34 +109,45 @@ type TerminalOutcome =
 	| { kind: "failed"; at: number };
 
 /**
- * Owns the agent-driven Create PR flow for one workspace: picks the target
- * (a live agent terminal, else the default agent run headlessly by the
- * host), dispatches through `pullRequests.createWithAgent`, then watches for
- * the outcome. The PR itself arrives through the normal link sync — this
- * polls faster while waiting, nudges a GitHub re-sync when the agent stops,
- * and reports a miss when the agent finishes (or dies) without a PR.
+ * Owns the agent-driven Create PR flow for one workspace — the same target
+ * model as the diff composer: a live agent terminal in the workspace, else
+ * a new agent terminal launched with the prompt as its first turn. Dispatch
+ * goes through `pullRequests.createWithAgent`; then this watches the
+ * agent's binding for the outcome. Success is the PR link appearing, or the
+ * PR URL on the agent's screen once it stops — the latter keeps the flow
+ * honest when the link sync (a GitHub call that can be rate-limited) is
+ * failing.
  */
 export function useCreatePrWithAgent({
 	workspaceId,
 	projectId,
 	onPrCreated,
+	onOpenTerminal,
 }: {
 	workspaceId: string;
 	projectId: string | null;
 	/** Fired once the PR link appears so the control flips to its PR face. */
 	onPrCreated: () => void;
+	/** Brings a terminal pane into view — a freshly launched agent's pane
+	 * is opened through this right after dispatch. */
+	onOpenTerminal?: (terminalId: string) => void;
 }): UseCreatePrWithAgentResult {
 	const { t } = useLingui();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const trpcUtils = workspaceTrpc.useUtils();
 	const bindings = useTerminalAgentBindings(workspaceId);
 	const hostUrl = useWorkspaceHostUrl(workspaceId);
 	const { data: configs = [] } = useV2AgentConfigs(hostUrl);
 
 	const [status, setStatus] = useState<AgentCreatePrStatus | null>(null);
-	// Post-dispatch Stop timestamps seen on the terminal target; reset per
-	// dispatch (see the terminal-outcome block below).
+	// Post-dispatch Stop timestamps seen on the target, and whether its
+	// binding has been seen at all (a fresh launch has none until the agent
+	// attaches). Both reset per dispatch.
 	const [stopsSeen, setStopsSeen] = useState<number[]>([]);
+	const [seenBinding, setSeenBinding] = useState(false);
+	// PR number read off the agent's screen once it stops; reset per dispatch.
+	const [reportedPrNumber, setReportedPrNumber] = useState<number | null>(null);
 	const target = useMemo(() => pickTarget(bindings), [bindings]);
 	// The bindings map the dispatch was made against: a *different* map that
 	// lacks the target means the host reported it gone (the map is only
@@ -131,10 +156,10 @@ export function useCreatePrWithAgent({
 	const dispatchBindingsRef = useRef<Map<string, TerminalAgentBinding> | null>(
 		null,
 	);
-	const headlessConfig = configs[0] ?? null;
+	const newSessionConfig = configs[0] ?? null;
 	const targetLabel = target
 		? agentLabel(target.agentId)
-		: (headlessConfig?.label ?? null);
+		: (newSessionConfig?.label ?? null);
 
 	const createMutation =
 		workspaceTrpc.pullRequests.createWithAgent.useMutation();
@@ -150,55 +175,49 @@ export function useCreatePrWithAgent({
 				workspaceId,
 				...(liveTarget
 					? { terminalId: liveTarget.terminalId }
-					: headlessConfig
-						? { agent: headlessConfig.id }
+					: newSessionConfig
+						? { agent: newSessionConfig.id }
 						: {}),
 			});
 			dispatchBindingsRef.current = bindings;
 			setStopsSeen([]);
-			if (result.mode === "terminal") {
-				const label = agentLabel(result.agentId);
-				setStatus({
-					mode: "terminal",
-					terminalId: result.terminalId,
-					agentLabel: label,
-					startedAt: Date.now(),
-					dispatchedAfter: liveTarget?.lastEventAt ?? 0,
-					stopsToIgnore: liveTarget && isWorking(liveTarget) ? 1 : 0,
-				});
-				toast.info(
-					t({
-						id: "workspace.shipControl.agentCreatingPr",
-						message: "Agent is creating the pull request…",
-					}),
-					{
-						description: t({
-							id: "workspace.shipControl.agentSentTo",
-							message: `Sent to ${label}`,
-						}),
-					},
-				);
-			} else {
-				const label = result.agentLabel;
-				setStatus({
-					mode: "headless",
-					runId: result.runId,
-					agentLabel: label,
-					startedAt: Date.now(),
-				});
-				toast.info(
-					t({
-						id: "workspace.shipControl.agentCreatingPr",
-						message: "Agent is creating the pull request…",
-					}),
-					{
-						description: t({
-							id: "workspace.shipControl.agentRunningHeadless",
-							message: `Running ${label} in the background`,
-						}),
-					},
-				);
-			}
+			setReportedPrNumber(null);
+			setSeenBinding(result.mode === "terminal");
+			const label =
+				result.mode === "terminal"
+					? agentLabel(result.agentId)
+					: result.agentLabel;
+			setStatus({
+				terminalId: result.terminalId,
+				agentLabel: label,
+				startedAt: Date.now(),
+				fresh: result.mode === "new-session",
+				dispatchedAfter:
+					result.mode === "terminal" ? (liveTarget?.lastEventAt ?? 0) : 0,
+				stopsToIgnore:
+					result.mode === "terminal" && liveTarget && isWorking(liveTarget)
+						? 1
+						: 0,
+			});
+			if (result.mode === "new-session") onOpenTerminal?.(result.terminalId);
+			toast.info(
+				t({
+					id: "workspace.shipControl.agentCreatingPr",
+					message: "Agent is creating the pull request…",
+				}),
+				{
+					description:
+						result.mode === "terminal"
+							? t({
+									id: "workspace.shipControl.agentSentTo",
+									message: `Sent to ${label}`,
+								})
+							: t({
+									id: "workspace.shipControl.agentStartedNewSession",
+									message: `Started ${label} in a new terminal`,
+								}),
+				},
+			);
 		} catch (error) {
 			// The likeliest failure is a target whose pty died while its
 			// session row lagged behind — refetch the bindings so the next
@@ -227,7 +246,8 @@ export function useCreatePrWithAgent({
 	}, [
 		bindings,
 		createMutation,
-		headlessConfig,
+		newSessionConfig,
+		onOpenTerminal,
 		queryClient,
 		t,
 		target,
@@ -243,27 +263,15 @@ export function useCreatePrWithAgent({
 		{ workspaceId },
 		{ enabled: waiting, refetchInterval: waiting ? PR_POLL_MS : false },
 	);
-	const headlessStatusQuery =
-		workspaceTrpc.pullRequests.agentCreateStatus.useQuery(
-			{ workspaceId },
-			{
-				enabled: status?.mode === "headless",
-				refetchInterval: status?.mode === "headless" ? PR_POLL_MS : false,
-			},
-		);
-	// The query is keyed by workspace, so right after a retry it still holds
-	// the previous run's outcome; only this dispatch's run counts.
-	const headlessRun =
-		status?.mode === "headless" &&
-		headlessStatusQuery.data?.runId === status.runId
-			? headlessStatusQuery.data
-			: null;
 
 	const onPrCreatedRef = useRef(onPrCreated);
 	onPrCreatedRef.current = onPrCreated;
 	const refreshRef = useRef(refreshMutation);
 	refreshRef.current = refreshMutation;
 	const lastRefreshAtRef = useRef(0);
+	// Why the last link refresh failed (GitHub rate limit, offline…): a
+	// finished agent with no link is then "unconfirmed", not "no PR".
+	const lastRefreshErrorRef = useRef<unknown>(null);
 	const requestRefresh = useCallback(
 		(force: boolean) => {
 			const now = Date.now();
@@ -272,62 +280,45 @@ export function useCreatePrWithAgent({
 			lastRefreshAtRef.current = now;
 			refreshRef.current
 				.mutateAsync({ workspaceIds: [workspaceId] })
+				.then(() => {
+					lastRefreshErrorRef.current = null;
+				})
 				.catch((error) => {
+					lastRefreshErrorRef.current = error;
 					console.warn("[create-pr-with-agent] PR link refresh failed", error);
 				});
 		},
 		[workspaceId],
 	);
 
-	// Success: the PR link appeared.
-	const createdPr = waiting ? prQuery.data : null;
-	useEffect(() => {
-		if (!createdPr) return;
-		setStatus(null);
-		onPrCreatedRef.current();
-		toast.success(
-			t({
-				id: "workspace.shipControl.prCreated",
-				message: `PR #${createdPr.number} created`,
-			}),
-			{
-				action: {
-					label: t({
-						id: "workspace.shipControl.openPrToastAction",
-						message: "Open",
-					}),
-					onClick: () => {
-						if (projectId == null) return;
-						usePullRequestsSplitViewStore.getState().expandDetail();
-						void navigate({
-							to: "/pull-requests/$prNumber",
-							params: { prNumber: String(createdPr.number) },
-							search: { project: projectId },
-						});
-					},
-				},
-			},
-		);
-	}, [createdPr, navigate, projectId, t]);
+	const openPr = useCallback(
+		(number: number) => {
+			if (projectId == null) return;
+			usePullRequestsSplitViewStore.getState().expandDetail();
+			void navigate({
+				to: "/pull-requests/$prNumber",
+				params: { prNumber: String(number) },
+				search: { project: projectId },
+			});
+		},
+		[navigate, projectId],
+	);
 
-	// Terminal mode: the binding tells us when the agent stopped, failed, or
-	// died. Stops are counted through state (not a ref written mid-render)
-	// keyed on the event timestamp, so each Stop is counted once however
-	// many renders see it, and a Stop that arrives without its Start having
-	// been observed (a fast turn between two refetches) still counts.
-	const targetBinding =
-		status?.mode === "terminal"
-			? (bindings.get(status.terminalId) ?? null)
-			: null;
+	// The binding tells us when the agent attached, stopped, failed, or died.
+	const targetBinding = status
+		? (bindings.get(status.terminalId) ?? null)
+		: null;
 	useEffect(() => {
-		if (status?.mode !== "terminal" || !targetBinding) return;
+		if (!status || !targetBinding) return;
+		setSeenBinding(true);
 		if (targetBinding.lastEventType !== "Stop") return;
 		const at = targetBinding.lastEventAt;
 		if (at <= status.dispatchedAfter) return;
 		setStopsSeen((seen) => (seen.includes(at) ? seen : [...seen, at]));
 	}, [status, targetBinding]);
+
 	const terminalOutcome = useMemo<TerminalOutcome>(() => {
-		if (status?.mode !== "terminal" || !targetBinding) return { kind: "none" };
+		if (!status || !targetBinding) return { kind: "none" };
 		if (
 			targetBinding.lastEventType === "Failed" &&
 			targetBinding.lastEventAt > status.dispatchedAfter
@@ -340,34 +331,86 @@ export function useCreatePrWithAgent({
 			: { kind: "stopped", at: settled };
 	}, [status, stopsSeen, targetBinding]);
 
-	// Definitive failures: the host saw the headless process exit non-zero,
-	// or the live agent's hook reported a failed turn.
-	const failure =
-		headlessRun?.status === "failed"
-			? {
-					key: `headless:${headlessRun.runId}`,
-					description: headlessRun.error ?? "",
-				}
-			: terminalOutcome.kind === "failed"
-				? { key: `terminal:${terminalOutcome.at}`, description: "" }
-				: null;
-	const failureKey = failure?.key ?? null;
-	const failureDescription = failure?.description ?? "";
+	// When the agent stops, read its screen for the PR URL it reported.
+	const stoppedAt =
+		terminalOutcome.kind === "stopped" ? terminalOutcome.at : null;
 	useEffect(() => {
-		if (failureKey === null) return;
+		if (stoppedAt === null || !status) return;
+		let cancelled = false;
+		trpcUtils.terminal.snapshot
+			.fetch({
+				workspaceId,
+				terminalId: status.terminalId,
+				maxLines: SNAPSHOT_LINES,
+			})
+			.then((snapshot) => {
+				if (cancelled) return;
+				const number = findReportedPrNumber(snapshot.text);
+				if (number !== null) setReportedPrNumber(number);
+			})
+			.catch((error) => {
+				console.warn("[create-pr-with-agent] terminal snapshot failed", error);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [stoppedAt, status, trpcUtils, workspaceId]);
+	// Success: the PR link appeared, or the agent's screen shows the PR it
+	// opened. The latter is what makes the flow reliable when the link sync
+	// is failing.
+	const createdPrNumber = waiting
+		? (prQuery.data?.number ?? reportedPrNumber)
+		: null;
+	useEffect(() => {
+		if (createdPrNumber === null) return;
+		setStatus(null);
+		onPrCreatedRef.current();
+		// Nudge the link sync so the control's PR badge follows as soon as
+		// GitHub lets it — harmless when the link is already there.
+		requestRefresh(true);
+		// `String(...)` keeps the placeholder positional ({0}) so this shares
+		// the manual flow's catalog entry instead of forking it.
+		toast.success(
+			t({
+				id: "workspace.shipControl.prCreated",
+				message: `PR #${String(createdPrNumber)} created`,
+			}),
+			{
+				action: {
+					label: t({
+						id: "workspace.shipControl.openPrToastAction",
+						message: "Open",
+					}),
+					onClick: () => openPr(createdPrNumber),
+				},
+			},
+		);
+	}, [createdPrNumber, openPr, requestRefresh, t]);
+
+	// The agent's hook reported a failed turn.
+	const failedAt =
+		terminalOutcome.kind === "failed" ? terminalOutcome.at : null;
+	useEffect(() => {
+		if (failedAt === null) return;
 		setStatus(null);
 		toast.error(
 			t({
-				id: "workspace.shipControl.agentHeadlessFailed",
+				id: "workspace.shipControl.agentFailed",
 				message: "The agent couldn't create the pull request",
 			}),
-			{ description: failureDescription || undefined },
+			{
+				description: t({
+					id: "workspace.shipControl.agentFinishedNoPrHint",
+					message: "Check what it reported, or create the PR manually",
+				}),
+			},
 		);
-	}, [failureKey, failureDescription, t]);
+	}, [failedAt, t]);
 
-	// A dispatched terminal whose binding vanished died under the agent.
+	// A terminal whose binding vanished after we saw it died under the agent.
 	const targetGone =
-		status?.mode === "terminal" &&
+		status !== null &&
+		seenBinding &&
 		targetBinding === null &&
 		dispatchBindingsRef.current !== null &&
 		bindings !== dispatchBindingsRef.current;
@@ -382,19 +425,57 @@ export function useCreatePrWithAgent({
 		);
 	}, [targetGone, t]);
 
-	// The agent said it's done: force a GitHub re-sync, then give the link a
-	// short grace window before reporting a miss.
-	const agentFinishedAt =
-		headlessRun?.status === "succeeded"
-			? (headlessRun.finishedAt ?? headlessRun.startedAt)
-			: terminalOutcome.kind === "stopped"
-				? terminalOutcome.at
-				: null;
+	// A fresh launch that never attaches didn't start.
+	const attachPending = status?.fresh === true && !seenBinding;
 	useEffect(() => {
-		if (agentFinishedAt === null || failureKey !== null) return;
+		if (!attachPending || !status) return;
+		const timer = window.setTimeout(
+			() => {
+				setStatus(null);
+				toast.error(
+					t({
+						id: "workspace.shipControl.agentDidNotStart",
+						message: "The agent didn't start",
+					}),
+					{
+						description: t({
+							id: "workspace.shipControl.agentDidNotStartHint",
+							message: "Check its terminal for the launch error",
+						}),
+					},
+				);
+			},
+			Math.max(0, status.startedAt + ATTACH_TIMEOUT_MS - Date.now()),
+		);
+		return () => window.clearTimeout(timer);
+	}, [attachPending, status, t]);
+
+	// The agent said it's done: force a GitHub re-sync, then give the link
+	// (and the snapshot) a short grace window before reporting a miss.
+	useEffect(() => {
+		if (stoppedAt === null) return;
 		requestRefresh(true);
 		const timer = window.setTimeout(() => {
 			setStatus(null);
+			const refreshError = lastRefreshErrorRef.current;
+			if (refreshError !== null) {
+				// The agent may well have opened it; we just couldn't ask
+				// GitHub. Say that rather than blaming the agent.
+				toast.warning(
+					t({
+						id: "workspace.shipControl.agentFinishedUnconfirmed",
+						message:
+							"The agent finished, but the pull request couldn't be confirmed",
+					}),
+					{
+						description: t({
+							id: "workspace.shipControl.agentFinishedUnconfirmedHint",
+							message: `GitHub sync failed: ${errorMessage(refreshError)}. Check the agent's report; the PR may already exist`,
+						}),
+					},
+				);
+				return;
+			}
 			toast.warning(
 				t({
 					id: "workspace.shipControl.agentFinishedNoPr",
@@ -409,7 +490,7 @@ export function useCreatePrWithAgent({
 			);
 		}, AGENT_FINISHED_GRACE_MS);
 		return () => window.clearTimeout(timer);
-	}, [agentFinishedAt, failureKey, requestRefresh, t]);
+	}, [stoppedAt, requestRefresh, t]);
 
 	// Periodic re-sync while waiting, and a hard give-up.
 	useEffect(() => {

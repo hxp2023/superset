@@ -25,8 +25,7 @@ function makeDeps(
 	} = {},
 ) {
 	const sent: Array<{ terminalId: string; text: string }> = [];
-	const started: Array<Parameters<CreateWithAgentDeps["startHeadless"]>[0]> =
-		[];
+	const launched: Array<Parameters<CreateWithAgentDeps["runAgent"]>[0]> = [];
 	const deps: CreateWithAgentDeps = {
 		db: {
 			query: {
@@ -73,35 +72,20 @@ function makeDeps(
 			sent.push({ terminalId, text });
 			return { success: true };
 		},
-		resolveHeadlessCommand: (agent) =>
-			agent === "cfg-1"
-				? {
-						presetId: "claude",
-						label: "Claude",
-						command: "claude -p",
-						env: { CLAUDE_CONFIG_DIR: "/tmp/claude-alt" },
-					}
-				: null,
-		startHeadless: async (args) => {
-			started.push(args);
-			return {
-				runId: "run-1",
-				workspaceId: args.workspaceId,
-				presetId: args.presetId,
-				startedAt: 0,
-				status: "running",
-			};
+		runAgent: async (args) => {
+			launched.push(args);
+			return { kind: "terminal", sessionId: "t-new", label: "Claude" };
 		},
 		...overrides,
 	};
-	return { deps, sent, started };
+	return { deps, sent, launched };
 }
 
 const input = { workspaceId: "ws", worktreePath: "/wt", draft: false };
 
 describe("createPullRequestWithAgent", () => {
 	test("pastes the prompt into a live agent terminal", async () => {
-		const { deps, sent, started } = makeDeps({
+		const { deps, sent, launched } = makeDeps({
 			bindings: [{ terminalId: "t1", agentId: "claude" }],
 		});
 		const result = await createPullRequestWithAgent(deps, {
@@ -114,7 +98,7 @@ describe("createPullRequestWithAgent", () => {
 			agentId: "claude",
 			skillSource: "bundled",
 		});
-		expect(started).toHaveLength(0);
+		expect(launched).toHaveLength(0);
 		expect(sent).toHaveLength(1);
 		expect(sent[0]?.text).toContain('<skill name="create-pr">\nskill body');
 		expect(sent[0]?.text).toContain("Branch: feat/x");
@@ -163,35 +147,28 @@ describe("createPullRequestWithAgent", () => {
 		expect(text.endsWith("</pr-context>")).toBe(true);
 	});
 
-	test("runs the default agent headlessly in the worktree when no terminal is given", async () => {
-		const { deps, sent, started } = makeDeps();
+	test("launches a new session for the default agent when no terminal is given", async () => {
+		const { deps, sent, launched } = makeDeps();
 		const result = await createPullRequestWithAgent(deps, {
 			...input,
 			draft: true,
 		});
 		expect(result).toEqual({
-			mode: "headless",
-			runId: "run-1",
-			presetId: "claude",
+			mode: "new-session",
+			terminalId: "t-new",
 			agentLabel: "Claude",
 			skillSource: "bundled",
 		});
 		expect(sent).toHaveLength(0);
-		expect(started).toHaveLength(1);
-		expect(started[0]?.cwd).toBe("/wt");
-		expect(started[0]?.command).toBe("claude -p");
-		expect(started[0]?.env).toEqual({ CLAUDE_CONFIG_DIR: "/tmp/claude-alt" });
-		expect(started[0]?.prompt).toContain("Open it as a draft");
+		expect(launched).toHaveLength(1);
+		expect(launched[0]?.agent).toBe("cfg-1");
+		expect(launched[0]?.prompt).toContain("Open it as a draft");
 	});
 
-	test("an explicit agent without a headless command is a precondition failure that names the selection", async () => {
-		const { deps } = makeDeps();
-		await expect(
-			createPullRequestWithAgent(deps, { ...input, agent: "cfg-opencode" }),
-		).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-		await expect(
-			createPullRequestWithAgent(deps, { ...input, agent: "cfg-opencode" }),
-		).rejects.toThrow("the selected agent can't run headlessly");
+	test("an explicit agent is launched as given", async () => {
+		const { deps, launched } = makeDeps();
+		await createPullRequestWithAgent(deps, { ...input, agent: "cfg-codex" });
+		expect(launched[0]?.agent).toBe("cfg-codex");
 	});
 
 	test("no configured agent at all is a precondition failure", async () => {

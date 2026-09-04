@@ -39,7 +39,8 @@ interface ShipControlProps {
 	 * actions collapse into the chevron menu so the control keeps one face.
 	 */
 	compact?: boolean;
-	/** Brings the terminal an agent is creating the PR in into view. */
+	/** Brings a terminal pane into view: opens a freshly launched agent's
+	 * pane on dispatch, and backs "Show agent terminal" while it works. */
 	onFocusTerminal?: (terminalId: string) => void;
 }
 
@@ -50,10 +51,10 @@ interface ShipControlProps {
  * stats own the face) folds the same actions into the chevron menu.
  *
  * Create PR hands the branch to an agent (`useCreatePrWithAgent`): a live
- * agent terminal in the workspace, else the default agent run headlessly by
- * the host. The face shows "Creating PR…" until the PR link lands (the
- * control then flips to its PR badge), the agent finishes without one, or
- * the wait times out. "Create PR manually…" in the chevron keeps the old
+ * agent terminal in the workspace, else a new agent terminal launched with
+ * the prompt — the diff composer's target model. The face shows "Creating
+ * PR…" until the PR is confirmed (the control then flips to its PR badge),
+ * the agent finishes without one, or the wait times out. "Create PR manually…" in the chevron keeps the old
  * title/description popover — which pushes first when the branch is
  * unpublished or ahead — as the by-hand path.
  *
@@ -209,6 +210,7 @@ export function ShipControl({
 		workspaceId,
 		projectId,
 		onPrCreated: onRefresh,
+		onOpenTerminal: onFocusTerminal,
 	});
 	const agentBusy = agentPr.status !== null || agentPr.isDispatching;
 	// Plain identifiers so Lingui names the placeholders for translators.
@@ -358,8 +360,7 @@ export function ShipControl({
 
 	// Menu entries while an agent has the PR: bring its terminal into view
 	// (terminal mode) or drop the wait. Shared by both modes' chevrons.
-	const agentTerminalId =
-		agentPr.status?.mode === "terminal" ? agentPr.status.terminalId : null;
+	const agentTerminalId = agentPr.status?.terminalId ?? null;
 	const agentWaitItems = agentPr.status ? (
 		<>
 			{agentTerminalId && onFocusTerminal && (
