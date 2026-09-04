@@ -172,9 +172,6 @@ function AuthenticatedLayout() {
 				shownWorkspaceInitWarningsRef.current.add(progress.workspaceId);
 				showWorkspaceAutoNameWarningToast({
 					description: progress.warning,
-					onOpenModelAuthSettings: () => {
-						void navigate({ to: "/settings/models" });
-					},
 				});
 			}
 			if (progress.step === "ready" || progress.step === "failed") {
