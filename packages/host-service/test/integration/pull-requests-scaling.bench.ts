@@ -146,16 +146,22 @@ describe("BENCH: pull-requests runtime — post-fix steady state", () => {
 		const scenario = await setup(5);
 		scenarios.push(scenario);
 
-		scenario.gitWatcher.start();
-		scenario.manager.start();
-
-		// Wait for initial sweep to settle.
-		await waitFor(() => scenario.counter.count >= 1, { timeoutMs: 10_000 });
-		await new Promise((r) => setTimeout(r, 200));
-
 		const targetWorkspaceId = scenario.workspaceIds[2];
 		const targetRepo = scenario.repos[2];
 		if (!targetWorkspaceId || !targetRepo) throw new Error("missing target");
+
+		scenario.gitWatcher.start();
+		scenario.manager.start();
+		// GitWatcher only watches a workspace while someone holds interest
+		// (#6729): simulate the target being open in a renderer, or the commit
+		// below is never observed and the latency wait times out.
+		scenario.gitWatcher.watchWorkspace(targetWorkspaceId);
+
+		// Wait for the initial sweep to settle, then for the attach's catch-up
+		// git:changed (GIT_DIR_DEBOUNCE_MS) and the sync it triggers to drain,
+		// so they don't overlap the measured commit.
+		await waitFor(() => scenario.counter.count >= 1, { timeoutMs: 10_000 });
+		await new Promise((r) => setTimeout(r, 1_500));
 
 		const expectedSha = (
 			await targetRepo.commit("bench commit", { "bench.txt": "x" })

@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../src/db";
 import { workspaces } from "../../src/db/schema";
-import { GitWatcher } from "../../src/events/git-watcher";
+import { GIT_DIR_DEBOUNCE_MS, GitWatcher } from "../../src/events/git-watcher";
 import { WorkspaceFilesystemManager } from "../../src/runtime/filesystem";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
@@ -24,6 +26,7 @@ import { seedProject, seedWorkspace } from "../helpers/seed";
 interface GitWatcherInternals {
 	watched: Map<string, { watcher: unknown; worktreePath: string }>;
 	interest: Map<string, number>;
+	ignoredDirs: Map<string, { lastRefreshAt: number; rulesChanged: boolean }>;
 	rescan(): Promise<void>;
 }
 
@@ -337,4 +340,54 @@ describe("GitWatcher lazy registration (regression coverage for #6729)", () => {
 		// the registration cost only shows up once something asks for it.
 		expect(internals(scenario.gitWatcher).watched.size).toBe(N);
 	}, 60_000);
+
+	test("unwatching during an in-flight ignore refresh does not emit for the unwatched workspace", async () => {
+		const scenario = await createScenario(1);
+		scenarios.push(scenario);
+		scenario.gitWatcher.start();
+
+		const id = scenario.workspaceIds[0] as string;
+		const repo = scenario.repos[0] as GitFixture;
+		const events: string[] = [];
+		scenario.gitWatcher.onChanged((event) => events.push(event.workspaceId));
+
+		scenario.gitWatcher.watchWorkspace(id);
+		// Drain the attach catch-up emit so the count below is exact.
+		await waitFor(() => events.length === 1, { timeoutMs: 5_000 });
+
+		// The ignore refresh that rides on an emit is rate-limited; the attach
+		// just ran one, so age it out to make the next emit's refresh run.
+		const ignoredState = internals(scenario.gitWatcher).ignoredDirs.get(id);
+		if (!ignoredState)
+			throw new Error("expected ignore state for a watched workspace");
+		ignoredState.lastRefreshAt = 0;
+
+		// Deterministic race: the refresh's slow half (re-deriving the native
+		// watcher's ignore set) lands on the swap path exactly when interest is
+		// released. Before the guard, the continuation scheduled a git:changed
+		// for a workspace nothing watched any more.
+		scenario.filesystem.refreshWatcherIgnores = async () => {
+			scenario.gitWatcher.unwatchWorkspace(id);
+			return true;
+		};
+
+		// `.git/info/exclude` is an ignore-rule source: editing it flags
+		// rulesChanged and marks the workspace dirty, so the flush both emits
+		// (legitimately — still watched at that instant) and starts the refresh.
+		await mkdir(join(repo.repoPath, ".git", "info"), { recursive: true });
+		await writeFile(
+			join(repo.repoPath, ".git", "info", "exclude"),
+			"# probe\n",
+		);
+
+		await waitFor(() => events.length === 2, { timeoutMs: 5_000 });
+		await waitFor(() => !internals(scenario.gitWatcher).watched.has(id), {
+			timeoutMs: 5_000,
+		});
+
+		// A stray emit would land one debounce window after the swap.
+		await settle(GIT_DIR_DEBOUNCE_MS + 700);
+		expect(events).toEqual([id, id]);
+		expect(internals(scenario.gitWatcher).ignoredDirs.has(id)).toBe(false);
+	});
 });

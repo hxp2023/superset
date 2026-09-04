@@ -392,6 +392,14 @@ export class GitWatcher {
 		worktreePath: string,
 		force = false,
 	): void {
+		// The async continuations below must only act for the watcher that
+		// started them: unwatchWorkspace() (or unwatch-then-rewatch) mid-refresh
+		// would otherwise re-create ignore state and, on a swap, schedule a
+		// git:changed for a workspace nobody watches any more.
+		const entry = this.watched.get(workspaceId);
+		if (!entry) return;
+		const stillCurrent = () =>
+			!this.closed && this.watched.get(workspaceId) === entry;
 		const state = this.getOrCreateIgnoredDirsState(workspaceId);
 		if (state.refreshing) return;
 		if (
@@ -404,7 +412,7 @@ export class GitWatcher {
 		state.rulesChanged = false;
 		void listGitIgnoredDirs(worktreePath)
 			.then(async (dirs) => {
-				if (this.closed) return;
+				if (!stillCurrent()) return;
 				state.dirs = new Set(dirs);
 				state.lastRefreshAt = Date.now();
 				if (rulesChanged) {
@@ -423,7 +431,7 @@ export class GitWatcher {
 							});
 							return false;
 						});
-					if (this.closed) return;
+					if (!stillCurrent()) return;
 					if (swapped) this.markGitDirDirty(workspaceId);
 				}
 			})
@@ -439,7 +447,7 @@ export class GitWatcher {
 				// switch rewriting .gitignore twice): the listing we just stored
 				// is stale and the emit that flagged it was swallowed by the
 				// `refreshing` guard — run once more.
-				if (state.rulesChanged && !this.closed) {
+				if (state.rulesChanged && stillCurrent()) {
 					this.refreshIgnoredDirs(workspaceId, worktreePath, true);
 				}
 			});
