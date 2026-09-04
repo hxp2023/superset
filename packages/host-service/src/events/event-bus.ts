@@ -41,7 +41,7 @@ const MAX_FILE_WATCHES_PER_CLIENT = 256;
  * against a buggy or adversarial client spamming `git:watch` with distinct
  * workspaceIds, each of which costs GitWatcher a synchronous DB lookup.
  */
-const MAX_GIT_WATCHES_PER_CLIENT = 2000;
+export const MAX_GIT_WATCHES_PER_CLIENT = 2000;
 
 type WorkspaceChangedListener = (
 	message: Omit<Extract<ServerMessage, { type: "workspace:changed" }>, "type">,
@@ -499,8 +499,12 @@ export class EventBus {
 	): void {
 		if (state.gitSubscriptions.has(workspaceId)) return;
 		if (state.gitSubscriptions.size >= MAX_GIT_WATCHES_PER_CLIENT) {
+			// Addressed to the workspace so the client can drop its local
+			// interest entry and retry later instead of assuming the watch is live.
 			sendMessage(socket, {
 				type: "error",
+				code: "git-watch-cap",
+				workspaceId,
 				message: "Too many git watches for this client",
 			});
 			return;

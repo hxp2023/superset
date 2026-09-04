@@ -4,7 +4,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { monitorEventLoopDelay } from "node:perf_hooks";
 import type { HostDb } from "../src/db";
-import { EventBus } from "../src/events/event-bus";
+import { EventBus, MAX_GIT_WATCHES_PER_CLIENT } from "../src/events/event-bus";
 import { GitWatcher } from "../src/events/git-watcher";
 import type { ServerMessage } from "../src/events/types";
 import { WorkspaceFilesystemManager } from "../src/runtime/filesystem";
@@ -171,6 +171,13 @@ function parseArgs(argv: string[]): Options {
 	if (options.concurrency < 1)
 		throw new Error("concurrency must be at least 1");
 	if (options.workspaces < 1) throw new Error("workspaces must be at least 1");
+	// One mock client registers every workspace; past the bus cap its
+	// git:watch commands are rejected and the counts silently under-report.
+	if (options.workspaces > MAX_GIT_WATCHES_PER_CLIENT) {
+		throw new Error(
+			`workspaces must be at most ${MAX_GIT_WATCHES_PER_CLIENT} (the per-client git:watch cap)`,
+		);
+	}
 
 	return options;
 }
@@ -517,6 +524,10 @@ async function runEventBusScenario(
 		}
 	};
 
+	// Command rejections the bus sends back (e.g. the per-client git:watch
+	// cap). Silently ignoring them would leave watchers unattached and the
+	// counts under-reported, so the run fails loudly instead.
+	const busErrors: string[] = [];
 	const socket: {
 		readyState: number;
 		send: (data: string) => void;
@@ -525,6 +536,10 @@ async function runEventBusScenario(
 		readyState: 1,
 		send: (data) => {
 			const message = JSON.parse(data) as ServerMessage;
+			if (message.type === "error") {
+				busErrors.push(message.message);
+				return;
+			}
 			if (
 				message.type !== "git:changed" ||
 				!workspaceIdSet.has(message.workspaceId)
@@ -572,6 +587,11 @@ async function runEventBusScenario(
 		eventBus.handleMessage(
 			socket,
 			JSON.stringify({ type: "git:watch", workspaceId }),
+		);
+	}
+	if (busErrors.length > 0) {
+		throw new Error(
+			`event bus rejected ${busErrors.length} git:watch command(s): ${busErrors[0]}`,
 		);
 	}
 	// Let every watcher's async attach chain (DB lookup + `git rev-parse`
@@ -856,9 +876,12 @@ function createWorkspaceDb(
 				// zero watcher activity, per code review on that PR).
 				where: (predicate: unknown) => {
 					const matchedId = findBoundWorkspaceId(predicate, knownIds);
+					// No bound id means rescan()'s `isNull(archivedAt)` scan: it must
+					// see every row, or the 30s sweep reads "nothing exists" and
+					// tears down every watcher mid-profile.
 					const matched = matchedId
 						? workspaceRows.filter((row) => row.id === matchedId)
-						: [];
+						: workspaceRows;
 					return {
 						all: () => matched,
 						get: () => matched[0],

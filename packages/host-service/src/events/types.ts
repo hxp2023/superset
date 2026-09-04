@@ -196,6 +196,10 @@ export interface WorkspaceCreateSettledMessage {
 export interface EventBusErrorMessage {
 	type: "error";
 	message: string;
+	/** Set on command rejections a client can act on. */
+	code?: "git-watch-cap";
+	/** The workspace whose command was rejected. */
+	workspaceId?: string;
 }
 
 export interface PageWatchChangedMessage {

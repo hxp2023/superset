@@ -249,4 +249,32 @@ describe("eventBus", () => {
 		expect(host.upgrades.length).toBe(1);
 		expect(host.clientCount()).toBe(0);
 	});
+
+	it("a git:watch the host rejects for its cap is re-sent by the next watchGit", async () => {
+		const host = makeHostServer();
+		const bus = getEventBus(host.hostUrl, () => "tok");
+		cleanups.push(bus.retain());
+		cleanups.push(() => host.server.stop(true));
+		const watchesFor = (workspaceId: string) =>
+			host.commands.filter(
+				(c) => c.type === "git:watch" && c.workspaceId === workspaceId,
+			).length;
+
+		bus.watchGit("ws-1");
+		await waitFor(() => watchesFor("ws-1") === 1);
+
+		// The host never registered it. Without dropping the local entry, the
+		// refcount would suppress every later watchGit for this workspace and
+		// its git:changed listeners would stay silent for the session.
+		host.push({
+			type: "error",
+			code: "git-watch-cap",
+			workspaceId: "ws-1",
+			message: "Too many git watches for this client",
+		});
+		await Bun.sleep(150);
+
+		bus.watchGit("ws-1");
+		await waitFor(() => watchesFor("ws-1") === 2);
+	});
 });

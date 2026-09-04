@@ -242,9 +242,10 @@ describe("GitWatcher lazy registration (regression coverage for #6729)", () => {
 		const events: string[] = [];
 		scenario.gitWatcher.onChanged((event) => events.push(event.workspaceId));
 
-		// A real commit touches `.git/` — GIT_DIR_DEBOUNCE_MS (1s) window —
-		// leaving a pending debounce timer + batch in flight.
-		await repo.commit("pending-at-archive-time", { "f.txt": "x" });
+		// An empty commit touches only `.git/`, so the pending batch sits in the
+		// GIT_DIR_DEBOUNCE_MS (1s) window — a worktree write would join it and
+		// shrink the window to DEBOUNCE_MS, racing the archive below.
+		await repo.commit("pending-at-archive-time", {});
 
 		// Archive it (and force the same cleanup a real 30s rescan would run)
 		// well before that 1s debounce window elapses.
@@ -389,5 +390,35 @@ describe("GitWatcher lazy registration (regression coverage for #6729)", () => {
 		await settle(GIT_DIR_DEBOUNCE_MS + 700);
 		expect(events).toEqual([id, id]);
 		expect(internals(scenario.gitWatcher).ignoredDirs.has(id)).toBe(false);
+	});
+
+	test("a stale error from a replaced .git watcher does not evict the live entry", async () => {
+		const scenario = await createScenario(1);
+		scenarios.push(scenario);
+		scenario.gitWatcher.start();
+
+		const id = scenario.workspaceIds[0] as string;
+		const watchedEntry = () => internals(scenario.gitWatcher).watched.get(id);
+
+		scenario.gitWatcher.watchWorkspace(id);
+		await waitFor(() => watchedEntry() !== undefined, { timeoutMs: 10_000 });
+		const stale = watchedEntry()?.watcher as {
+			emit: (event: string, ...args: unknown[]) => boolean;
+		};
+
+		// Replace the watcher: unwatch tears the first one down, rewatch
+		// attaches a fresh one for the same workspace id.
+		scenario.gitWatcher.unwatchWorkspace(id);
+		scenario.gitWatcher.watchWorkspace(id);
+		await waitFor(() => watchedEntry() !== undefined, { timeoutMs: 10_000 });
+		expect(watchedEntry()?.watcher).not.toBe(stale);
+
+		// An error the old native watcher had queued lands now. Keyed only by
+		// workspace id, its cleanup used to delete the new entry and strand a
+		// live native watcher with nothing tracking it.
+		stale.emit("error", new Error("stale watcher error"));
+
+		expect(watchedEntry()).toBeDefined();
+		expect(watchedEntry()?.watcher).not.toBe(stale);
 	});
 });

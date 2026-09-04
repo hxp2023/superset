@@ -253,9 +253,17 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 	}
 
 	if (message.type === "error") {
-		// Server-side bus errors aren't actionable from the client; the
-		// reconnect loop already handles transient failures, and logging
-		// here just floods the console when a host bounces offline.
+		// A git:watch the host capped never took effect: drop the local
+		// interest entry so the next watchGit() re-sends instead of treating
+		// the watch as live forever. Other bus errors aren't actionable here —
+		// the reconnect loop covers transient failures, and logging them
+		// floods the console when a host bounces offline.
+		if (message.code === "git-watch-cap" && message.workspaceId) {
+			state.gitWatchedWorkspaces.delete(message.workspaceId);
+			console.warn("[eventBus] git:watch rejected by the host's cap", {
+				workspaceId: message.workspaceId,
+			});
+		}
 		return;
 	}
 

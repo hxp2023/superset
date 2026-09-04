@@ -659,10 +659,14 @@ export class GitWatcher {
 		}
 
 		watcher.on("error", () => {
-			// Watcher died — clean up so rescan can re-add
+			// Watcher died — clean up so rescan can re-add. Identity-checked: an
+			// error queued on a watcher that unwatch→rewatch already replaced
+			// must not evict the live entry (its resources were released by
+			// stopWatching; closing again is harmless).
+			watcher.close();
+			if (this.watched.get(workspaceId)?.watcher !== watcher) return;
 			disposeWorktreeWatch();
 			this.watched.delete(workspaceId);
-			watcher.close();
 		});
 
 		// Recheck interest: watchWorkspace()/unwatchWorkspace() can flip the
