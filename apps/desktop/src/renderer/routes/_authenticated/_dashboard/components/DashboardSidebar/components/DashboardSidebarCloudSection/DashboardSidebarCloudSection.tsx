@@ -76,25 +76,22 @@ export function DashboardSidebarCloudSection({
 		? `${cloudRepo.owner}/${cloudRepo.name}`
 		: null;
 
-	const branchById = useMemo(() => {
-		const servedById = new Map(hostWorkspaces.map((row) => [row.id, row]));
-		return new Map(
-			cloudWorkspaces.map((cloud) => [
-				cloud.id,
-				servedById.get(cloud.id)?.branch ?? cloud.branch,
-			]),
-		);
-	}, [cloudWorkspaces, hostWorkspaces]);
+	// Only the open workspace's sandbox is in the fan-out, so this holds at
+	// most one row.
+	const servedById = useMemo(
+		() => new Map(hostWorkspaces.map((row) => [row.id, row])),
+		[hostWorkspaces],
+	);
 
 	const pullRequestRefs = useMemo<CloudPullRequestRef[]>(
 		() =>
 			cloudRepoFullName
 				? cloudWorkspaces.map((cloud) => ({
 						repoFullName: cloudRepoFullName,
-						headBranch: branchById.get(cloud.id) ?? cloud.branch,
+						headBranch: servedById.get(cloud.id)?.branch ?? cloud.branch,
 					}))
 				: [],
-		[branchById, cloudRepoFullName, cloudWorkspaces],
+		[servedById, cloudRepoFullName, cloudWorkspaces],
 	);
 	const cloudPullRequests = useSidebarCloudPullRequests(pullRequestRefs);
 
@@ -116,7 +113,8 @@ export function DashboardSidebarCloudSection({
 					(localById.get(right.id)?.tabOrder ?? 0),
 			)
 			.map((cloud) => {
-				const branch = branchById.get(cloud.id) ?? cloud.branch;
+				const served = servedById.get(cloud.id);
+				const branch = served?.branch ?? cloud.branch;
 				const pullRequest = cloudRepoFullName
 					? (cloudPullRequests.byRef.get(
 							cloudPullRequestRefKey({
@@ -173,7 +171,7 @@ export function DashboardSidebarCloudSection({
 				};
 			});
 	}, [
-		branchById,
+		servedById,
 		cloudPullRequests.byRef,
 		cloudRepoFullName,
 		cloudWorkspaces,
