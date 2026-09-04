@@ -1,4 +1,7 @@
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
 import type { FileTree } from "@pierre/trees";
+import { i18n } from "@superset/i18n";
 import { alert } from "@superset/ui/atoms/Alert";
 import { toast } from "@superset/ui/sonner";
 import { workspaceTrpc } from "@superset/workspace-client";
@@ -97,7 +100,13 @@ function resolveDropDirRel(e: React.DragEvent): string {
 }
 
 function dirLabel(dirRel: string): string {
-	return dirRel === "" ? "workspace root" : basename(dirRel);
+	return dirRel === ""
+		? i18n._(
+				msg({
+					message: "workspace root",
+				}),
+			)
+		: basename(dirRel);
 }
 
 /** Locate the rendered row element for a directory within the same tree. */
@@ -252,6 +261,7 @@ export function useFilesTabDrop({
 	rootPath,
 	workspaceId,
 }: UseFilesTabDropOptions): FilesTabDrop {
+	const { t } = useLingui();
 	const writeFile = workspaceTrpc.filesystem.writeFile.useMutation();
 	const createDirectory =
 		workspaceTrpc.filesystem.createDirectory.useMutation();
@@ -294,7 +304,11 @@ export function useFilesTabDrop({
 				// A single unreadable entry rejects the whole traversal; surface it
 				// instead of failing silently as an unhandled rejection.
 				if (bridge.isCurrent(versionToken)) {
-					toast.error("Could not read the dropped files");
+					toast.error(
+						t({
+							message: "Could not read the dropped files",
+						}),
+					);
 				}
 				return;
 			}
@@ -302,7 +316,11 @@ export function useFilesTabDrop({
 			if (!bridge.isCurrent(versionToken)) return;
 
 			if (tree.files.length === 0 && tree.dirs.length === 0) {
-				toast.error("Could not read the dropped files");
+				toast.error(
+					t({
+						message: "Could not read the dropped files",
+					}),
+				);
 				return;
 			}
 
@@ -383,14 +401,22 @@ export function useFilesTabDrop({
 			if (added > 0) {
 				toast.success(
 					added === 1
-						? `Added 1 file to ${where}`
-						: `Added ${added} files to ${where}`,
+						? t({
+								message: `Added 1 file to ${where}`,
+							})
+						: t({
+								message: `Added ${added} files to ${where}`,
+							}),
 				);
 			} else if (createdDirs > 0 && failed === 0 && failedDirs === 0) {
 				toast.success(
 					createdDirs === 1
-						? `Created 1 folder in ${where}`
-						: `Created ${createdDirs} folders in ${where}`,
+						? t({
+								message: `Created 1 folder in ${where}`,
+							})
+						: t({
+								message: `Created ${createdDirs} folders in ${where}`,
+							}),
 				);
 			}
 			// A failed directory cascades into failures for its files, so prefer
@@ -399,14 +425,22 @@ export function useFilesTabDrop({
 			if (failed > 0) {
 				toast.error(
 					failed === 1
-						? "Failed to add 1 file"
-						: `Failed to add ${failed} files`,
+						? t({
+								message: "Failed to add 1 file",
+							})
+						: t({
+								message: `Failed to add ${failed} files`,
+							}),
 				);
 			} else if (failedDirs > 0) {
 				toast.error(
 					failedDirs === 1
-						? "Failed to create 1 folder"
-						: `Failed to create ${failedDirs} folders`,
+						? t({
+								message: "Failed to create 1 folder",
+							})
+						: t({
+								message: `Failed to create ${failedDirs} folders`,
+							}),
 				);
 			}
 
@@ -429,12 +463,24 @@ export function useFilesTabDrop({
 			const firstName = basename(collisions[0].relPath);
 			alert({
 				title: many
-					? `${collisions.length} files already exist in ${where}. Do you want to replace them?`
-					: `A file named '${firstName}' already exists in ${where}. Do you want to replace it?`,
-				description: "This action is irreversible.",
+					? t({
+							message: `${collisions.length} files already exist in ${where}. Do you want to replace them?`,
+						})
+					: t({
+							message: `A file named '${firstName}' already exists in ${where}. Do you want to replace it?`,
+						}),
+				description: t({
+					message: "This action is irreversible.",
+				}),
 				actions: [
 					{
-						label: many ? "Replace All" : "Replace",
+						label: many
+							? t({
+									message: "Replace All",
+								})
+							: t({
+									message: "Replace",
+								}),
 						variant: "destructive",
 						onClick: async () => {
 							let replaced = 0;
@@ -456,24 +502,37 @@ export function useFilesTabDrop({
 							if (replaced > 0) {
 								toast.success(
 									replaced === 1
-										? `Replaced 1 file in ${where}`
-										: `Replaced ${replaced} files in ${where}`,
+										? t({
+												message: `Replaced 1 file in ${where}`,
+											})
+										: t({
+												message: `Replaced ${replaced} files in ${where}`,
+											}),
 								);
 							}
 							if (replaceFailed > 0) {
 								toast.error(
 									replaceFailed === 1
-										? "Failed to replace 1 file"
-										: `Failed to replace ${replaceFailed} files`,
+										? t({
+												message: "Failed to replace 1 file",
+											})
+										: t({
+												message: `Failed to replace ${replaceFailed} files`,
+											}),
 								);
 							}
 						},
 					},
-					{ label: "Cancel", variant: "ghost" },
+					{
+						label: t({
+							message: "Cancel",
+						}),
+						variant: "ghost",
+					},
 				],
 			});
 		},
-		[model, bridge, writeFile, createDirectory, rootPath, workspaceId],
+		[model, bridge, writeFile, createDirectory, rootPath, workspaceId, t],
 	);
 
 	const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -519,13 +578,17 @@ export function useFilesTabDrop({
 			const { entries, fallbackFiles } = collectDroppedEntries(e);
 
 			if (entries.length === 0 && fallbackFiles.length === 0) {
-				toast.error("Could not read the dropped files");
+				toast.error(
+					t({
+						message: "Could not read the dropped files",
+					}),
+				);
 				return;
 			}
 
 			void uploadDropped(dirRel, entries, fallbackFiles);
 		},
-		[rootPath, workspaceId, uploadDropped],
+		[rootPath, workspaceId, uploadDropped, t],
 	);
 
 	return { dropTarget, onDragOver, onDragLeave, onDrop };

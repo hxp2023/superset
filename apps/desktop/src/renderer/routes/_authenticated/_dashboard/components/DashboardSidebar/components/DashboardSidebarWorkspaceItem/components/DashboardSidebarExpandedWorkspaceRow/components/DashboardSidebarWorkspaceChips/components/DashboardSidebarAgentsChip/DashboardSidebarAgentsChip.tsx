@@ -1,3 +1,5 @@
+import { plural } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Badge } from "@superset/ui/badge";
 import {
 	HoverCard,
@@ -26,6 +28,7 @@ export function DashboardSidebarAgentsChip({
 	workspaceId,
 	agents,
 }: DashboardSidebarAgentsChipProps) {
+	const { t } = useLingui();
 	const { isOpen, onOpenChange, onPointerEnter, onPointerLeave, toggleOpen } =
 		useDashboardSidebarChipHoverSuppression();
 
@@ -64,7 +67,21 @@ export function DashboardSidebarAgentsChip({
 							}
 						}}
 						aria-expanded={isOpen}
-						aria-label={`${agents.length} running agents — ${isOpen ? "hide" : "show"} details`}
+						aria-label={
+							isOpen
+								? t({
+										message: plural(agents.length, {
+											one: "# running agent — hide details",
+											other: "# running agents — hide details",
+										}),
+									})
+								: t({
+										message: plural(agents.length, {
+											one: "# running agent — show details",
+											other: "# running agents — show details",
+										}),
+									})
+						}
 						className={cn(
 							"group/chip h-[18px] overflow-visible bg-muted/60 px-1.5 py-0 text-[9px] font-medium tabular-nums text-muted-foreground",
 							"[&>svg]:size-2.5 hover:bg-muted hover:text-foreground",
@@ -82,7 +99,9 @@ export function DashboardSidebarAgentsChip({
 				className="w-64 p-1"
 			>
 				<div className="flex items-center justify-between px-2 py-1.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-					<span>Agents</span>
+					<span>
+						<Trans>Agents</Trans>
+					</span>
 					<span className="tabular-nums">{agents.length}</span>
 				</div>
 				<div className="max-h-60 overflow-y-auto">

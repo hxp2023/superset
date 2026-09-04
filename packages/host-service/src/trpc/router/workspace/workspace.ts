@@ -1,11 +1,14 @@
 import { existsSync } from "node:fs";
 import { basename } from "node:path";
+import { workspaceTagsInputSchema } from "@superset/shared/workspace-tags";
 import { TRPCError } from "@trpc/server";
 import { eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { projects, workspaces } from "../../../db/schema";
 import { getSandboxProvisioningState } from "../../../runtime/sandbox/container-manager";
 import {
+	getWorkspaceTags,
+	getWorkspaceTagsByWorkspaceId,
 	toCloudShape,
 	updateLocalWorkspace,
 } from "../../../workspaces/local-workspace-store";
@@ -65,8 +68,13 @@ export const workspaceRouter = router({
 						project.name || basename(project.repoPath),
 					]),
 			);
+			const tagsByWorkspaceId = getWorkspaceTagsByWorkspaceId(
+				ctx.db,
+				rows.map((row) => row.id),
+			);
 			return rows.map((row) => ({
 				...toCloudShape(row, ctx.organizationId),
+				tags: tagsByWorkspaceId.get(row.id) ?? [],
 				worktreePath: row.worktreePath,
 				sandboxed: row.sandboxEnabled,
 				sandboxStatus: row.sandboxEnabled
@@ -79,6 +87,8 @@ export const workspaceRouter = router({
 				projectName: row.projectId
 					? (projectNameById.get(row.projectId) ?? null)
 					: null,
+				// Host-only: the frozen cloud shape never had an activity signal.
+				lastActivityAt: row.lastActivityAt,
 				archivedAt: row.archivedAt,
 				archiveReason: row.archiveReason,
 			}));
@@ -97,6 +107,7 @@ export const workspaceRouter = router({
 				name: z.string().min(1).optional(),
 				branch: z.string().min(1).optional(),
 				taskId: z.string().uuid().nullable().optional(),
+				tags: workspaceTagsInputSchema.optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -116,13 +127,21 @@ export const workspaceRouter = router({
 						'The local workspace cannot be renamed — it always displays as "local".',
 				});
 			}
-			const patch: { name?: string; branch?: string; taskId?: string | null } =
-				{};
+			const patch: {
+				name?: string;
+				branch?: string;
+				taskId?: string | null;
+				tags?: string[];
+			} = {};
 			if (input.name !== undefined) patch.name = input.name;
 			if (input.branch !== undefined) patch.branch = input.branch;
 			if (input.taskId !== undefined) patch.taskId = input.taskId;
+			if (input.tags !== undefined) patch.tags = input.tags;
 			if (Object.keys(patch).length === 0) {
-				return toCloudShape(current, ctx.organizationId);
+				return {
+					...toCloudShape(current, ctx.organizationId),
+					tags: getWorkspaceTags(ctx.db, current.id),
+				};
 			}
 			const updated = updateLocalWorkspace(
 				{ db: ctx.db, eventBus: ctx.eventBus },
@@ -146,7 +165,10 @@ export const workspaceRouter = router({
 					);
 				});
 			}
-			return toCloudShape(updated, ctx.organizationId);
+			return {
+				...toCloudShape(updated, ctx.organizationId),
+				tags: getWorkspaceTags(ctx.db, updated.id),
+			};
 		}),
 
 	// Workspaces are host-owned now; the cloud list it proxied is gone. Kept as

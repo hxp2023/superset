@@ -1,5 +1,6 @@
 "use client";
 
+import { useLingui } from "@lingui/react/macro";
 import {
 	ADMIN_INSIGHTS,
 	type AdminInsightKey,
@@ -44,6 +45,7 @@ export function TrendSeriesTile({
 	valueSuffix,
 	dashIncompleteLast,
 }: TrendSeriesTileProps) {
+	const { t } = useLingui();
 	const query = useInsightResults(insight);
 
 	const series = Array.isArray(query.data?.result)
@@ -69,12 +71,27 @@ export function TrendSeriesTile({
 
 	const chartConfig = Object.fromEntries(
 		series.flatMap((s, i) => {
-			const label = s.custom_name ?? s.label ?? `series ${i + 1}`;
+			const label =
+				s.custom_name ??
+				s.label ??
+				t({
+					message: `series ${i + 1}`,
+				});
 			const color = SERIES_COLORS[i % SERIES_COLORS.length];
 			return [
 				[`s${i}`, { label, color }],
 				...(splitIncomplete
-					? [[`s${i}partial`, { label: `${label} (partial week)`, color }]]
+					? [
+							[
+								`s${i}partial`,
+								{
+									label: t({
+										message: `${label} (partial week)`,
+									}),
+									color,
+								},
+							],
+						]
 					: []),
 			];
 		}),

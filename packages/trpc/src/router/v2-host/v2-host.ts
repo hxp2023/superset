@@ -1,11 +1,15 @@
+import { mintUserJwt } from "@superset/auth/server";
 import { db, dbWs } from "@superset/db/client";
 import { v2UsersHostRoleValues } from "@superset/db/enums";
 import { members, v2Hosts, v2UsersHosts } from "@superset/db/schema";
 import { getCurrentTxid } from "@superset/db/utils";
-import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import type { TRPCRouterRecord } from "@trpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
-import { protectedProcedure } from "../../trpc";
+import { env } from "../../env";
+import { fetchRelayPresence } from "../../lib/relay-presence";
+import { protectedProcedure, userError } from "../../trpc";
 import {
 	requireActiveOrgId,
 	requireActiveOrgMembership,
@@ -25,9 +29,10 @@ async function requireHostOwner(
 	});
 
 	if (!host) {
-		throw new TRPCError({
+		throw userError({
 			code: "NOT_FOUND",
 			message: "Host not found in this organization",
+			i18nKey: "serverError.v2Host.hostNotFoundInThisOrganization",
 		});
 	}
 
@@ -41,9 +46,10 @@ async function requireHostOwner(
 	});
 
 	if (!access || access.role !== "owner") {
-		throw new TRPCError({
+		throw userError({
 			code: "FORBIDDEN",
 			message: "Only host owners can change membership",
+			i18nKey: "serverError.v2Host.onlyHostOwnersCanChangeMembership",
 		});
 	}
 
@@ -60,9 +66,10 @@ async function requireOrgMember(userId: string, organizationId: string) {
 	});
 
 	if (!member) {
-		throw new TRPCError({
+		throw userError({
 			code: "BAD_REQUEST",
 			message: "User is not a member of this organization",
+			i18nKey: "serverError.v2Host.userIsNotAMember",
 		});
 	}
 }
@@ -70,11 +77,10 @@ async function requireOrgMember(userId: string, organizationId: string) {
 export const v2HostRouter = {
 	list: protectedProcedure.query(async ({ ctx }) => {
 		const organizationId = requireActiveOrgId(ctx);
-		return db
+		const rows = await db
 			.select({
 				machineId: v2Hosts.machineId,
 				name: v2Hosts.name,
-				isOnline: v2Hosts.isOnline,
 				organizationId: v2Hosts.organizationId,
 			})
 			.from(v2Hosts)
@@ -91,6 +97,26 @@ export const v2HostRouter = {
 					eq(v2UsersHosts.userId, ctx.session.user.id),
 				),
 			);
+
+		// The relay's Durable Objects are the presence authority. Session
+		// callers hold no relay JWT, so mint a short one for the lookup.
+		const jwt = await mintUserJwt({
+			userId: ctx.session.user.id,
+			organizationIds: [organizationId],
+			scope: "host-presence",
+			ttlSeconds: 60,
+		});
+		const presence = await fetchRelayPresence(
+			env.RELAY_URL,
+			jwt,
+			rows.map((row) => buildHostRoutingKey(row.organizationId, row.machineId)),
+		);
+		return rows.map((row) => ({
+			...row,
+			isOnline:
+				presence?.[buildHostRoutingKey(row.organizationId, row.machineId)]
+					?.online ?? false,
+		}));
 	}),
 
 	listMembers: protectedProcedure.query(async ({ ctx }) => {
@@ -133,9 +159,10 @@ export const v2HostRouter = {
 					)
 					.returning({ machineId: v2Hosts.machineId });
 				if (!updated) {
-					throw new TRPCError({
+					throw userError({
 						code: "NOT_FOUND",
 						message: "Host not found in this organization",
+						i18nKey: "serverError.v2Host.hostNotFoundInThisOrganization",
 					});
 				}
 				return await getCurrentTxid(tx);
@@ -163,9 +190,10 @@ export const v2HostRouter = {
 					.for("update");
 
 				if (!membership) {
-					throw new TRPCError({
+					throw userError({
 						code: "FORBIDDEN",
 						message: "Not a member of this organization",
+						i18nKey: "serverError.v2Host.notAMemberOfThisOrganization",
 					});
 				}
 
@@ -182,9 +210,10 @@ export const v2HostRouter = {
 					.for("update");
 
 				if (!host) {
-					throw new TRPCError({
+					throw userError({
 						code: "NOT_FOUND",
 						message: "Host not found in this organization",
+						i18nKey: "serverError.v2Host.hostNotFoundInThisOrganization",
 					});
 				}
 
@@ -202,9 +231,10 @@ export const v2HostRouter = {
 					.for("update");
 
 				if (!access || access.role !== "owner") {
-					throw new TRPCError({
+					throw userError({
 						code: "FORBIDDEN",
 						message: "Only host owners can delete this host",
+						i18nKey: "serverError.v2Host.onlyHostOwnersCanDelete",
 					});
 				}
 
@@ -219,9 +249,10 @@ export const v2HostRouter = {
 					.returning({ machineId: v2Hosts.machineId });
 
 				if (!deleted) {
-					throw new TRPCError({
+					throw userError({
 						code: "NOT_FOUND",
 						message: "Host not found in this organization",
+						i18nKey: "serverError.v2Host.hostNotFoundInThisOrganization",
 					});
 				}
 
@@ -266,9 +297,10 @@ export const v2HostRouter = {
 			});
 
 			if (!result.inserted) {
-				throw new TRPCError({
+				throw userError({
 					code: "CONFLICT",
 					message: "User already has access to this host",
+					i18nKey: "serverError.v2Host.userAlreadyHasAccess",
 				});
 			}
 
@@ -291,10 +323,11 @@ export const v2HostRouter = {
 			);
 
 			if (host.createdByUserId === input.userId) {
-				throw new TRPCError({
+				throw userError({
 					code: "BAD_REQUEST",
 					message:
 						"This user runs the host service for this device and can't be removed.",
+					i18nKey: "serverError.v2Host.thisUserRunsTheHostService",
 				});
 			}
 
@@ -326,9 +359,10 @@ export const v2HostRouter = {
 						)
 						.for("update");
 					if (otherOwners.length === 0) {
-						throw new TRPCError({
+						throw userError({
 							code: "BAD_REQUEST",
 							message: "A host must have at least one owner.",
+							i18nKey: "serverError.v2Host.aHostMustHaveAtLeast",
 						});
 					}
 				}
@@ -369,10 +403,11 @@ export const v2HostRouter = {
 			);
 
 			if (input.role === "member" && host.createdByUserId === input.userId) {
-				throw new TRPCError({
+				throw userError({
 					code: "BAD_REQUEST",
 					message:
 						"This user runs the host service for this device and must remain an owner.",
+					i18nKey: "serverError.v2Host.thisUserRunsTheHostService2",
 				});
 			}
 
@@ -387,9 +422,10 @@ export const v2HostRouter = {
 				});
 
 				if (!target) {
-					throw new TRPCError({
+					throw userError({
 						code: "NOT_FOUND",
 						message: "User is not a member of this host",
+						i18nKey: "serverError.v2Host.userIsNotAMemberOf2",
 					});
 				}
 
@@ -407,9 +443,10 @@ export const v2HostRouter = {
 						)
 						.for("update");
 					if (otherOwners.length === 0) {
-						throw new TRPCError({
+						throw userError({
 							code: "BAD_REQUEST",
 							message: "A host must have at least one owner.",
+							i18nKey: "serverError.v2Host.aHostMustHaveAtLeast",
 						});
 					}
 				}
@@ -426,9 +463,10 @@ export const v2HostRouter = {
 					)
 					.returning({ userId: v2UsersHosts.userId });
 				if (!updated) {
-					throw new TRPCError({
+					throw userError({
 						code: "NOT_FOUND",
 						message: "User is not a member of this host",
+						i18nKey: "serverError.v2Host.userIsNotAMemberOf2",
 					});
 				}
 				return await getCurrentTxid(tx);

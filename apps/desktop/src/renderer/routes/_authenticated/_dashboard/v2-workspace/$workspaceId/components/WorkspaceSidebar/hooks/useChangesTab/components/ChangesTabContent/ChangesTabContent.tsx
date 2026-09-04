@@ -1,15 +1,15 @@
+import { Trans } from "@lingui/react/macro";
 import type { AppRouter } from "@superset/host-service";
 import { Spinner } from "@superset/ui/spinner";
 import type { inferRouterOutputs } from "@trpc/server";
 import { memo, useCallback, useState } from "react";
+import type { ChangesetFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import type {
 	ChangesFilter,
 	ChangesViewMode,
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
-import type { ChangesetFile } from "../../../../../../hooks/useChangeset";
 import type { FoldSignal } from "../ChangesFileList";
 import { ChangesFileList } from "../ChangesFileList";
-import { ChangesHeader } from "../ChangesHeader";
 import { ChangesToolbar } from "../ChangesToolbar";
 import { shouldShowChangesLoading } from "./shouldShowChangesLoading";
 
@@ -29,11 +29,9 @@ interface ChangesTabContentProps {
 	baseBranch: string | null;
 	files: ChangesetFile[];
 	isLoading: boolean;
-	totalChanges: number;
-	totalAdditions: number;
-	totalDeletions: number;
 	worktreePath?: string;
 	selectedFilePath?: string;
+	selectedChangeKey?: string;
 	onSelectFile?: (
 		path: string,
 		openInNewTab?: boolean,
@@ -43,8 +41,7 @@ interface ChangesTabContentProps {
 	onOpenInEditor?: (path: string) => void;
 	onFilterChange: (filter: ChangesFilter) => void;
 	onViewModeChange: (viewMode: ChangesViewMode) => void;
-	onRefresh: () => void;
-	onBaseBranchChange: (branchName: string) => void;
+	onBaseBranchChange: (branchName: string | null) => void;
 	onRenameBranch: (newName: string) => void;
 	canRenameBranch: boolean;
 }
@@ -59,17 +56,14 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 	baseBranch,
 	files,
 	isLoading,
-	totalChanges,
-	totalAdditions,
-	totalDeletions,
 	worktreePath,
 	selectedFilePath,
+	selectedChangeKey,
 	onSelectFile,
 	onOpenFile,
 	onOpenInEditor,
 	onFilterChange,
 	onViewModeChange,
-	onRefresh,
 	onBaseBranchChange,
 	onRenameBranch,
 	canRenameBranch,
@@ -96,7 +90,9 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 		return (
 			<div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
 				<Spinner className="size-3.5" />
-				<span>Loading changes...</span>
+				<span>
+					<Trans>Loading changes...</Trans>
+				</span>
 			</div>
 		);
 	}
@@ -104,23 +100,14 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 	if (!status.data) {
 		return (
 			<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-				Unable to load git status
+				<Trans>Unable to load git status</Trans>
 			</div>
 		);
 	}
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="py-1.5">
-				<ChangesHeader
-					currentBranch={status.data.currentBranch}
-					defaultBranchName={status.data.defaultBranch.name}
-					baseBranch={baseBranch}
-					branches={branches.data?.branches ?? []}
-					onBaseBranchChange={onBaseBranchChange}
-					onRenameBranch={onRenameBranch}
-					canRename={canRenameBranch}
-				/>
+			<div className="pt-1">
 				<ChangesToolbar
 					filter={filter}
 					onFilterChange={onFilterChange}
@@ -128,15 +115,24 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 					uncommittedCount={
 						status.data.staged.length + status.data.unstaged.length
 					}
-					totalFiles={totalChanges}
-					totalAdditions={totalAdditions}
-					totalDeletions={totalDeletions}
-					isRefreshing={status.isFetching}
 					viewMode={viewMode}
 					onViewModeChange={onViewModeChange}
-					onRefresh={onRefresh}
 					collapsed={foldCollapsed}
 					onToggleFold={toggleFold}
+					baseBranch={baseBranch ?? status.data.defaultBranch.name}
+					branches={branches.data?.branches ?? []}
+					// Picking the repo default clears the override (null) instead of
+					// pinning it, so the workspace follows a later default change.
+					onBaseBranchChange={(branchName) =>
+						onBaseBranchChange(
+							branchName === status.data?.defaultBranch.name
+								? null
+								: branchName,
+						)
+					}
+					currentBranchName={status.data.currentBranch.name}
+					canRenameBranch={canRenameBranch}
+					onRenameBranch={onRenameBranch}
 				/>
 			</div>
 			<ChangesFileList
@@ -146,6 +142,7 @@ export const ChangesTabContent = memo(function ChangesTabContent({
 				viewMode={viewMode}
 				worktreePath={worktreePath}
 				selectedFilePath={selectedFilePath}
+				selectedChangeKey={selectedChangeKey}
 				foldSignal={foldSignal}
 				onSelectFile={onSelectFile}
 				onOpenFile={onOpenFile}

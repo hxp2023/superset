@@ -1,3 +1,5 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import { create } from "zustand";
 
 export const DEVICE_FILTER_THIS_DEVICE = "this-device";
@@ -33,13 +35,21 @@ export type V2WorkspacesAgentStatusFilter =
 /** Shared by the Agent filter dropdown and the list rows' Agent cell. */
 export const V2_WORKSPACES_AGENT_STATUS_LABELS: Record<
 	V2WorkspacesAgentStatusFilter,
-	string
+	MessageDescriptor
 > = {
-	idle: "Idle",
-	working: "Working",
-	permission: "Needs permission",
-	review: "Ready for review",
-	failed: "Failed",
+	idle: msg({ message: "Idle" }),
+	working: msg({
+		message: "Working",
+	}),
+	permission: msg({
+		message: "Needs permission",
+	}),
+	review: msg({
+		message: "Ready for review",
+	}),
+	failed: msg({
+		message: "Failed",
+	}),
 };
 
 export const V2_WORKSPACES_PIN_FILTERS = ["all", "pinned", "unpinned"] as const;
@@ -47,11 +57,17 @@ export type V2WorkspacesPinFilter = (typeof V2_WORKSPACES_PIN_FILTERS)[number];
 
 export const V2_WORKSPACES_PIN_FILTER_LABELS: Record<
 	V2WorkspacesPinFilter,
-	string
+	MessageDescriptor
 > = {
-	all: "All workspaces",
-	pinned: "Pinned",
-	unpinned: "Unpinned",
+	all: msg({
+		message: "All workspaces",
+	}),
+	pinned: msg({
+		message: "Shown",
+	}),
+	unpinned: msg({
+		message: "Hidden",
+	}),
 };
 
 export type V2WorkspacesViewMode = "list" | "board";
@@ -64,11 +80,20 @@ export const V2_WORKSPACES_SORT_MODES = [
 ] as const;
 export type V2WorkspacesSortMode = (typeof V2_WORKSPACES_SORT_MODES)[number];
 
-export const V2_WORKSPACES_SORT_LABELS: Record<V2WorkspacesSortMode, string> = {
-	activity: "Last activity",
-	created: "Created",
-	churn: "Diff size",
-	name: "Name",
+export const V2_WORKSPACES_SORT_LABELS: Record<
+	V2WorkspacesSortMode,
+	MessageDescriptor
+> = {
+	activity: msg({
+		message: "Last activity",
+	}),
+	created: msg({
+		message: "Created",
+	}),
+	churn: msg({
+		message: "Diff size",
+	}),
+	name: msg({ message: "Name" }),
 };
 
 export const V2_WORKSPACES_ARCHIVED_WINDOWS = [
@@ -101,7 +126,7 @@ interface V2WorkspacesFilterState {
 	prStateFilters: V2WorkspacesPrStateFilter[];
 	/** Empty = any agent status. */
 	agentStatusFilters: V2WorkspacesAgentStatusFilter[];
-	/** Sidebar visibility: pinned, unpinned, or both ("all"). */
+	/** Sidebar visibility: shown, hidden, or both ("all"). */
 	pinFilter: V2WorkspacesPinFilter;
 	viewMode: V2WorkspacesViewMode;
 	/** Row order inside status groups (both views). */

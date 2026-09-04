@@ -18,6 +18,19 @@ export type HostShapedWorkspace = Omit<
 	/** Null for project-less "session" workspaces. */
 	projectId: string | null;
 	type: "main" | "worktree" | "session";
+	/**
+	 * Normalized, sorted tag set. Optional because a row served by an older
+	 * host — or restored from a pre-tags IndexedDB snapshot — carries the
+	 * field ABSENT; consumers must guard with `== null` / `?? []`.
+	 */
+	tags?: string[];
+	/**
+	 * Epoch ms of the newest agent lifecycle event, stamped by the host (it
+	 * never moves on metadata writes, unlike `updatedAt`). Optional for the
+	 * same reason as `tags`; null when the host predates the column. Merged
+	 * items (`HostWorkspaceItem`) always carry it, normalized to null.
+	 */
+	lastActivityAt?: number | null;
 };
 
 /**
@@ -39,6 +52,7 @@ export interface HostWorkspaceRow extends HostShapedWorkspace {
 export interface HostWorkspaceItem extends HostShapedWorkspace {
 	worktreePath?: string;
 	worktreeExists?: boolean;
+	lastActivityAt: number | null;
 	/** True when the workspace's terminals run inside a sandbox container. */
 	sandboxed?: boolean;
 	sandboxStatus?: "provisioning" | "ready" | "error";
@@ -87,6 +101,7 @@ export function getHostWorkspacesQueryKey(
 /**
  * One target per known host: the local host always (direct URL), remote
  * hosts via relay when online, and a null-URL placeholder when offline.
+ * Plus, at most, the one sandbox behind the workspace that is open.
  */
 export function deriveHostWorkspacesQueryTargets({
 	activeHostUrl,
@@ -94,7 +109,7 @@ export function deriveHostWorkspacesQueryTargets({
 	machineId,
 	relayUrl,
 	fallbackOrganizationId,
-	sandboxes = [],
+	openSandbox = null,
 }: {
 	activeHostUrl: string | null;
 	hosts: HostRowForTargets[];
@@ -102,12 +117,12 @@ export function deriveHostWorkspacesQueryTargets({
 	relayUrl: string;
 	/** Org for the synthesized local target — see derivePullRequestQueryTargets. */
 	fallbackOrganizationId?: string | null;
-	/** Cloud workspaces whose sandbox currently has a brokered address. */
-	sandboxes?: Array<{
+	/** The open cloud workspace's sandbox — never the whole cloud list, see useHostWorkspacesSource. */
+	openSandbox?: {
 		workspaceId: string;
 		organizationId: string;
 		url: string;
-	}>;
+	} | null;
 }): HostWorkspacesQueryTarget[] {
 	const targets: HostWorkspacesQueryTarget[] = hosts.map((host) => {
 		const isLocal = host.machineId === machineId;
@@ -139,11 +154,11 @@ export function deriveHostWorkspacesQueryTargets({
 		});
 	}
 
-	for (const sandbox of sandboxes) {
+	if (openSandbox) {
 		targets.push({
-			machineId: sandbox.workspaceId,
-			organizationId: sandbox.organizationId,
-			hostUrl: sandbox.url,
+			machineId: openSandbox.workspaceId,
+			organizationId: openSandbox.organizationId,
+			hostUrl: openSandbox.url,
 			isLocal: false,
 			isSandbox: true,
 		});
@@ -235,8 +250,14 @@ export function applyWorkspaceChangedEvent(
 		type: snapshot.type,
 		createdByUserId: snapshot.createdByUserId,
 		taskId: snapshot.taskId,
+		// Runtime-optional despite the payload type: an older host's events
+		// carry no tags — keep the row's last known set rather than wiping it.
+		tags: snapshot.tags ?? existing?.tags,
 		createdAt: new Date(snapshot.createdAt),
 		updatedAt: new Date(snapshot.updatedAt),
+		// Same runtime-optionality as tags: an older host's events omit it, so
+		// keep the row's last known stamp rather than wiping it.
+		lastActivityAt: snapshot.lastActivityAt ?? existing?.lastActivityAt ?? null,
 		worktreePath: snapshot.worktreePath,
 		sandboxed: snapshot.sandboxed,
 		sandboxStatus: snapshot.sandboxStatus,
@@ -248,6 +269,22 @@ export function applyWorkspaceChangedEvent(
 	return existing
 		? rows.map((row) => (row.id === nextRow.id ? nextRow : row))
 		: [...rows, nextRow];
+}
+
+/**
+ * The one place a served/cached row becomes a consumer-facing item: fields
+ * an older host (or an older snapshot) omits are normalized here so nothing
+ * downstream has to know which host version produced the row.
+ */
+export function toHostWorkspaceItem(
+	row: HostWorkspaceRow,
+	hostReachable: boolean,
+): HostWorkspaceItem {
+	return {
+		...row,
+		lastActivityAt: row.lastActivityAt ?? null,
+		hostReachable,
+	};
 }
 
 /**
@@ -271,10 +308,7 @@ export function mergeHostWorkspaces({
 		for (const row of result.rows) {
 			if (seenIds.has(row.id)) continue;
 			seenIds.add(row.id);
-			items.push({
-				...row,
-				hostReachable: result.reachable,
-			});
+			items.push(toHostWorkspaceItem(row, result.reachable));
 		}
 	}
 

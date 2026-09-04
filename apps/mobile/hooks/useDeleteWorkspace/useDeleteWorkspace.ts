@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { Alert } from "react-native";
@@ -44,6 +45,7 @@ const RELAY_ERROR_CODES = new Set(["BAD_GATEWAY", "SERVICE_UNAVAILABLE"]);
  * can leave for the list instead of sitting on a screen whose row is gone.
  */
 export function useDeleteWorkspace() {
+	const { t } = useLingui();
 	const queryClient = useQueryClient();
 	const cloud = useCloudWorkspaceActions();
 
@@ -51,19 +53,32 @@ export function useDeleteWorkspace() {
 		(target: DeleteWorkspaceTarget, onConfirmed?: () => void) => {
 			if (target.isCloud) {
 				Alert.alert(
-					"Delete cloud workspace",
-					`Delete "${target.name}"? This shuts down its sandbox and everything in it.`,
+					t({
+						message: "Delete cloud workspace",
+					}),
+					t({
+						message: `Delete "${target.name}"? This shuts down its sandbox and everything in it.`,
+					}),
 					[
-						{ style: "cancel", text: "Cancel" },
+						{
+							style: "cancel",
+							text: t({ message: "Cancel" }),
+						},
 						{
 							onPress: () => {
 								onConfirmed?.();
-								void cloud
-									.remove(target.id)
-									.catch(() => Alert.alert("Delete failed"));
+								void cloud.remove(target.id).catch(() =>
+									Alert.alert(
+										t({
+											message: "Delete failed",
+										}),
+									),
+								);
 							},
 							style: "destructive",
-							text: "Delete",
+							text: t({
+								message: "Delete",
+							}),
 						},
 					],
 				);
@@ -72,7 +87,11 @@ export function useDeleteWorkspace() {
 
 			const { hostId, hostUrl } = target;
 			if (!hostId || !hostUrl) {
-				Alert.alert("Host is not online");
+				Alert.alert(
+					t({
+						message: "Host is not online",
+					}),
+				);
 				return;
 			}
 			const client = getHostServiceClientByUrl(hostUrl);
@@ -108,15 +127,27 @@ export function useDeleteWorkspace() {
 					const rows = await client.workspace.list.query().catch(() => null);
 					if (rows && !rows.some((row) => row.id === target.id)) return;
 					void queryClient.invalidateQueries({ queryKey: listKey });
-					Alert.alert("Delete failed", failureDetail(error));
+					Alert.alert(
+						t({
+							message: "Delete failed",
+						}),
+						failureDetail(error),
+					);
 				}
 			};
 
 			Alert.alert(
-				"Delete workspace",
-				`Delete "${target.name}"? This removes its worktree from the host.`,
+				t({
+					message: "Delete workspace",
+				}),
+				t({
+					message: `Delete "${target.name}"? This removes its worktree from the host.`,
+				}),
 				[
-					{ style: "cancel", text: "Cancel" },
+					{
+						style: "cancel",
+						text: t({ message: "Cancel" }),
+					},
 					{
 						onPress: () => {
 							// Drop the row now. The host's archive lands within
@@ -129,12 +160,14 @@ export function useDeleteWorkspace() {
 							void destroy(false);
 						},
 						style: "destructive",
-						text: "Delete",
+						text: t({
+							message: "Delete",
+						}),
 					},
 				],
 			);
 		},
-		[cloud, queryClient],
+		[cloud, queryClient, t],
 	);
 }
 

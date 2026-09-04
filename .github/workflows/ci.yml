@@ -112,6 +112,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Check i18n catalogs
+        run: bun run check:i18n && git diff --exit-code --stat HEAD -- packages/i18n/locales
+
   test:
     name: Test
     runs-on: ubuntu-latest

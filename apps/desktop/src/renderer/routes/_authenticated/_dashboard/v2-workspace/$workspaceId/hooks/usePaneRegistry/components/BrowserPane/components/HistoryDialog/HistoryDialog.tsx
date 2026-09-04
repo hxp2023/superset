@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import {
 	Dialog,
@@ -29,6 +30,7 @@ export function HistoryDialog({
 	onOpenChange,
 	onSelect,
 }: HistoryDialogProps) {
+	const { t } = useLingui();
 	const [entries, setEntries] = useState<HistoryEntry[]>([]);
 	const [query, setQuery] = useState("");
 	// Whole-table results for the current query. `getAll` only loads the most
@@ -96,18 +98,26 @@ export function HistoryDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-3xl">
 				<DialogHeader>
-					<DialogTitle>History</DialogTitle>
+					<DialogTitle>
+						<Trans>History</Trans>
+					</DialogTitle>
 				</DialogHeader>
 				<Input
 					value={query}
 					onChange={(e) => setQuery(e.target.value)}
-					placeholder="Search history"
+					placeholder={t({
+						message: "Search history",
+					})}
 					autoFocus
 				/>
 				<ScrollArea className="h-80 min-w-0 -mx-1 px-1">
 					{filtered.length === 0 ? (
 						<p className="py-8 text-center text-sm text-muted-foreground">
-							{entries.length === 0 ? "No history yet" : "No matches"}
+							{entries.length === 0 ? (
+								<Trans>No history yet</Trans>
+							) : (
+								<Trans>No matches</Trans>
+							)}
 						</p>
 					) : (
 						<div className="flex min-w-0 flex-col">
@@ -153,7 +163,7 @@ export function HistoryDialog({
 						onClick={handleClearHistory}
 						disabled={entries.length === 0}
 					>
-						Clear history
+						<Trans>Clear history</Trans>
 					</Button>
 				</div>
 			</DialogContent>

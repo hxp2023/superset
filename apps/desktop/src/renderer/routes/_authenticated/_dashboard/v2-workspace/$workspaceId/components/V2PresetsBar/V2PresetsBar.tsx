@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import {
 	DropdownMenu,
@@ -245,7 +246,9 @@ export function V2PresetsBar({
 							</Button>
 						</DropdownMenuTrigger>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Manage Terminal Scripts</TooltipContent>
+					<TooltipContent side="bottom">
+						<Trans>Manage Terminal Scripts</Trans>
+					</TooltipContent>
 				</Tooltip>
 				<DropdownMenuContent align="end" className="w-56">
 					{matchedPresets.map((preset) => {
@@ -325,7 +328,7 @@ export function V2PresetsBar({
 						}
 						onSelect={(event) => event.preventDefault()}
 					>
-						Show Scripts Bar
+						<Trans>Show Scripts Bar</Trans>
 					</DropdownMenuCheckboxItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
@@ -333,7 +336,9 @@ export function V2PresetsBar({
 						onClick={() => navigate({ to: "/settings/terminal" })}
 					>
 						<Settings className="size-4" />
-						<span>Manage Terminal Scripts</span>
+						<span>
+							<Trans>Manage Terminal Scripts</Trans>
+						</span>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

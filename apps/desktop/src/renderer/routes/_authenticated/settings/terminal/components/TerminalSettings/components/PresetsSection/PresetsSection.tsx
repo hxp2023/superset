@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	type ExecutionMode,
 	normalizeExecutionMode,
@@ -39,6 +40,7 @@ export function PresetsSection({
 	pendingCreateProjectId,
 	onPendingCreateProjectIdChange,
 }: PresetsSectionProps) {
+	const { t } = useLingui();
 	const searchQuery = useSettingsSearchQuery();
 	const isDark = useIsDarkTheme();
 	const { data: groupedProjects = [] } =
@@ -484,11 +486,18 @@ export function PresetsSection({
 			<div className="flex items-center justify-between">
 				<div className="space-y-0.5">
 					<Label className="text-sm font-medium">
-						<HighlightText text="Terminal Scripts" query={searchQuery} />
+						<HighlightText
+							text={t({
+								message: "Terminal Scripts",
+							})}
+							query={searchQuery}
+						/>
 					</Label>
 					<p className="text-xs text-muted-foreground">
-						Reusable commands that launch in terminals. Project setup, run, and
-						teardown commands are configured as lifecycle scripts.
+						<Trans>
+							Reusable commands that launch in terminals. Project setup, run,
+							and teardown commands are configured as lifecycle scripts.
+						</Trans>
 					</p>
 				</div>
 				{showPresets && (
@@ -499,7 +508,7 @@ export function PresetsSection({
 						onClick={() => handleAddRow()}
 					>
 						<HiOutlinePlus className="h-4 w-4" />
-						Add Script
+						<Trans>Add Script</Trans>
 					</Button>
 				)}
 			</div>
@@ -527,7 +536,7 @@ export function PresetsSection({
 						onToggleVisibility={handleToggleVisibility}
 					/>
 					<p className="text-xs text-muted-foreground">
-						Click a terminal script to edit its details.
+						<Trans>Click a terminal script to edit its details.</Trans>
 					</p>
 				</>
 			)}

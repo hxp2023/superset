@@ -1,3 +1,5 @@
+import { plural } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Badge } from "@superset/ui/badge";
 import {
 	HoverCard,
@@ -26,6 +28,7 @@ interface DashboardSidebarPortsChipProps {
 export function DashboardSidebarPortsChip({
 	ports,
 }: DashboardSidebarPortsChipProps) {
+	const { t } = useLingui();
 	const { isPending, killPorts } = useDashboardSidebarPortKill();
 	const { isOpen, onOpenChange, onPointerEnter, onPointerLeave, toggleOpen } =
 		useDashboardSidebarChipHoverSuppression();
@@ -36,7 +39,12 @@ export function DashboardSidebarPortsChip({
 		const closedCount = results.filter((result) => result.success).length;
 		if (closedCount > 0) {
 			toast.success(
-				closedCount === 1 ? "Closed 1 port" : `Closed ${closedCount} ports`,
+				t({
+					message: plural(closedCount, {
+						one: "Closed # port",
+						other: "Closed # ports",
+					}),
+				}),
 			);
 		}
 	};
@@ -69,7 +77,21 @@ export function DashboardSidebarPortsChip({
 						disabled={isPending}
 						aria-busy={isPending}
 						aria-expanded={isOpen}
-						aria-label={`${ports.length} active ${ports.length === 1 ? "port" : "ports"} — ${isOpen ? "hide" : "show"} details`}
+						aria-label={
+							isOpen
+								? t({
+										message: plural(ports.length, {
+											one: "# active port — hide details",
+											other: "# active ports — hide details",
+										}),
+									})
+								: t({
+										message: plural(ports.length, {
+											one: "# active port — show details",
+											other: "# active ports — show details",
+										}),
+									})
+						}
 						className={cn(
 							"group/chip h-[18px] bg-muted/60 px-1.5 py-0 text-[9px] font-medium tabular-nums text-muted-foreground",
 							"[&>svg]:size-2.5 hover:bg-muted hover:text-foreground disabled:opacity-70",
@@ -97,7 +119,9 @@ export function DashboardSidebarPortsChip({
 				className="w-64 p-1"
 			>
 				<div className="flex items-center justify-between px-2 py-1.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-					<span>Ports</span>
+					<span>
+						<Trans>Ports</Trans>
+					</span>
 					<span className="tabular-nums">{ports.length}</span>
 				</div>
 				<div className="max-h-60 overflow-y-auto">
@@ -116,7 +140,7 @@ export function DashboardSidebarPortsChip({
 					className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-70"
 				>
 					<LuX className="size-3" strokeWidth={STROKE_WIDTH} />
-					Close all ports
+					<Trans>Close all ports</Trans>
 				</button>
 			</HoverCardContent>
 		</HoverCard>

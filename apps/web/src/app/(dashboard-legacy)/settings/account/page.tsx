@@ -1,5 +1,6 @@
 "use client";
 
+import { Trans } from "@lingui/react/macro";
 import { authClient } from "@superset/auth/client";
 import { ACCOUNT_DELETION_GRACE_DAYS } from "@superset/shared/constants";
 import {
@@ -38,7 +39,9 @@ export default function AccountSettingsPage() {
 	return (
 		<div className="max-w-2xl space-y-8">
 			<div>
-				<h2 className="text-xl font-medium">Account</h2>
+				<h2 className="text-xl font-medium">
+					<Trans>Account</Trans>
+				</h2>
 				{user && (
 					<p className="mt-1 text-sm text-muted-foreground">
 						{user.name} · {user.email}
@@ -48,7 +51,9 @@ export default function AccountSettingsPage() {
 
 			<div className="flex items-center justify-between gap-8 border-t pt-6">
 				<div>
-					<div className="text-sm font-medium">Sign out</div>
+					<div className="text-sm font-medium">
+						<Trans>Sign out</Trans>
+					</div>
 				</div>
 				<Button
 					variant="outline"
@@ -62,13 +67,15 @@ export default function AccountSettingsPage() {
 						}
 					}}
 				>
-					Sign out
+					<Trans>Sign out</Trans>
 				</Button>
 			</div>
 
 			<div className="flex items-center justify-between gap-8 border-t pt-6">
 				<div>
-					<div className="text-sm font-medium">Delete account</div>
+					<div className="text-sm font-medium">
+						<Trans>Delete account</Trans>
+					</div>
 					{deleteAccount.error && (
 						<div className="mt-1 text-sm text-destructive">
 							{deleteAccount.error.message}
@@ -78,25 +85,35 @@ export default function AccountSettingsPage() {
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
 						<Button variant="destructive" disabled={deleteAccount.isPending}>
-							{deleteAccount.isPending ? "Deleting…" : "Delete account"}
+							{deleteAccount.isPending ? (
+								<Trans>Deleting…</Trans>
+							) : (
+								<Trans>Delete account</Trans>
+							)}
 						</Button>
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>
-							<AlertDialogTitle>Delete account?</AlertDialogTitle>
+							<AlertDialogTitle>
+								<Trans>Delete account?</Trans>
+							</AlertDialogTitle>
 							<AlertDialogDescription>
-								All of your data will be permanently deleted after{" "}
-								{ACCOUNT_DELETION_GRACE_DAYS} days — sign back in before then to
-								restore your account.
+								<Trans>
+									All of your data will be permanently deleted after{" "}
+									{ACCOUNT_DELETION_GRACE_DAYS} days — sign back in before then
+									to restore your account.
+								</Trans>
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogCancel>
+								<Trans>Cancel</Trans>
+							</AlertDialogCancel>
 							<AlertDialogAction
 								variant="destructive"
 								onClick={() => deleteAccount.mutate()}
 							>
-								Delete account
+								<Trans>Delete account</Trans>
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>

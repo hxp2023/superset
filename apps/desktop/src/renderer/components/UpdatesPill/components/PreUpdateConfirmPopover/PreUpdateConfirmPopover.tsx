@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import type { DesktopNotice } from "@superset/shared/desktop-notices";
 import { Button } from "@superset/ui/button";
 import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
@@ -42,10 +43,10 @@ export function PreUpdateConfirmPopover({
 					/>
 					<div className="mt-3 flex justify-end gap-1.5">
 						<Button variant="ghost" size="sm" onClick={onCancel}>
-							Not now
+							<Trans>Not now</Trans>
 						</Button>
 						<Button size="sm" onClick={onConfirm}>
-							Continue update
+							<Trans>Continue update</Trans>
 						</Button>
 					</div>
 				</div>

@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import type { CreatePaneInput, Pane, WorkspaceStore } from "@superset/panes";
 import { toast } from "@superset/ui/sonner";
 import { workspaceTrpc } from "@superset/workspace-client";
@@ -15,10 +16,8 @@ import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/provide
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { getPresetLaunchPlan } from "renderer/stores/tabs/preset-launch";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
-import {
-	filterMatchingPresetsForProject,
-	isProjectTargetedPreset,
-} from "shared/preset-project-targeting";
+import { filterMatchingPresetsForProject } from "shared/preset-project-targeting";
+import { getPresetsForTriggerField } from "shared/preset-trigger-selection";
 import { quote } from "shell-quote";
 import type { StoreApi } from "zustand/vanilla";
 import type { PaneViewerData, TerminalPaneData } from "../../types";
@@ -81,23 +80,6 @@ function buildFocusedTerminalCommand({
 	return `cd ${quote([resolvedCwd])} && ${command}`;
 }
 
-function selectAutoApplyPresets(
-	presets: V2TerminalPresetRow[],
-	field: "applyOnWorkspaceCreated" | "applyOnNewTab",
-) {
-	const targetedPresets = presets.filter(isProjectTargetedPreset);
-	const globalPresets = presets.filter(
-		(preset) => !isProjectTargetedPreset(preset),
-	);
-
-	const targetedTagged = targetedPresets.filter((preset) => preset[field]);
-	if (targetedTagged.length > 0) {
-		return targetedTagged;
-	}
-
-	return globalPresets.filter((preset) => preset[field]);
-}
-
 interface UseV2PresetExecutionArgs {
 	store: StoreApi<WorkspaceStore<PaneViewerData>>;
 	launcher: TerminalLauncher;
@@ -107,6 +89,7 @@ export function useV2PresetExecution({
 	store,
 	launcher,
 }: UseV2PresetExecutionArgs) {
+	const { t } = useLingui();
 	const { workspace } = useWorkspace();
 	const workspaceId = workspace.id;
 	const projectId = workspace.projectId;
@@ -138,8 +121,8 @@ export function useV2PresetExecution({
 		[allPresets, projectId],
 	);
 	const newTabPresets = useMemo(
-		() => selectAutoApplyPresets(matchedPresets, "applyOnNewTab"),
-		[matchedPresets],
+		() => getPresetsForTriggerField(allPresets, "applyOnNewTab", projectId),
+		[allPresets, projectId],
 	);
 
 	// `useV2AgentConfigs` is the cached source of truth for agent configs
@@ -290,18 +273,26 @@ export function useV2PresetExecution({
 				}
 			} catch (err) {
 				console.error("[useV2PresetExecution] Failed to execute preset:", err);
-				toast.error("Failed to run terminal script", {
-					description:
-						err instanceof Error
-							? err.message
-							: "Terminal session creation failed.",
-				});
+				toast.error(
+					t({
+						message: "Failed to run terminal script",
+					}),
+					{
+						description:
+							err instanceof Error
+								? err.message
+								: t({
+										message: "Terminal session creation failed.",
+									}),
+					},
+				);
 			}
 		},
 		[
 			store,
 			launcher,
 			resolvePresetCommands,
+			t,
 			workspaceId,
 			workspaceQuery.data?.worktreePath,
 			writeInput,

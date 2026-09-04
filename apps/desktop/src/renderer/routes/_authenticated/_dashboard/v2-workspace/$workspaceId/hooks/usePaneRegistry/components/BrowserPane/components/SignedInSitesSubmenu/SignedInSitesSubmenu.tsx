@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	DropdownMenuItem,
 	DropdownMenuSub,
@@ -26,6 +27,7 @@ const VISIBLE_LIMIT = 20;
  * equivalent is listing the sites currently holding one of those cookies.
  */
 export function SignedInSitesSubmenu() {
+	const { t } = useLingui();
 	const [domains, setDomains] = useState<CookieDomain[] | null>(null);
 	const [query, setQuery] = useState("");
 
@@ -41,7 +43,11 @@ export function SignedInSitesSubmenu() {
 			.mutate({ domain })
 			.then(loadDomains)
 			.catch(() => {
-				toast.error(`Could not forget ${domain}`);
+				toast.error(
+					t({
+						message: `Could not forget ${domain}`,
+					}),
+				);
 			});
 	};
 
@@ -61,7 +67,9 @@ export function SignedInSitesSubmenu() {
 				else setQuery("");
 			}}
 		>
-			<DropdownMenuSubTrigger>Signed-in sites</DropdownMenuSubTrigger>
+			<DropdownMenuSubTrigger>
+				<Trans>Signed-in sites</Trans>
+			</DropdownMenuSubTrigger>
 			<DropdownMenuSubContent className="w-72 p-0">
 				<div className="p-1">
 					<Input
@@ -72,7 +80,13 @@ export function SignedInSitesSubmenu() {
 							if (e.key !== "Escape") e.stopPropagation();
 						}}
 						placeholder={
-							domains ? `Search ${domains.length} sites…` : "Search sites…"
+							domains
+								? t({
+										message: `Search ${domains.length} sites…`,
+									})
+								: t({
+										message: "Search sites…",
+									})
 						}
 						className="h-7 rounded-md bg-muted/40 px-2"
 						spellCheck={false}
@@ -83,11 +97,15 @@ export function SignedInSitesSubmenu() {
 				<div className="max-h-72 overflow-y-auto px-1 pb-1">
 					{domains === null ? (
 						<div className="px-2 py-1.5 text-sm text-muted-foreground">
-							Loading…
+							<Trans>Loading…</Trans>
 						</div>
 					) : visible.length === 0 ? (
 						<div className="px-2 py-1.5 text-sm text-muted-foreground">
-							{domains.length === 0 ? "No sites are signed in" : "No matches"}
+							{domains.length === 0 ? (
+								<Trans>No sites are signed in</Trans>
+							) : (
+								<Trans>No matches</Trans>
+							)}
 						</div>
 					) : (
 						<>
@@ -109,8 +127,18 @@ export function SignedInSitesSubmenu() {
 									<button
 										type="button"
 										tabIndex={-1}
-										aria-label={`Forget ${domain}`}
-										title={`${cookieCount} cookie${cookieCount === 1 ? "" : "s"} — forget this site`}
+										aria-label={t({
+											message: `Forget ${domain}`,
+										})}
+										title={
+											cookieCount === 1
+												? t({
+														message: "1 cookie — forget this site",
+													})
+												: t({
+														message: `${cookieCount} cookies — forget this site`,
+													})
+										}
 										className="shrink-0 rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground"
 									>
 										<TbX className="size-3.5" />
@@ -119,7 +147,9 @@ export function SignedInSitesSubmenu() {
 							))}
 							{matches.length > VISIBLE_LIMIT && (
 								<div className="px-2 py-1.5 text-xs text-muted-foreground/60">
-									{matches.length - VISIBLE_LIMIT} more — refine your search
+									<Trans>
+										{matches.length - VISIBLE_LIMIT} more — refine your search
+									</Trans>
 								</div>
 							)}
 						</>

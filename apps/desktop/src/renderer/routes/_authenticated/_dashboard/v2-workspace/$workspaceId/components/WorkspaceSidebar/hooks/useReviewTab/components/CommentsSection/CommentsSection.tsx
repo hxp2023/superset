@@ -1,3 +1,6 @@
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
 import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
 import {
 	Collapsible,
@@ -53,6 +56,7 @@ export function CommentsSection({
 	onOpenComment,
 	onOpenInDiff,
 }: CommentsSectionProps) {
+	const { t } = useLingui();
 	const [commentsOpen, setCommentsOpen] = useState(true);
 	const [reviewOpen, setReviewOpen] = useState(true);
 	const [resolvedOpen, setResolvedOpen] = useState(false);
@@ -112,7 +116,12 @@ export function CommentsSection({
 
 	const handleCopySingle = useCallback(
 		(comment: NormalizedComment) => {
-			void copyToClipboard(comment.body.trim() || "No comment body")
+			void copyToClipboard(
+				comment.body.trim() ||
+					t({
+						message: "No comment body",
+					}),
+			)
 				.then(() => {
 					markCopied(`comment:${comment.id}`);
 				})
@@ -120,7 +129,7 @@ export function CommentsSection({
 					console.warn("Failed to copy comment", err);
 				});
 		},
-		[copyToClipboard, markCopied],
+		[copyToClipboard, markCopied, t],
 	);
 
 	const copyCommentList = useCallback(
@@ -169,7 +178,13 @@ export function CommentsSection({
 			).length;
 			if (failedCount > 0) {
 				toast.error(
-					`Failed to resolve ${failedCount} thread${failedCount === 1 ? "" : "s"}`,
+					failedCount === 1
+						? t({
+								message: `Failed to resolve ${failedCount} thread`,
+							})
+						: t({
+								message: `Failed to resolve ${failedCount} threads`,
+							}),
 				);
 			}
 		} finally {
@@ -180,6 +195,7 @@ export function CommentsSection({
 		setReviewThreadResolution,
 		utils.git.getPullRequestThreads,
 		workspaceId,
+		t,
 	]);
 
 	const conversationCommentsCountLabel = isLoading
@@ -189,9 +205,13 @@ export function CommentsSection({
 		? "..."
 		: openReviewComments.length;
 	const conversationCopyAllLabel =
-		copiedActionKey === "comments:conversation" ? "Copied" : "Copy all";
+		copiedActionKey === "comments:conversation"
+			? t({ message: "Copied" })
+			: t({ message: "Copy all" });
 	const reviewCopyAllLabel =
-		copiedActionKey === "comments:review" ? "Copied" : "Copy all";
+		copiedActionKey === "comments:review"
+			? t({ message: "Copied" })
+			: t({ message: "Copy all" });
 
 	return (
 		<>
@@ -213,7 +233,9 @@ export function CommentsSection({
 								commentsOpen && "rotate-90",
 							)}
 						/>
-						<span className="truncate text-xs font-medium">Comments</span>
+						<span className="truncate text-xs font-medium">
+							<Trans>Comments</Trans>
+						</span>
 						<span className="shrink-0 text-[10px] text-muted-foreground">
 							{conversationCommentsCountLabel}
 						</span>
@@ -240,7 +262,7 @@ export function CommentsSection({
 						renderCommentSkeletons()
 					) : conversationComments.length === 0 ? (
 						<div className="px-1.5 py-1 text-xs text-muted-foreground">
-							No comments yet.
+							<Trans>No comments yet.</Trans>
 						</div>
 					) : (
 						conversationComments.map((comment) => (
@@ -275,7 +297,9 @@ export function CommentsSection({
 								reviewOpen && "rotate-90",
 							)}
 						/>
-						<span className="truncate text-xs font-medium">Review</span>
+						<span className="truncate text-xs font-medium">
+							<Trans>Review</Trans>
+						</span>
 						<span className="shrink-0 text-[10px] text-muted-foreground">
 							{reviewCommentsCountLabel}
 						</span>
@@ -294,7 +318,9 @@ export function CommentsSection({
 									) : (
 										<CheckCheck className="size-3" />
 									)}
-									<span>Resolve all</span>
+									<span>
+										<Trans>Resolve all</Trans>
+									</span>
 								</button>
 							)}
 							<button
@@ -317,7 +343,7 @@ export function CommentsSection({
 						renderCommentSkeletons()
 					) : openReviewComments.length === 0 ? (
 						<div className="px-1.5 py-1 text-xs text-muted-foreground">
-							No open review comments.
+							<Trans>No open review comments.</Trans>
 						</div>
 					) : (
 						openReviewComments.map((comment) => (
@@ -352,7 +378,9 @@ export function CommentsSection({
 								resolvedOpen && "rotate-90",
 							)}
 						/>
-						<span className="truncate text-xs font-medium">Resolved</span>
+						<span className="truncate text-xs font-medium">
+							<Trans>Resolved</Trans>
+						</span>
 						<span className="shrink-0 text-[10px] text-muted-foreground">
 							{resolvedComments.length}
 						</span>
@@ -383,16 +411,38 @@ function buildCommentsClipboardText(comments: NormalizedComment[]): string {
 					? `${c.path}:${c.line}`
 					: c.path
 				: c.kind === "conversation"
-					? "Conversation"
+					? i18n._(
+							msg({
+								message: "Conversation",
+							}),
+						)
 					: null;
 			const meta = [
 				c.authorLogin,
-				c.kind === "review" ? "Review" : "Comment",
+				c.kind === "review"
+					? i18n._(
+							msg({
+								message: "Review",
+							}),
+						)
+					: i18n._(
+							msg({
+								message: "Comment",
+							}),
+						),
 				location,
 			]
 				.filter(Boolean)
 				.join(" \u2022 ");
-			return [meta, c.body.trim() || "No comment body"]
+			return [
+				meta,
+				c.body.trim() ||
+					i18n._(
+						msg({
+							message: "No comment body",
+						}),
+					),
+			]
 				.filter(Boolean)
 				.join("\n");
 		})
@@ -450,6 +500,7 @@ function CommentRow({
 	onOpen,
 	onOpenInDiff,
 }: CommentRowProps) {
+	const { t } = useLingui();
 	const age = formatShortAge(comment.createdAt);
 	const isCopied = copiedActionKey === `comment:${comment.id}`;
 
@@ -494,7 +545,7 @@ function CommentRow({
 					</span>
 					{comment.kind === "review" && comment.isOutdated ? (
 						<span className="shrink-0 rounded border border-border/70 bg-muted/35 px-1 py-0 text-[9px] uppercase tracking-wide text-muted-foreground">
-							Outdated
+							<Trans>Outdated</Trans>
 						</span>
 					) : null}
 					<span className="flex-1" />
@@ -517,7 +568,9 @@ function CommentRow({
 				type="button"
 				onClick={handleClick}
 				className="flex min-w-0 flex-1 items-start gap-2 text-left"
-				aria-label={`View comment by ${comment.authorLogin}`}
+				aria-label={t({
+					message: `View comment by ${comment.authorLogin}`,
+				})}
 			>
 				{content}
 			</button>
@@ -529,7 +582,9 @@ function CommentRow({
 						rel="noopener noreferrer"
 						onClick={(e) => e.stopPropagation()}
 						className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-						aria-label="Open comment on GitHub"
+						aria-label={t({
+							message: "Open comment on GitHub",
+						})}
 					>
 						<LuArrowUpRight className="size-3" />
 					</a>
@@ -539,7 +594,9 @@ function CommentRow({
 						<button
 							type="button"
 							onClick={(e) => e.stopPropagation()}
-							aria-label="More actions"
+							aria-label={t({
+								message: "More actions",
+							})}
 							className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
 						>
 							<ChevronDown className="size-3" />
@@ -559,7 +616,7 @@ function CommentRow({
 									}
 								>
 									<GitCompare />
-									Open in diff
+									<Trans>Open in diff</Trans>
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									onSelect={() =>
@@ -572,7 +629,7 @@ function CommentRow({
 									}
 								>
 									<SquarePlus />
-									Open in diff in new tab
+									<Trans>Open in diff in new tab</Trans>
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 							</>
@@ -592,19 +649,25 @@ function CommentRow({
 								}
 							>
 								<MessageSquare />
-								Open as comment pane
+								<Trans>Open as comment pane</Trans>
 							</DropdownMenuItem>
 						) : null}
 						<DropdownMenuItem onSelect={() => onCopy(comment)}>
 							{isCopied ? <LuCheck /> : <CopyIcon />}
-							{isCopied ? "Copied" : "Copy comment"}
+							{isCopied
+								? t({
+										message: "Copied",
+									})
+								: t({
+										message: "Copy comment",
+									})}
 						</DropdownMenuItem>
 						{comment.url ? (
 							<DropdownMenuItem
 								onSelect={() => window.open(comment.url, "_blank", "noopener")}
 							>
 								<ExternalLink />
-								Open on GitHub
+								<Trans>Open on GitHub</Trans>
 							</DropdownMenuItem>
 						) : null}
 					</DropdownMenuContent>

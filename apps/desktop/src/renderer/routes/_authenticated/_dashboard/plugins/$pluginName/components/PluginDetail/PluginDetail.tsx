@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	getMatchingExternalServers,
 	type PluginCatalogEntry,
@@ -20,6 +21,7 @@ const SKILL_DESCRIPTIONS = new Map<string, string>(
 );
 
 export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const { data: installed } = electronTrpc.plugins.listInstalled.useQuery();
 	const { data: externalServers } =
@@ -48,7 +50,7 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 				onClick={() => navigate({ to: "/plugins" })}
 			>
 				<LuArrowLeft className="size-4" />
-				Plugins
+				<Trans>Plugins</Trans>
 			</Button>
 
 			<div className="flex items-start gap-4">
@@ -65,7 +67,14 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground">
 						v{plugin.version} · {plugin.interface.category}
-						{record ? ` · installed ${record.installedAt.slice(0, 10)}` : ""}
+						{record ? (
+							<>
+								{" · "}
+								<Trans>installed {record.installedAt.slice(0, 10)}</Trans>
+							</>
+						) : (
+							""
+						)}
 					</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
@@ -74,7 +83,9 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 							<Switch
 								checked={isPluginEnabled}
 								disabled={isBusy}
-								aria-label={`${plugin.interface.displayName} enabled`}
+								aria-label={t({
+									message: `${plugin.interface.displayName} enabled`,
+								})}
 								onCheckedChange={(checked) => setEnabled(plugin.name, checked)}
 							/>
 							<Button
@@ -85,7 +96,7 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 								onClick={() => uninstall(plugin.name)}
 							>
 								<LuTrash2 className="size-4" />
-								Uninstall
+								<Trans>Uninstall</Trans>
 							</Button>
 						</>
 					) : (
@@ -95,7 +106,7 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 							disabled={isBusy}
 							onClick={() => install(plugin.name)}
 						>
-							Install
+							<Trans>Install</Trans>
 						</Button>
 					)}
 				</div>
@@ -103,18 +114,25 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 
 			{isInstalled && (
 				<p className="mt-3 text-xs text-muted-foreground">
-					{!isPluginEnabled
-						? "Disabled — kept installed, but Superset writes nothing into your agent configs."
-						: record
-							? "Enabled — servers are written into your agent configs."
-							: "Provided by entries in your own agent config."}{" "}
-					Changes take effect in new agent sessions.
+					{!isPluginEnabled ? (
+						<Trans>
+							Disabled — kept installed, but Superset writes nothing into your
+							agent configs.
+						</Trans>
+					) : record ? (
+						<Trans>
+							Enabled — servers are written into your agent configs.
+						</Trans>
+					) : (
+						<Trans>Provided by entries in your own agent config.</Trans>
+					)}{" "}
+					<Trans>Changes take effect in new agent sessions.</Trans>
 				</p>
 			)}
 			{detectedServers.length > 0 && (
 				<section className="mt-8 flex flex-col gap-3">
 					<h2 className="text-sm font-semibold text-foreground">
-						Detected in your agent configs
+						<Trans>Detected in your agent configs</Trans>
 					</h2>
 					<div className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/60">
 						{detectedServers.map((server) => (
@@ -137,14 +155,18 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 						))}
 					</div>
 					<p className="text-xs text-muted-foreground">
-						You added these yourself — Superset never touches them, and never
-						writes duplicates of servers you already have.
+						<Trans>
+							You added these yourself — Superset never touches them, and never
+							writes duplicates of servers you already have.
+						</Trans>
 					</p>
 				</section>
 			)}
 
 			<section className="mt-8 flex flex-col gap-3">
-				<h2 className="text-sm font-semibold text-foreground">MCP servers</h2>
+				<h2 className="text-sm font-semibold text-foreground">
+					<Trans>MCP servers</Trans>
+				</h2>
 				<div className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/60">
 					{Object.entries(plugin.mcpServers).map(([name, config]) => (
 						<div key={name} className="flex items-center gap-3 p-3">
@@ -155,7 +177,7 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 										variant="outline"
 										className="h-4 shrink-0 rounded px-1 text-[9px] font-medium tracking-wide text-muted-foreground uppercase"
 									>
-										{"url" in config ? "MCP" : "CLI"}
+										{"url" in config ? <Trans>MCP</Trans> : <Trans>CLI</Trans>}
 									</Badge>
 								</div>
 								<p className="truncate font-mono text-xs text-muted-foreground">
@@ -168,13 +190,17 @@ export function PluginDetail({ plugin }: { plugin: PluginCatalogEntry }) {
 					))}
 				</div>
 				<p className="text-xs text-muted-foreground">
-					Remote servers sign you in the first time an agent uses them.
+					<Trans>
+						Remote servers sign you in the first time an agent uses them.
+					</Trans>
 				</p>
 			</section>
 
 			{plugin.skills && plugin.skills.length > 0 && (
 				<section className="mt-8 flex flex-col gap-3">
-					<h2 className="text-sm font-semibold text-foreground">Skills</h2>
+					<h2 className="text-sm font-semibold text-foreground">
+						<Trans>Skills</Trans>
+					</h2>
 					<div className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/60">
 						{plugin.skills.map((name) => (
 							<div key={name} className="flex items-center gap-3 p-3">

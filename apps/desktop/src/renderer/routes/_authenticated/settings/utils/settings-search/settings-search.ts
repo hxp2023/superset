@@ -23,6 +23,7 @@ export const SETTING_ITEM_ID = {
 	TEAMS_LIST: "teams-list",
 
 	APPEARANCE_THEME: "appearance-theme",
+	APPEARANCE_LANGUAGE: "appearance-language",
 	APPEARANCE_MARKDOWN: "appearance-markdown",
 	APPEARANCE_CUSTOM_THEMES: "appearance-custom-themes",
 	APPEARANCE_EDITOR_FONT: "appearance-editor-font",
@@ -36,6 +37,7 @@ export const SETTING_ITEM_ID = {
 	KEYBOARD_SHORTCUTS: "keyboard-shortcuts",
 	BEHAVIOR_CONFIRM_QUIT: "behavior-confirm-quit",
 	BEHAVIOR_FILE_OPEN_MODE: "behavior-file-open-mode",
+	BEHAVIOR_CHANGES_OPEN_TARGET: "behavior-changes-open-target",
 	BEHAVIOR_RESOURCE_MONITOR: "behavior-resource-monitor",
 	BEHAVIOR_OPEN_LINKS_IN_APP: "behavior-open-links-in-app",
 	BEHAVIOR_STAR_GITHUB: "behavior-star-github",
@@ -59,6 +61,7 @@ export const SETTING_ITEM_ID = {
 	TERMINAL_SESSIONS: "terminal-sessions",
 	TERMINAL_LINK_BEHAVIOR: "terminal-link-behavior",
 	TERMINAL_BACKGROUND_LIMIT: "terminal-background-limit",
+	TERMINAL_COPY_ON_SELECT: "terminal-copy-on-select",
 
 	LINKS_FILE: "links-file",
 	LINKS_FOLDER: "links-folder",
@@ -101,6 +104,8 @@ export const SETTING_ITEM_ID = {
 		"security-expose-host-service-via-relay",
 
 	HOST_MEMBERS: "host-members",
+	ENVIRONMENTS_LIST: "environments-list",
+	ENVIRONMENTS_SECRETS: "environments-secrets",
 	HOST_INVITE_MEMBER: "host-invite-member",
 	HOST_MEMBER_ROLE: "host-member-role",
 	HOST_WORKTREE_LOCATION: "host-worktree-location",
@@ -166,6 +171,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.TEAMS_LIST]: "shared",
 
 	[SETTING_ITEM_ID.APPEARANCE_THEME]: "shared",
+	[SETTING_ITEM_ID.APPEARANCE_LANGUAGE]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_MARKDOWN]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_CUSTOM_THEMES]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_EDITOR_FONT]: "v2",
@@ -180,6 +186,8 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 
 	[SETTING_ITEM_ID.BEHAVIOR_CONFIRM_QUIT]: "shared",
 	[SETTING_ITEM_ID.BEHAVIOR_FILE_OPEN_MODE]: "v1",
+	// The top-bar Changes control is a v2-only surface.
+	[SETTING_ITEM_ID.BEHAVIOR_CHANGES_OPEN_TARGET]: "v2",
 	[SETTING_ITEM_ID.BEHAVIOR_RESOURCE_MONITOR]: "shared",
 	[SETTING_ITEM_ID.BEHAVIOR_OPEN_LINKS_IN_APP]: "v1",
 	[SETTING_ITEM_ID.BEHAVIOR_STAR_GITHUB]: "shared",
@@ -205,6 +213,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.TERMINAL_SESSIONS]: "shared",
 	[SETTING_ITEM_ID.TERMINAL_LINK_BEHAVIOR]: "v1",
 	[SETTING_ITEM_ID.TERMINAL_BACKGROUND_LIMIT]: "v2",
+	[SETTING_ITEM_ID.TERMINAL_COPY_ON_SELECT]: "v2",
 
 	[SETTING_ITEM_ID.LINKS_FILE]: "v2",
 	[SETTING_ITEM_ID.LINKS_FOLDER]: "v2",
@@ -246,6 +255,8 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.SECURITY_EXPOSE_HOST_SERVICE_VIA_RELAY]: "shared",
 
 	[SETTING_ITEM_ID.HOST_MEMBERS]: "shared",
+	[SETTING_ITEM_ID.ENVIRONMENTS_LIST]: "v2",
+	[SETTING_ITEM_ID.ENVIRONMENTS_SECRETS]: "v2",
 	[SETTING_ITEM_ID.HOST_INVITE_MEMBER]: "shared",
 	[SETTING_ITEM_ID.HOST_MEMBER_ROLE]: "shared",
 	[SETTING_ITEM_ID.HOST_WORKTREE_LOCATION]: "v2",
@@ -318,7 +329,7 @@ const INTEGRATION_SEARCH_ITEMS: SettingsItem[] = INTEGRATIONS.map(
 		id: integrationSettingItemId(integration.provider),
 		section: "integrations",
 		title: integration.label,
-		description: integration.description,
+		description: integration.description(),
 		keywords: [
 			"integrations",
 			integration.label.toLowerCase(),
@@ -537,6 +548,21 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"rename team",
 			"delete team",
 			"organize",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.APPEARANCE_LANGUAGE,
+		section: "appearance",
+		title: "Language",
+		description: "App display language",
+		keywords: [
+			"appearance",
+			"language",
+			"locale",
+			"translation",
+			"i18n",
+			"english",
+			"international",
 		],
 	},
 	{
@@ -825,6 +851,24 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		],
 	},
 	{
+		id: SETTING_ITEM_ID.BEHAVIOR_CHANGES_OPEN_TARGET,
+		section: "behavior",
+		title: "Changes open target",
+		description:
+			"Open the Changes view as a pane in the current tab or as its own tab",
+		keywords: [
+			"changes",
+			"diff",
+			"open",
+			"pane",
+			"tab",
+			"split",
+			"new tab",
+			"viewer",
+			"behavior",
+		],
+	},
+	{
 		id: SETTING_ITEM_ID.BEHAVIOR_RESOURCE_MONITOR,
 		section: "behavior",
 		title: "Resource monitor",
@@ -1091,6 +1135,21 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"performance",
 			"ram",
 			"scrollback",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.TERMINAL_COPY_ON_SELECT,
+		section: "terminal",
+		title: "Copy on select",
+		description: "Copy selected terminal text to the clipboard right away",
+		keywords: [
+			"terminal",
+			"copy",
+			"select",
+			"selection",
+			"clipboard",
+			"ghostty",
+			"iterm",
 		],
 	},
 	{
@@ -1672,14 +1731,18 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.SECURITY_EXPOSE_HOST_SERVICE_VIA_RELAY,
 		section: "security",
-		title: "Allow remote workspaces to access this device via relay",
+		title: "Allow remote access to this device via relay",
 		description:
-			"Controls whether remote workspaces can reach your local host service through the Superset relay",
+			"Controls whether other devices can reach your local host service through the Superset relay",
 		keywords: [
 			"security",
 			"relay",
 			"remote",
+			"remote access",
 			"workspace",
+			// The section was called Remote Workspaces until the rename; keep the
+			// old name searchable for anyone who still reaches for it.
+			"workspaces",
 			"expose",
 			"lockdown",
 			"network",
@@ -1687,6 +1750,39 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"host service",
 			"tunnel",
 			"attack surface",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.ENVIRONMENTS_LIST,
+		section: "environments",
+		title: "Environments",
+		description: "Starting points a cloud workspace boots from",
+		keywords: [
+			"environment",
+			"environments",
+			"sandbox",
+			"cloud",
+			"image",
+			"fork",
+			"base",
+			"template",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.ENVIRONMENTS_SECRETS,
+		section: "environments",
+		title: "Environment variables",
+		description: "Variables set on every sandbox started from an environment",
+		keywords: [
+			"environment",
+			"variable",
+			"variables",
+			"secret",
+			"secrets",
+			"env",
+			"dotenv",
+			"key",
+			"credential",
 		],
 	},
 	{

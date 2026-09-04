@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { ExternalApp } from "@superset/local-db";
 import {
 	DropdownMenu,
@@ -32,6 +33,7 @@ export function V2OpenInMenuButton({
 	branch,
 	projectId,
 }: V2OpenInMenuButtonProps) {
+	const { t } = useLingui();
 	const activeTheme = useThemeStore((state) => state.activeTheme);
 
 	const { app: persistedApp, setApp: persistDefaultApp } =
@@ -42,11 +44,26 @@ export function V2OpenInMenuButton({
 		onSuccess: (_data, variables) => {
 			persistDefaultApp(variables.app);
 		},
-		onError: (error) => toast.error(`Failed to open: ${error.message}`),
+		onError: (error) =>
+			toast.error(
+				t({
+					message: `Failed to open: ${error.message}`,
+				}),
+			),
 	});
 	const copyPath = electronTrpc.external.copyPath.useMutation({
-		onSuccess: () => toast.success("Path copied to clipboard"),
-		onError: (error) => toast.error(`Failed to copy path: ${error.message}`),
+		onSuccess: () =>
+			toast.success(
+				t({
+					message: "Path copied to clipboard",
+				}),
+			),
+		onError: (error) =>
+			toast.error(
+				t({
+					message: `Failed to copy path: ${error.message}`,
+				}),
+			),
 	});
 
 	const currentApp = useMemo(
@@ -90,8 +107,12 @@ export function V2OpenInMenuButton({
 						disabled={isLoading || !currentApp}
 						aria-label={
 							currentApp
-								? `Open in ${currentApp.displayLabel ?? currentApp.label}`
-								: "Open in editor"
+								? t({
+										message: `Open in ${currentApp.displayLabel ?? currentApp.label}`,
+									})
+								: t({
+										message: "Open in editor",
+									})
 						}
 						className={cn(
 							// Icon-only when the nearest @container is narrow; the branch
@@ -128,11 +149,13 @@ export function V2OpenInMenuButton({
 				<TooltipContent side="bottom" sideOffset={6}>
 					{currentApp ? (
 						<HotkeyLabel
-							label={`Open in ${currentApp.displayLabel ?? currentApp.label}`}
+							label={t({
+								message: `Open in ${currentApp.displayLabel ?? currentApp.label}`,
+							})}
 							id="OPEN_IN_APP"
 						/>
 					) : (
-						"Select an editor from the dropdown"
+						<Trans>Select an editor from the dropdown</Trans>
 					)}
 				</TooltipContent>
 			</Tooltip>

@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
@@ -11,12 +12,18 @@ import { CHIP, CHIP_EMPTY } from "../../chipStyles";
 export function EndpointChip({
 	url,
 	method = "POST",
-	placeholder = "Save to get URL",
+	placeholder,
 }: {
 	url: string | null;
 	method?: string;
 	placeholder?: string;
 }) {
+	const { t } = useLingui();
+	const resolvedPlaceholder =
+		placeholder ??
+		t({
+			message: "Save to get URL",
+		});
 	if (!url) {
 		return (
 			<button
@@ -24,7 +31,7 @@ export function EndpointChip({
 				disabled
 				className={cn(CHIP, CHIP_EMPTY, "font-mono text-[12px]")}
 			>
-				{placeholder}
+				{resolvedPlaceholder}
 			</button>
 		);
 	}
@@ -35,8 +42,18 @@ export function EndpointChip({
 					type="button"
 					onClick={() =>
 						navigator.clipboard.writeText(url).then(
-							() => toast.success("URL copied"),
-							() => toast.error("Copy failed"),
+							() =>
+								toast.success(
+									t({
+										message: "URL copied",
+									}),
+								),
+							() =>
+								toast.error(
+									t({
+										message: "Copy failed",
+									}),
+								),
 						)
 					}
 					className={cn(CHIP, "max-w-80 font-mono text-[12px]")}

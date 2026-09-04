@@ -1,3 +1,7 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
 import { Button } from "@superset/ui/button";
 import {
 	DropdownMenu,
@@ -24,11 +28,17 @@ import { useResourceNavigation } from "./hooks/useResourceNavigation";
 import { useResourceSnapshot } from "./hooks/useResourceSnapshot";
 import type { SortOption, UsageValues } from "./types";
 
-const SORT_LABELS: Record<SortOption, string> = {
-	memory: "Memory",
-	cpu: "CPU",
-	name: "Name",
-	sidebar: "Sidebar order",
+const SORT_LABELS: Record<SortOption, MessageDescriptor> = {
+	memory: msg({
+		message: "Memory",
+	}),
+	cpu: msg({ message: "CPU" }),
+	name: msg({
+		message: "Name",
+	}),
+	sidebar: msg({
+		message: "Sidebar order",
+	}),
 };
 
 function getTotalUsage(
@@ -50,6 +60,7 @@ export function ResourceConsumption({
 	surface = "v1",
 	className,
 }: ResourceConsumptionProps) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(false);
 	const { data: enabled } =
 		electronTrpc.settings.getShowResourceMonitor.useQuery();
@@ -69,7 +80,9 @@ export function ResourceConsumption({
 						<Button
 							variant="ghost"
 							size="icon-xs"
-							aria-label="Resource consumption"
+							aria-label={t({
+								message: "Resource consumption",
+							})}
 							className={cn(
 								"no-drag relative text-muted-foreground hover:text-foreground",
 								className,
@@ -80,7 +93,7 @@ export function ResourceConsumption({
 					</PopoverTrigger>
 				</TooltipTrigger>
 				<TooltipContent side="bottom" sideOffset={6}>
-					Resources
+					<Trans>Resources</Trans>
 				</TooltipContent>
 			</Tooltip>
 
@@ -103,6 +116,7 @@ function ResourceConsumptionContent({
 	surface,
 	onClose,
 }: ResourceConsumptionContentProps) {
+	const { t } = useLingui();
 	const [sortOption, setSortOption] = useState<SortOption>("memory");
 	const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(
 		new Set(),
@@ -161,7 +175,7 @@ function ResourceConsumptionContent({
 			<div className="px-3.5 pt-3 pb-3 border-b border-border/60">
 				<div className="flex items-center justify-between">
 					<h4 className="text-[13px] font-medium tracking-tight text-foreground">
-						Resources
+						<Trans>Resources</Trans>
 					</h4>
 					<div className="flex items-center gap-0.5">
 						<DropdownMenu>
@@ -169,10 +183,12 @@ function ResourceConsumptionContent({
 								<button
 									type="button"
 									className="flex items-center gap-1 h-6 px-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
-									aria-label="Sort workspaces"
+									aria-label={t({
+										message: "Sort workspaces",
+									})}
 								>
 									<HiOutlineBarsArrowDown className="h-3.5 w-3.5" />
-									<span>{SORT_LABELS[sortOption]}</span>
+									<span>{i18n._(SORT_LABELS[sortOption])}</span>
 								</button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-40">
@@ -181,14 +197,16 @@ function ResourceConsumptionContent({
 									onValueChange={(value) => setSortOption(value as SortOption)}
 								>
 									<DropdownMenuRadioItem value="memory">
-										Memory
+										<Trans>Memory</Trans>
 									</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="cpu">CPU</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="cpu">
+										<Trans>CPU</Trans>
+									</DropdownMenuRadioItem>
 									<DropdownMenuRadioItem value="name">
-										Name
+										<Trans>Name</Trans>
 									</DropdownMenuRadioItem>
 									<DropdownMenuRadioItem value="sidebar">
-										Sidebar order
+										<Trans>Sidebar order</Trans>
 									</DropdownMenuRadioItem>
 								</DropdownMenuRadioGroup>
 							</DropdownMenuContent>
@@ -197,7 +215,9 @@ function ResourceConsumptionContent({
 							type="button"
 							onClick={() => refetch()}
 							className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
-							aria-label="Refresh metrics"
+							aria-label={t({
+								message: "Refresh metrics",
+							})}
 						>
 							<HiOutlineArrowPath
 								className={cn("h-3.5 w-3.5", isFetching && "animate-spin")}
@@ -239,13 +259,13 @@ function ResourceConsumptionContent({
 
 				{normalizedSnapshot && normalizedSnapshot.workspaces.length === 0 && (
 					<div className="px-3.5 py-6 text-center text-[11px] text-muted-foreground">
-						No active terminal sessions
+						<Trans>No active terminal sessions</Trans>
 					</div>
 				)}
 
 				{!normalizedSnapshot && (
 					<div className="px-3.5 py-6 text-center text-[11px] text-muted-foreground">
-						Loading…
+						<Trans>Loading…</Trans>
 					</div>
 				)}
 			</div>

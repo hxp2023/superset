@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -38,6 +39,7 @@ export function ChecksSection({
 	checksStatus,
 	prUrl,
 }: ChecksSectionProps) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(true);
 
 	// Mirrors computeChecksRollup: a cancelled check is a relevant failure, not
@@ -53,8 +55,12 @@ export function ChecksSection({
 	).length;
 	const checksSummary =
 		relevantChecks.length > 0
-			? `${passingChecks}/${relevantChecks.length} checks passing`
-			: "No checks reported";
+			? t({
+					message: `${passingChecks}/${relevantChecks.length} checks passing`,
+				})
+			: t({
+					message: "No checks reported",
+				});
 	const checksStatusConfig = checkSummaryIconConfig[checksStatus];
 	const ChecksStatusIcon = checksStatusConfig.Icon;
 
@@ -73,7 +79,9 @@ export function ChecksSection({
 							open && "rotate-90",
 						)}
 					/>
-					<span className="truncate text-xs font-medium">Checks</span>
+					<span className="truncate text-xs font-medium">
+						<Trans>Checks</Trans>
+					</span>
 					<span className="shrink-0 text-[10px] text-muted-foreground">
 						{relevantChecks.length}
 					</span>
@@ -98,7 +106,7 @@ export function ChecksSection({
 			<CollapsibleContent className="min-w-0 overflow-hidden px-0.5 pb-1">
 				{relevantChecks.length === 0 ? (
 					<div className="px-1.5 py-1 text-xs text-muted-foreground">
-						No checks reported.
+						<Trans>No checks reported.</Trans>
 					</div>
 				) : (
 					relevantChecks.map((check, index) => (
@@ -198,6 +206,7 @@ function CopyLogsButton({
 	workspaceId: string;
 	detailsUrl: string;
 }) {
+	const { t } = useLingui();
 	const utils = workspaceTrpc.useUtils();
 	const [state, setState] = useState<"idle" | "loading" | "copied" | "error">(
 		"idle",
@@ -236,8 +245,12 @@ function CopyLogsButton({
 		<button
 			type="button"
 			onClick={handleCopy}
-			title="Copy job logs to clipboard"
-			aria-label="Copy job logs to clipboard"
+			title={t({
+				message: "Copy job logs to clipboard",
+			})}
+			aria-label={t({
+				message: "Copy job logs to clipboard",
+			})}
 			className={cn(
 				"shrink-0 rounded-sm p-0.5 text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
 				"opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",

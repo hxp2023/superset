@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { cn } from "@superset/ui/utils";
 import { LuArrowUpRight, LuCircleMinus } from "react-icons/lu";
 import { CHECK_STATUS_ICONS } from "renderer/routes/_authenticated/_dashboard/utils/checkStatusIcons";
@@ -6,16 +7,6 @@ import {
 	summarizePullRequestChecks,
 } from "../pull-request-checks";
 
-// Capy's checks list states each row's outcome as a word next to the
-// external-link icon, not just an icon color — matches that.
-const CHECK_STATUS_LABELS: Record<PullRequestCheck["status"], string> = {
-	success: "Passed",
-	failure: "Failed",
-	pending: "Running",
-	skipped: "Skipped",
-	cancelled: "Cancelled",
-};
-
 interface PullRequestChecksSectionProps {
 	checks: PullRequestCheck[];
 }
@@ -23,31 +14,55 @@ interface PullRequestChecksSectionProps {
 export function PullRequestChecksSection({
 	checks,
 }: PullRequestChecksSectionProps) {
+	const { t } = useLingui();
+	// Capy's checks list states each row's outcome as a word next to the
+	// external-link icon, not just an icon color — matches that.
+	const checkStatusLabels: Record<PullRequestCheck["status"], string> = {
+		success: t({
+			message: "Passed",
+		}),
+		failure: t({
+			message: "Failed",
+		}),
+		pending: t({
+			message: "Running",
+		}),
+		skipped: t({
+			message: "Skipped",
+		}),
+		cancelled: t({
+			message: "Cancelled",
+		}),
+	};
 	const summary = summarizePullRequestChecks(checks);
-	const summaryLabel =
-		summary.status === "none"
-			? checks.length === 0
-				? "No checks reported"
-				: "All checks skipped or cancelled"
-			: summary.status === "success"
-				? `All ${summary.relevantChecks.length} passed`
-				: summary.status === "failure"
-					? `${summary.failing} failing`
-					: `${summary.pending} running`;
 
 	return (
 		<section aria-labelledby="pull-request-checks-heading">
 			<div className="mb-3 flex items-center justify-between gap-3">
 				<h2 id="pull-request-checks-heading" className="text-sm font-semibold">
-					Checks
+					<Trans>Checks</Trans>
 				</h2>
-				<span className="text-xs text-muted-foreground">{summaryLabel}</span>
+				<span className="text-xs text-muted-foreground">
+					{summary.status === "none" ? (
+						checks.length === 0 ? (
+							<Trans>No checks reported</Trans>
+						) : (
+							<Trans>All checks skipped or cancelled</Trans>
+						)
+					) : summary.status === "success" ? (
+						<Trans>All {summary.relevantChecks.length} passed</Trans>
+					) : summary.status === "failure" ? (
+						<Trans>{summary.failing} failing</Trans>
+					) : (
+						<Trans>{summary.pending} running</Trans>
+					)}
+				</span>
 			</div>
 			<div>
 				{checks.length === 0 ? (
 					<div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
 						<LuCircleMinus className="size-3.5" />
-						No checks reported for the latest commit.
+						<Trans>No checks reported for the latest commit.</Trans>
 					</div>
 				) : (
 					checks.map((check, index) => {
@@ -66,7 +81,7 @@ export function PullRequestChecksSection({
 									{check.name}
 								</span>
 								<span className="shrink-0 text-xs text-muted-foreground">
-									{CHECK_STATUS_LABELS[check.status]}
+									{checkStatusLabels[check.status]}
 								</span>
 								{check.url && (
 									<LuArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" />

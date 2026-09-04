@@ -1,14 +1,22 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import { env } from "renderer/env.renderer";
 import type { CommandContext, SectionId } from "./types";
 
 const BASE: SectionId[] = ["actions", "navigation", "add-project"];
 
-export const SECTION_LABELS: Record<SectionId, string> = {
-	workspace: "Workspace actions",
-	actions: "Actions",
-	navigation: "Navigation",
-	"add-project": "Add project",
-	dev: "Dev",
+export const SECTION_LABELS: Record<SectionId, MessageDescriptor> = {
+	workspace: msg({
+		message: "Workspace actions",
+	}),
+	actions: msg({ message: "Actions" }),
+	navigation: msg({
+		message: "Navigation",
+	}),
+	"add-project": msg({
+		message: "Add project",
+	}),
+	dev: msg({ message: "Dev" }),
 };
 
 export function resolveSectionOrder(context: CommandContext): SectionId[] {

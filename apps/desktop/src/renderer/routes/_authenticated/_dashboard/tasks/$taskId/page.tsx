@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import type { SelectTask, SelectTaskStatus } from "@superset/db/schema";
 import { ScrollArea } from "@superset/ui/scroll-area";
 import { Separator } from "@superset/ui/separator";
@@ -120,14 +121,18 @@ function TaskDetailPage() {
 		if (isTaskLoading) {
 			return (
 				<div className="flex-1 flex items-center justify-center">
-					<span className="text-muted-foreground">Loading task...</span>
+					<span className="text-muted-foreground">
+						<Trans>Loading task...</Trans>
+					</span>
 				</div>
 			);
 		}
 
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">Task not found</span>
+				<span className="text-muted-foreground">
+					<Trans>Task not found</Trans>
+				</span>
 			</div>
 		);
 	}
@@ -154,7 +159,9 @@ function TaskDetailPage() {
 							<>
 								<Separator className="my-8" />
 
-								<h2 className="text-lg font-semibold mb-4">Activity</h2>
+								<h2 className="text-lg font-semibold mb-4">
+									<Trans>Activity</Trans>
+								</h2>
 
 								<ActivitySection
 									createdAt={new Date(task.createdAt)}

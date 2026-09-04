@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { cn } from "@superset/ui/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -34,11 +35,22 @@ interface AgentCommentComposerProps {
 export function AgentCommentComposer({
 	workspaceId,
 	contextLabel,
-	placeholder = "Ask the AI…",
-	submitLabel = "Comment",
+	placeholder,
+	submitLabel,
 	onCancel,
 	onSubmit,
 }: AgentCommentComposerProps) {
+	const { t } = useLingui();
+	const resolvedPlaceholder =
+		placeholder ??
+		t({
+			message: "Ask the AI…",
+		});
+	const resolvedSubmitLabel =
+		submitLabel ??
+		t({
+			message: "Comment",
+		});
 	const bindings = useTerminalAgentBindings(workspaceId);
 	const sessions = useMemo(
 		() =>
@@ -111,7 +123,7 @@ export function AgentCommentComposer({
 					{contextLabel}
 				</span>
 				<span className="text-[10px] tracking-tight text-muted-foreground/70">
-					esc to dismiss
+					<Trans>esc to dismiss</Trans>
 				</span>
 			</div>
 
@@ -120,7 +132,7 @@ export function AgentCommentComposer({
 					ref={textareaRef}
 					value={comment}
 					onChange={(e) => setComment(e.target.value)}
-					placeholder={placeholder}
+					placeholder={resolvedPlaceholder}
 					rows={3}
 					className={cn(
 						"block w-full resize-none bg-transparent text-[13px] leading-snug text-foreground",
@@ -152,7 +164,7 @@ export function AgentCommentComposer({
 						disabled={submitting}
 						className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button
 						type="submit"
@@ -167,7 +179,13 @@ export function AgentCommentComposer({
 						{submitting ? (
 							<LuLoaderCircle className="size-3 animate-spin" />
 						) : null}
-						<span>{submitting ? "Sending…" : submitLabel}</span>
+						<span>
+							{submitting
+								? t({
+										message: "Sending…",
+									})
+								: resolvedSubmitLabel}
+						</span>
 						{submitting ? null : <KbdEnter />}
 					</Button>
 				</div>

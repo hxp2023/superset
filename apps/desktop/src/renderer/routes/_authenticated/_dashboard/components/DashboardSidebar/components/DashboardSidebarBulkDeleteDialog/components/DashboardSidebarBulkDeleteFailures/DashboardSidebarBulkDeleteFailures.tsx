@@ -1,3 +1,4 @@
+import { Plural, Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -16,36 +17,39 @@ import {
 
 interface DashboardSidebarBulkDeleteFailuresProps {
 	failures: BulkWorkspaceDeleteFailure[];
-	isDeleting: boolean;
 	onClose: () => void;
 	onForceTeardownFailures: () => void;
 }
 
 export function DashboardSidebarBulkDeleteFailures({
 	failures,
-	isDeleting,
 	onClose,
 	onForceTeardownFailures,
 }: DashboardSidebarBulkDeleteFailuresProps) {
 	const teardownFailureCount = failures.filter(
 		(failure) => failure.error.kind === "teardown-failed",
 	).length;
-	const workspaceLabel = failures.length === 1 ? "workspace" : "workspaces";
 
 	return (
 		<AlertDialog
 			open
 			onOpenChange={(open) => {
-				if (!open && !isDeleting) onClose();
+				if (!open) onClose();
 			}}
 		>
 			<AlertDialogContent className="max-w-[500px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Couldn’t delete {failures.length} {workspaceLabel}
+						<Plural
+							value={failures.length}
+							one="Couldn’t delete # workspace"
+							other="Couldn’t delete # workspaces"
+						/>
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						Review each failure before deciding whether to continue.
+						<Trans>
+							Review each failure before deciding whether to continue.
+						</Trans>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 
@@ -84,11 +88,11 @@ export function DashboardSidebarBulkDeleteFailures({
 
 				{teardownFailureCount > 0 && (
 					<p className="px-4 pb-2 text-xs text-muted-foreground">
-						Delete anyway skips the teardown script for{" "}
-						{teardownFailureCount === 1
-							? "the affected workspace"
-							: "the affected workspaces"}
-						.
+						<Plural
+							value={teardownFailureCount}
+							one="Delete anyway skips the teardown script for the affected workspace."
+							other="Delete anyway skips the teardown script for the affected workspaces."
+						/>
 					</p>
 				)}
 
@@ -97,24 +101,22 @@ export function DashboardSidebarBulkDeleteFailures({
 						variant="ghost"
 						size="sm"
 						className="h-7 px-3 text-xs"
-						disabled={isDeleting}
 						onClick={onClose}
 					>
-						Close
+						<Trans>Close</Trans>
 					</Button>
 					{teardownFailureCount > 0 && (
 						<Button
 							variant="destructive"
 							size="sm"
 							className="h-7 px-3 text-xs"
-							disabled={isDeleting}
 							onClick={onForceTeardownFailures}
 						>
-							{isDeleting
-								? "Deleting…"
-								: teardownFailureCount === 1
-									? "Delete anyway"
-									: `Delete ${teardownFailureCount} anyway`}
+							<Plural
+								value={teardownFailureCount}
+								one="Delete anyway"
+								other="Delete # anyway"
+							/>
 						</Button>
 					)}
 				</AlertDialogFooter>

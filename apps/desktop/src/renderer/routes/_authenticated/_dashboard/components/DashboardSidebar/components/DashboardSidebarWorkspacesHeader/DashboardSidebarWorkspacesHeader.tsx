@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -7,6 +8,7 @@ import {
 import { toast } from "@superset/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import {
 	VscFolderOpened,
 	VscGithubAlt,
@@ -14,49 +16,130 @@ import {
 	VscNewFolder,
 } from "react-icons/vsc";
 import { useFolderFirstImport } from "renderer/routes/_authenticated/_dashboard/components/AddRepositoryModals/hooks/useFolderFirstImport";
+import type { SidebarProjectSortMode } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
 import {
 	useOpenEmptyProjectModal,
 	useOpenNewProjectModal,
 	useOpenTemplateGalleryModal,
 } from "renderer/stores/add-repository-modal";
+import { useSidebarSectionsCollapseStore } from "renderer/stores/sidebar-sections-collapse";
 import { DashboardSidebarSectionHeader } from "../DashboardSidebarSectionHeader";
+import { DashboardSidebarProjectsFilterInput } from "./components/DashboardSidebarProjectsFilterInput";
+import { DashboardSidebarProjectsSortMenu } from "./components/DashboardSidebarProjectsSortMenu";
+import { useProjectFilterExpanded } from "./hooks/useProjectFilterExpanded";
 
-export function DashboardSidebarWorkspacesHeader() {
+interface DashboardSidebarWorkspacesHeaderProps {
+	sortMode: SidebarProjectSortMode;
+	onSortModeChange: (mode: SidebarProjectSortMode) => void;
+	filterQuery: string;
+	onFilterQueryChange: (query: string) => void;
+}
+
+export function DashboardSidebarWorkspacesHeader({
+	sortMode,
+	onSortModeChange,
+	filterQuery,
+	onFilterQueryChange,
+}: DashboardSidebarWorkspacesHeaderProps) {
+	const { t } = useLingui();
+	const isSectionCollapsed = useSidebarSectionsCollapseStore(
+		(s) => s.collapsed.workspaces,
+	);
+	const toggleSectionCollapsed = useSidebarSectionsCollapseStore(
+		(s) => s.toggle,
+	);
+	// The query lives in DashboardSidebar (it clears it when the sidebar
+	// collapses to the icon rail); only the open/closed flag is local, and
+	// the hook keeps the input open whenever a query is active because this
+	// header unmounts under the bulk-selection toolbar.
+	const [isFilterExpanded, setIsFilterExpanded] =
+		useProjectFilterExpanded(filterQuery);
+	const handleFilterExpandedChange = (expanded: boolean) => {
+		setIsFilterExpanded(expanded);
+		// Filtering a hidden list is useless — reveal it when the search opens.
+		if (expanded && isSectionCollapsed) toggleSectionCollapsed("workspaces");
+	};
+	// The converse: collapsing the section while the input is open would leave
+	// a filter running against a hidden list (and no chevron to say the rows
+	// are merely collapsed), so a collapse closes the filter.
+	const wasSectionCollapsedRef = useRef(isSectionCollapsed);
+	useEffect(() => {
+		if (isSectionCollapsed && !wasSectionCollapsedRef.current) {
+			onFilterQueryChange("");
+			setIsFilterExpanded(false);
+		}
+		wasSectionCollapsedRef.current = isSectionCollapsed;
+	}, [isSectionCollapsed, onFilterQueryChange, setIsFilterExpanded]);
 	const openEmptyProject = useOpenEmptyProjectModal();
 	const openNewProject = useOpenNewProjectModal();
 	const openTemplateGallery = useOpenTemplateGalleryModal();
 	const navigate = useNavigate();
 	const folderImport = useFolderFirstImport({
 		onError: (message) => {
-			toast.error(`Import failed: ${message}`);
+			toast.error(
+				t({
+					message: `Import failed: ${message}`,
+				}),
+			);
 		},
 		onMultipleProjects: ({ candidates }) => {
-			toast.error("Import failed", {
-				description: `Multiple projects use this repository (${candidates.length}). Choose the project in settings to set it up on this device.`,
-				action: {
-					label: "Open Projects",
-					onClick: () => navigate({ to: "/settings/projects" }),
+			toast.error(
+				t({
+					message: "Import failed",
+				}),
+				{
+					description: t({
+						message: `Multiple projects use this repository (${candidates.length}). Choose the project in settings to set it up on this device.`,
+					}),
+					action: {
+						label: t({
+							message: "Open Projects",
+						}),
+						onClick: () => navigate({ to: "/settings/projects" }),
+					},
 				},
-			});
+			);
 		},
 	});
 
 	const handleImportFolder = async () => {
 		const result = await folderImport.start();
 		if (result) {
-			toast.success("Project ready — open it from the sidebar.");
+			toast.success(
+				t({
+					message: "Project ready — open it from the sidebar.",
+				}),
+			);
 		}
 	};
 
 	return (
-		<DashboardSidebarSectionHeader label="Projects" section="workspaces">
+		<DashboardSidebarSectionHeader
+			label={t({
+				message: "Projects",
+			})}
+			section="workspaces"
+			labelHidden={isFilterExpanded}
+		>
+			<DashboardSidebarProjectsFilterInput
+				query={filterQuery}
+				onQueryChange={onFilterQueryChange}
+				isExpanded={isFilterExpanded}
+				onExpandedChange={handleFilterExpandedChange}
+			/>
+			<DashboardSidebarProjectsSortMenu
+				sortMode={sortMode}
+				onSortModeChange={onSortModeChange}
+			/>
 			<DropdownMenu>
 				<Tooltip delayDuration={700}>
 					<TooltipTrigger asChild>
 						<DropdownMenuTrigger asChild>
 							<button
 								type="button"
-								aria-label="Add project"
+								aria-label={t({
+									message: "Add project",
+								})}
 								onClick={(event) => event.stopPropagation()}
 								onKeyDown={(event) => event.stopPropagation()}
 								className="group/addrepo flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
@@ -66,7 +149,9 @@ export function DashboardSidebarWorkspacesHeader() {
 							</button>
 						</DropdownMenuTrigger>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Add project</TooltipContent>
+					<TooltipContent side="bottom">
+						<Trans>Add project</Trans>
+					</TooltipContent>
 				</Tooltip>
 				<DropdownMenuContent
 					align="end"
@@ -79,19 +164,19 @@ export function DashboardSidebarWorkspacesHeader() {
 				>
 					<DropdownMenuItem onSelect={handleImportFolder}>
 						<VscFolderOpened className="size-4" />
-						Open project
+						<Trans>Open project</Trans>
 					</DropdownMenuItem>
 					<DropdownMenuItem onSelect={() => openNewProject()}>
 						<VscGithubAlt className="size-4" />
-						Clone from URL
+						<Trans>Clone from URL</Trans>
 					</DropdownMenuItem>
 					<DropdownMenuItem onSelect={() => openEmptyProject()}>
 						<VscNewFolder className="size-4" />
-						Create new project
+						<Trans>Create new project</Trans>
 					</DropdownMenuItem>
 					<DropdownMenuItem onSelect={() => openTemplateGallery()}>
 						<VscLayout className="size-4" />
-						Start from a template
+						<Trans>Start from a template</Trans>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

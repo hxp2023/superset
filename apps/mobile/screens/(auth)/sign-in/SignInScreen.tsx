@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import { useState } from "react";
@@ -17,6 +18,7 @@ const TERMS_URL = "https://superset.sh/terms";
 const PRIVACY_URL = "https://superset.sh/privacy";
 
 export function SignInScreen() {
+	const { t } = useLingui();
 	const [error, setError] = useState<string | null>(null);
 
 	const handleSignIn = async (provider: SocialProvider) => {
@@ -28,7 +30,11 @@ export function SignInScreen() {
 			});
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : "Something went wrong";
+				err instanceof Error
+					? err.message
+					: t({
+							message: "Something went wrong",
+						});
 			console.error("[sign-in] Error:", err);
 			setError(message);
 		}
@@ -79,7 +85,11 @@ export function SignInScreen() {
 				return;
 			}
 			const message =
-				err instanceof Error ? err.message : "Something went wrong";
+				err instanceof Error
+					? err.message
+					: t({
+							message: "Something went wrong",
+						});
 			console.error("[sign-in] Apple error:", err);
 			setError(message);
 		}
@@ -94,10 +104,10 @@ export function SignInScreen() {
 
 			<View className="items-center gap-2">
 				<Text className="text-2xl font-semibold text-foreground">
-					Welcome to Superset
+					<Trans>Welcome to Superset</Trans>
 				</Text>
 				<Text className="text-base text-muted-foreground">
-					Sign in to get started
+					<Trans>Sign in to get started</Trans>
 				</Text>
 			</View>
 
@@ -126,20 +136,22 @@ export function SignInScreen() {
 			)}
 
 			<Text className="text-center text-xs text-muted-foreground/70">
-				By signing in, you agree to our{"\n"}
-				<Text
-					className="text-xs text-muted-foreground underline"
-					onPress={() => openUrl(TERMS_URL)}
-				>
-					Terms of Service
-				</Text>{" "}
-				and{" "}
-				<Text
-					className="text-xs text-muted-foreground underline"
-					onPress={() => openUrl(PRIVACY_URL)}
-				>
-					Privacy Policy
-				</Text>
+				<Trans>
+					By signing in, you agree to our{"\n"}
+					<Text
+						className="text-xs text-muted-foreground underline"
+						onPress={() => openUrl(TERMS_URL)}
+					>
+						Terms of Service
+					</Text>{" "}
+					and{" "}
+					<Text
+						className="text-xs text-muted-foreground underline"
+						onPress={() => openUrl(PRIVACY_URL)}
+					>
+						Privacy Policy
+					</Text>
+				</Trans>
 			</Text>
 		</View>
 	);

@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	isPluginExternallyConfigured,
 	PLUGIN_CATALOG,
@@ -20,6 +21,7 @@ import { PluginCard } from "./components/PluginCard";
 import { SkillsList } from "./components/SkillsList";
 
 export function PluginsView() {
+	const { t } = useLingui();
 	const [search, setSearch] = useState("");
 	const [isManageOpen, setIsManageOpen] = useState(false);
 	const navigate = useNavigate();
@@ -100,15 +102,21 @@ export function PluginsView() {
 		<div className="mx-auto w-full max-w-3xl px-6 pb-16">
 			<Tabs defaultValue="plugins">
 				<TabsList className="mb-6">
-					<TabsTrigger value="plugins">Plugins</TabsTrigger>
-					<TabsTrigger value="skills">Skills</TabsTrigger>
+					<TabsTrigger value="plugins">
+						<Trans>Plugins</Trans>
+					</TabsTrigger>
+					<TabsTrigger value="skills">
+						<Trans>Skills</Trans>
+					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="plugins" className="flex flex-col gap-6">
 					<div>
-						<h1 className="text-2xl font-semibold text-foreground">Plugins</h1>
+						<h1 className="text-2xl font-semibold text-foreground">
+							<Trans>Plugins</Trans>
+						</h1>
 						<p className="mt-1 text-sm text-muted-foreground">
-							Work with your agents across your favorite tools
+							<Trans>Work with your agents across your favorite tools</Trans>
 						</p>
 					</div>
 
@@ -117,7 +125,9 @@ export function PluginsView() {
 						<Input
 							value={search}
 							onChange={(event) => setSearch(event.target.value)}
-							placeholder="Search plugins"
+							placeholder={t({
+								message: "Search plugins",
+							})}
 							className="rounded-full pl-9"
 						/>
 					</div>
@@ -126,7 +136,7 @@ export function PluginsView() {
 						<section className="flex flex-col gap-3">
 							<div className="flex items-center justify-between">
 								<h2 className="text-sm font-semibold text-foreground">
-									Installed
+									<Trans>Installed</Trans>
 								</h2>
 								<Tooltip delayDuration={300}>
 									<TooltipTrigger asChild>
@@ -134,13 +144,17 @@ export function PluginsView() {
 											variant="ghost"
 											size="icon-xs"
 											className="text-muted-foreground"
-											aria-label="Manage plugins"
+											aria-label={t({
+												message: "Manage plugins",
+											})}
 											onClick={() => setIsManageOpen(true)}
 										>
 											<LuSettings2 className="size-4" />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent>Manage plugins</TooltipContent>
+									<TooltipContent>
+										<Trans>Manage plugins</Trans>
+									</TooltipContent>
 								</Tooltip>
 							</div>
 							<div className="flex flex-wrap gap-2">
@@ -163,7 +177,14 @@ export function PluginsView() {
 										</TooltipTrigger>
 										<TooltipContent>
 											{plugin.interface.displayName}
-											{disabledNames.has(plugin.name) ? " (disabled)" : ""}
+											{disabledNames.has(plugin.name) ? (
+												<>
+													{" "}
+													<Trans>(disabled)</Trans>
+												</>
+											) : (
+												""
+											)}
 										</TooltipContent>
 									</Tooltip>
 								))}
@@ -174,7 +195,7 @@ export function PluginsView() {
 					{featured.length > 0 && (
 						<section className="flex flex-col gap-3">
 							<h2 className="text-sm font-semibold text-foreground">
-								Featured
+								<Trans>Featured</Trans>
 							</h2>
 							<div className="grid grid-cols-1 gap-2 md:grid-cols-2">
 								{featured.map(renderCard)}
@@ -195,7 +216,7 @@ export function PluginsView() {
 
 					{visiblePlugins.length === 0 && (
 						<p className="py-8 text-center text-sm text-muted-foreground">
-							No plugins match "{search.trim()}"
+							<Trans>No plugins match "{search.trim()}"</Trans>
 						</p>
 					)}
 
@@ -211,9 +232,13 @@ export function PluginsView() {
 
 				<TabsContent value="skills" className="flex flex-col gap-6">
 					<div>
-						<h1 className="text-2xl font-semibold text-foreground">Skills</h1>
+						<h1 className="text-2xl font-semibold text-foreground">
+							<Trans>Skills</Trans>
+						</h1>
 						<p className="mt-1 text-sm text-muted-foreground">
-							Reusable instructions your agents pick up automatically
+							<Trans>
+								Reusable instructions your agents pick up automatically
+							</Trans>
 						</p>
 					</div>
 					<SkillsList />

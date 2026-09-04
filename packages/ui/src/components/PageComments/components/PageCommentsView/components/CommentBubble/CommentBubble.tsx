@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@lingui/core/macro";
+import { i18n } from "../../../../../../lib/i18n";
 import { PIN_SIZE, type PinPoint, STACK_OFFSET } from "../../utils/pinLayout";
 import { pinClassName } from "./pinClassName";
 
@@ -32,7 +34,12 @@ export function CommentBubble({
 				zIndex: stackIndex,
 			}}
 			className={pinClassName({ resolved, active, interactive: true })}
-			aria-label={`${count} comment${count === 1 ? "" : "s"}`}
+			aria-label={i18n._({
+				...msg({
+					message: "{count, plural, one {# comment} other {# comments}}",
+				}),
+				values: { count },
+			})}
 		>
 			{count > 1 ? count : initials}
 		</button>

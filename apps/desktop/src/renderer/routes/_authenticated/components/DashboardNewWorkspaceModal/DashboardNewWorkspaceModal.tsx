@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import {
 	PromptInputProvider,
 	usePromptInputController,
@@ -86,8 +87,12 @@ export function DashboardNewWorkspaceModal() {
 					onOpenChange={(open) => !open && closeModal()}
 				>
 					<DialogHeader className="sr-only">
-						<DialogTitle>New Workspace</DialogTitle>
-						<DialogDescription>Create a new workspace</DialogDescription>
+						<DialogTitle>
+							<Trans>New Workspace</Trans>
+						</DialogTitle>
+						<DialogDescription>
+							<Trans>Create a new workspace</Trans>
+						</DialogDescription>
 					</DialogHeader>
 					<DialogContent
 						showCloseButton={false}

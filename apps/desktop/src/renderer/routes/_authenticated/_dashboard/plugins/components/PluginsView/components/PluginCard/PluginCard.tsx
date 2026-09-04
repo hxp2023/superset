@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { PluginCatalogEntry } from "@superset/shared/plugins";
 import { Button } from "@superset/ui/button";
 import {
@@ -33,6 +34,7 @@ export function PluginCard({
 	onUninstall,
 	onSetEnabled,
 }: PluginCardProps) {
+	const { t } = useLingui();
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: the card nests real buttons (Install, ··· menu); a native <button> cannot contain them
 		<div
@@ -60,7 +62,7 @@ export function PluginCard({
 					)}
 					{isDisabled && (
 						<span className="shrink-0 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-							Disabled
+							<Trans>Disabled</Trans>
 						</span>
 					)}
 				</div>
@@ -75,7 +77,9 @@ export function PluginCard({
 							variant="ghost"
 							size="icon-xs"
 							className="shrink-0 text-muted-foreground"
-							aria-label={`${plugin.interface.displayName} options`}
+							aria-label={t({
+								message: `${plugin.interface.displayName} options`,
+							})}
 							onClick={(event) => event.stopPropagation()}
 						>
 							<LuEllipsis className="size-4" />
@@ -91,7 +95,7 @@ export function PluginCard({
 							) : (
 								<LuPause className="size-4" />
 							)}
-							{isDisabled ? "Enable" : "Disable"}
+							{isDisabled ? <Trans>Enable</Trans> : <Trans>Disable</Trans>}
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							variant="destructive"
@@ -99,7 +103,7 @@ export function PluginCard({
 							onSelect={() => onUninstall(plugin)}
 						>
 							<LuTrash2 className="size-4" />
-							Uninstall
+							<Trans>Uninstall</Trans>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -114,7 +118,7 @@ export function PluginCard({
 						onInstall(plugin);
 					}}
 				>
-					Install
+					<Trans>Install</Trans>
 				</Button>
 			)}
 		</div>

@@ -1,3 +1,5 @@
+import { plural } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import {
 	Command,
@@ -34,6 +36,7 @@ export function ProjectFilter({
 	onChange,
 	alwaysShowLabel,
 }: ProjectFilterProps) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 
@@ -70,12 +73,21 @@ export function ProjectFilter({
 	const isAllSelected = value.length === 0;
 	const isLoadingWithoutProjects = !isReady && projects.length === 0;
 	const label = isLoadingWithoutProjects
-		? "Loading repositories"
+		? t({
+				message: "Loading repositories",
+			})
 		: isAllSelected
-			? "All repositories"
+			? t({
+					message: "All repositories",
+				})
 			: selectedProjects.length === 1
 				? selectedProjects[0]?.name
-				: `${selectedProjects.length} repositories`;
+				: t({
+						message: plural(selectedProjects.length, {
+							one: "# repository",
+							other: "# repositories",
+						}),
+					});
 	const selectedProject =
 		selectedProjects.length === 1 ? selectedProjects[0] : null;
 
@@ -92,7 +104,9 @@ export function ProjectFilter({
 					variant="ghost"
 					size="sm"
 					title={label}
-					aria-label={`Repositories: ${label}`}
+					aria-label={t({
+						message: `Repositories: ${label}`,
+					})}
 					className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
 				>
 					{selectedProject ? (
@@ -120,18 +134,24 @@ export function ProjectFilter({
 			<PopoverContent align="start" className="w-60 p-0">
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search projects..."
+						placeholder={t({
+							message: "Search projects...",
+						})}
 						value={search}
 						onValueChange={setSearch}
 					/>
 					<CommandList className="max-h-80">
 						{filtered.length === 0 && (
 							<CommandEmpty>
-								{isReady || projects.length > 0
-									? search
-										? "No projects found."
-										: "No projects available."
-									: "Loading projects…"}
+								{isReady || projects.length > 0 ? (
+									search ? (
+										<Trans>No projects found.</Trans>
+									) : (
+										<Trans>No projects available.</Trans>
+									)
+								) : (
+									<Trans>Loading projects…</Trans>
+								)}
 							</CommandEmpty>
 						)}
 						{filtered.length > 0 && (
@@ -139,7 +159,9 @@ export function ProjectFilter({
 								{!search && (
 									<CommandItem onSelect={() => onChange([])}>
 										<HiOutlineSquares2X2 className="size-4 shrink-0" />
-										<span className="text-sm">All repositories</span>
+										<span className="text-sm">
+											<Trans>All repositories</Trans>
+										</span>
 										{isAllSelected && (
 											<HiCheck className="ml-auto size-3.5 shrink-0" />
 										)}

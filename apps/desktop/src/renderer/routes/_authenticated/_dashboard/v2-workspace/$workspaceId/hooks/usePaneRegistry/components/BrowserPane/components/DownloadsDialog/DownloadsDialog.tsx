@@ -1,3 +1,6 @@
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
 import type { SelectDownload } from "@superset/local-db";
 import { Button } from "@superset/ui/button";
 import {
@@ -31,19 +34,36 @@ function stateLabel(row: DownloadRow): string {
 		case "progressing": {
 			const total = row.totalBytes;
 			return total
-				? `${formatBytes(row.receivedBytes)} of ${formatBytes(total)}`
+				? i18n._({
+						...msg({
+							message: "{received} of {total}",
+						}),
+						values: {
+							received: formatBytes(row.receivedBytes),
+							total: formatBytes(total),
+						},
+					})
 				: formatBytes(row.receivedBytes);
 		}
 		case "completed":
 			return formatBytes(row.receivedBytes);
 		case "cancelled":
-			return "Cancelled";
+			return i18n._(
+				msg({
+					message: "Cancelled",
+				}),
+			);
 		case "interrupted":
-			return "Failed";
+			return i18n._(
+				msg({
+					message: "Failed",
+				}),
+			);
 	}
 }
 
 export function DownloadsDialog({ open, onOpenChange }: DownloadsDialogProps) {
+	const { t } = useLingui();
 	const [rows, setRows] = useState<DownloadRow[]>([]);
 
 	useEffect(() => {
@@ -76,12 +96,14 @@ export function DownloadsDialog({ open, onOpenChange }: DownloadsDialogProps) {
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
-					<DialogTitle>Downloads</DialogTitle>
+					<DialogTitle>
+						<Trans>Downloads</Trans>
+					</DialogTitle>
 				</DialogHeader>
 				<ScrollArea className="h-80 min-w-0 -mx-1 px-1">
 					{rows.length === 0 ? (
 						<p className="py-8 text-center text-sm text-muted-foreground">
-							No downloads yet
+							<Trans>No downloads yet</Trans>
 						</p>
 					) : (
 						<div className="flex min-w-0 flex-col">
@@ -109,7 +131,9 @@ export function DownloadsDialog({ open, onOpenChange }: DownloadsDialogProps) {
 										<button
 											type="button"
 											onClick={() => handleCancel(row.id)}
-											aria-label="Cancel download"
+											aria-label={t({
+												message: "Cancel download",
+											})}
 											className="shrink-0 rounded p-1 text-muted-foreground/60 transition-colors hover:text-foreground"
 										>
 											<TbX className="size-4" />
@@ -118,7 +142,9 @@ export function DownloadsDialog({ open, onOpenChange }: DownloadsDialogProps) {
 										<button
 											type="button"
 											onClick={() => handleShowInFolder(row.id)}
-											aria-label="Show in folder"
+											aria-label={t({
+												message: "Show in folder",
+											})}
 											className="shrink-0 rounded p-1 text-muted-foreground/60 transition-colors hover:text-foreground"
 										>
 											<TbFolderOpen className="size-4" />
@@ -136,7 +162,7 @@ export function DownloadsDialog({ open, onOpenChange }: DownloadsDialogProps) {
 						onClick={handleClear}
 						disabled={!hasFinished}
 					>
-						Clear list
+						<Trans>Clear list</Trans>
 					</Button>
 				</div>
 			</DialogContent>

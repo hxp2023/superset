@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -63,12 +64,24 @@ export function DestroyConfirmPane({
 			<AlertDialogContent className="max-w-[340px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Delete {isSession ? "session" : "workspace"} "{workspaceName}"?
+						{isSession ? (
+							<Trans>Delete session "{workspaceName}"?</Trans>
+						) : (
+							<Trans>Delete workspace "{workspaceName}"?</Trans>
+						)}
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						{isSession
-							? "This deletes the session's folder and everything in it from disk."
-							: "This removes the worktree from disk. The cloud workspace record will also be removed."}
+						{isSession ? (
+							<Trans>
+								This deletes the session's folder and everything in it from
+								disk.
+							</Trans>
+						) : (
+							<Trans>
+								This removes the worktree from disk. The cloud workspace record
+								will also be removed.
+							</Trans>
+						)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<div className="px-4 pb-2">
@@ -80,13 +93,17 @@ export function DestroyConfirmPane({
 						}
 						aria-hidden={hasWarnings ? undefined : true}
 					>
-						{hasWarnings
-							? hasChanges && hasUnpushedCommits
-								? "Has uncommitted changes and unpushed commits"
-								: hasChanges
-									? "Has uncommitted changes"
-									: "Has unpushed commits"
-							: " "}
+						{hasWarnings ? (
+							hasChanges && hasUnpushedCommits ? (
+								<Trans>Has uncommitted changes and unpushed commits</Trans>
+							) : hasChanges ? (
+								<Trans>Has uncommitted changes</Trans>
+							) : (
+								<Trans>Has unpushed commits</Trans>
+							)
+						) : (
+							" "
+						)}
 					</div>
 				</div>
 				{blockingReason && (
@@ -110,7 +127,7 @@ export function DestroyConfirmPane({
 								htmlFor={checkboxId}
 								className="text-xs text-muted-foreground cursor-pointer select-none"
 							>
-								Also delete local branch
+								<Trans>Also delete local branch</Trans>
 							</Label>
 						</div>
 					</div>
@@ -122,7 +139,7 @@ export function DestroyConfirmPane({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button
 						variant="destructive"

@@ -1,5 +1,6 @@
 "use client";
 
+import { Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -59,24 +60,34 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? (
+							<Trans>Disconnecting...</Trans>
+						) : (
+							<Trans>Disconnect</Trans>
+						)}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect Sentry?</AlertDialogTitle>
+						<AlertDialogTitle>
+							<Trans>Disconnect Sentry?</Trans>
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							Sentry triggers stop firing until you connect again. The
-							integration stays installed in Sentry — uninstall it there to
-							revoke access entirely.
+							<Trans>
+								Sentry triggers stop firing until you connect again. The
+								integration stays installed in Sentry — uninstall it there to
+								revoke access entirely.
+							</Trans>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>
+							<Trans>Cancel</Trans>
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={() => disconnectMutation.mutate({ organizationId })}
 						>
-							Disconnect
+							<Trans>Disconnect</Trans>
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -84,5 +95,9 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Connect Sentry</Button>;
+	return (
+		<Button onClick={handleConnect}>
+			<Trans>Connect Sentry</Trans>
+		</Button>
+	);
 }

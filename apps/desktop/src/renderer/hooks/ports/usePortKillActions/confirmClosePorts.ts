@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { type AlertOptions, alert } from "@superset/ui/atoms/Alert";
 import { useTerminalCloseConfirmStore } from "renderer/stores/terminal-close-confirm/store";
 
@@ -21,16 +23,48 @@ export function confirmClosePorts(
 	return new Promise<boolean>((resolve) => {
 		const shown = showAlert({
 			title: isSinglePort
-				? "This port is still in use"
-				: "These ports are still in use",
+				? i18n._(
+						msg({
+							message: "This port is still in use",
+						}),
+					)
+				: i18n._(
+						msg({
+							message: "These ports are still in use",
+						}),
+					),
 			description: isSinglePort
-				? "Closing this port will end the process using it."
-				: "Closing these ports will end the processes using them.",
-			checkbox: { label: "Don't ask again" },
+				? i18n._(
+						msg({
+							message: "Closing this port will end the process using it.",
+						}),
+					)
+				: i18n._(
+						msg({
+							message: "Closing these ports will end the processes using them.",
+						}),
+					),
+			checkbox: {
+				label: i18n._(
+					msg({
+						message: "Don't ask again",
+					}),
+				),
+			},
 			onDismiss: () => resolve(false),
 			actions: [
 				{
-					label: isSinglePort ? "Close port" : "Close ports",
+					label: isSinglePort
+						? i18n._(
+								msg({
+									message: "Close port",
+								}),
+							)
+						: i18n._(
+								msg({
+									message: "Close ports",
+								}),
+							),
 					variant: "destructive",
 					onClick: ({ checkboxChecked }) => {
 						if (checkboxChecked) {
@@ -39,7 +73,15 @@ export function confirmClosePorts(
 						resolve(true);
 					},
 				},
-				{ label: "Cancel", variant: "ghost", onClick: () => resolve(false) },
+				{
+					label: i18n._(
+						msg({
+							message: "Cancel",
+						}),
+					),
+					variant: "ghost",
+					onClick: () => resolve(false),
+				},
 			],
 		});
 

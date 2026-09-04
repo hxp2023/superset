@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import {
 	getPluginComponentKinds,
 	type PluginCatalogEntry,
@@ -6,16 +7,31 @@ import {
 import { Badge } from "@superset/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 
-const COMPONENT_KIND_LABELS: Record<
-	PluginComponentKind,
-	{ label: string; tooltip: string }
-> = {
-	mcp: { label: "MCP", tooltip: "Remote MCP server — connects over HTTP" },
-	cli: { label: "CLI", tooltip: "Runs a local command on your machine" },
-	skills: { label: "Skill", tooltip: "Adds skills to your agents" },
-};
-
 export function PluginKindBadges({ plugin }: { plugin: PluginCatalogEntry }) {
+	const { t } = useLingui();
+	const componentKindLabels: Record<
+		PluginComponentKind,
+		{ label: string; tooltip: string }
+	> = {
+		mcp: {
+			label: t({ message: "MCP" }),
+			tooltip: t({
+				message: "Remote MCP server — connects over HTTP",
+			}),
+		},
+		cli: {
+			label: t({ message: "CLI" }),
+			tooltip: t({
+				message: "Runs a local command on your machine",
+			}),
+		},
+		skills: {
+			label: t({ message: "Skill" }),
+			tooltip: t({
+				message: "Adds skills to your agents",
+			}),
+		},
+	};
 	return (
 		<>
 			{getPluginComponentKinds(plugin).map((kind) => (
@@ -25,10 +41,10 @@ export function PluginKindBadges({ plugin }: { plugin: PluginCatalogEntry }) {
 							variant="outline"
 							className="h-4 shrink-0 rounded px-1 text-[9px] font-medium tracking-wide text-muted-foreground uppercase"
 						>
-							{COMPONENT_KIND_LABELS[kind].label}
+							{componentKindLabels[kind].label}
 						</Badge>
 					</TooltipTrigger>
-					<TooltipContent>{COMPONENT_KIND_LABELS[kind].tooltip}</TooltipContent>
+					<TooltipContent>{componentKindLabels[kind].tooltip}</TooltipContent>
 				</Tooltip>
 			))}
 		</>

@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from "../../../../constants";
@@ -13,11 +15,34 @@ function formatTimeAgo(date: Date): string {
 	const days = Math.floor(diff / MS_PER_DAY);
 	const months = Math.floor(days / 30);
 
-	if (minutes < 1) return "now";
-	if (minutes < 60) return `${minutes}m`;
-	if (hours < 24) return `${hours}h`;
-	if (days < 30) return `${days}d`;
-	return `${months}mo`;
+	if (minutes < 1) return i18n._(msg({ message: "now" }));
+	if (minutes < 60)
+		return i18n._({
+			...msg({
+				message: "{minutes}m",
+			}),
+			values: { minutes },
+		});
+	if (hours < 24)
+		return i18n._({
+			...msg({
+				message: "{hours}h",
+			}),
+			values: { hours },
+		});
+	if (days < 30)
+		return i18n._({
+			...msg({
+				message: "{days}d",
+			}),
+			values: { days },
+		});
+	return i18n._({
+		...msg({
+			message: "{months}mo",
+		}),
+		values: { months },
+	});
 }
 
 const statusIcons = {

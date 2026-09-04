@@ -1,3 +1,4 @@
+import { msg } from "@lingui/core/macro";
 import { Badge } from "@superset/ui/badge";
 import {
 	Card,
@@ -9,23 +10,56 @@ import {
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { FaSlack } from "react-icons/fa";
+import { i18n } from "@/lib/i18n-server";
 import { api } from "@/trpc/server";
 import { IntegrationErrorHandler } from "../components/IntegrationErrorHandler";
 import { ConnectionControls } from "./components/ConnectionControls";
 
 const CALLBACK_MESSAGES = {
-	oauth_denied: "Authorization was denied. Please try again.",
-	missing_params: "Invalid OAuth response. Please try again.",
-	invalid_state: "Invalid state parameter. Please try again.",
-	token_exchange_failed: "Failed to connect to Slack. Please try again.",
-	slack_api_error: "Slack API error occurred. Please try again.",
-	unauthorized: "You are not authorized to perform this action.",
+	oauth_denied: i18n._(
+		msg({
+			message: "Authorization was denied. Please try again.",
+		}),
+	),
+	missing_params: i18n._(
+		msg({
+			message: "Invalid OAuth response. Please try again.",
+		}),
+	),
+	invalid_state: i18n._(
+		msg({
+			message: "Invalid state parameter. Please try again.",
+		}),
+	),
+	token_exchange_failed: i18n._(
+		msg({
+			message: "Failed to connect to Slack. Please try again.",
+		}),
+	),
+	slack_api_error: i18n._(
+		msg({
+			message: "Slack API error occurred. Please try again.",
+		}),
+	),
+	unauthorized: i18n._(
+		msg({
+			message: "You are not authorized to perform this action.",
+		}),
+	),
 	workspace_already_linked: {
 		param: "owner",
-		withParam:
-			"This Slack workspace is already connected by {owner}. Ask them to disconnect first.",
-		withoutParam:
-			"This Slack workspace is already connected by another Superset organization.",
+		withParam: i18n._(
+			msg({
+				message:
+					"This Slack workspace is already connected by {owner}. Ask them to disconnect first.",
+			}),
+		),
+		withoutParam: i18n._(
+			msg({
+				message:
+					"This Slack workspace is already connected by another Superset organization.",
+			}),
+		),
 	},
 };
 
@@ -37,7 +71,12 @@ export default async function SlackIntegrationPage() {
 		return (
 			<div className="flex flex-col items-center justify-center py-16">
 				<p className="text-muted-foreground">
-					You need to be part of an organization to use integrations.
+					{i18n._(
+						msg({
+							message:
+								"You need to be part of an organization to use integrations.",
+						}),
+					)}
 				</p>
 			</div>
 		);
@@ -57,7 +96,11 @@ export default async function SlackIntegrationPage() {
 				className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ArrowLeft className="size-4" />
-				Back to Integrations
+				{i18n._(
+					msg({
+						message: "Back to Integrations",
+					}),
+				)}
 			</Link>
 
 			<div className="flex items-start gap-6">
@@ -70,24 +113,49 @@ export default async function SlackIntegrationPage() {
 						{isConnected ? (
 							<Badge variant="default" className="gap-1">
 								<CheckCircle2 className="size-3" />
-								Connected
+								{i18n._(
+									msg({
+										message: "Connected",
+									}),
+								)}
 							</Badge>
 						) : (
-							<Badge variant="secondary">Not Connected</Badge>
+							<Badge variant="secondary">
+								{i18n._(
+									msg({
+										message: "Not Connected",
+									}),
+								)}
+							</Badge>
 						)}
 					</div>
 					<p className="mt-1 text-muted-foreground">
-						Connect Slack to manage tasks from conversations. Mention the bot in
-						any channel or send it a direct message to create and update tasks.
+						{i18n._(
+							msg({
+								message:
+									"Connect Slack to manage tasks from conversations. Mention the bot in any channel or send it a direct message to create and update tasks.",
+							}),
+						)}
 					</p>
 				</div>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Connection</CardTitle>
+					<CardTitle>
+						{i18n._(
+							msg({
+								message: "Connection",
+							}),
+						)}
+					</CardTitle>
 					<CardDescription>
-						Connect your Slack workspace to manage tasks from conversations.
+						{i18n._(
+							msg({
+								message:
+									"Connect your Slack workspace to manage tasks from conversations.",
+							}),
+						)}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -97,7 +165,11 @@ export default async function SlackIntegrationPage() {
 					/>
 					{connection && (
 						<div className="mt-4 text-sm text-muted-foreground">
-							Connected to{" "}
+							{i18n._(
+								msg({
+									message: "Connected to",
+								}),
+							)}{" "}
 							<span className="font-medium">{connection.externalOrgName}</span>
 						</div>
 					)}

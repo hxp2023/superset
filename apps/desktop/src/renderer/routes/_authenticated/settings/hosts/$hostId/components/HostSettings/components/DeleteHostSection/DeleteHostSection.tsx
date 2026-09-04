@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -30,6 +31,7 @@ export function DeleteHostSection({
 	hostName,
 	isLocalHost,
 }: DeleteHostSectionProps) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const searchQuery = useSettingsSearchQuery();
 	const actions = useOptimisticActions();
@@ -67,7 +69,11 @@ export function DeleteHostSection({
 
 		try {
 			await transaction.isPersisted.promise;
-			toast.success(`Deleted "${hostName}"`);
+			toast.success(
+				t({
+					message: `Deleted "${hostName}"`,
+				}),
+			);
 		} catch {
 			// The shared mutation runner reports the error, and the collection
 			// restores the host without disrupting wherever the user navigated.
@@ -78,21 +84,28 @@ export function DeleteHostSection({
 		<div className="flex items-center justify-between gap-8 py-2.5">
 			<div className="min-w-0 flex-1">
 				<p className="text-sm font-medium">
-					<HighlightText text="Delete host" query={searchQuery} />
+					<HighlightText
+						text={t({
+							message: "Delete host",
+						})}
+						query={searchQuery}
+					/>
 				</p>
 				<p
 					id={deleteHostDescriptionId}
 					className="mt-0.5 text-xs text-muted-foreground"
 				>
-					Deletes this host, its access, and its workspaces. Files on the
-					machine stay.
+					<Trans>
+						Deletes this host, its access, and its workspaces. Files on the
+						machine stay.
+					</Trans>
 				</p>
 				{isLocalHost ? (
 					<p
 						id={localHostDescriptionId}
 						className="mt-0.5 text-xs text-muted-foreground"
 					>
-						Stop Superset here to delete from another device.
+						<Trans>Stop Superset here to delete from another device.</Trans>
 					</p>
 				) : null}
 			</div>
@@ -107,7 +120,7 @@ export function DeleteHostSection({
 						className="shrink-0"
 						disabled={isLocalHost || isDeleting}
 					>
-						Delete host
+						<Trans>Delete host</Trans>
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent
@@ -117,20 +130,26 @@ export function DeleteHostSection({
 					}}
 				>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete "{hostName}"?</AlertDialogTitle>
+						<AlertDialogTitle>
+							<Trans>Delete "{hostName}"?</Trans>
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							This removes the host, its access, and its workspaces. Files on
-							the machine stay. A running host may reappear. This can’t be
-							undone.
+							<Trans>
+								This removes the host, its access, and its workspaces. Files on
+								the machine stay. A running host may reappear. This can’t be
+								undone.
+							</Trans>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<div className="space-y-2">
 						<Label htmlFor={confirmationInputId} className="text-xs">
-							Type{" "}
-							<span className="font-mono font-medium text-foreground">
-								{hostName}
-							</span>{" "}
-							to confirm
+							<Trans>
+								Type{" "}
+								<span className="font-mono font-medium text-foreground">
+									{hostName}
+								</span>{" "}
+								to confirm
+							</Trans>
 						</Label>
 						<Input
 							ref={confirmationInputRef}
@@ -143,7 +162,9 @@ export function DeleteHostSection({
 						/>
 					</div>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+						<AlertDialogCancel disabled={isDeleting}>
+							<Trans>Cancel</Trans>
+						</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
 							onClick={(event) => {
@@ -153,7 +174,7 @@ export function DeleteHostSection({
 							disabled={isDeleting || !canDelete}
 							aria-busy={isDeleting}
 						>
-							{isDeleting ? "Deleting…" : "Delete"}
+							{isDeleting ? <Trans>Deleting…</Trans> : <Trans>Delete</Trans>}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

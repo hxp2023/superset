@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -33,6 +34,7 @@ export function V2WorkspaceRunButton({
 	onToggle,
 	onForceStop,
 }: V2WorkspaceRunButtonProps) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const setSettingsSearchQuery = useSetSettingsSearchQuery();
 	const hotkeyText = useHotkeyDisplay("RUN_WORKSPACE_COMMAND").text;
@@ -60,7 +62,11 @@ export function V2WorkspaceRunButton({
 		});
 	}, [definition, navigate, projectId, setSettingsSearchQuery]);
 
-	const label = isRunning ? "Stop" : hasRunCommand ? "Run" : "Set Run";
+	const label = isRunning
+		? t({ message: "Stop" })
+		: hasRunCommand
+			? t({ message: "Run" })
+			: t({ message: "Set Run" });
 	const Icon = isRunning ? Square : hasRunCommand ? Play : Settings;
 
 	return (
@@ -87,10 +93,16 @@ export function V2WorkspaceRunButton({
 				)}
 				aria-label={
 					isRunning
-						? "Stop workspace run command"
+						? t({
+								message: "Stop workspace run command",
+							})
 						: hasRunCommand
-							? "Run workspace command"
-							: "Configure workspace run command"
+							? t({
+									message: "Run workspace command",
+								})
+							: t({
+									message: "Configure workspace run command",
+								})
 				}
 			>
 				<Icon className="size-3 shrink-0" />
@@ -114,7 +126,9 @@ export function V2WorkspaceRunButton({
 							isRunning &&
 								"border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]",
 						)}
-						aria-label="Workspace run options"
+						aria-label={t({
+							message: "Workspace run options",
+						})}
 					>
 						<ChevronDown className="size-3" />
 					</button>
@@ -127,7 +141,7 @@ export function V2WorkspaceRunButton({
 								className="text-destructive focus:text-destructive"
 							>
 								<X className="mr-2 size-4 text-destructive" />
-								Force Stop
+								<Trans>Force Stop</Trans>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 						</>
@@ -135,8 +149,12 @@ export function V2WorkspaceRunButton({
 					<DropdownMenuItem onClick={handleConfigureClick}>
 						<Settings className="mr-2 size-4" />
 						{definition?.source === "terminal-preset"
-							? "Edit Run Script"
-							: "Configure"}
+							? t({
+									message: "Edit Run Script",
+								})
+							: t({
+									message: "Configure",
+								})}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

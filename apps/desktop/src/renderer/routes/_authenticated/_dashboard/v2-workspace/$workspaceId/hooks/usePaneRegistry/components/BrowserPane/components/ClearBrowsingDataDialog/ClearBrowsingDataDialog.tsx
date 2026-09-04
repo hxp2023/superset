@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { Checkbox } from "@superset/ui/checkbox";
 import {
@@ -22,6 +23,7 @@ export function ClearBrowsingDataDialog({
 	open,
 	onOpenChange,
 }: ClearBrowsingDataDialogProps) {
+	const { t } = useLingui();
 	const [clearHistory, setClearHistory] = useState(true);
 	const [clearCookies, setClearCookies] = useState(true);
 	const [clearCache, setClearCache] = useState(true);
@@ -38,13 +40,17 @@ export function ClearBrowsingDataDialog({
 		const tasks: Array<{ label: string; run: () => Promise<unknown> }> = [];
 		if (clearHistory) {
 			tasks.push({
-				label: "history",
+				label: t({
+					message: "history",
+				}),
 				run: () => electronTrpcClient.browserHistory.clear.mutate(),
 			});
 		}
 		if (clearCookies) {
 			tasks.push({
-				label: "cookies and site data",
+				label: t({
+					message: "cookies and site data",
+				}),
 				run: () =>
 					electronTrpcClient.browser.clearBrowsingData.mutate({
 						type: "cookies",
@@ -53,7 +59,9 @@ export function ClearBrowsingDataDialog({
 		}
 		if (clearCache) {
 			tasks.push({
-				label: "cached files",
+				label: t({
+					message: "cached files",
+				}),
 				run: () =>
 					electronTrpcClient.browser.clearBrowsingData.mutate({
 						type: "cache",
@@ -68,16 +76,26 @@ export function ClearBrowsingDataDialog({
 		);
 
 		if (failed.length === 0) {
-			toast.success("Browsing data cleared");
+			toast.success(
+				t({
+					message: "Browsing data cleared",
+				}),
+			);
 			onOpenChange(false);
 		} else if (succeeded.length > 0) {
+			const succeededLabels = succeeded.map((task) => task.label).join(", ");
+			const failedLabels = failed.map((task) => task.label).join(", ");
 			toast.error(
-				`Cleared ${succeeded.map((t) => t.label).join(", ")} — could not clear ${failed
-					.map((t) => t.label)
-					.join(", ")}`,
+				t({
+					message: `Cleared ${succeededLabels} — could not clear ${failedLabels}`,
+				}),
 			);
 		} else {
-			toast.error("Could not clear browsing data");
+			toast.error(
+				t({
+					message: "Could not clear browsing data",
+				}),
+			);
 		}
 		setIsClearing(false);
 	};
@@ -86,9 +104,11 @@ export function ClearBrowsingDataDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Clear browsing data</DialogTitle>
+					<DialogTitle>
+						<Trans>Clear browsing data</Trans>
+					</DialogTitle>
 					<DialogDescription>
-						Choose what to clear from the in-app browser.
+						<Trans>Choose what to clear from the in-app browser.</Trans>
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-3 py-1">
@@ -99,7 +119,7 @@ export function ClearBrowsingDataDialog({
 							onCheckedChange={(v) => setClearHistory(v === true)}
 						/>
 						<Label htmlFor="clear-history" className="font-normal">
-							Browsing history
+							<Trans>Browsing history</Trans>
 						</Label>
 					</div>
 					<div className="flex items-center gap-2">
@@ -109,7 +129,7 @@ export function ClearBrowsingDataDialog({
 							onCheckedChange={(v) => setClearCookies(v === true)}
 						/>
 						<Label htmlFor="clear-cookies" className="font-normal">
-							Cookies and site data — signs you out of most sites
+							<Trans>Cookies and site data — signs you out of most sites</Trans>
 						</Label>
 					</div>
 					<div className="flex items-center gap-2">
@@ -119,7 +139,7 @@ export function ClearBrowsingDataDialog({
 							onCheckedChange={(v) => setClearCache(v === true)}
 						/>
 						<Label htmlFor="clear-cache" className="font-normal">
-							Cached images and files
+							<Trans>Cached images and files</Trans>
 						</Label>
 					</div>
 				</div>
@@ -129,14 +149,14 @@ export function ClearBrowsingDataDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isClearing}
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button
 						variant="destructive"
 						onClick={handleClear}
 						disabled={isClearing || !canClear}
 					>
-						{isClearing ? "Clearing…" : "Clear data"}
+						{isClearing ? <Trans>Clearing…</Trans> : <Trans>Clear data</Trans>}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

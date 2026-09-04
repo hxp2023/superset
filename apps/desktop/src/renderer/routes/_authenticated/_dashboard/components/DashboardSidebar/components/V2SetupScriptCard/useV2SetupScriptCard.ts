@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import type { SidebarCardEntry } from "renderer/components/SidebarCardSlot";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
@@ -15,6 +16,7 @@ export function useV2SetupScriptCard({
 	projectId: string | null;
 	projectName: string | null;
 }): SidebarCardEntry | null {
+	const { t } = useLingui();
 	const openNewWorkspaceModal = useOpenNewWorkspaceModal();
 	const isDismissed = useV2SetupCardDismissalsStore((s) =>
 		projectId ? s.isDismissed(projectId) : false,
@@ -39,10 +41,18 @@ export function useV2SetupScriptCard({
 
 	return {
 		id: `setup-script:${projectId}`,
-		badge: "Setup",
-		title: "Lifecycle scripts",
-		description: `Automate workspace setup for ${projectName}`,
-		actionLabel: "Configure",
+		badge: t({
+			message: "Setup",
+		}),
+		title: t({
+			message: "Lifecycle scripts",
+		}),
+		description: t({
+			message: `Automate workspace setup for ${projectName}`,
+		}),
+		actionLabel: t({
+			message: "Configure",
+		}),
 		// Configure → open the new-workspace modal seeded with a prompt that walks
 		// the agent through writing setup/teardown scripts for this project, rather
 		// than sending the user to the settings page to hand-write config.json.

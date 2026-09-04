@@ -1,3 +1,4 @@
+import { Plural, Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -15,66 +16,63 @@ import { DashboardSidebarBulkDeleteFailures } from "./components/DashboardSideba
 import { useBulkWorkspaceDelete } from "./hooks/useBulkWorkspaceDelete";
 
 interface DashboardSidebarBulkDeleteDialogProps {
+	requestId: number;
 	workspaces: DashboardSidebarWorkspace[];
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
 	onDeleted: (workspaceIds: string[]) => void;
 }
 
+/**
+ * One bulk delete request: the confirm pane while the request awaits
+ * confirmation, nothing while the destroys run behind a progress toast, and
+ * the failures pane if any workspace could not be deleted.
+ */
 export function DashboardSidebarBulkDeleteDialog({
+	requestId,
 	workspaces,
-	open,
-	onOpenChange,
 	onDeleted,
 }: DashboardSidebarBulkDeleteDialogProps) {
 	const checkboxId = useId();
 	const {
-		completedCount,
+		phase,
+		close,
+		handleOpenChange,
 		deleteBranch,
 		failures,
 		forceTeardownFailures,
 		inspectionSummary,
-		isDeleting,
 		run,
 		setDeleteBranch,
-	} = useBulkWorkspaceDelete({
-		workspaces,
-		open,
-		onOpenChange,
-		onDeleted,
-	});
+	} = useBulkWorkspaceDelete({ requestId, workspaces, onDeleted });
 	const { canConfirm, changedCount, items, uncheckedCount, unpushedCount } =
 		inspectionSummary;
 	const hasWarnings = changedCount > 0 || unpushedCount > 0;
-	const workspaceLabel = workspaces.length === 1 ? "workspace" : "workspaces";
 
-	if (failures.length > 0) {
+	if (phase === "failed") {
 		return (
 			<DashboardSidebarBulkDeleteFailures
 				failures={failures}
-				isDeleting={isDeleting}
-				onClose={() => onOpenChange(false)}
+				onClose={close}
 				onForceTeardownFailures={forceTeardownFailures}
 			/>
 		);
 	}
 
 	return (
-		<AlertDialog
-			open={open}
-			onOpenChange={(next) => {
-				if (isDeleting) return;
-				onOpenChange(next);
-			}}
-		>
+		<AlertDialog open={phase === "confirm"} onOpenChange={handleOpenChange}>
 			<AlertDialogContent className="max-w-[440px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Delete {workspaces.length} {workspaceLabel}?
+						<Plural
+							value={workspaces.length}
+							one="Delete # workspace?"
+							other="Delete # workspaces?"
+						/>
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						This removes every selected worktree from disk and deletes its
-						workspace record.
+						<Trans>
+							This removes every selected worktree from disk and deletes its
+							workspace record.
+						</Trans>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 
@@ -88,12 +86,12 @@ export function DashboardSidebarBulkDeleteDialog({
 								<span className="min-w-0 truncate">{item.workspaceName}</span>
 								{item.status === "loading" && (
 									<span className="shrink-0 text-muted-foreground">
-										Checking…
+										<Trans>Checking…</Trans>
 									</span>
 								)}
 								{item.status === "error" && (
 									<span className="select-text cursor-text shrink-0 text-destructive">
-										Couldn’t verify
+										<Trans>Couldn’t verify</Trans>
 									</span>
 								)}
 								{item.status === "blocked" && (
@@ -104,11 +102,13 @@ export function DashboardSidebarBulkDeleteDialog({
 								{item.status === "ready" &&
 									(item.hasChanges || item.hasUnpushedCommits) && (
 										<span className="shrink-0 text-right text-yellow-700 dark:text-yellow-400">
-											{item.hasChanges && item.hasUnpushedCommits
-												? "Uncommitted · Unpushed"
-												: item.hasChanges
-													? "Uncommitted"
-													: "Unpushed"}
+											{item.hasChanges && item.hasUnpushedCommits ? (
+												<Trans>Uncommitted · Unpushed</Trans>
+											) : item.hasChanges ? (
+												<Trans>Uncommitted</Trans>
+											) : (
+												<Trans>Unpushed</Trans>
+											)}
 										</span>
 									)}
 							</li>
@@ -121,14 +121,13 @@ export function DashboardSidebarBulkDeleteDialog({
 						<Checkbox
 							id={checkboxId}
 							checked={deleteBranch}
-							disabled={isDeleting}
 							onCheckedChange={(checked) => setDeleteBranch(checked === true)}
 						/>
 						<Label
 							htmlFor={checkboxId}
 							className="cursor-pointer select-none text-xs text-muted-foreground"
 						>
-							Also delete local branches
+							<Trans>Also delete local branches</Trans>
 						</Label>
 					</div>
 				</div>
@@ -138,25 +137,24 @@ export function DashboardSidebarBulkDeleteDialog({
 						variant="ghost"
 						size="sm"
 						className="h-7 px-3 text-xs"
-						disabled={isDeleting}
-						onClick={() => onOpenChange(false)}
+						onClick={close}
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button
 						variant="destructive"
 						size="sm"
 						className="h-7 px-3 text-xs"
-						disabled={!canConfirm || isDeleting}
+						disabled={!canConfirm}
 						onClick={run}
 					>
-						{isDeleting
-							? `Deleting ${Math.min(completedCount + 1, workspaces.length)} of ${workspaces.length}…`
-							: uncheckedCount > 0
-								? "Delete without checking"
-								: hasWarnings
-									? "Delete anyway"
-									: "Delete"}
+						{uncheckedCount > 0 ? (
+							<Trans>Delete without checking</Trans>
+						) : hasWarnings ? (
+							<Trans>Delete anyway</Trans>
+						) : (
+							<Trans>Delete</Trans>
+						)}
 					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>

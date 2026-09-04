@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import type { SortOption, WorkspaceMetrics } from "../types";
 
 export interface ProjectResourceGroup {
@@ -15,7 +17,13 @@ export function groupWorkspacesByProject(
 
 	for (const workspace of workspaces) {
 		const projectId = workspace.projectId || "unknown";
-		const projectName = workspace.projectName || "Unknown Project";
+		const projectName =
+			workspace.projectName ||
+			i18n._(
+				msg({
+					message: "Unknown Project",
+				}),
+			);
 		let group = projectMap.get(projectId);
 		if (!group) {
 			group = {

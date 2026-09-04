@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { cn } from "@superset/ui/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import type { ResourceMetricsSnapshot } from "../../types";
@@ -20,6 +21,7 @@ interface ResourceMetricsSummaryProps {
 export function ResourceMetricsSummary({
 	snapshot,
 }: ResourceMetricsSummaryProps) {
+	const { t } = useLingui();
 	const trackedMemorySharePercent = getTrackedMemorySharePercent(
 		snapshot.totalMemory,
 		snapshot.host.totalMemory,
@@ -43,19 +45,34 @@ export function ResourceMetricsSummary({
 		<>
 			<div className="grid grid-cols-3 divide-x divide-border/50">
 				<MetricBadge
-					label="CPU"
+					label={t({
+						message: "CPU",
+					})}
 					value={formatCpu(snapshot.totalCpu)}
-					tooltip="Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
+					tooltip={t({
+						message:
+							"Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain.",
+					})}
 				/>
 				<MetricBadge
-					label="Memory"
+					label={t({
+						message: "Memory",
+					})}
 					value={formatMemory(snapshot.totalMemory)}
-					tooltip="Resident memory used by Superset and monitored terminal process trees. If this keeps climbing without dropping, a workspace process may be retaining memory. High values increase swap risk and can cause stutter."
+					tooltip={t({
+						message:
+							"Resident memory used by Superset and monitored terminal process trees. If this keeps climbing without dropping, a workspace process may be retaining memory. High values increase swap risk and can cause stutter.",
+					})}
 				/>
 				<MetricBadge
-					label="RAM Share"
+					label={t({
+						message: "RAM Share",
+					})}
 					value={formatPercent(trackedMemorySharePercent)}
-					tooltip="Percent of total system RAM used by monitored Superset resources only (not all apps). A high share means Superset is a major contributor to system memory pressure; a low share means pressure is likely elsewhere."
+					tooltip={t({
+						message:
+							"Percent of total system RAM used by monitored Superset resources only (not all apps). A high share means Superset is a major contributor to system memory pressure; a low share means pressure is likely elsewhere.",
+					})}
 				/>
 			</div>
 			<Tooltip delayDuration={150}>
@@ -63,7 +80,9 @@ export function ResourceMetricsSummary({
 					<div
 						className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted/60"
 						role="progressbar"
-						aria-label="System RAM share"
+						aria-label={t({
+							message: "System RAM share",
+						})}
 						aria-valuenow={Math.round(clampedSharePercent)}
 						aria-valuemin={0}
 						aria-valuemax={100}
@@ -78,7 +97,10 @@ export function ResourceMetricsSummary({
 					</div>
 				</TooltipTrigger>
 				<TooltipContent side="bottom" sideOffset={6}>
-					Superset uses {formatPercent(trackedMemorySharePercent)} of system RAM
+					<Trans>
+						Superset uses {formatPercent(trackedMemorySharePercent)} of system
+						RAM
+					</Trans>
 				</TooltipContent>
 			</Tooltip>
 		</>

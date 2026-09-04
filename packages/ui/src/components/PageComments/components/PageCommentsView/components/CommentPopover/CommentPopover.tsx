@@ -1,6 +1,8 @@
 "use client";
 
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
+	Bot,
 	Check,
 	Loader2,
 	Pencil,
@@ -24,6 +26,7 @@ import {
 	type PageComment,
 	useComments,
 } from "../../../../providers/CommentProvider";
+import { commentAuthor } from "../../../../utils/commentAuthor";
 import { relativeTime } from "../../../../utils/relativeTime";
 import type { PinPoint } from "../../utils/pinLayout";
 import { popoverPlacement } from "./utils/popoverLayout";
@@ -66,6 +69,7 @@ export function CommentPopover({
 	onDelete,
 	onDismiss,
 }: CommentPopoverProps) {
+	const { t } = useLingui();
 	const { submitting, busyThreadId } = useComments();
 	const threadBusy = thread !== null && busyThreadId === thread.id;
 	const [value, setValue] = useState("");
@@ -148,14 +152,21 @@ export function CommentPopover({
 						>
 							<div className="flex h-7 items-center gap-2.5">
 								<Avatar className="size-7">
-									<AvatarImage src={comment.authorImage ?? undefined} alt="" />
+									<AvatarImage
+										src={commentAuthor(comment).image ?? undefined}
+										alt=""
+									/>
 									<AvatarFallback className="text-[11px]">
-										{initialsOf(comment.authorName)}
+										{commentAuthor(comment).isAgent ? (
+											<Bot className="size-3.5" />
+										) : (
+											initialsOf(commentAuthor(comment).name)
+										)}
 									</AvatarFallback>
 								</Avatar>
 								<div className="flex min-w-0 items-baseline gap-2">
 									<span className="truncate font-medium text-sm">
-										{comment.authorName}
+										{commentAuthor(comment).name}
 									</span>
 									<span className="truncate text-muted-foreground text-xs">
 										{relativeTime(comment.createdAt)}
@@ -165,7 +176,9 @@ export function CommentPopover({
 								    or focused, so a thread reads as prose. */}
 								<div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/comment:opacity-100">
 									<IconButton
-										label="Edit comment"
+										label={t({
+											message: "Edit comment",
+										})}
 										onClick={() => {
 											setEditingId(comment.id);
 											setEditValue(comment.body);
@@ -176,7 +189,13 @@ export function CommentPopover({
 									{onToggleResolved ? (
 										<IconButton
 											label={
-												thread.resolved ? "Reopen thread" : "Resolve thread"
+												thread.resolved
+													? t({
+															message: "Reopen thread",
+														})
+													: t({
+															message: "Resolve thread",
+														})
 											}
 											onClick={onToggleResolved}
 											disabled={threadBusy}
@@ -190,7 +209,9 @@ export function CommentPopover({
 									) : null}
 									{onDelete ? (
 										<IconButton
-											label="Delete thread"
+											label={t({
+												message: "Delete thread",
+											})}
 											onClick={onDelete}
 											disabled={threadBusy}
 										>
@@ -219,10 +240,10 @@ export function CommentPopover({
 											{submitting ? (
 												<>
 													<Loader2 className="size-3.5 animate-spin" />
-													Saving…
+													<Trans>Saving…</Trans>
 												</>
 											) : (
-												"Save"
+												<Trans>Save</Trans>
 											)}
 										</Button>
 										<Button
@@ -231,7 +252,7 @@ export function CommentPopover({
 											onClick={() => setEditingId(null)}
 											disabled={submitting}
 										>
-											Cancel
+											<Trans>Cancel</Trans>
 										</Button>
 									</div>
 								</div>
@@ -258,7 +279,15 @@ export function CommentPopover({
 							submit();
 						}
 					}}
-					placeholder={thread ? "Reply to thread…" : "Write a comment…"}
+					placeholder={
+						thread
+							? t({
+									message: "Reply to thread…",
+								})
+							: t({
+									message: "Write a comment…",
+								})
+					}
 					className={cn(
 						"resize-none rounded-none border-0 bg-transparent p-3.5 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent",
 						composerOpen ? "min-h-[68px]" : "min-h-11 py-3",
@@ -266,12 +295,20 @@ export function CommentPopover({
 				/>
 				{composerOpen ? (
 					<div className="flex items-center gap-2.5 px-3.5 pb-3.5">
-						<span className="text-muted-foreground text-xs">⌘↵ to send</span>
+						<span className="text-muted-foreground text-xs">
+							<Trans>⌘↵ to send</Trans>
+						</span>
 						<Button
 							size="icon"
 							className="ml-auto size-8 rounded-lg"
 							onClick={submit}
-							aria-label={thread ? "Send reply" : "Post comment"}
+							aria-label={
+								thread
+									? t({ message: "Send reply" })
+									: t({
+											message: "Post comment",
+										})
+							}
 							disabled={submitting || value.trim().length === 0}
 						>
 							{submitting ? (

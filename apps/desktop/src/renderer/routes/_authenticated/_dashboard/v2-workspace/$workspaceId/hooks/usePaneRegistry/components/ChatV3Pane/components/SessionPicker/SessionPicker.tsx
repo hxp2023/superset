@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import type { ChatTransport } from "@superset/chat/client";
 import type { ChatSessionRow } from "@superset/chat-runtime";
 import { Button } from "@superset/ui/button";
@@ -54,7 +55,7 @@ export function SessionPicker({
 		>
 			<DropdownMenuTrigger asChild>
 				<Button size="sm" variant="ghost">
-					{active ? sessionLabel(active) : "Sessions"}
+					{active ? sessionLabel(active) : <Trans>Sessions</Trans>}
 					<ChevronDown className="ml-1 size-3" />
 				</Button>
 			</DropdownMenuTrigger>
@@ -73,7 +74,7 @@ export function SessionPicker({
 				{sessions.length > 0 && <DropdownMenuSeparator />}
 				<DropdownMenuItem onSelect={onNewSession}>
 					<Plus className="mr-1 size-3.5" />
-					New session
+					<Trans>New session</Trans>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

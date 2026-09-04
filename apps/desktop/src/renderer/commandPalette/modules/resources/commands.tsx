@@ -1,3 +1,4 @@
+import { msg } from "@lingui/core/macro";
 import { HiOutlineChartBar, HiOutlineCpuChip } from "react-icons/hi2";
 import {
 	getUsageLastSection,
@@ -16,7 +17,7 @@ import type { Command } from "../../core/types";
  */
 export const openUsageCommand: Command = {
 	id: "usage.open",
-	title: "Usage",
+	title: msg({ message: "Usage" }),
 	section: "actions",
 	icon: HiOutlineChartBar,
 	keywords: [
@@ -41,7 +42,9 @@ export const openUsageCommand: Command = {
  */
 export const checkResourcesCommand: Command = {
 	id: "resources.check",
-	title: "Check resources",
+	title: msg({
+		message: "Check resources",
+	}),
 	section: "actions",
 	icon: HiOutlineCpuChip,
 	hotkeyId: "CHECK_RESOURCES",

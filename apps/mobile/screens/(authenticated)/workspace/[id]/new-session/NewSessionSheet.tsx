@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SquareTerminal } from "lucide-react-native";
@@ -21,6 +22,7 @@ import { useHostAgentConfigs } from "@/screens/(authenticated)/hooks/useHostAgen
  * shell, each row launching a new session and landing on its tab.
  */
 export function NewSessionSheet() {
+	const { t } = useLingui();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const theme = useTheme();
@@ -45,15 +47,22 @@ export function NewSessionSheet() {
 	let canRetry = false;
 	if (!host) {
 		if (isResolving) isLoading = true;
-		else notice = "Could not reach this workspace's machine";
+		else
+			notice = t({
+				message: "Could not reach this workspace's machine",
+			});
 	} else if (presets.length === 0) {
 		if (presetsQuery.isError) {
-			notice = "Could not load presets from the host";
+			notice = t({
+				message: "Could not load presets from the host",
+			});
 			canRetry = true;
 		} else if (presetsQuery.isPending) {
 			isLoading = true;
 		} else {
-			notice = "No agents configured on this machine";
+			notice = t({
+				message: "No agents configured on this machine",
+			});
 		}
 	}
 
@@ -90,7 +99,9 @@ export function NewSessionSheet() {
 		} catch (error) {
 			setLaunchingKey(null);
 			Alert.alert(
-				"Could not start session",
+				t({
+					message: "Could not start session",
+				}),
 				error instanceof Error ? error.message : String(error),
 			);
 		}
@@ -107,7 +118,9 @@ export function NewSessionSheet() {
 			<Stack.Toolbar placement="left">
 				<Stack.Toolbar.Button
 					icon="xmark"
-					accessibilityLabel="Close"
+					accessibilityLabel={t({
+						message: "Close",
+					})}
 					onPress={() => router.back()}
 				/>
 			</Stack.Toolbar>
@@ -121,7 +134,9 @@ export function NewSessionSheet() {
 							variant="secondary"
 							onPress={() => void presetsQuery.refetch()}
 						>
-							<Text>Try again</Text>
+							<Text>
+								<Trans>Try again</Trans>
+							</Text>
 						</Button>
 					) : null}
 				</View>
@@ -144,7 +159,7 @@ export function NewSessionSheet() {
 			{presets.length > 0 ? (
 				<ListRow
 					icon={<SquareTerminal size={19} color={theme.mutedForeground} />}
-					label="Shell"
+					label={t({ message: "Shell" })}
 					trailing={launchingKey === "shell" ? spinner : undefined}
 					onPress={() => void launch(null)}
 					isLast

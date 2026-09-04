@@ -1,5 +1,6 @@
 "use client";
 
+import { useLingui } from "@lingui/react/macro";
 import {
 	ADMIN_INSIGHTS,
 	POSTHOG_PROJECT_URL,
@@ -33,6 +34,7 @@ function cellState(
 }
 
 export function RetentionGridTile() {
+	const { t } = useLingui();
 	const query = useInsightResults("cohortRetention");
 
 	const cohorts = Array.isArray(query.data?.result)
@@ -47,7 +49,7 @@ export function RetentionGridTile() {
 	// week; a week whose contributors are all mid-flight is itself dashed.
 	const meanRow: CohortRow = {
 		key: "mean",
-		label: "Mean",
+		label: t({ message: "Mean" }),
 		emphasis: true,
 		size: cohorts.length
 			? Math.round(
@@ -94,8 +96,16 @@ export function RetentionGridTile() {
 
 	return (
 		<InsightTileFrame
-			title={query.data?.name ?? "Cohort retention"}
-			description="Weekly cohorts by first real workspace; % returning with another workspace each week"
+			title={
+				query.data?.name ??
+				t({
+					message: "Cohort retention",
+				})
+			}
+			description={t({
+				message:
+					"Weekly cohorts by first real workspace; % returning with another workspace each week",
+			})}
 			lastRefresh={query.data?.lastRefresh}
 			isLoading={query.isLoading || query.data?.result == null}
 			error={query.error}
@@ -105,9 +115,8 @@ export function RetentionGridTile() {
 			isRefreshing={query.isFetching}
 		>
 			<CohortGrid
-				columnLabels={Array.from(
-					{ length: intervalCount },
-					(_, week) => `Week ${week}`,
+				columnLabels={Array.from({ length: intervalCount }, (_, week) =>
+					t({ message: `Week ${week}` }),
 				)}
 				rows={rows}
 			/>

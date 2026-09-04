@@ -1,3 +1,5 @@
+import { useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
 import { toast } from "@superset/ui/sonner";
 import { useDelayElapsed } from "renderer/hooks/useDelayElapsed";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -14,14 +16,22 @@ import { LOCAL_HOST_SERVICE_DETAIL } from "../../utils/localHostServiceDetail";
 const LOCAL_HOST_GRACE_MS = 10_000;
 
 export function WorkspaceLocalHostPendingState({ hostId }: { hostId: string }) {
+	const { t } = useLingui();
 	const { hostServiceStatus, activeOrganizationId } = useLocalHostService();
 	const showState = useDelayElapsed(true, LOCAL_HOST_GRACE_MS);
 
 	const restart = electronTrpc.hostServiceCoordinator.restart.useMutation({
 		onError: (error) => {
-			toast.error("Couldn't restart the host service", {
-				description: `${error.message} — try the Superset tray menu > Host Service > Restart.`,
-			});
+			toast.error(
+				t({
+					message: "Couldn't restart the host service",
+				}),
+				{
+					description: t({
+						message: `${error.message} — try the Superset tray menu > Host Service > Restart.`,
+					}),
+				},
+			);
 		},
 	});
 
@@ -39,20 +49,33 @@ export function WorkspaceLocalHostPendingState({ hostId }: { hostId: string }) {
 		<StateScreenShell>
 			<WorkspaceHostUnreachableState
 				hostId={hostId}
-				hostName="This device"
-				detail={LOCAL_HOST_SERVICE_DETAIL[hostServiceStatus]}
+				hostName={t({
+					message: "This device",
+				})}
+				detail={i18n._(LOCAL_HOST_SERVICE_DETAIL[hostServiceStatus])}
 				isReconnecting={isStarting}
-				retryLabel="Restart host service"
-				retryBusyLabel="Starting…"
+				retryLabel={t({
+					message: "Restart host service",
+				})}
+				retryBusyLabel={t({
+					message: "Starting…",
+				})}
 				onRetry={() => {
 					if (isStarting) return;
 					// The button reads as enabled without an org, so swallowing the
 					// click here would look like the restart silently failed.
 					if (!activeOrganizationId) {
-						toast.error("No active organization", {
-							description:
-								"Switch organization or sign in again to restart the host service.",
-						});
+						toast.error(
+							t({
+								message: "No active organization",
+							}),
+							{
+								description: t({
+									message:
+										"Switch organization or sign in again to restart the host service.",
+								}),
+							},
+						);
 						return;
 					}
 					restart.mutate({ organizationId: activeOrganizationId });

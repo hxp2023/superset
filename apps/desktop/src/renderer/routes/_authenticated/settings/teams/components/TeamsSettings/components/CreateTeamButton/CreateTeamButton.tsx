@@ -1,3 +1,5 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+import { errorMessage } from "@superset/i18n/errors";
 import { Button } from "@superset/ui/button";
 import {
 	Dialog,
@@ -26,6 +28,7 @@ function slugify(value: string): string {
 }
 
 export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
+	const { t } = useLingui();
 	const [isOpen, setIsOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [slug, setSlug] = useState("");
@@ -63,16 +66,30 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 				organizationId,
 			});
 			if (result.error) {
-				toast.error(result.error.message ?? "Failed to create team");
+				toast.error(
+					result.error.message ??
+						t({
+							message: "Failed to create team",
+						}),
+				);
 				return;
 			}
 			await utils.organization.listTeams.invalidate();
-			toast.success(`Created team "${trimmedName}"`);
+			toast.success(
+				t({
+					message: `Created team "${trimmedName}"`,
+				}),
+			);
 			reset();
 			setIsOpen(false);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to create team",
+				errorMessage(
+					error,
+					t({
+						message: "Failed to create team",
+					}),
+				),
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -81,7 +98,9 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 
 	return (
 		<>
-			<Button onClick={() => setIsOpen(true)}>Create team</Button>
+			<Button onClick={() => setIsOpen(true)}>
+				<Trans>Create team</Trans>
+			</Button>
 			<Dialog
 				open={isOpen}
 				onOpenChange={(open) => {
@@ -92,30 +111,42 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 				<DialogContent>
 					<form onSubmit={handleSubmit}>
 						<DialogHeader>
-							<DialogTitle>Create a team</DialogTitle>
+							<DialogTitle>
+								<Trans>Create a team</Trans>
+							</DialogTitle>
 							<DialogDescription>
-								Name and a URL-friendly slug. Both can be changed later.
+								<Trans>
+									Name and a URL-friendly slug. Both can be changed later.
+								</Trans>
 							</DialogDescription>
 						</DialogHeader>
 						<div className="my-4 space-y-4">
 							<div className="space-y-1.5">
-								<Label htmlFor="team-name">Name</Label>
+								<Label htmlFor="team-name">
+									<Trans>Name</Trans>
+								</Label>
 								<Input
 									id="team-name"
 									value={name}
 									onChange={(event) => handleNameChange(event.target.value)}
-									placeholder="e.g. Engineering"
+									placeholder={t({
+										message: "e.g. Engineering",
+									})}
 									autoFocus
 									required
 								/>
 							</div>
 							<div className="space-y-1.5">
-								<Label htmlFor="team-slug">Slug</Label>
+								<Label htmlFor="team-slug">
+									<Trans>Slug</Trans>
+								</Label>
 								<Input
 									id="team-slug"
 									value={slug}
 									onChange={(event) => handleSlugChange(event.target.value)}
-									placeholder="e.g. engineering"
+									placeholder={t({
+										message: "e.g. engineering",
+									})}
 									required
 								/>
 							</div>
@@ -127,13 +158,17 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 								onClick={() => setIsOpen(false)}
 								disabled={isSubmitting}
 							>
-								Cancel
+								<Trans>Cancel</Trans>
 							</Button>
 							<Button
 								type="submit"
 								disabled={!name.trim() || !slug.trim() || isSubmitting}
 							>
-								{isSubmitting ? "Creating..." : "Create"}
+								{isSubmitting ? (
+									<Trans>Creating...</Trans>
+								) : (
+									<Trans>Create</Trans>
+								)}
 							</Button>
 						</DialogFooter>
 					</form>

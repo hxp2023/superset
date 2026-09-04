@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import type { UsageHistory } from "../../../../hooks/useHostUsageHistory";
 import { formatTokens, formatUsd } from "../../utils/formatUsage";
 
@@ -14,6 +15,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** One-line stat strip — five numbers, no chrome. */
 export function UsageMetricTiles({ history }: { history: UsageHistory }) {
+	const { t } = useLingui();
 	const { totals } = history;
 	const observedInput =
 		totals.uncachedInput + totals.cachedInput + totals.cacheWrite;
@@ -26,15 +28,34 @@ export function UsageMetricTiles({ history }: { history: UsageHistory }) {
 
 	return (
 		<div className="grid grid-cols-3 gap-x-4 gap-y-1 border-y py-2 md:grid-cols-5">
-			<Stat label="Processed tokens" value={formatTokens(totals.tokens)} />
 			<Stat
-				label="Cached input"
+				label={t({
+					message: "Processed tokens",
+				})}
+				value={formatTokens(totals.tokens)}
+			/>
+			<Stat
+				label={t({
+					message: "Cached input",
+				})}
 				value={`${formatTokens(totals.cachedInput)} · ${cachedShare}%`}
 			/>
-			<Stat label="Uncached input" value={formatTokens(totals.uncachedInput)} />
-			<Stat label="Output" value={formatTokens(totals.output)} />
 			<Stat
-				label="Cache savings"
+				label={t({
+					message: "Uncached input",
+				})}
+				value={formatTokens(totals.uncachedInput)}
+			/>
+			<Stat
+				label={t({
+					message: "Output",
+				})}
+				value={formatTokens(totals.output)}
+			/>
+			<Stat
+				label={t({
+					message: "Cache savings",
+				})}
 				value={`${formatUsd(totals.cacheSavingsUsd)} · ${savingsMultiple}x`}
 			/>
 		</div>

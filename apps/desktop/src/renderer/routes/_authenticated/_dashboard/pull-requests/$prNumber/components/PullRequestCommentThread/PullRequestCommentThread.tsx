@@ -1,3 +1,4 @@
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
 import { Button } from "@superset/ui/button";
 import {
@@ -60,6 +61,7 @@ export function PullRequestCommentThread({
 	isReplyPending,
 	focusTick,
 }: PullRequestCommentThreadProps) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(!isResolved && !isOutdated);
 	const [isCopied, setIsCopied] = useState(false);
 	const [replyText, setReplyText] = useState("");
@@ -79,7 +81,11 @@ export function PullRequestCommentThread({
 			.then(() => setIsCopied(true))
 			.catch((err) => {
 				console.error("[PullRequestCommentThread/copy] Failed to copy:", err);
-				toast.error("Couldn't copy comment");
+				toast.error(
+					t({
+						message: "Couldn't copy comment",
+					}),
+				);
 			});
 	};
 	// Auto-collapse on resolve/outdated (matches GitHub).
@@ -98,9 +104,16 @@ export function PullRequestCommentThread({
 		if (!trimmed) return;
 		const dispatched = onReply(trimmed);
 		if (!dispatched) {
-			toast.error("Couldn't send reply", {
-				description: "This thread has no comment to reply to.",
-			});
+			toast.error(
+				t({
+					message: "Couldn't send reply",
+				}),
+				{
+					description: t({
+						message: "This thread has no comment to reply to.",
+					}),
+				},
+			);
 			return;
 		}
 		// Optimistic clear: the mutation itself is fire-and-forget from here,
@@ -131,7 +144,15 @@ export function PullRequestCommentThread({
 			<div className="flex items-center gap-2 px-3 py-1.5">
 				<CollapsibleTrigger
 					className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none"
-					aria-label={open ? "Collapse thread" : "Expand thread"}
+					aria-label={
+						open
+							? t({
+									message: "Collapse thread",
+								})
+							: t({
+									message: "Expand thread",
+								})
+					}
 				>
 					<LuChevronRight
 						className={cn(
@@ -153,20 +174,22 @@ export function PullRequestCommentThread({
 						</Avatar>
 					)}
 					<span className="shrink-0 font-medium text-foreground/90">
-						{comments.length === 1
-							? "1 comment"
-							: `${comments.length} comments`}
+						<Plural
+							value={comments.length}
+							one="# comment"
+							other="# comments"
+						/>
 					</span>
 				</CollapsibleTrigger>
 				<div className="flex shrink-0 items-center gap-1.5">
 					{isOutdated && (
 						<span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-							Outdated
+							<Trans>Outdated</Trans>
 						</span>
 					)}
 					{isResolved && (
 						<span className="rounded-full bg-[#dcfae8] px-1.5 py-0.5 text-[10px] font-medium text-[#00a558] [.dark_&]:bg-[#064e3b] [.dark_&]:text-[#34d399]">
-							Resolved
+							<Trans>Resolved</Trans>
 						</span>
 					)}
 					<button
@@ -175,10 +198,16 @@ export function PullRequestCommentThread({
 						className="shrink-0 text-muted-foreground hover:text-foreground"
 						aria-label={
 							isCopied
-								? "Copied"
+								? t({
+										message: "Copied",
+									})
 								: comments.length === 1
-									? "Copy comment"
-									: "Copy comments"
+									? t({
+											message: "Copy comment",
+										})
+									: t({
+											message: "Copy comments",
+										})
 						}
 					>
 						{isCopied ? (
@@ -194,7 +223,9 @@ export function PullRequestCommentThread({
 							rel="noreferrer"
 							onClick={(e) => e.stopPropagation()}
 							className="shrink-0 text-muted-foreground hover:text-foreground"
-							aria-label="Open on GitHub"
+							aria-label={t({
+								message: "Open on GitHub",
+							})}
 						>
 							<LuExternalLink className="size-3" />
 						</a>
@@ -217,7 +248,9 @@ export function PullRequestCommentThread({
 								handleReplySubmit();
 							}
 						}}
-						placeholder="Write a reply…"
+						placeholder={t({
+							message: "Write a reply…",
+						})}
 						rows={2}
 						className="resize-none bg-background text-xs"
 					/>
@@ -232,7 +265,11 @@ export function PullRequestCommentThread({
 							{isResolvePending && (
 								<LuLoaderCircle className="size-3 animate-spin" />
 							)}
-							{isResolved ? "Unresolve" : "Resolve conversation"}
+							{isResolved ? (
+								<Trans>Unresolve</Trans>
+							) : (
+								<Trans>Resolve conversation</Trans>
+							)}
 						</Button>
 						<Button
 							type="button"
@@ -243,7 +280,7 @@ export function PullRequestCommentThread({
 							{isReplyPending && (
 								<LuLoaderCircle className="size-3 animate-spin" />
 							)}
-							Reply
+							<Trans>Reply</Trans>
 						</Button>
 					</div>
 				</div>

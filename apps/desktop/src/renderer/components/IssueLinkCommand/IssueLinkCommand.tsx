@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Checkbox } from "@superset/ui/checkbox";
 import {
 	Command,
@@ -42,6 +43,7 @@ export function IssueLinkCommand({
 	tooltipLabel,
 	onSelect,
 }: IssueLinkCommandProps) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showClosed, setShowClosed] = useState(false);
@@ -168,7 +170,9 @@ export function IssueLinkCommand({
 			>
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search issues..."
+						placeholder={t({
+							message: "Search issues...",
+						})}
 						value={searchQuery}
 						onValueChange={setSearchQuery}
 					/>
@@ -182,23 +186,33 @@ export function IssueLinkCommand({
 							htmlFor={showClosedId}
 							className="cursor-pointer select-none text-xs text-muted-foreground"
 						>
-							Show closed
+							<Trans>Show closed</Trans>
 						</label>
 					</div>
 					<CommandList className="max-h-[420px]">
 						{filteredTasks.length === 0 && (
 							<CommandEmpty>
-								{showClosed ? "No issues found." : "No open issues found."}
+								{showClosed ? (
+									<Trans>No issues found.</Trans>
+								) : (
+									<Trans>No open issues found.</Trans>
+								)}
 							</CommandEmpty>
 						)}
 						{filteredTasks.length > 0 && (
 							<CommandGroup
 								heading={
 									searchQuery
-										? "Results"
+										? t({
+												message: "Results",
+											})
 										: showClosed
-											? "Recent issues"
-											: "Open issues"
+											? t({
+													message: "Recent issues",
+												})
+											: t({
+													message: "Open issues",
+												})
 								}
 							>
 								{filteredTasks.map((task) => {

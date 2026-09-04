@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@superset/ui/atoms/Avatar";
 import {
 	DropdownMenu,
@@ -17,6 +18,7 @@ interface AssigneeCellProps {
 }
 
 export function AssigneeCell({ info }: AssigneeCellProps) {
+	const { t } = useLingui();
 	const { tasks: taskActions } = useOptimisticActions();
 	const [open, setOpen] = useState(false);
 
@@ -60,7 +62,12 @@ export function AssigneeCell({ info }: AssigneeCellProps) {
 					) : task.assigneeExternalId ? (
 						<Avatar
 							size="xs"
-							fullName={task.assigneeDisplayName || "External"}
+							fullName={
+								task.assigneeDisplayName ||
+								t({
+									message: "External",
+								})
+							}
 							image={task.assigneeAvatarUrl}
 						/>
 					) : (
@@ -79,14 +86,16 @@ export function AssigneeCell({ info }: AssigneeCellProps) {
 						className="flex items-center gap-2"
 					>
 						<HiOutlineUserCircle className="size-5 text-muted-foreground shrink-0" />
-						<span className="text-sm">No assignee</span>
+						<span className="text-sm">
+							<Trans>No assignee</Trans>
+						</span>
 						{!assigneeId && !task.assigneeExternalId && (
 							<span className="ml-auto text-xs text-muted-foreground">✓</span>
 						)}
 					</DropdownMenuItem>
 					{isLoadingMembers && (
 						<div className="px-2 py-1.5 text-sm text-muted-foreground">
-							Loading members...
+							<Trans>Loading members...</Trans>
 						</div>
 					)}
 					{users.map((user) => (

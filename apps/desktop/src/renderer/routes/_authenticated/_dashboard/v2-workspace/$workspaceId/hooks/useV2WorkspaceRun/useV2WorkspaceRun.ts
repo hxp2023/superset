@@ -1,3 +1,7 @@
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
+import { errorMessage, rawErrorMessage } from "@superset/i18n/errors";
 import type { CreatePaneInput, WorkspaceStore } from "@superset/panes";
 import { toast } from "@superset/ui/sonner";
 import { workspaceTrpc } from "@superset/workspace-client";
@@ -25,7 +29,9 @@ const TERMINAL_GONE_ERROR_MESSAGES = [
 ] as const;
 
 function isTerminalGoneError(error: unknown): boolean {
-	const message = error instanceof Error ? error.message : String(error);
+	// Matches server wording, so it must see the raw English message — the
+	// translated display string would break this under any other locale.
+	const message = rawErrorMessage(error);
 	return TERMINAL_GONE_ERROR_MESSAGES.some((terminalMessage) =>
 		message.includes(terminalMessage),
 	);
@@ -53,7 +59,11 @@ function makeTerminalPane(
 	return {
 		id: paneId,
 		kind: "terminal",
-		titleOverride: "Workspace Run",
+		titleOverride: i18n._(
+			msg({
+				message: "Workspace Run",
+			}),
+		),
 		data: { terminalId } as TerminalPaneData,
 	};
 }
@@ -80,6 +90,7 @@ export function useV2WorkspaceRun({
 	matchedPresets,
 	resolvePresetCommands,
 }: UseV2WorkspaceRunArgs) {
+	const { t } = useLingui();
 	const { workspace } = useWorkspace();
 	const workspaceId = workspace.id;
 	const projectId = workspace.projectId;
@@ -160,10 +171,17 @@ export function useV2WorkspaceRun({
 		if (isStartingRef.current) return;
 		const command = buildTerminalCommand(definition?.commands);
 		if (!definition || !command) {
-			toast.error("No workspace run command configured", {
-				description:
-					"Add a lifecycle run script in Project Settings or mark a terminal script as the workspace run.",
-			});
+			toast.error(
+				t({
+					message: "No workspace run command configured",
+				}),
+				{
+					description: t({
+						message:
+							"Add a lifecycle run script in Project Settings or mark a terminal script as the workspace run.",
+					}),
+				},
+			);
 			return;
 		}
 
@@ -223,9 +241,19 @@ export function useV2WorkspaceRun({
 				state.addTab({ id: tabId, panes: [pane] });
 			}
 		} catch (error) {
-			toast.error("Failed to run workspace command", {
-				description: error instanceof Error ? error.message : "Unknown error",
-			});
+			toast.error(
+				t({
+					message: "Failed to run workspace command",
+				}),
+				{
+					description: errorMessage(
+						error,
+						t({
+							message: "Unknown error",
+						}),
+					),
+				},
+			);
 		} finally {
 			isStartingRef.current = false;
 			setIsPending(false);
@@ -234,6 +262,7 @@ export function useV2WorkspaceRun({
 		definition,
 		launcher,
 		store,
+		t,
 		updateWorkspaceRunTerminals,
 		workspaceId,
 		workspaceRunTerminals,
@@ -272,14 +301,25 @@ export function useV2WorkspaceRun({
 				if (!state || state.state !== "running") return;
 				delete state.stopRequestedAt;
 			});
-			toast.error("Failed to stop workspace run command", {
-				description: error instanceof Error ? error.message : "Unknown error",
-			});
+			toast.error(
+				t({
+					message: "Failed to stop workspace run command",
+				}),
+				{
+					description: errorMessage(
+						error,
+						t({
+							message: "Unknown error",
+						}),
+					),
+				},
+			);
 		} finally {
 			setIsPending(false);
 		}
 	}, [
 		runningState,
+		t,
 		updateWorkspaceRunTerminals,
 		workspaceId,
 		writeInputMutation,
@@ -313,15 +353,26 @@ export function useV2WorkspaceRun({
 				return;
 			}
 
-			toast.error("Failed to force stop workspace run command", {
-				description: error instanceof Error ? error.message : "Unknown error",
-			});
+			toast.error(
+				t({
+					message: "Failed to force stop workspace run command",
+				}),
+				{
+					description: errorMessage(
+						error,
+						t({
+							message: "Unknown error",
+						}),
+					),
+				},
+			);
 		} finally {
 			setIsPending(false);
 		}
 	}, [
 		killSessionMutation,
 		runningState,
+		t,
 		updateWorkspaceRunTerminals,
 		utils,
 		workspaceId,

@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@superset/ui/atoms/Avatar";
 import { Badge } from "@superset/ui/badge";
 import {
@@ -37,6 +38,7 @@ export function OrganizationDropdown({
 }: {
 	variant?: "topbar" | "expanded" | "collapsed";
 }) {
+	const { t } = useLingui();
 	const { data: session } = authClient.useSession();
 	const collections = useCollections();
 	const signOut = useSignOut();
@@ -44,7 +46,11 @@ export function OrganizationDropdown({
 	const [submitPromptOpen, setSubmitPromptOpen] = useState(false);
 	const openNewWindow = electronTrpc.window.openNew.useMutation({
 		onError: (error) =>
-			toast.error(`Failed to open new window: ${error.message}`),
+			toast.error(
+				t({
+					message: `Failed to open new window: ${error.message}`,
+				}),
+			),
 	});
 
 	// Per-window active org (from CollectionsProvider), not the shared session —
@@ -65,7 +71,12 @@ export function OrganizationDropdown({
 	}
 
 	const userName = session?.user?.name;
-	const displayName = activeOrganization?.name ?? userName ?? "Organization";
+	const displayName =
+		activeOrganization?.name ??
+		userName ??
+		t({
+			message: "Organization",
+		});
 
 	const { plan: currentPlan } = useCurrentPlan();
 	const isPaid = currentPlan !== "free";
@@ -84,7 +95,9 @@ export function OrganizationDropdown({
 			<button
 				type="button"
 				className="flex size-8 items-center justify-center rounded-md transition-colors text-muted-foreground hover:bg-fill-hover"
-				aria-label="Organization menu"
+				aria-label={t({
+					message: "Organization menu",
+				})}
 			>
 				<Avatar
 					size="xs"
@@ -97,7 +110,9 @@ export function OrganizationDropdown({
 			<button
 				type="button"
 				className="group flex w-full items-center gap-2 rounded-md px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground min-w-0"
-				aria-label="Organization menu"
+				aria-label={t({
+					message: "Organization menu",
+				})}
 			>
 				<Avatar
 					size="xs"
@@ -112,7 +127,9 @@ export function OrganizationDropdown({
 			<button
 				type="button"
 				className="group no-drag flex items-center gap-1.5 h-6 px-1.5 rounded border border-border/60 bg-secondary/50 hover:bg-secondary hover:border-border transition-all duration-150 ease-out focus:outline-none focus:ring-1 focus:ring-ring"
-				aria-label="Organization menu"
+				aria-label={t({
+					message: "Organization menu",
+				})}
 			>
 				<Avatar
 					size="xs"
@@ -147,13 +164,17 @@ export function OrganizationDropdown({
 						onSelect={() => navigate({ to: "/settings/organization" })}
 					>
 						<FiUsers className="h-4 w-4" />
-						<span>Manage members</span>
+						<span>
+							<Trans>Manage members</Trans>
+						</span>
 					</DropdownMenuItem>
 					{organizations && organizations.length > 0 && (
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger className="gap-2">
 								<HiOutlineArrowsRightLeft className="h-4 w-4" />
-								<span>Switch organization</span>
+								<span>
+									<Trans>Switch organization</Trans>
+								</span>
 							</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent>
 								{userEmail && (
@@ -186,7 +207,9 @@ export function OrganizationDropdown({
 									onSelect={() => navigate({ to: "/create-organization" })}
 								>
 									<HiOutlinePlus className="h-4 w-4" />
-									<span>Create organization</span>
+									<span>
+										<Trans>Create organization</Trans>
+									</span>
 								</DropdownMenuItem>
 							</DropdownMenuSubContent>
 						</DropdownMenuSub>
@@ -194,7 +217,9 @@ export function OrganizationDropdown({
 
 					<DropdownMenuItem onSelect={() => openNewWindow.mutate()}>
 						<HiOutlineWindow className="h-4 w-4" />
-						<span>New window</span>
+						<span>
+							<Trans>New window</Trans>
+						</span>
 					</DropdownMenuItem>
 
 					<HelpSubMenu onSubmitPrompt={() => setSubmitPromptOpen(true)} />
@@ -204,7 +229,9 @@ export function OrganizationDropdown({
 					{/* Account */}
 					<DropdownMenuItem onSelect={handleSignOut} className="gap-2">
 						<HiOutlineArrowRightOnRectangle className="h-4 w-4" />
-						<span>Log out</span>
+						<span>
+							<Trans>Log out</Trans>
+						</span>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

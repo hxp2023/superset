@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { COMPANY } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
 import { useState } from "react";
@@ -63,25 +64,39 @@ export function UpdateRequiredPage({
 					</div>
 
 					<div className="flex flex-col items-center gap-2 text-center">
-						<h1 className="text-xl font-semibold">Update Required</h1>
+						<h1 className="text-xl font-semibold">
+							<Trans>Update Required</Trans>
+						</h1>
 						<p className="max-w-md text-muted-foreground">
-							{message ||
-								"A new version of Superset is required to continue. Please update to the latest version."}
+							{message || (
+								<Trans>
+									A new version of Superset is required to continue. Please
+									update to the latest version.
+								</Trans>
+							)}
 						</p>
 					</div>
 
 					<div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
-						<span>Your version: {currentVersion}</span>
-						{minimumVersion && <span>Required version: {minimumVersion}+</span>}
+						<span>
+							<Trans>Your version: {currentVersion}</Trans>
+						</span>
+						{minimumVersion && (
+							<span>
+								<Trans>Required version: {minimumVersion}+</Trans>
+							</span>
+						)}
 					</div>
 
 					<p className="text-xs text-muted-foreground/70">
-						Your terminal sessions won't be interrupted.
+						<Trans>Your terminal sessions won't be interrupted.</Trans>
 					</p>
 
 					{isError && (
 						<p className="text-sm text-destructive select-text cursor-text break-words">
-							{updateStatus.error || "Update check failed. Please try again."}
+							{updateStatus.error || (
+								<Trans>Update check failed. Please try again.</Trans>
+							)}
 						</p>
 					)}
 
@@ -95,9 +110,11 @@ export function UpdateRequiredPage({
 								{installMutation.isPending && (
 									<HiArrowPath className="h-4 w-4 animate-spin" />
 								)}
-								{installMutation.isPending
-									? "Installing..."
-									: "Install & Restart"}
+								{installMutation.isPending ? (
+									<Trans>Installing...</Trans>
+								) : (
+									<Trans>Install & Restart</Trans>
+								)}
 							</Button>
 						) : (
 							<Button
@@ -108,16 +125,18 @@ export function UpdateRequiredPage({
 								<HiArrowPath
 									className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
 								/>
-								{isChecking
-									? "Checking..."
-									: isDownloading
-										? "Downloading..."
-										: "Check for Update"}
+								{isChecking ? (
+									<Trans>Checking...</Trans>
+								) : isDownloading ? (
+									<Trans>Downloading...</Trans>
+								) : (
+									<Trans>Check for Update</Trans>
+								)}
 							</Button>
 						)}
 
 						<Button variant="ghost" onClick={handleDownloadManually}>
-							Download Manually
+							<Trans>Download Manually</Trans>
 						</Button>
 					</div>
 				</div>

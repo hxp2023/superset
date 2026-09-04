@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import {
 	DropdownMenu,
@@ -45,6 +46,7 @@ function readStoredAgent(): SelectedAgent {
 }
 
 export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const hostService = useLocalHostService();
 	const { machineId, activeHostUrl } = hostService;
@@ -137,29 +139,50 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 	};
 
 	const submitBlocker = useMemo<string | null>(() => {
-		if (!selectedProjectId) return "Select a project";
-		if (!hostId) return "No active host";
+		if (!selectedProjectId)
+			return t({
+				message: "Select a project",
+			});
+		if (!hostId)
+			return t({
+				message: "No active host",
+			});
 		if (hostId !== machineId) {
 			const remote = otherHosts.find((host) => host.id === hostId);
-			if (!remote?.isOnline) return "Host is offline";
+			if (!remote?.isOnline)
+				return t({
+					message: "Host is offline",
+				});
 		} else if (!activeHostUrl) {
-			return "Host service is not running";
+			return t({
+				message: "Host service is not running",
+			});
 		}
 		// While the host's project list is still loading, needsSetup is null —
 		// block until we know whether the project is actually set up on the
 		// chosen host, otherwise the server-side guard becomes the only check.
-		if (setUpProjectIds === null) return "Checking host…";
+		if (setUpProjectIds === null)
+			return t({
+				message: "Checking host…",
+			});
 		if (selectedProject?.needsSetup === true) {
-			return "Project not set up on this host";
+			return t({
+				message: "Project not set up on this host",
+			});
 		}
 		// Agent UUIDs are host-scoped. Right after a host switch the stored id
 		// from the previous host is still in selectedAgent until the agent
 		// query resolves and the corrective effect runs — block submission so
 		// we don't send an id this host doesn't recognize.
 		if (selectedAgent !== NONE) {
-			if (!v2AgentsFetched) return "Checking agents…";
+			if (!v2AgentsFetched)
+				return t({
+					message: "Checking agents…",
+				});
 			if (!validAgentIds.has(selectedAgent)) {
-				return "Selected agent is not available on this host";
+				return t({
+					message: "Selected agent is not available on this host",
+				});
 			}
 		}
 		return null;
@@ -174,13 +197,14 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 		machineId,
 		otherHosts,
 		activeHostUrl,
+		t,
 	]);
 
 	const handleOpen = () => {
 		if (submitBlocker) {
 			if (hostId === machineId && !activeHostUrl) {
 				showHostServiceUnavailableToast(hostService, {
-					action: "open the task in a workspace",
+					action: "openTaskInWorkspace",
 				});
 			} else {
 				toast.error(submitBlocker);
@@ -242,7 +266,9 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<span className="text-xs text-muted-foreground">Open in workspace</span>
+			<span className="text-xs text-muted-foreground">
+				<Trans>Open in workspace</Trans>
+			</span>
 			<DevicePicker
 				hostId={hostId}
 				onSelectHostId={(next) => {
@@ -270,7 +296,9 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 										<span className="truncate">{selectedProject.name}</span>
 									</>
 								) : (
-									<span className="text-muted-foreground">Select project</span>
+									<span className="text-muted-foreground">
+										<Trans>Select project</Trans>
+									</span>
 								)}
 							</span>
 							<HiChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -281,7 +309,9 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 						className="w-[--radix-dropdown-menu-trigger-width]"
 					>
 						{recentProjects.length === 0 ? (
-							<DropdownMenuItem disabled>No projects found</DropdownMenuItem>
+							<DropdownMenuItem disabled>
+								<Trans>No projects found</Trans>
+							</DropdownMenuItem>
 						) : (
 							recentProjects.map((project) => (
 								<DropdownMenuItem
@@ -297,7 +327,7 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 									<span className="flex-1 truncate">{project.name}</span>
 									{project.needsSetup === true && (
 										<span className="text-[10px] text-amber-500 shrink-0">
-											not set up
+											<Trans>not set up</Trans>
 										</span>
 									)}
 								</DropdownMenuItem>
@@ -307,7 +337,9 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 				</DropdownMenu>
 				<Button
 					size="icon"
-					aria-label="Open in workspace"
+					aria-label={t({
+						message: "Open in workspace",
+					})}
 					className="h-8 w-8 shrink-0"
 					disabled={!!submitBlocker}
 					onClick={handleOpen}
@@ -318,11 +350,15 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 			<AgentSelect<SelectedAgent>
 				agents={v2Agents}
 				value={selectedAgent}
-				placeholder="Select agent"
+				placeholder={t({
+					message: "Select agent",
+				})}
 				onValueChange={setSelectedAgent}
 				triggerClassName="h-8 text-xs"
 				allowNone
-				noneLabel="No agent"
+				noneLabel={t({
+					message: "No agent",
+				})}
 				noneValue={NONE}
 			/>
 		</div>

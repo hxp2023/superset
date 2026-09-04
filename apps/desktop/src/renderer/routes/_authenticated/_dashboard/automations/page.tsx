@@ -1,3 +1,7 @@
+import { plural } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
+import { errorMessage } from "@superset/i18n/errors";
 import { COMPANY } from "@superset/shared/constants";
 import { describeSchedule } from "@superset/shared/rrule";
 import type { RouterOutputs } from "@superset/trpc";
@@ -99,6 +103,7 @@ function settledErrorMessage(result: PromiseSettledResult<unknown>) {
 }
 
 function AutomationsPage() {
+	const { t } = useLingui();
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id;
 
@@ -138,7 +143,12 @@ function AutomationsPage() {
 		}) => apiTrpcClient.automation.runNow.mutate({ id }),
 		onMutate: ({ id }) => addRetrying([id]),
 		onSettled: (_data, _error, { id }) => removeRetrying([id]),
-		onSuccess: (_, { name }) => toast.success(`Running "${name}" now`),
+		onSuccess: (_, { name }) =>
+			toast.success(
+				t({
+					message: `Running "${name}" now`,
+				}),
+			),
 		onError: (error, { targetHostId }) => {
 			const message = error instanceof Error ? error.message : null;
 			if (isHostOfflineError(message)) {
@@ -146,10 +156,15 @@ function AutomationsPage() {
 				return;
 			}
 			if (isStaleAgentError(message)) {
-				toast.error(STALE_AGENT_HELP);
+				toast.error(i18n._(STALE_AGENT_HELP));
 				return;
 			}
-			toast.error(message ?? "Failed to trigger run");
+			toast.error(
+				message ??
+					t({
+						message: "Failed to trigger run",
+					}),
+			);
 		},
 	});
 
@@ -173,9 +188,12 @@ function AutomationsPage() {
 			const retried = outcomes.length - failed.length;
 			if (retried > 0) {
 				toast.success(
-					retried === 1
-						? "Retrying 1 automation"
-						: `Retrying ${retried} automations`,
+					t({
+						message: plural(retried, {
+							one: "Retrying # automation",
+							other: "Retrying # automations",
+						}),
+					}),
 				);
 			}
 			if (failed.length === 0) return;
@@ -191,12 +209,19 @@ function AutomationsPage() {
 			);
 			if (other.length === 0) return;
 			const message = settledErrorMessage(other[0].result);
+			const failedCount = other.length;
+			const totalCount = outcomes.length;
 			toast.error(
 				other.length === 1
 					? isStaleAgentError(message)
-						? STALE_AGENT_HELP
-						: (message ?? "Failed to retry automation")
-					: `Failed to retry ${other.length} of ${outcomes.length} automations`,
+						? i18n._(STALE_AGENT_HELP)
+						: (message ??
+							t({
+								message: "Failed to retry automation",
+							}))
+					: t({
+							message: `Failed to retry ${failedCount} of ${totalCount} automations`,
+						}),
 			);
 		},
 	});
@@ -215,11 +240,24 @@ function AutomationsPage() {
 		onSuccess: (_, { id, enabled, name }) => {
 			void utils.automation.list.invalidate();
 			void utils.automation.get.invalidate({ id });
-			toast.success(enabled ? `"${name}" resumed` : `"${name}" paused`);
+			toast.success(
+				enabled
+					? t({
+							message: `"${name}" resumed`,
+						})
+					: t({
+							message: `"${name}" paused`,
+						}),
+			);
 		},
 		onError: (error) =>
 			toast.error(
-				error instanceof Error ? error.message : "Failed to update automation",
+				errorMessage(
+					error,
+					t({
+						message: "Failed to update automation",
+					}),
+				),
 			),
 	});
 
@@ -229,11 +267,20 @@ function AutomationsPage() {
 		onSuccess: (_, { name }) => {
 			void utils.automation.list.invalidate();
 			setPendingDelete(null);
-			toast.success(`"${name}" deleted`);
+			toast.success(
+				t({
+					message: `"${name}" deleted`,
+				}),
+			);
 		},
 		onError: (error) =>
 			toast.error(
-				error instanceof Error ? error.message : "Failed to delete automation",
+				errorMessage(
+					error,
+					t({
+						message: "Failed to delete automation",
+					}),
+				),
 			),
 	});
 
@@ -430,7 +477,11 @@ function AutomationsPage() {
 				agentChoices[0];
 			if (!choice) throw new Error("No agent available yet");
 			return apiTrpcClient.automation.create.mutate({
-				name: template?.name ?? "Untitled",
+				name: template
+					? i18n._(template.name)
+					: t({
+							message: "Untitled",
+						}),
 				prompt: template?.prompt ?? "",
 				// Preset slug when unambiguous — instance UUIDs die when the host's
 				// agent-config table is re-seeded, orphaning the automation.
@@ -453,7 +504,12 @@ function AutomationsPage() {
 			// Raw Postgres errors are multi-line SQL dumps — keep the first line.
 			const message =
 				error instanceof Error ? error.message.split("\n")[0]?.trim() : null;
-			toast.error(message || "Failed to create automation");
+			toast.error(
+				message ||
+					t({
+						message: "Failed to create automation",
+					}),
+			);
 		},
 	});
 
@@ -469,7 +525,11 @@ function AutomationsPage() {
 	const handleCreateWithAgent = () => {
 		if (creatingWithAgent) return;
 		if (!machineId) {
-			toast.error("Host service is not running");
+			toast.error(
+				t({
+					message: "Host service is not running",
+				}),
+			);
 			return;
 		}
 		const terminalAgents = agentChoices.filter((a) => a.id !== "superset");
@@ -477,7 +537,11 @@ function AutomationsPage() {
 		const agent =
 			terminalAgents.find((a) => a.id === stored)?.id ?? terminalAgents[0]?.id;
 		if (!agent) {
-			toast.error("No terminal agent is configured on this device");
+			toast.error(
+				t({
+					message: "No terminal agent is configured on this device",
+				}),
+			);
 			return;
 		}
 		setCreatingWithAgent(true);
@@ -571,7 +635,7 @@ function AutomationsPage() {
 				<div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pb-12">
 					<div className="flex items-center justify-between">
 						<h1 className="text-xl font-semibold tracking-tight">
-							Automations
+							<Trans>Automations</Trans>
 						</h1>
 						<div className="flex items-center gap-2">
 							<Tooltip>
@@ -586,13 +650,17 @@ function AutomationsPage() {
 											href={`${COMPANY.DOCS_URL}/automations`}
 											target="_blank"
 											rel="noreferrer"
-											aria-label="Automations docs"
+											aria-label={t({
+												message: "Automations docs",
+											})}
 										>
 											<LuCircleHelp className="size-4" />
 										</a>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>Automations docs</TooltipContent>
+								<TooltipContent>
+									<Trans>Automations docs</Trans>
+								</TooltipContent>
 							</Tooltip>
 							<Button
 								type="button"
@@ -603,7 +671,9 @@ function AutomationsPage() {
 								onClick={handleCreateWithAgent}
 							>
 								<LuSparkles className="size-4" />
-								<span>Create with AI</span>
+								<span>
+									<Trans>Create with AI</Trans>
+								</span>
 							</Button>
 							<Button
 								type="button"
@@ -613,7 +683,9 @@ function AutomationsPage() {
 								onClick={() => createMutation.mutate(null)}
 							>
 								<LuPlus className="size-4" />
-								<span>New automation</span>
+								<span>
+									<Trans>New automation</Trans>
+								</span>
 							</Button>
 						</div>
 					</div>
@@ -649,7 +721,9 @@ function AutomationsPage() {
 										value="mine"
 										className="h-8 rounded-md px-3 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground"
 									>
-										<span className="text-sm">Mine</span>
+										<span className="text-sm">
+											<Trans>Mine</Trans>
+										</span>
 										<span className="ml-1 tabular-nums text-xs text-muted-foreground">
 											{mineCount}
 										</span>
@@ -658,7 +732,9 @@ function AutomationsPage() {
 										value="team"
 										className="h-8 rounded-md px-3 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground"
 									>
-										<span className="text-sm">Team</span>
+										<span className="text-sm">
+											<Trans>Team</Trans>
+										</span>
 										<span className="ml-1 tabular-nums text-xs text-muted-foreground">
 											{teamCount}
 										</span>
@@ -684,14 +760,18 @@ function AutomationsPage() {
 															retryAllMutation.isPending && "animate-spin",
 														)}
 													/>
-													<span>Retry all</span>
+													<span>
+														<Trans>Retry all</Trans>
+													</span>
 													<span className="tabular-nums text-xs text-muted-foreground">
 														{failedMine.length}
 													</span>
 												</Button>
 											</TooltipTrigger>
 											<TooltipContent>
-												Retry every automation whose last run failed
+												<Trans>
+													Retry every automation whose last run failed
+												</Trans>
 											</TooltipContent>
 										</Tooltip>
 									)}
@@ -700,8 +780,12 @@ function AutomationsPage() {
 										<Input
 											value={search}
 											onChange={(e) => setSearch(e.target.value)}
-											placeholder="Search"
-											aria-label="Search automations"
+											placeholder={t({
+												message: "Search",
+											})}
+											aria-label={t({
+												message: "Search automations",
+											})}
 											className="h-8 w-44 pl-8"
 										/>
 									</div>
@@ -726,11 +810,15 @@ function AutomationsPage() {
 									>
 										<LuTriangleAlert />
 									</EmptyMedia>
-									<EmptyTitle>Couldn't load automations</EmptyTitle>
+									<EmptyTitle>
+										<Trans>Couldn't load automations</Trans>
+									</EmptyTitle>
 									<EmptyDescription className="select-text cursor-text">
-										{automationsError instanceof Error
-											? automationsError.message
-											: "The request failed."}
+										{automationsError instanceof Error ? (
+											automationsError.message
+										) : (
+											<Trans>The request failed.</Trans>
+										)}
 									</EmptyDescription>
 								</EmptyHeader>
 								<Button
@@ -741,7 +829,9 @@ function AutomationsPage() {
 									}}
 								>
 									<LuRotateCw className="size-4" />
-									<span>Try again</span>
+									<span>
+										<Trans>Try again</Trans>
+									</span>
 								</Button>
 							</Empty>
 						) : showMineEmptyState ? (
@@ -760,9 +850,13 @@ function AutomationsPage() {
 									>
 										<LuSearchX />
 									</EmptyMedia>
-									<EmptyTitle>No team automations</EmptyTitle>
+									<EmptyTitle>
+										<Trans>No team automations</Trans>
+									</EmptyTitle>
 									<EmptyDescription>
-										Nobody on your team has shared automations yet.
+										<Trans>
+											Nobody on your team has shared automations yet.
+										</Trans>
 									</EmptyDescription>
 								</EmptyHeader>
 							</Empty>
@@ -779,7 +873,9 @@ function AutomationsPage() {
 											<TableHead className={cn(DATA_TABLE_HEAD_CELL, "pl-4")}>
 												<SortableHeader
 													field="name"
-													label="Name"
+													label={t({
+														message: "Name",
+													})}
 													sortField={sortField}
 													sortDirection={sortDirection}
 													onSort={handleSort}
@@ -791,7 +887,9 @@ function AutomationsPage() {
 												>
 													<SortableHeader
 														field="owner"
-														label="Owner"
+														label={t({
+															message: "Owner",
+														})}
 														sortField={sortField}
 														sortDirection={sortDirection}
 														onSort={handleSort}
@@ -803,7 +901,9 @@ function AutomationsPage() {
 											>
 												<SortableHeader
 													field="schedule"
-													label="Schedule"
+													label={t({
+														message: "Schedule",
+													})}
 													sortField={sortField}
 													sortDirection={sortDirection}
 													onSort={handleSort}
@@ -814,7 +914,9 @@ function AutomationsPage() {
 											>
 												<SortableHeader
 													field="status"
-													label="Status"
+													label={t({
+														message: "Status",
+													})}
 													sortField={sortField}
 													sortDirection={sortDirection}
 													onSort={handleSort}
@@ -825,7 +927,9 @@ function AutomationsPage() {
 											>
 												{/* Sortable heads are buttons, which Chrome's UA sheet
 												    exempts from the header's `uppercase` — match them. */}
-												<span className="normal-case">Last run</span>
+												<span className="normal-case">
+													<Trans>Last run</Trans>
+												</span>
 											</TableHead>
 											<TableHead
 												className={cn(DATA_TABLE_HEAD_CELL, "w-20 pr-4")}
@@ -839,7 +943,7 @@ function AutomationsPage() {
 													colSpan={columnCount}
 													className="h-24 text-center text-sm text-muted-foreground"
 												>
-													No automations match
+													<Trans>No automations match</Trans>
 												</TableCell>
 											</TableRow>
 										) : sortField ? (
@@ -847,11 +951,26 @@ function AutomationsPage() {
 										) : (
 											<>
 												{needsAttention.length > 0 &&
-													sectionRow("Needs attention", true)}
+													sectionRow(
+														t({
+															message: "Needs attention",
+														}),
+														true,
+													)}
 												{needsAttention.map(renderAutomationRow)}
-												{upNext.length > 0 && sectionRow("Up next")}
+												{upNext.length > 0 &&
+													sectionRow(
+														t({
+															message: "Up next",
+														}),
+													)}
 												{upNext.map(renderAutomationRow)}
-												{pausedVisible.length > 0 && sectionRow("Paused")}
+												{pausedVisible.length > 0 &&
+													sectionRow(
+														t({
+															message: "Paused",
+														}),
+													)}
 												{pausedVisible.map(renderAutomationRow)}
 											</>
 										)}
@@ -865,18 +984,20 @@ function AutomationsPage() {
 						<div className="relative mt-4 flex items-center gap-2.5 rounded-lg border border-border/60 px-3 py-2 pr-9">
 							<LuTerminal className="size-3.5 shrink-0 text-muted-foreground" />
 							<p className="min-w-0 truncate text-xs text-muted-foreground">
-								Tell any agent to use the{" "}
-								<code className="select-text cursor-text rounded bg-accent/60 px-1 py-0.5 font-mono text-[11px] text-foreground">
-									superset
-								</code>{" "}
-								CLI to spin up workspaces, run tasks, or manage automations.{" "}
+								<Trans>
+									Tell any agent to use the{" "}
+									<code className="select-text cursor-text rounded bg-accent/60 px-1 py-0.5 font-mono text-[11px] text-foreground">
+										superset
+									</code>{" "}
+									CLI to spin up workspaces, run tasks, or manage automations.
+								</Trans>{" "}
 								<a
 									href={`${COMPANY.DOCS_URL}/cli/getting-started`}
 									target="_blank"
 									rel="noreferrer"
 									className="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80"
 								>
-									CLI docs
+									<Trans>CLI docs</Trans>
 								</a>
 							</p>
 							<Button
@@ -884,7 +1005,9 @@ function AutomationsPage() {
 								variant="ghost"
 								size="icon-sm"
 								onClick={() => setCliHintDismissed(true)}
-								aria-label="Dismiss"
+								aria-label={t({
+									message: "Dismiss",
+								})}
 								className="absolute right-1.5 top-1/2 size-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 							>
 								<LuX className="size-3.5" />
@@ -910,18 +1033,22 @@ function AutomationsPage() {
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete automation?</AlertDialogTitle>
+						<AlertDialogTitle>
+							<Trans>Delete automation?</Trans>
+						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{pendingDelete ? (
-								<>
+								<Trans>
 									"{pendingDelete.name}" will stop firing and its run history
 									will be removed. This can't be undone.
-								</>
+								</Trans>
 							) : null}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>
+							<Trans>Cancel</Trans>
+						</AlertDialogCancel>
 						<AlertDialogAction
 							disabled={deleteMutation.isPending}
 							onClick={() => {
@@ -933,7 +1060,7 @@ function AutomationsPage() {
 								}
 							}}
 						>
-							Delete
+							<Trans>Delete</Trans>
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

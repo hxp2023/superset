@@ -1,10 +1,13 @@
+import { Trans } from "@lingui/react/macro";
+import { FEATURE_FLAGS } from "@superset/shared/constants";
 import {
-	INTEGRATIONS,
 	type IntegrationProvider,
+	offeredIntegrations,
 } from "@superset/shared/integrations";
 import { Button } from "@superset/ui/button";
 import { Skeleton } from "@superset/ui/skeleton";
-import { useCallback, useEffect, useState } from "react";
+import { useFeatureFlagPayload } from "posthog-js/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BsMicrosoftTeams } from "react-icons/bs";
 import { FaGithub, FaGoogle, FaSlack } from "react-icons/fa";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
@@ -58,6 +61,14 @@ export function IntegrationsSettings({
 	// window against the other one's organization.
 	const activeOrganizationId = useActiveOrganizationId();
 	const searchQuery = useSettingsSearchQuery();
+
+	const enabledTriggerKinds = useFeatureFlagPayload(
+		FEATURE_FLAGS.AUTOMATION_EVENT_TRIGGERS,
+	);
+	const offered = useMemo(
+		() => offeredIntegrations(enabledTriggerKinds),
+		[enabledTriggerKinds],
+	);
 
 	const { data: integrations, isPending: isIntegrationsPending } =
 		cloudTrpc.integration.list.useQuery(
@@ -167,13 +178,17 @@ export function IntegrationsSettings({
 		return (
 			<div className="p-6 max-w-4xl w-full">
 				<div className="mb-8">
-					<h2 className="text-xl font-semibold">Integrations</h2>
+					<h2 className="text-xl font-semibold">
+						<Trans>Integrations</Trans>
+					</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Connect external services to sync data.
+						<Trans>Connect external services to sync data.</Trans>
 					</p>
 				</div>
 				<p className="text-sm text-muted-foreground">
-					You need to be part of an organization to use integrations.
+					<Trans>
+						You need to be part of an organization to use integrations.
+					</Trans>
 				</p>
 			</div>
 		);
@@ -182,14 +197,18 @@ export function IntegrationsSettings({
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Integrations</h2>
+				<h2 className="text-xl font-semibold">
+					<Trans>Integrations</Trans>
+				</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Connect external services to sync data with your organization.
+					<Trans>
+						Connect external services to sync data with your organization.
+					</Trans>
 				</p>
 			</div>
 
 			<div className="space-y-1">
-				{INTEGRATIONS.map((integration) => {
+				{offered.map((integration) => {
 					const itemId = integrationSettingItemId(integration.provider);
 					if (!isItemVisible(itemId, visibleItems)) return null;
 					const state = providerStates[integration.provider];
@@ -199,7 +218,7 @@ export function IntegrationsSettings({
 							name={
 								<HighlightText text={integration.label} query={searchQuery} />
 							}
-							description={integration.description}
+							description={integration.description()}
 							icon={INTEGRATION_ICONS[integration.provider]}
 							isConnected={state.isConnected}
 							connectedOrgName={state.connectedOrgName}
@@ -211,7 +230,9 @@ export function IntegrationsSettings({
 			</div>
 
 			<p className="mt-6 text-xs text-muted-foreground">
-				Manage integrations in the web app to connect and configure services.
+				<Trans>
+					Manage integrations in the web app to connect and configure services.
+				</Trans>
 			</p>
 		</div>
 	);
@@ -248,11 +269,15 @@ function IntegrationRow({
 				}
 			/>
 			<span className="text-xs text-muted-foreground">
-				{isConnected
-					? connectedOrgName
-						? `Connected to ${connectedOrgName}`
-						: "Connected"
-					: "Not connected"}
+				{isConnected ? (
+					connectedOrgName ? (
+						<Trans>Connected to {connectedOrgName}</Trans>
+					) : (
+						<Trans>Connected</Trans>
+					)
+				) : (
+					<Trans>Not connected</Trans>
+				)}
 			</span>
 		</div>
 	);
@@ -279,7 +304,7 @@ function IntegrationRow({
 					className="gap-2"
 				>
 					<HiOutlineArrowTopRightOnSquare className="size-4" />
-					{isConnected ? "Manage" : "Connect"}
+					{isConnected ? <Trans>Manage</Trans> : <Trans>Connect</Trans>}
 				</Button>
 			</div>
 		</div>

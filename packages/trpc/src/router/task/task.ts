@@ -17,7 +17,7 @@ import { and, asc, desc, eq, ilike, isNull, lt, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { syncTask } from "../../lib/integrations/sync";
-import { protectedProcedure, type TRPCContext } from "../../trpc";
+import { protectedProcedure, type TRPCContext, userError } from "../../trpc";
 import { verifyOrgMembership } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import {
@@ -37,7 +37,7 @@ const TASK_SLUG_CONSTRAINT = "tasks_org_slug_unique";
 const TASK_SLUG_RETRY_LIMIT = 5;
 
 type DbWsTransaction = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
-type Executor = typeof dbWs | DbWsTransaction;
+type Executor = typeof db | DbWsTransaction;
 
 function isConstraintError(error: unknown, constraint: string): boolean {
 	if (!error || typeof error !== "object") {
@@ -266,9 +266,10 @@ async function createTask(
 		}
 	}
 
-	throw new TRPCError({
+	throw userError({
 		code: "CONFLICT",
 		message: "Failed to generate a unique task slug",
+		i18nKey: "serverError.task.failedToGenerateAUniqueTask",
 	});
 }
 

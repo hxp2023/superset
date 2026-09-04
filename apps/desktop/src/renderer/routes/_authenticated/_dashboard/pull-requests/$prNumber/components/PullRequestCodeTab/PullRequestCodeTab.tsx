@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type {
 	CodeViewItem,
 	CodeViewOptions,
@@ -7,22 +8,11 @@ import type {
 import { parsePatchFiles } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
 import { FileTree as PierreFileTree, useFileTree } from "@pierre/trees/react";
+import { errorMessage } from "@superset/i18n/errors";
 import { sanitizePromptForPty } from "@superset/shared/agent-prompt-launch";
 import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-	LuChevronDown,
-	LuChevronRight,
-	LuChevronUp,
-	LuColumns2,
-	LuFiles,
-	LuFoldVertical,
-	LuRows2,
-	LuUnfoldVertical,
-} from "react-icons/lu";
 import {
 	type AgentPromptFileSide,
 	formatAgentPromptWithFileContext,
@@ -30,16 +20,18 @@ import {
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import {
 	createPierreTreeStyle,
+	formatDiffStats,
 	PIERRE_TREE_UNSAFE_CSS,
 	type PierreGitStatus,
 } from "renderer/lib/pierreTree";
 import { normalizeTerminalCommand } from "renderer/lib/terminal/launch-command";
 import { WorkItemDetailState } from "renderer/routes/_authenticated/_dashboard/components/WorkItemDetailState";
 import type { AgentTarget } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/hooks/useDiffCommentTarget";
-import { useDiffCodeViewTheme } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/hooks/useDiffCodeViewTheme";
+import { useDiffCardCodeViewTheme } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/DiffPane/hooks/useDiffCodeViewTheme";
+import { DiffFileCollapseButton } from "renderer/screens/main/components/DiffFileCollapseButton";
+import { DiffFileHeaderName } from "renderer/screens/main/components/DiffFileHeaderName";
+import { DiffViewToolbar } from "renderer/screens/main/components/DiffViewToolbar";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
-import { useSettings } from "renderer/stores/settings";
-import { useResolvedTheme } from "renderer/stores/theme";
 import { useWorkspaceCreates } from "renderer/stores/workspace-creates/useWorkspaceCreates";
 import { PullRequestCommentComposer } from "../PullRequestCommentComposer";
 import { PullRequestCommentThread } from "../PullRequestCommentThread";
@@ -128,104 +120,6 @@ const NARROW_WINDOW_WIDTH_THRESHOLD = 1400;
 // nothing stops it tracking width for the tab's whole lifetime.
 const NARROW_PANE_WIDTH_HIDE_TREE_THRESHOLD = 1150;
 
-// Extra unsafeCSS appended to (not replacing) useDiffCodeViewTheme's own —
-// that hook is shared with the v2-workspace DiffPane, so styling specific to
-// this tab lives here instead of there.
-//
-// [data-diff]'s --diffs-light-bg/--diffs-dark-bg override: the shared hook
-// sources its background from the *terminal* theme
-// (terminalTheme?.background ?? var(--background)), which makes sense for
-// DiffPane sitting next to terminal panes, but this tab has no terminal
-// nearby and the terminal theme's default background doesn't match this
-// app's own var(--background) — re-overridden here (both are !important, so
-// this wins by appearing later in the concatenated string) back to the
-// token the rest of the tab actually uses. The CodeView root's own
-// `style.backgroundColor` gets the equivalent fix directly as a prop
-// (see codeViewStyle) since that one isn't reachable through unsafeCSS.
-//
-// Card-per-file look: Pierre has no single wrapping element around one
-// file's header+content (confirmed live: [data-diffs-header]'s
-// parentElement is the shadow root itself), so the "card" is an illusion
-// built from two adjacent elements — the header gets rounded top corners,
-// the diff body gets rounded bottom corners, matching borders on both meet
-// with no gap between them, and layout.gap (set where this is used) puts
-// real space before the *next* file's header. Mirrors packages/ui's shared
-// Card component's own recipe (rounded-xl border shadow-sm) rather than
-// inventing a new one.
-//
-// A function (not a static string) because the additions/deletions colors
-// are theme-branched in JS — mirroring useDiffCodeViewTheme's own
-// additionColor/deletionColor — rather than relying on a `.dark` selector,
-// which can't reach in from outside the shadow root the way a CSS custom
-// property can.
-function prCodeTabCardUnsafeCss(
-	additionsColor: string,
-	deletionsColor: string,
-): string {
-	return `
-	[data-diffs-header='default'] {
-		border: 1px solid var(--border);
-		border-bottom: none;
-		border-top-left-radius: 0.75rem;
-		border-top-right-radius: 0.75rem;
-		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-		/* Pushes [data-metadata] (the +/- count) to the card's right edge
-		 * instead of leaving it flush against the filename — matches the
-		 * PR list row's own diff-stat placement. Overrides the shared
-		 * hook's flex-start (same selector, appended later so it wins). */
-		justify-content: space-between;
-		/* Pierre's own padding (0 16px) sits the collapse chevron well right
-		 * of the Files pill above it (px-2 on the toolbar row, 8px) — cut to
-		 * match so the two rows read as left-aligned. */
-		padding-left: 8px;
-	}
-	/* Every header carries data-sticky from first render (confirmed live —
-	 * it's there even scrolled to the very top), since position: sticky
-	 * pins it while the code column scrolls behind it, not clipped away.
-	 * Rounded top corners cut a notch out of the header's own background,
-	 * and whatever's scrolled behind shows through that notch as a stray
-	 * border/text sliver. Squaring the top only (the diff body below,
-	 * [data-diff], keeps its rounded bottom) removes the notch entirely —
-	 * reads as a flat toolbar cap on a rounded card, not a broken corner. */
-	[data-diffs-header='default'][data-sticky] {
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
-	}
-	/* Pierre renders the full relative path as one plain-text node here;
-	 * replaced by our own filename/directory split rendered through
-	 * renderHeaderFilenameSuffix, which sits right after this in the DOM so
-	 * hiding it (rather than removing/reordering) keeps the same slot order. */
-	[data-diffs-header='default'] [data-title] {
-		display: none;
-	}
-	/* Match PullRequestRow's diff-stat colors (the PR list view) instead of
-	 * the shared hook's own green/red, which use a different palette. */
-	[data-diffs-header='default'] [data-additions-count] {
-		color: ${additionsColor};
-	}
-	[data-diffs-header='default'] [data-deletions-count] {
-		color: ${deletionsColor};
-	}
-	[data-diff] {
-		--diffs-light-bg: var(--background) !important;
-		--diffs-dark-bg: var(--background) !important;
-		border: 1px solid var(--border);
-		border-top: none;
-		border-bottom-left-radius: 0.75rem;
-		border-bottom-right-radius: 0.75rem;
-		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	}
-	/* The shared hook zeroes this strip's own inline padding to sit flush
-	 * with DiffPane's edge-to-edge pane — appropriate there, but it leaves
-	 * "N unmodified lines" text touching this card's left border with no
-	 * breathing room. Restored (higher specificity: same selector, later in
-	 * the concatenated string, so this !important wins over that one). */
-	[data-separator^='line-info'] [data-separator-content] {
-		padding-inline: 8px !important;
-	}
-`;
-}
-
 // GitHub's diff-file-type vocabulary (from parsePatchFiles) mapped onto
 // Pierre's tree git-status vocabulary — a distinct mapping from
 // FILE_STATUS_TO_PIERRE, which targets local-filesystem status instead.
@@ -269,28 +163,6 @@ function parseFileDiffs(patch: string): ParsedFileDiff[] {
 	);
 }
 
-function formatDiffStats(additions: number, deletions: number): string {
-	if (additions === 0 && deletions === 0) return "";
-	if (additions === 0) return `−${deletions}`;
-	if (deletions === 0) return `+${additions}`;
-	return `+${additions} −${deletions}`;
-}
-
-// Pierre's own header renders the full relative path as one string
-// (data-title); the filename-first look (name in the foreground color, then
-// the containing directory trailing off in the muted color) is built by
-// hiding that native title and rendering our own split via
-// renderHeaderFilenameSuffix instead — see prCodeTabCardUnsafeCss's
-// `[data-title] { display: none }` rule.
-function splitPath(path: string): { dir: string; name: string } {
-	const slashIndex = path.lastIndexOf("/");
-	if (slashIndex === -1) return { dir: "", name: path };
-	return {
-		dir: path.slice(0, slashIndex + 1),
-		name: path.slice(slashIndex + 1),
-	};
-}
-
 // Matches DiffPane's useDiffCommentComposer: a range spanning both an
 // addition and a deletion side has no single "side" the agent prompt can
 // name, so it's reported as "mixed" rather than picking one arbitrarily.
@@ -308,39 +180,13 @@ export function PullRequestCodeTab({
 	hostUrl,
 	hostId,
 }: PullRequestCodeTabProps) {
-	const { options, style } = useDiffCodeViewTheme();
-	// Matches PullRequestRow's diff-stat colors exactly (text-emerald-600 /
-	// [.dark_&]:text-[#34d399], text-red-600 / [.dark_&]:text-[#f87171]) so
-	// the same PR reads with the same additions/deletions colors in both the
-	// list and the diff viewer. Branched in JS rather than a `.dark`
-	// selector in unsafeCSS — `.dark` lives on an ancestor outside Pierre's
-	// shadow root, which a shadow-scoped stylesheet's descendant combinator
-	// can't reach (see additionColor/deletionColor in useDiffCodeViewTheme
-	// for the same pattern).
-	const activeTheme = useResolvedTheme();
-	const prAdditionsColor =
-		activeTheme.type === "dark" ? "#34d399" : "var(--color-emerald-600)";
-	const prDeletionsColor =
-		activeTheme.type === "dark" ? "#f87171" : "var(--color-red-600)";
-	// useDiffCodeViewTheme sources its background from the *terminal* theme
-	// (terminalTheme?.background ?? var(--background)) — sensible for
-	// DiffPane, which sits next to terminal panes in the workspace view, but
-	// this tab has no terminal nearby and the terminal theme's default
-	// background doesn't match the app's own var(--background) (e.g. a flat
-	// white terminal background against this app's slightly-off-white
-	// #f9f9fa page). Most visible on the CodeView root's own native
-	// scrollbar, which paints against whatever background that element has.
-	const codeViewStyle = useMemo(
-		() => ({ ...style, backgroundColor: "var(--background)" }),
-		[style],
-	);
+	const { t } = useLingui();
+	// Card look (rounded header/body pairs, gap between files, PR-row
+	// additions/deletions colors, app background instead of the terminal
+	// theme's) comes from the shared card theme hook — the same one the
+	// v2-workspace DiffPane renders with.
+	const { options, style: codeViewStyle } = useDiffCardCodeViewTheme();
 	const codeViewRef = useRef<CodeViewHandle<PrAnnotationMetadata>>(null);
-	// Sourced from the same persisted setting DiffPane's toggle reads/writes
-	// (options.diffStyle already carries it via useDiffCodeViewTheme) — a
-	// local default here would silently override the user's saved
-	// preference on first open and throw away any toggle made from this tab.
-	const diffStyle = useSettings((s) => s.diffStyle);
-	const updateSetting = useSettings((s) => s.update);
 	const [initialTreeExpansion] = useState<"open" | "closed">(() =>
 		window.innerWidth < NARROW_WINDOW_WIDTH_THRESHOLD ? "closed" : "open",
 	);
@@ -482,11 +328,18 @@ export function PullRequestCodeTab({
 		if (!threadsData?.fetchFailed) return;
 		if (lastWarnedThreadsFetchedAt.current === threadsUpdatedAt) return;
 		lastWarnedThreadsFetchedAt.current = threadsUpdatedAt;
-		toast.error("Couldn't load review comments", {
-			description:
-				"The diff is still up to date — only comments failed to load.",
-		});
-	}, [threadsData?.fetchFailed, threadsUpdatedAt]);
+		toast.error(
+			t({
+				message: "Couldn't load review comments",
+			}),
+			{
+				description: t({
+					message:
+						"The diff is still up to date — only comments failed to load.",
+				}),
+			},
+		);
+	}, [threadsData?.fetchFailed, threadsUpdatedAt, t]);
 	// A single useMutation instance is shared across every thread rendered
 	// in the diff (one component, called once), so `.isPending`/`.variables`
 	// only ever reflect the most recently *started* call — if two threads
@@ -517,9 +370,14 @@ export function PullRequestCodeTab({
 			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
 		},
 		onError: (mutationError) => {
-			toast.error("Couldn't update thread", {
-				description: mutationError.message,
-			});
+			toast.error(
+				t({
+					message: "Couldn't update thread",
+				}),
+				{
+					description: errorMessage(mutationError),
+				},
+			);
 		},
 	});
 	const [pendingReplyCommentIds, setPendingReplyCommentIds] = useState<
@@ -548,9 +406,14 @@ export function PullRequestCodeTab({
 			void queryClient.invalidateQueries({ queryKey: threadsQueryKey });
 		},
 		onError: (mutationError) => {
-			toast.error("Couldn't post reply", {
-				description: mutationError.message,
-			});
+			toast.error(
+				t({
+					message: "Couldn't post reply",
+				}),
+				{
+					description: errorMessage(mutationError),
+				},
+			);
 		},
 	});
 	const linkedWorkspaceQueryKey = [
@@ -640,13 +503,22 @@ export function PullRequestCodeTab({
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: linkedWorkspaceQueryKey });
-			toast.success("Sent to agent");
+			toast.success(
+				t({
+					message: "Sent to agent",
+				}),
+			);
 			closeComposer();
 		},
 		onError: (mutationError) => {
-			toast.error("Couldn't send comment", {
-				description: mutationError.message,
-			});
+			toast.error(
+				t({
+					message: "Couldn't send comment",
+				}),
+				{
+					description: errorMessage(mutationError),
+				},
+			);
 		},
 	});
 
@@ -693,7 +565,7 @@ export function PullRequestCodeTab({
 		} catch (err) {
 			return {
 				files: [] as ParsedFileDiff[],
-				error: err instanceof Error ? err.message : "Failed to parse diff",
+				error: errorMessage(err, "Failed to parse diff"),
 			};
 		}
 	}, [data?.patch]);
@@ -845,13 +717,6 @@ export function PullRequestCodeTab({
 		() =>
 			({
 				...options,
-				// A visible gap between files is what makes the rounded
-				// header/diff pair (prCodeTabCardUnsafeCss) read as
-				// separate cards rather than one continuous, oddly-cornered
-				// block — DiffPane's own gap: 0 doesn't need this since it
-				// has no such per-file card styling.
-				layout: { ...options.layout, gap: 16 },
-				unsafeCSS: `${options.unsafeCSS ?? ""}\n${prCodeTabCardUnsafeCss(prAdditionsColor, prDeletionsColor)}`,
 				enableLineSelection: true,
 				enableGutterUtility: true,
 				// Pierre gates the gutter "+" button's pointer flow behind a
@@ -874,7 +739,7 @@ export function PullRequestCodeTab({
 					updateComposer({ itemId: context.item.id, path, range });
 				},
 			}) as CodeViewOptions<PrAnnotationMetadata>,
-		[options, pathByItemId, updateComposer, prAdditionsColor, prDeletionsColor],
+		[options, pathByItemId, updateComposer],
 	);
 
 	const treePaths = useMemo(() => files.map((f) => f.path), [files]);
@@ -948,7 +813,12 @@ export function PullRequestCodeTab({
 		return (
 			<div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
 				<div className="flex flex-1 items-center justify-center">
-					<WorkItemDetailState message="Loading diff…" isLoading />
+					<WorkItemDetailState
+						message={t({
+							message: "Loading diff…",
+						})}
+						isLoading
+					/>
 				</div>
 			</div>
 		);
@@ -973,7 +843,9 @@ export function PullRequestCodeTab({
 			<div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
 				<div className="flex flex-1 items-center justify-center">
 					<WorkItemDetailState
-						message={`Couldn't parse this diff: ${patchParseError}`}
+						message={t({
+							message: `Couldn't parse this diff: ${patchParseError}`,
+						})}
 						isError
 						onRetry={() => void refetch()}
 					/>
@@ -986,19 +858,11 @@ export function PullRequestCodeTab({
 		return (
 			<div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
 				<div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-sm text-muted-foreground">
-					No changes to display.
+					<Trans>No changes to display.</Trans>
 				</div>
 			</div>
 		);
 	}
-
-	const toggleClass = (active: boolean) =>
-		cn(
-			"flex size-5 items-center justify-center rounded transition-colors",
-			active
-				? "bg-secondary text-foreground"
-				: "text-muted-foreground hover:text-foreground",
-		);
 
 	return (
 		<div
@@ -1025,178 +889,42 @@ export function PullRequestCodeTab({
 					</ResizablePanel>
 				)}
 				<div className="flex min-h-0 flex-1 flex-col">
-					<div className="flex shrink-0 items-center justify-between gap-1 border-b border-border/20 px-2 py-1.5">
-						<div className="flex items-center gap-1">
-							<button
-								type="button"
-								onClick={() => setManualTreeCollapsed(!isTreeCollapsed)}
-								aria-label={
-									isTreeCollapsed ? "Show file tree" : "Hide file tree"
-								}
-								className="flex items-center gap-1.5 rounded-md bg-fill-hover px-1.5 py-1 text-muted-foreground transition-colors hover:bg-fill-selected hover:text-foreground"
-							>
-								<LuFiles className="size-3.5 shrink-0" strokeWidth={1.5} />
-								<span className="text-[11px] font-medium">Files</span>
-								<span className="text-[11px] tabular-nums text-muted-foreground/70">
-									{files.length}
-								</span>
-							</button>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<button
-										type="button"
-										onClick={() =>
-											setAllFilesCollapsed(
-												!areAllFilesCollapsed,
-												files.map((f) => f.item.id),
-											)
-										}
-										aria-label={
-											areAllFilesCollapsed
-												? "Expand all files"
-												: "Collapse all files"
-										}
-										className="flex items-center justify-center rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-									>
-										{areAllFilesCollapsed ? (
-											<LuUnfoldVertical
-												className="size-3.5"
-												strokeWidth={1.5}
-											/>
-										) : (
-											<LuFoldVertical className="size-3.5" strokeWidth={1.5} />
-										)}
-									</button>
-								</TooltipTrigger>
-								<TooltipContent side="bottom">
-									{areAllFilesCollapsed
-										? "Expand all files"
-										: "Collapse all files"}
-								</TooltipContent>
-							</Tooltip>
-						</div>
-						<div className="flex items-center gap-1">
-							{orderedThreads.length > 0 && (
-								<>
-									<div className="flex items-center gap-0.5 rounded-md bg-muted/50 px-1 py-0.5">
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<button
-													type="button"
-													onClick={goToPrevComment}
-													aria-label="Previous comment"
-													className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-												>
-													<LuChevronUp className="size-3.5" strokeWidth={1.5} />
-												</button>
-											</TooltipTrigger>
-											<TooltipContent side="bottom">
-												Previous comment
-											</TooltipContent>
-										</Tooltip>
-										<span className="min-w-[3ch] text-center text-[11px] tabular-nums text-muted-foreground">
-											{focusedThreadIndex != null
-												? focusedThreadIndex + 1
-												: "–"}
-											/{orderedThreads.length}
-										</span>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<button
-													type="button"
-													onClick={goToNextComment}
-													aria-label="Next comment"
-													className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-												>
-													<LuChevronDown
-														className="size-3.5"
-														strokeWidth={1.5}
-													/>
-												</button>
-											</TooltipTrigger>
-											<TooltipContent side="bottom">
-												Next comment
-											</TooltipContent>
-										</Tooltip>
-									</div>
-									<div className="mx-0.5 h-4 w-px bg-border" />
-								</>
-							)}
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<button
-										type="button"
-										onClick={() => updateSetting("diffStyle", "unified")}
-										aria-label="Unified view"
-										aria-pressed={diffStyle === "unified"}
-										className={toggleClass(diffStyle === "unified")}
-									>
-										<LuRows2 className="size-3.5" />
-									</button>
-								</TooltipTrigger>
-								<TooltipContent side="bottom">Unified view</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<button
-										type="button"
-										onClick={() => updateSetting("diffStyle", "split")}
-										aria-label="Split view"
-										aria-pressed={diffStyle === "split"}
-										className={toggleClass(diffStyle === "split")}
-									>
-										<LuColumns2 className="size-3.5" />
-									</button>
-								</TooltipTrigger>
-								<TooltipContent side="bottom">Split view</TooltipContent>
-							</Tooltip>
-						</div>
-					</div>
+					<DiffViewToolbar
+						tree={{
+							fileCount: files.length,
+							isCollapsed: isTreeCollapsed,
+							onToggle: () => setManualTreeCollapsed(!isTreeCollapsed),
+						}}
+						areAllFilesCollapsed={areAllFilesCollapsed}
+						onToggleCollapseAll={() =>
+							setAllFilesCollapsed(
+								!areAllFilesCollapsed,
+								files.map((f) => f.item.id),
+							)
+						}
+						commentNav={{
+							focusedIndex: focusedThreadIndex,
+							total: orderedThreads.length,
+							onPrev: goToPrevComment,
+							onNext: goToNextComment,
+						}}
+					/>
 					<CodeView
 						ref={codeViewRef}
 						className="min-h-0 flex-1 overflow-y-auto overflow-x-clip overscroll-contain [overflow-anchor:none]"
 						style={codeViewStyle}
 						items={items}
 						options={codeViewOptions}
-						renderHeaderPrefix={(item) => {
-							const isCollapsed = collapsedFileIds.has(item.id);
-							return (
-								<button
-									type="button"
-									onClick={(e) => {
-										e.stopPropagation();
-										toggleFileCollapsed(item.id);
-									}}
-									aria-label={isCollapsed ? "Expand file" : "Collapse file"}
-									className="flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-								>
-									<LuChevronRight
-										className={cn(
-											"size-3 shrink-0 transition-transform",
-											!isCollapsed && "rotate-90",
-										)}
-										strokeWidth={1.5}
-									/>
-								</button>
-							);
-						}}
+						renderHeaderPrefix={(item) => (
+							<DiffFileCollapseButton
+								collapsed={collapsedFileIds.has(item.id)}
+								onToggle={() => toggleFileCollapsed(item.id)}
+							/>
+						)}
 						renderHeaderFilenameSuffix={(item) => {
 							const path = pathByItemId.get(item.id);
 							if (!path) return null;
-							const { dir, name } = splitPath(path);
-							return (
-								<span className="flex min-w-0 items-center gap-1.5">
-									<span className="shrink-0 text-foreground">{name}</span>
-									{dir && (
-										<span
-											className="min-w-0 truncate text-muted-foreground/70"
-											title={dir}
-										>
-											{dir}
-										</span>
-									)}
-								</span>
-							);
+							return <DiffFileHeaderName path={path} />;
 						}}
 						renderAnnotation={(annotation) => {
 							const metadata = annotation.metadata;
@@ -1212,8 +940,12 @@ export function PullRequestCodeTab({
 										key={`${metadata.path}:${metadata.startLine}-${metadata.endLine}`}
 										contextLabel={
 											metadata.startLine === metadata.endLine
-												? `Line ${metadata.startLine}`
-												: `Lines ${metadata.startLine}–${metadata.endLine}`
+												? t({
+														message: `Line ${metadata.startLine}`,
+													})
+												: t({
+														message: `Lines ${metadata.startLine}–${metadata.endLine}`,
+													})
 										}
 										hostUrl={hostUrl}
 										linkedWorkspaceId={linkedWorkspaceId}

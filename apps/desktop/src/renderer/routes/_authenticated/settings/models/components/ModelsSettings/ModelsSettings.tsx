@@ -1,3 +1,5 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+import { errorMessage } from "@superset/i18n/errors";
 import { chatServiceTrpc } from "@superset/provider-auth/client";
 import { Badge } from "@superset/ui/badge";
 import { Button } from "@superset/ui/button";
@@ -43,6 +45,7 @@ const DIALOG_CONTEXT = {
 } as const;
 
 export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
+	const { t } = useLingui();
 	const showAnthropic = isItemVisible(
 		SETTING_ITEM_ID.MODELS_ANTHROPIC,
 		visibleItems,
@@ -141,10 +144,21 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				refetchAnthropicEnvConfig(),
 				refetchAnthropicAuthStatus(),
 			]);
-			toast.success("Anthropic settings updated");
+			toast.success(
+				t({
+					message: "Anthropic settings updated",
+				}),
+			);
 			return true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save");
+			toast.error(
+				errorMessage(
+					error,
+					t({
+						message: "Failed to save",
+					}),
+				),
+			);
 			return false;
 		}
 	};
@@ -179,9 +193,20 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 			await setAnthropicApiKeyMutation.mutateAsync({ apiKey });
 			setAnthropicApiKeyInput("");
 			await refetchAnthropicAuthStatus();
-			toast.success("Anthropic API key updated");
+			toast.success(
+				t({
+					message: "Anthropic API key updated",
+				}),
+			);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save");
+			toast.error(
+				errorMessage(
+					error,
+					t({
+						message: "Failed to save",
+					}),
+				),
+			);
 		}
 	};
 
@@ -192,9 +217,20 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 			await setOpenAIApiKeyMutation.mutateAsync({ apiKey });
 			setOpenAIApiKeyInput("");
 			await refetchOpenAIAuthStatus();
-			toast.success("OpenAI API key updated");
+			toast.success(
+				t({
+					message: "OpenAI API key updated",
+				}),
+			);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save");
+			toast.error(
+				errorMessage(
+					error,
+					t({
+						message: "Failed to save",
+					}),
+				),
+			);
 		}
 	};
 
@@ -214,7 +250,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 		if (action.kind === "logout") {
 			return (
 				<Button variant="outline" size="sm" onClick={onDisconnect}>
-					Sign out
+					<Trans>Sign out</Trans>
 				</Button>
 			);
 		}
@@ -224,7 +260,11 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				onClick={() => void startOAuth()}
 				disabled={isStartingOAuth}
 			>
-				{action.kind === "reconnect" ? "Reconnect" : "Sign in"}
+				{action.kind === "reconnect" ? (
+					<Trans>Reconnect</Trans>
+				) : (
+					<Trans>Sign in</Trans>
+				)}
 			</Button>
 		);
 	};
@@ -233,12 +273,16 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 		<>
 			<div className="w-full max-w-4xl p-6">
 				<div className="mb-8">
-					<h2 className="text-xl font-semibold">Models</h2>
+					<h2 className="text-xl font-semibold">
+						<Trans>Models</Trans>
+					</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Manage provider accounts, API keys, and overrides. Connecting
-						Anthropic or OpenAI below is also what powers automatic workspace
-						naming — without one connected, new workspaces fall back to a name
-						derived from your prompt.
+						<Trans>
+							Manage provider accounts, API keys, and overrides. Connecting
+							Anthropic or OpenAI below is also what powers automatic workspace
+							naming — without one connected, new workspaces fall back to a name
+							derived from your prompt.
+						</Trans>
 					</p>
 				</div>
 
@@ -247,7 +291,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 						<SettingsSection
 							title="Anthropic"
 							icon={<img alt="" className="size-4" src={claudeIcon} />}
-							description="Sign in with Claude or use an API key."
+							description={t({
+								message: "Sign in with Claude or use an API key.",
+							})}
 							action={
 								<div className="flex items-center gap-2">
 									{anthropicBadge ? (
@@ -273,7 +319,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 							}
 						>
 							<ConfigRow
-								title="API key"
+								title={t({
+									message: "API key",
+								})}
 								htmlFor="anthropic-api-key"
 								field={
 									<Input
@@ -285,7 +333,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 										}}
 										placeholder={
 											anthropicStatus?.authMethod === "api_key"
-												? "Saved Anthropic API key"
+												? t({
+														message: "Saved Anthropic API key",
+													})
 												: "sk-ant-..."
 										}
 										className="font-mono"
@@ -303,12 +353,18 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											setAnthropicApiKeyInput("");
 											setAnthropicForm(nextForm);
 											await refetchAnthropicAuthStatus();
-											toast.success("Anthropic API key cleared");
+											toast.success(
+												t({
+													message: "Anthropic API key cleared",
+												}),
+											);
 										} catch (error) {
 											toast.error(
 												error instanceof Error
 													? error.message
-													: "Failed to clear",
+													: t({
+															message: "Failed to clear",
+														}),
 											);
 										}
 									})();
@@ -329,7 +385,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											<HiChevronDown
 												className={`size-3.5 transition-transform ${advancedOpen ? "" : "-rotate-90"}`}
 											/>
-											Advanced
+											<Trans>Advanced</Trans>
 										</button>
 									</CollapsibleTrigger>
 									{advancedOpen && hasAdvancedContent ? (
@@ -339,7 +395,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											disabled={isSavingAnthropicConfig}
 											className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
 										>
-											Reset
+											<Trans>Reset</Trans>
 										</button>
 									) : null}
 								</div>
@@ -349,7 +405,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											htmlFor="anthropic-auth-token"
 											className="text-sm font-medium"
 										>
-											Auth token
+											<Trans>Auth token</Trans>
 										</Label>
 										<Input
 											id="anthropic-auth-token"
@@ -372,7 +428,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											htmlFor="anthropic-base-url"
 											className="text-sm font-medium"
 										>
-											Base URL
+											<Trans>Base URL</Trans>
 										</Label>
 										<Input
 											id="anthropic-base-url"
@@ -394,7 +450,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											htmlFor="anthropic-extra-env"
 											className="text-sm font-medium"
 										>
-											Additional env vars
+											<Trans>Additional env vars</Trans>
 										</Label>
 										<Textarea
 											id="anthropic-extra-env"
@@ -414,7 +470,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 										/>
 									</div>
 									<p className="text-xs text-muted-foreground">
-										Saved on blur.
+										<Trans>Saved on blur.</Trans>
 									</p>
 								</CollapsibleContent>
 							</Collapsible>
@@ -431,7 +487,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 									src="https://models.dev/logos/openai.svg"
 								/>
 							}
-							description="Sign in with ChatGPT or use an API key."
+							description={t({
+								message: "Sign in with ChatGPT or use an API key.",
+							})}
 							action={
 								<div className="flex items-center gap-2">
 									{openAIBadge ? (
@@ -457,7 +515,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 							}
 						>
 							<ConfigRow
-								title="API key"
+								title={t({
+									message: "API key",
+								})}
 								htmlFor="openai-api-key"
 								field={
 									<Input
@@ -469,7 +529,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 										}}
 										placeholder={
 											openAIStatus?.authMethod === "api_key"
-												? "Saved OpenAI API key"
+												? t({
+														message: "Saved OpenAI API key",
+													})
 												: "sk-..."
 										}
 										className="font-mono"
@@ -485,12 +547,18 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											await clearOpenAIApiKeyMutation.mutateAsync();
 											setOpenAIApiKeyInput("");
 											await refetchOpenAIAuthStatus();
-											toast.success("OpenAI API key cleared");
+											toast.success(
+												t({
+													message: "OpenAI API key cleared",
+												}),
+											);
 										} catch (error) {
 											toast.error(
 												error instanceof Error
 													? error.message
-													: "Failed to clear",
+													: t({
+															message: "Failed to clear",
+														}),
 											);
 										}
 									})();

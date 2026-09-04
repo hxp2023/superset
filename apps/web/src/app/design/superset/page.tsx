@@ -1,5 +1,6 @@
+import { msg } from "@lingui/core/macro";
 import type { Metadata } from "next";
-
+import { i18n } from "@/lib/i18n-server";
 import { DesignPageHeader } from "../components/DesignPageHeader";
 import { ShowcaseNav, type ShowcaseNavItem } from "../components/ShowcaseNav";
 import { AiAgentSection } from "./components/AiAgentSection";
@@ -16,12 +17,60 @@ export const metadata: Metadata = {
 };
 
 const NAV_ITEMS: ShowcaseNavItem[] = [
-	{ id: "superset", index: "01", title: "Originals" },
-	{ id: "ai-status", index: "02", title: "AI · Status" },
-	{ id: "ai-chat", index: "03", title: "AI · Conversation" },
-	{ id: "ai-agent", index: "04", title: "AI · Agent activity" },
-	{ id: "ai-content", index: "05", title: "AI · Content" },
-	{ id: "shared", index: "06", title: "Shared app components" },
+	{
+		id: "superset",
+		index: "01",
+		title: i18n._(
+			msg({
+				message: "Originals",
+			}),
+		),
+	},
+	{
+		id: "ai-status",
+		index: "02",
+		title: i18n._(
+			msg({
+				message: "AI · Status",
+			}),
+		),
+	},
+	{
+		id: "ai-chat",
+		index: "03",
+		title: i18n._(
+			msg({
+				message: "AI · Conversation",
+			}),
+		),
+	},
+	{
+		id: "ai-agent",
+		index: "04",
+		title: i18n._(
+			msg({
+				message: "AI · Agent activity",
+			}),
+		),
+	},
+	{
+		id: "ai-content",
+		index: "05",
+		title: i18n._(
+			msg({
+				message: "AI · Content",
+			}),
+		),
+	},
+	{
+		id: "shared",
+		index: "06",
+		title: i18n._(
+			msg({
+				message: "Shared app components",
+			}),
+		),
+	},
 ];
 
 export default function DesignSupersetPage() {
@@ -29,13 +78,26 @@ export default function DesignSupersetPage() {
 		<div className="min-h-screen bg-background">
 			<DesignPageHeader
 				active="superset"
-				title="Superset Components"
+				title={i18n._(
+					msg({
+						message: "Superset Components",
+					}),
+				)}
 				description={
 					<>
-						Everything we built on top of the primitives — Superset originals,
-						the <code className="font-mono text-foreground">ai-elements</code>{" "}
-						suite for agent UIs, and shared app components. Click any import
-						path to copy it.
+						{i18n._(
+							msg({
+								message:
+									"Everything we built on top of the primitives — Superset originals, the",
+							}),
+						)}{" "}
+						<code className="font-mono text-foreground">ai-elements</code>{" "}
+						{i18n._(
+							msg({
+								message:
+									"suite for agent UIs, and shared app components. Click any import path to copy it.",
+							}),
+						)}
 					</>
 				}
 			/>

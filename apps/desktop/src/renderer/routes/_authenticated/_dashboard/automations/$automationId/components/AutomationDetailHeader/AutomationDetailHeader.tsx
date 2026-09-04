@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -37,13 +38,16 @@ export function AutomationDetailHeader({
 	runNowDisabled,
 	readOnly,
 }: AutomationDetailHeaderProps) {
+	const { t } = useLingui();
 	return (
 		<header className="flex h-11 shrink-0 items-center justify-between border-b border-border px-4">
 			<Breadcrumb>
 				<BreadcrumbList className="text-sm">
 					<BreadcrumbItem>
 						<BreadcrumbLink asChild>
-							<Link to="/automations">Automations</Link>
+							<Link to="/automations">
+								<Trans>Automations</Trans>
+							</Link>
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
@@ -67,16 +71,20 @@ export function AutomationDetailHeader({
 								size="icon-sm"
 								onClick={onOpenHistory}
 								disabled={readOnly}
-								aria-label="Prompt history"
+								aria-label={t({
+									message: "Prompt history",
+								})}
 							>
 								<LuClock className="size-4" />
 							</Button>
 						</span>
 					</TooltipTrigger>
 					<TooltipContent>
-						{readOnly
-							? "Only the owner can view prompt history"
-							: "Prompt history"}
+						{readOnly ? (
+							<Trans>Only the owner can view prompt history</Trans>
+						) : (
+							<Trans>Prompt history</Trans>
+						)}
 					</TooltipContent>
 				</Tooltip>
 				<DropdownMenu>
@@ -85,7 +93,9 @@ export function AutomationDetailHeader({
 							variant="ghost"
 							size="icon-sm"
 							disabled={readOnly}
-							aria-label="More actions"
+							aria-label={t({
+								message: "More actions",
+							})}
 						>
 							<LuEllipsis className="size-4" />
 						</Button>
@@ -97,7 +107,7 @@ export function AutomationDetailHeader({
 							onSelect={onDelete}
 						>
 							<LuTrash2 className="size-4" />
-							Delete automation
+							<Trans>Delete automation</Trans>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -113,13 +123,15 @@ export function AutomationDetailHeader({
 								disabled={readOnly || runNowDisabled}
 							>
 								<LuPlay className="size-4" />
-								<span>Run now</span>
+								<span>
+									<Trans>Run now</Trans>
+								</span>
 							</Button>
 						</span>
 					</TooltipTrigger>
 					{readOnly && (
 						<TooltipContent>
-							Only the owner can run this automation
+							<Trans>Only the owner can run this automation</Trans>
 						</TooltipContent>
 					)}
 				</Tooltip>

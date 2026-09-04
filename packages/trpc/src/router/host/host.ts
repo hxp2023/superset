@@ -1,4 +1,4 @@
-import { db, dbWs } from "@superset/db/client";
+import { db } from "@superset/db/client";
 import {
 	subscriptions,
 	users,
@@ -14,13 +14,13 @@ import {
 	buildHostRoutingKey,
 	parseHostRoutingKey,
 } from "@superset/shared/host-routing";
-import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import type { TRPCRouterRecord } from "@trpc/server";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { env } from "../../env";
 import { emitAppFirstOpened } from "../../lib/activation-events";
 import { fetchRelayPresence } from "../../lib/relay-presence";
-import { resolveUserRelayUrl } from "../../lib/relay-url";
-import { jwtProcedure } from "../../trpc";
+import { jwtProcedure, userError } from "../../trpc";
 
 // Registering a first host means the app is installed and running, so it
 // also marks the user as first-opened for the activation automation.
@@ -48,22 +48,22 @@ async function emitFirstHostEvent(userId: string) {
 
 export const hostRouter = {
 	/**
-	 * The relay every client and host of this user must use. Resolved here so
-	 * one authenticated answer serves the desktop, its host-service, the CLI
-	 * and the web app — client-side flag evaluation raced identification and
-	 * silently fell back, which split hosts and clients across two relays.
+	 * The relay every client and host of this user must use. Answered here so
+	 * the desktop, its host-service, the CLI and the web app all read one
+	 * value instead of resolving it separately and landing on different relays.
 	 */
-	relayEndpoint: jwtProcedure.query(async ({ ctx }) => {
-		return { url: await resolveUserRelayUrl(ctx.userId) };
+	relayEndpoint: jwtProcedure.query(() => {
+		return { url: env.RELAY_URL };
 	}),
 
 	list: jwtProcedure
 		.input(z.object({ organizationId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
 			if (!ctx.organizationIds.includes(input.organizationId)) {
-				throw new TRPCError({
+				throw userError({
 					code: "FORBIDDEN",
 					message: "Not a member of this organization",
+					i18nKey: "serverError.host.notAMemberOfThisOrganization",
 				});
 			}
 
@@ -71,7 +71,6 @@ export const hostRouter = {
 				.select({
 					machineId: v2Hosts.machineId,
 					name: v2Hosts.name,
-					isOnline: v2Hosts.isOnline,
 					wakeCommand: v2Hosts.wakeCommand,
 					organizationId: v2Hosts.organizationId,
 				})
@@ -90,13 +89,12 @@ export const hostRouter = {
 					),
 				);
 
-			// The relay's DOs are the presence authority; the DB flag is only
-			// the fallback for hosts still on the v1 relay, which keeps writing
-			// it. Callers' own bearer token is forwarded for the access checks.
+			// The relay's Durable Objects are the presence authority. Callers'
+			// own bearer token is forwarded for the access checks.
 			const bearer = ctx.headers.get("authorization")?.slice("Bearer ".length);
 			const presence = bearer
 				? await fetchRelayPresence(
-						await resolveUserRelayUrl(ctx.userId),
+						env.RELAY_URL,
 						bearer,
 						rows.map((row) =>
 							buildHostRoutingKey(row.organizationId, row.machineId),
@@ -109,7 +107,7 @@ export const hostRouter = {
 				name: row.name,
 				online:
 					presence?.[buildHostRoutingKey(row.organizationId, row.machineId)]
-						?.online ?? row.isOnline,
+						?.online ?? false,
 				wakeCommand: row.wakeCommand,
 				organizationId: row.organizationId,
 			}));
@@ -125,13 +123,14 @@ export const hostRouter = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			if (!ctx.organizationIds.includes(input.organizationId)) {
-				throw new TRPCError({
+				throw userError({
 					code: "FORBIDDEN",
 					message: "Not a member of this organization",
+					i18nKey: "serverError.host.notAMemberOfThisOrganization",
 				});
 			}
 
-			const [inserted] = await dbWs
+			const [inserted] = await db
 				.insert(v2Hosts)
 				.values({
 					organizationId: input.organizationId,
@@ -154,14 +153,15 @@ export const hostRouter = {
 				}));
 
 			if (!host) {
-				throw new TRPCError({
+				throw userError({
 					code: "INTERNAL_SERVER_ERROR",
 					message: "Failed to ensure host",
+					i18nKey: "serverError.host.failedToEnsureHost",
 				});
 			}
 
 			if (host.createdByUserId === ctx.userId) {
-				await dbWs
+				await db
 					.insert(v2UsersHosts)
 					.values({
 						organizationId: input.organizationId,
@@ -225,47 +225,6 @@ export const hostRouter = {
 			return { allowed, paidPlan };
 		}),
 
-	setOnline: jwtProcedure
-		.input(z.object({ hostId: z.string().min(1), isOnline: z.boolean() }))
-		.mutation(async ({ ctx, input }) => {
-			const parsed = parseHostRoutingKey(input.hostId);
-			if (!parsed) {
-				throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid hostId" });
-			}
-			if (!ctx.organizationIds.includes(parsed.organizationId)) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "No access to this host",
-				});
-			}
-
-			const access = await db.query.v2UsersHosts.findFirst({
-				where: and(
-					eq(v2UsersHosts.userId, ctx.userId),
-					eq(v2UsersHosts.organizationId, parsed.organizationId),
-					eq(v2UsersHosts.hostId, parsed.machineId),
-				),
-				columns: { hostId: true },
-			});
-			if (!access) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "No access to this host",
-				});
-			}
-
-			await db
-				.update(v2Hosts)
-				.set({ isOnline: input.isOnline })
-				.where(
-					and(
-						eq(v2Hosts.organizationId, parsed.organizationId),
-						eq(v2Hosts.machineId, parsed.machineId),
-					),
-				);
-			return { success: true };
-		}),
-
 	setWakeCommand: jwtProcedure
 		.input(
 			z.object({
@@ -277,9 +236,10 @@ export const hostRouter = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			if (!ctx.organizationIds.includes(input.organizationId)) {
-				throw new TRPCError({
+				throw userError({
 					code: "FORBIDDEN",
 					message: "No access to this host",
+					i18nKey: "serverError.host.noAccessToThisHost",
 				});
 			}
 
@@ -294,13 +254,14 @@ export const hostRouter = {
 				columns: { role: true },
 			});
 			if (!access || access.role !== "owner") {
-				throw new TRPCError({
+				throw userError({
 					code: "FORBIDDEN",
 					message: "Only the host owner can set its wake command",
+					i18nKey: "serverError.host.onlyTheHostOwnerCanSet",
 				});
 			}
 
-			await dbWs
+			await db
 				.update(v2Hosts)
 				.set({ wakeCommand: input.wakeCommand })
 				.where(

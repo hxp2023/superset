@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
@@ -23,6 +24,7 @@ export function useFolderFirstImport(options?: {
 	onError?: (message: string) => void;
 	onMultipleProjects?: (input: { candidates: MatchingProject[] }) => void;
 }): UseFolderFirstImportResult {
+	const { t } = useLingui();
 	const hostService = useLocalHostService();
 	const { waitForHostReady } = hostService;
 	const finalizeSetup = useFinalizeProjectSetup();
@@ -36,7 +38,9 @@ export function useFolderFirstImport(options?: {
 		let repoPath: string;
 		try {
 			const picked = await selectDirectory.mutateAsync({
-				title: "Import existing folder",
+				title: t({
+					message: "Import existing folder",
+				}),
 			});
 			if (picked.canceled || !picked.path) return null;
 			repoPath = picked.path;
@@ -49,7 +53,7 @@ export function useFolderFirstImport(options?: {
 		if (!activeHostUrl) {
 			onError?.(
 				getHostServiceUnavailableMessage(hostService, {
-					action: "import a folder",
+					action: "importFolder",
 				}),
 			);
 			return null;
@@ -76,7 +80,11 @@ export function useFolderFirstImport(options?: {
 			candidates = response.candidates;
 			if (candidates.length === 0 && response.cloudErrors.length > 0) {
 				const first = response.cloudErrors[0];
-				onError?.(`Couldn't reach cloud for ${first.url}: ${first.message}`);
+				onError?.(
+					t({
+						message: `Couldn't reach cloud for ${first.url}: ${first.message}`,
+					}),
+				);
 				return null;
 			}
 		} catch (err) {
@@ -90,7 +98,9 @@ export function useFolderFirstImport(options?: {
 				onMultipleProjects({ candidates });
 			} else {
 				onError?.(
-					`Multiple projects use this repository (${candidates.length}). Open the project you want from settings to set it up on this device.`,
+					t({
+						message: `Multiple projects use this repository (${candidates.length}). Open the project you want from settings to set it up on this device.`,
+					}),
 				);
 			}
 			return null;
@@ -128,6 +138,7 @@ export function useFolderFirstImport(options?: {
 		onMultipleProjects,
 		requestGitInit,
 		selectDirectory,
+		t,
 	]);
 
 	return { start };

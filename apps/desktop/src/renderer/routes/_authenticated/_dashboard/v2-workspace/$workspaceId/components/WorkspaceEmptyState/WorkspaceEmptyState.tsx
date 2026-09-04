@@ -1,7 +1,8 @@
+import { useLingui } from "@lingui/react/macro";
 import { useMemo } from "react";
 import type { IconType } from "react-icons";
 import { BsTerminalPlus } from "react-icons/bs";
-import { LuSearch } from "react-icons/lu";
+import { LuGitCompareArrows, LuSearch } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { GitHubStarPill } from "renderer/components/GitHubStarPill";
 import { useHotkeyDisplay } from "renderer/hotkeys";
@@ -11,6 +12,7 @@ import { useTheme } from "renderer/stores/theme";
 
 interface WorkspaceEmptyStateProps {
 	onOpenBrowser: () => void;
+	onOpenChanges: () => void;
 	onOpenChatV3?: (() => void) | undefined;
 	onOpenQuickOpen: () => void;
 	onOpenTerminal: () => void;
@@ -26,20 +28,25 @@ interface WorkspaceEmptyStateAction {
 
 export function WorkspaceEmptyState({
 	onOpenBrowser,
+	onOpenChanges,
 	onOpenChatV3,
 	onOpenQuickOpen,
 	onOpenTerminal,
 }: WorkspaceEmptyStateProps) {
+	const { t } = useLingui();
 	const activeTheme = useTheme();
 	const { keys: newGroupDisplay } = useHotkeyDisplay("NEW_GROUP");
 	const { keys: newBrowserDisplay } = useHotkeyDisplay("NEW_BROWSER");
 	const { keys: quickOpenDisplay } = useHotkeyDisplay("QUICK_OPEN");
+	const { keys: openChangesDisplay } = useHotkeyDisplay("OPEN_DIFF_VIEWER");
 
 	const actions = useMemo<Array<WorkspaceEmptyStateAction>>(
 		() => [
 			{
 				id: "terminal",
-				label: "Open Terminal",
+				label: t({
+					message: "Open Terminal",
+				}),
 				display: newGroupDisplay,
 				icon: BsTerminalPlus,
 				onClick: onOpenTerminal,
@@ -48,7 +55,9 @@ export function WorkspaceEmptyState({
 				? [
 						{
 							id: "chat-v3",
-							label: "Open Chat v3",
+							label: t({
+								message: "Open Chat v3",
+							}),
 							display: [],
 							icon: TbMessageCirclePlus,
 							onClick: onOpenChatV3,
@@ -57,14 +66,27 @@ export function WorkspaceEmptyState({
 				: []),
 			{
 				id: "browser",
-				label: "Open Browser",
+				label: t({
+					message: "Open Browser",
+				}),
 				display: newBrowserDisplay,
 				icon: TbWorld,
 				onClick: onOpenBrowser,
 			},
 			{
+				id: "changes",
+				label: t({
+					message: "Open Changes",
+				}),
+				display: openChangesDisplay,
+				icon: LuGitCompareArrows,
+				onClick: onOpenChanges,
+			},
+			{
 				id: "search-files",
-				label: "Search Files",
+				label: t({
+					message: "Search Files",
+				}),
 				display: quickOpenDisplay,
 				icon: LuSearch,
 				onClick: onOpenQuickOpen,
@@ -74,10 +96,13 @@ export function WorkspaceEmptyState({
 			newBrowserDisplay,
 			newGroupDisplay,
 			onOpenBrowser,
+			onOpenChanges,
 			onOpenChatV3,
 			onOpenQuickOpen,
 			onOpenTerminal,
+			openChangesDisplay,
 			quickOpenDisplay,
+			t,
 		],
 	);
 

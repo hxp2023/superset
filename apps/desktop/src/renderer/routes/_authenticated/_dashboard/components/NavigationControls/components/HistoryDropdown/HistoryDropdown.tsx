@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -56,7 +57,7 @@ function WorkspaceRow({
 			{ws ? (
 				<>
 					<span className="text-muted-foreground text-xs shrink-0 w-20 text-left line-clamp-1">
-						Workspace
+						<Trans>Workspace</Trans>
 					</span>
 					<span className="flex items-center justify-center w-4 shrink-0">
 						<span
@@ -71,10 +72,10 @@ function WorkspaceRow({
 			) : (
 				<>
 					<span className="text-muted-foreground text-xs shrink-0 w-20 text-left line-clamp-1">
-						Workspace
+						<Trans>Workspace</Trans>
 					</span>
 					<span className="truncate text-xs font-normal text-muted-foreground flex-1 min-w-0">
-						Unknown
+						<Trans>Unknown</Trans>
 					</span>
 				</>
 			)}
@@ -105,7 +106,7 @@ function V2WorkspaceRow({
 			onSelect={onSelect}
 		>
 			<span className="text-muted-foreground text-xs shrink-0 w-20 text-left line-clamp-1">
-				{ws ? ws.projectName : "Workspace"}
+				{ws ? ws.projectName : <Trans>Workspace</Trans>}
 			</span>
 			<span className="flex items-center justify-center w-4 shrink-0">
 				<LuGitBranch
@@ -119,7 +120,7 @@ function V2WorkspaceRow({
 					!ws && "text-muted-foreground",
 				)}
 			>
-				{ws ? ws.branch : "Unknown"}
+				{ws ? ws.branch : <Trans>Unknown</Trans>}
 			</span>
 		</DropdownMenuItem>
 	);
@@ -149,7 +150,7 @@ function AutomationRow({
 			onSelect={onSelect}
 		>
 			<span className="text-muted-foreground text-xs shrink-0 w-20 text-left line-clamp-1">
-				Automation
+				<Trans>Automation</Trans>
 			</span>
 			<span className="flex items-center justify-center w-4 shrink-0">
 				{presetIcon ? (
@@ -164,7 +165,7 @@ function AutomationRow({
 					!automation && "text-muted-foreground",
 				)}
 			>
-				{automation ? automation.name : "Unknown"}
+				{automation ? automation.name : <Trans>Unknown</Trans>}
 			</span>
 		</DropdownMenuItem>
 	);
@@ -217,10 +218,10 @@ function TaskRow({
 			) : (
 				<>
 					<span className="text-muted-foreground text-xs shrink-0 w-20 text-left line-clamp-1">
-						Task
+						<Trans>Task</Trans>
 					</span>
 					<span className="truncate text-xs font-normal text-muted-foreground flex-1 min-w-0">
-						Unknown
+						<Trans>Unknown</Trans>
 					</span>
 				</>
 			)}
@@ -321,7 +322,9 @@ export function HistoryDropdown() {
 						<LuHistory className="size-3.5" strokeWidth={1.5} />
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Recently viewed</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Recently viewed</Trans>
+				</TooltipContent>
 			</Tooltip>
 		);
 	}
@@ -339,10 +342,14 @@ export function HistoryDropdown() {
 						</button>
 					</DropdownMenuTrigger>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Recently viewed</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Recently viewed</Trans>
+				</TooltipContent>
 			</Tooltip>
 			<DropdownMenuContent align="start" className="w-80">
-				<DropdownMenuLabel>Recently Viewed</DropdownMenuLabel>
+				<DropdownMenuLabel>
+					<Trans>Recently Viewed</Trans>
+				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				{filteredEntries.map((entry) => {
 					if (entry.type === "task") {

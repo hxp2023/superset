@@ -1,5 +1,6 @@
 "use client";
 
+import { Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -58,21 +59,31 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? (
+							<Trans>Disconnecting...</Trans>
+						) : (
+							<Trans>Disconnect</Trans>
+						)}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect Notion?</AlertDialogTitle>
+						<AlertDialogTitle>
+							<Trans>Disconnect Notion?</Trans>
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will remove the connection between your organization and
-							Notion. You can reconnect at any time.
+							<Trans>
+								This will remove the connection between your organization and
+								Notion. You can reconnect at any time.
+							</Trans>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>
+							<Trans>Cancel</Trans>
+						</AlertDialogCancel>
 						<AlertDialogAction onClick={handleDisconnect}>
-							Disconnect
+							<Trans>Disconnect</Trans>
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -80,5 +91,9 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Connect Notion</Button>;
+	return (
+		<Button onClick={handleConnect}>
+			<Trans>Connect Notion</Trans>
+		</Button>
+	);
 }

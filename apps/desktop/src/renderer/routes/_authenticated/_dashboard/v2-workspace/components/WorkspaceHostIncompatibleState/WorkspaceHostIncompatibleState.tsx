@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpCircle, Monitor } from "lucide-react";
@@ -34,12 +35,14 @@ export function WorkspaceHostIncompatibleState({
 
 				<div className="flex flex-col gap-1.5">
 					<h1 className="text-[15px] font-medium tracking-tight text-foreground">
-						Host needs an update
+						<Trans>Host needs an update</Trans>
 					</h1>
 					<p className="select-text cursor-text text-[13px] leading-relaxed text-muted-foreground">
-						This workspace's host is on an older version of Superset than this
-						client supports. Update the Superset app on that device to
-						reconnect.
+						<Trans>
+							This workspace's host is on an older version of Superset than this
+							client supports. Update the Superset app on that device to
+							reconnect.
+						</Trans>
 					</p>
 				</div>
 
@@ -59,7 +62,7 @@ export function WorkspaceHostIncompatibleState({
 					<div className="border-t border-border/60 px-3 py-2">
 						<div className="flex items-center justify-between gap-3">
 							<span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
-								Running
+								<Trans>Running</Trans>
 							</span>
 							<code className="select-text cursor-text font-mono text-[12px] tabular-nums text-foreground">
 								{hostVersion}
@@ -67,7 +70,7 @@ export function WorkspaceHostIncompatibleState({
 						</div>
 						<div className="mt-1 flex items-center justify-between gap-3">
 							<span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
-								Required
+								<Trans>Required</Trans>
 							</span>
 							<code className="select-text cursor-text font-mono text-[12px] tabular-nums text-muted-foreground">
 								≥ {minVersion}
@@ -83,7 +86,7 @@ export function WorkspaceHostIncompatibleState({
 					className="-ml-2 h-7 gap-1.5 px-2 text-[13px] font-medium text-foreground hover:bg-muted/60"
 				>
 					<Link to="/v2-workspaces">
-						Browse workspaces
+						<Trans>Browse workspaces</Trans>
 						<ArrowRight
 							className="size-3.5"
 							strokeWidth={2}

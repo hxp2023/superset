@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { toast } from "@superset/ui/sonner";
 import { EmptyProjectModal } from "renderer/routes/_authenticated/components/EmptyProjectModal";
 import { TemplateGalleryModal } from "renderer/routes/_authenticated/components/TemplateGalleryModal";
@@ -9,6 +10,7 @@ import {
 import { NewProjectModal } from "./components/NewProjectModal";
 
 export function AddRepositoryModals() {
+	const { t } = useLingui();
 	const active = useAddRepositoryModalActive();
 	const close = useCloseAddRepositoryModal();
 	const resolveNewProject = useResolveNewProjectModal();
@@ -21,10 +23,20 @@ export function AddRepositoryModals() {
 					if (!open) close();
 				}}
 				onSuccess={(result) => {
-					toast.success("Project created.");
+					toast.success(
+						t({
+							message: "Project created.",
+						}),
+					);
 					resolveNewProject({ projectId: result.projectId });
 				}}
-				onError={(message) => toast.error(`Create failed: ${message}`)}
+				onError={(message) =>
+					toast.error(
+						t({
+							message: `Create failed: ${message}`,
+						}),
+					)
+				}
 			/>
 			<NewProjectModal
 				open={active.kind === "new-project"}
@@ -32,10 +44,20 @@ export function AddRepositoryModals() {
 					if (!open) close();
 				}}
 				onSuccess={(result) => {
-					toast.success("Project created.");
+					toast.success(
+						t({
+							message: "Project created.",
+						}),
+					);
 					resolveNewProject({ projectId: result.projectId });
 				}}
-				onError={(message) => toast.error(`Create failed: ${message}`)}
+				onError={(message) =>
+					toast.error(
+						t({
+							message: `Create failed: ${message}`,
+						}),
+					)
+				}
 			/>
 			<TemplateGalleryModal
 				open={active.kind === "template-gallery"}
@@ -43,10 +65,20 @@ export function AddRepositoryModals() {
 					if (!open) close();
 				}}
 				onCreated={(result) => {
-					toast.success("Project created.");
+					toast.success(
+						t({
+							message: "Project created.",
+						}),
+					);
 					resolveNewProject({ projectId: result.projectId });
 				}}
-				onError={(message) => toast.error(`Create failed: ${message}`)}
+				onError={(message) =>
+					toast.error(
+						t({
+							message: `Create failed: ${message}`,
+						}),
+					)
+				}
 			/>
 		</>
 	);

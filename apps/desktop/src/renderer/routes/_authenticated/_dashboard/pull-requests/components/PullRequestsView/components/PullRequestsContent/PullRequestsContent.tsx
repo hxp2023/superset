@@ -1,3 +1,4 @@
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { useNavigate } from "@tanstack/react-router";
 import { GoGitPullRequest } from "react-icons/go";
@@ -43,6 +44,7 @@ export function PullRequestsContent({
 	selectedPrProjectId,
 	repoSlugByProjectId,
 }: PullRequestsContentProps) {
+	const { t } = useLingui();
 	const debouncedQuery = useDebouncedValue(searchQuery, 300);
 	const navigate = useNavigate();
 	const expandDetail = usePullRequestsSplitViewStore((s) => s.expandDetail);
@@ -133,11 +135,15 @@ export function PullRequestsContent({
 				<div className="flex flex-col items-center gap-2 text-muted-foreground text-center">
 					<GoGitPullRequest className="h-8 w-8" />
 					<span className="max-w-prose text-sm text-wrap-pretty">
-						{areProjectsReady
-							? hasProjects
-								? "Select a project to see pull requests."
-								: "Add a project to see pull requests."
-							: "Loading projects…"}
+						{areProjectsReady ? (
+							hasProjects ? (
+								<Trans>Select a project to see pull requests.</Trans>
+							) : (
+								<Trans>Add a project to see pull requests.</Trans>
+							)
+						) : (
+							<Trans>Loading projects…</Trans>
+						)}
 					</span>
 				</div>
 			</div>
@@ -150,7 +156,7 @@ export function PullRequestsContent({
 				<div className="flex max-w-prose flex-col items-center gap-2 text-center text-muted-foreground">
 					<GoGitPullRequest className="size-8" />
 					<span className="text-sm text-wrap-pretty">
-						The device that hosts this project is unavailable.
+						<Trans>The device that hosts this project is unavailable.</Trans>
 					</span>
 				</div>
 			</div>
@@ -164,12 +170,6 @@ export function PullRequestsContent({
 		selectedPrProjectId == null
 			? pullRequests.findIndex((pr) => pr.prNumber === selectedPrNumber)
 			: -1;
-	const countLabel = isInitialLoad
-		? "Loading…"
-		: totalCount === 0
-			? "0"
-			: `${pullRequests.length} of ${totalCount}`;
-
 	return (
 		<div
 			className="@container flex h-full flex-col overflow-hidden"
@@ -178,15 +178,29 @@ export function PullRequestsContent({
 			<div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30 shrink-0">
 				<GoGitPullRequest className="size-3.5 text-muted-foreground" />
 				<span className="text-xs text-muted-foreground" aria-live="polite">
-					<span className="tabular-nums">{countLabel}</span>{" "}
-					{totalCount === 1 ? "pull request" : "pull requests"}
+					<span className="tabular-nums">
+						{isInitialLoad ? (
+							<Trans>Loading…</Trans>
+						) : totalCount === 0 ? (
+							"0"
+						) : (
+							<Trans>
+								{pullRequests.length} of {totalCount}
+							</Trans>
+						)}
+					</span>{" "}
+					<Plural value={totalCount} one="pull request" other="pull requests" />
 				</span>
 				<Button
 					variant="ghost"
 					size="icon-xs"
 					className="ml-auto"
-					title="Refresh"
-					aria-label="Refresh pull requests"
+					title={t({
+						message: "Refresh",
+					})}
+					aria-label={t({
+						message: "Refresh pull requests",
+					})}
 					disabled={isFetching}
 					onClick={() => refetch()}
 				>
@@ -205,26 +219,30 @@ export function PullRequestsContent({
 					<div className="flex flex-col items-start gap-3 px-4 py-4 text-sm text-destructive select-text cursor-text">
 						<span>{error.message}</span>
 						<Button variant="outline" size="sm" onClick={() => refetch()}>
-							Try again
+							<Trans>Try again</Trans>
 						</Button>
 					</div>
 				) : repoMismatch ? (
 					<div className="px-4 py-3 text-sm text-muted-foreground select-text cursor-text">
-						PR URL must match {repoMismatch}.
+						<Trans>PR URL must match {repoMismatch}.</Trans>
 					</div>
 				) : isInitialLoad ? (
 					<div className="flex h-full items-center justify-center gap-2 p-8 text-muted-foreground">
 						<LuRefreshCw className="size-4 animate-spin motion-reduce:animate-none" />
-						<span className="text-sm">Loading pull requests…</span>
+						<span className="text-sm">
+							<Trans>Loading pull requests…</Trans>
+						</span>
 					</div>
 				) : totalCount === 0 && !isFetching ? (
 					<div className="flex h-full items-center justify-center p-8">
 						<span className="text-sm text-muted-foreground">
-							{mergedOnly
-								? "No merged pull requests."
-								: includeClosed
-									? "No pull requests found."
-									: "No open pull requests."}
+							{mergedOnly ? (
+								<Trans>No merged pull requests.</Trans>
+							) : includeClosed ? (
+								<Trans>No pull requests found.</Trans>
+							) : (
+								<Trans>No open pull requests.</Trans>
+							)}
 						</span>
 					</div>
 				) : (
@@ -232,10 +250,12 @@ export function PullRequestsContent({
 						{error instanceof Error && (
 							<div className="flex items-center gap-2 rounded-lg bg-destructive/5 px-4 py-2 text-xs text-destructive">
 								<span className="min-w-0 flex-1 truncate select-text cursor-text">
-									Some repositories could not be loaded: {error.message}
+									<Trans>
+										Some repositories could not be loaded: {error.message}
+									</Trans>
 								</span>
 								<Button variant="outline" size="xs" onClick={() => refetch()}>
-									Retry
+									<Trans>Retry</Trans>
 								</Button>
 							</div>
 						)}

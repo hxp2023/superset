@@ -1,14 +1,27 @@
+import { msg } from "@lingui/core/macro";
 import { OAuthDialog, type OAuthDialogProps } from "../OAuthDialog";
 
 const ANTHROPIC_PROVIDER: OAuthDialogProps["provider"] = {
-	title: "Connect Anthropic",
-	description:
-		"Approve access in your browser, then paste the callback URL or `code#state` here.",
-	codeLabel: "Authorization code",
-	codePlaceholder: "Paste callback URL or code#state",
-	codeHint:
-		"Anthropic usually returns a full callback URL. Pasting either format works.",
-	preparingLabel: "Preparing Anthropic browser login...",
+	title: msg({
+		message: "Connect Anthropic",
+	}),
+	description: msg({
+		message:
+			"Approve access in your browser, then paste the callback URL or `code#state` here.",
+	}),
+	codeLabel: msg({
+		message: "Authorization code",
+	}),
+	codePlaceholder: msg({
+		message: "Paste callback URL or code#state",
+	}),
+	codeHint: msg({
+		message:
+			"Anthropic usually returns a full callback URL. Pasting either format works.",
+	}),
+	preparingLabel: msg({
+		message: "Preparing Anthropic browser login...",
+	}),
 };
 
 type AnthropicOAuthDialogProps = Omit<OAuthDialogProps, "provider">;

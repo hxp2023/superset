@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
@@ -15,12 +16,12 @@ import {
 	modifierLabel,
 	useChangesSidebarFilePolicy,
 } from "renderer/lib/clickPolicy";
-import { PathActionsMenuItems } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/components/PathActionsMenuItems";
 import {
 	type ChangesetFile,
 	getChangesetFileKey,
 } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
+import { PathActionsMenuItems } from "../../../PathActionsMenuItems";
 
 interface FileRowContextMenuItemsProps {
 	file: ChangesetFile;
@@ -56,6 +57,7 @@ export function FileRowContextMenuItems({
 	onOpenInEditor,
 	onRequestDiscard,
 }: FileRowContextMenuItemsProps) {
+	const { t } = useLingui();
 	const absolutePath = worktreePath
 		? toAbsoluteWorkspacePath(worktreePath, file.path)
 		: undefined;
@@ -74,13 +76,13 @@ export function FileRowContextMenuItems({
 				onSelect={() => onSelectFile?.(file.path, false, changeKey)}
 			>
 				<GitCompare />
-				Open Diff
+				<Trans>Open Diff</Trans>
 			</DropdownMenuItem>
 			<DropdownMenuItem
 				onSelect={() => onSelectFile?.(file.path, true, changeKey)}
 			>
 				<SquarePlus />
-				Open Diff in New Tab
+				<Trans>Open Diff in New Tab</Trans>
 				{diffNewTabTier && (
 					<DropdownMenuShortcut>
 						{modifierLabel(diffNewTabTier)}
@@ -92,7 +94,7 @@ export function FileRowContextMenuItems({
 				disabled={!onOpenFile || !absolutePath}
 			>
 				<FileText />
-				Open File
+				<Trans>Open File</Trans>
 				{fileTier && (
 					<DropdownMenuShortcut>{modifierLabel(fileTier)}</DropdownMenuShortcut>
 				)}
@@ -102,14 +104,14 @@ export function FileRowContextMenuItems({
 				disabled={!onOpenFile || !absolutePath}
 			>
 				<SquarePlus />
-				Open File in New Tab
+				<Trans>Open File in New Tab</Trans>
 			</DropdownMenuItem>
 			<DropdownMenuItem
 				onSelect={() => onOpenInEditor?.(file.path)}
 				disabled={!onOpenInEditor}
 			>
 				<ExternalLink />
-				Open in Editor
+				<Trans>Open in Editor</Trans>
 				{externalTier && (
 					<DropdownMenuShortcut>
 						{modifierLabel(externalTier)}
@@ -134,7 +136,13 @@ export function FileRowContextMenuItems({
 						onSelect={() => onRequestDiscard(file)}
 					>
 						{isDeleteAction ? <Trash2 /> : <Undo2 />}
-						{isDeleteAction ? "Delete" : "Discard changes"}
+						{isDeleteAction
+							? t({
+									message: "Delete",
+								})
+							: t({
+									message: "Discard changes",
+								})}
 					</DropdownMenuItem>
 				</>
 			)}

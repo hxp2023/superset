@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { GlobeIcon } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -60,7 +62,14 @@ export const WebFetchTool = ({
 		</View>
 	) : isError || !isSuccess ? (
 		<Text className="text-destructive text-xs">
-			{statusCode ? `Error ${statusCode}` : "Failed"}
+			{statusCode
+				? i18n._({
+						...msg({
+							message: "Error {statusCode}",
+						}),
+						values: { statusCode },
+					})
+				: i18n._(msg({ message: "Failed" }))}
 		</Text>
 	) : bytes !== undefined ? (
 		<Text className="text-muted-foreground text-xs">{formatBytes(bytes)}</Text>
@@ -93,7 +102,17 @@ export const WebFetchTool = ({
 							onPress={() => setIsExpanded((prev) => !prev)}
 						>
 							<Text className="mt-1 text-muted-foreground text-xs underline">
-								{isExpanded ? "Show less" : "Show more"}
+								{isExpanded
+									? i18n._(
+											msg({
+												message: "Show less",
+											}),
+										)
+									: i18n._(
+											msg({
+												message: "Show more",
+											}),
+										)}
 							</Text>
 						</Pressable>
 					) : null}

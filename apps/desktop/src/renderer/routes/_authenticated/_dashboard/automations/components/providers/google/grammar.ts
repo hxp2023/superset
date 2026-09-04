@@ -1,3 +1,5 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import type {
 	GoogleCalendarTriggerEvent,
 	TriggerConfigInput,
@@ -98,39 +100,119 @@ export const GMAIL_SENTENCE: SentencePart<GmailSlot>[] = [
 ];
 
 export const MINUTES_BEFORE_OPTIONS = [
-	{ value: "5", label: "5 minutes" },
-	{ value: "10", label: "10 minutes" },
-	{ value: "15", label: "15 minutes" },
-	{ value: "30", label: "30 minutes" },
-	{ value: "60", label: "1 hour" },
-	{ value: "120", label: "2 hours" },
+	{
+		value: "5",
+		label: msg({
+			message: "5 minutes",
+		}),
+	},
+	{
+		value: "10",
+		label: msg({
+			message: "10 minutes",
+		}),
+	},
+	{
+		value: "15",
+		label: msg({
+			message: "15 minutes",
+		}),
+	},
+	{
+		value: "30",
+		label: msg({
+			message: "30 minutes",
+		}),
+	},
+	{
+		value: "60",
+		label: msg({
+			message: "1 hour",
+		}),
+	},
+	{
+		value: "120",
+		label: msg({
+			message: "2 hours",
+		}),
+	},
 ] as const;
 
 export const EXTERNAL_ATTENDEE_OPTIONS = [
-	{ value: "any", label: "anyone" },
-	{ value: "external", label: "someone external" },
+	{
+		value: "any",
+		label: msg({
+			message: "anyone",
+		}),
+	},
+	{
+		value: "external",
+		label: msg({
+			message: "someone external",
+		}),
+	},
 ] as const;
 
 export const ATTACHMENT_OPTIONS = [
-	{ value: "any", label: "with or without attachments" },
-	{ value: "attachment", label: "with an attachment" },
+	{
+		value: "any",
+		label: msg({
+			message: "with or without attachments",
+		}),
+	},
+	{
+		value: "attachment",
+		label: msg({
+			message: "with an attachment",
+		}),
+	},
 ] as const;
 
 export const CALENDAR_MENU: TriggerMenuEntry<GoogleCalendarConfig>[] = [
-	leaf("Event created", "event.created"),
-	leaf("Event updated", "event.updated"),
-	leaf("Event cancelled", "event.cancelled"),
-	leaf("Event starting soon", "event.starting_soon"),
-	leaf("Event ended", "event.ended"),
+	leaf(
+		msg({
+			message: "Event created",
+		}),
+		"event.created",
+	),
+	leaf(
+		msg({
+			message: "Event updated",
+		}),
+		"event.updated",
+	),
+	leaf(
+		msg({
+			message: "Event cancelled",
+		}),
+		"event.cancelled",
+	),
+	leaf(
+		msg({
+			message: "Event starting soon",
+		}),
+		"event.starting_soon",
+	),
+	leaf(
+		msg({
+			message: "Event ended",
+		}),
+		"event.ended",
+	),
 ];
 
 // One leaf, so the Add Trigger menu shows the provider row itself; the label
 // only surfaces in search, where "gmail" has to find it.
 export const GMAIL_MENU: TriggerMenuEntry<GmailConfig>[] = [
-	{ label: "Email received in Gmail", create: createGmailConfig },
+	{
+		label: msg({
+			message: "Email received in Gmail",
+		}),
+		create: createGmailConfig,
+	},
 ];
 
-function leaf(label: string, event: GoogleCalendarTriggerEvent) {
+function leaf(label: MessageDescriptor, event: GoogleCalendarTriggerEvent) {
 	return { label, create: () => createCalendarConfig(event) };
 }
 

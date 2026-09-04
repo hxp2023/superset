@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { cn } from "@superset/ui/utils";
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -23,6 +24,7 @@ interface HostsSettingsSidebarProps {
 export function HostsSettingsSidebar({
 	selectedHostId,
 }: HostsSettingsSidebarProps) {
+	const { t } = useLingui();
 	const { data: hosts = [] } = cloudTrpc.v2Host.list.useQuery(undefined);
 
 	const presence = useHostsPresence(hosts);
@@ -49,26 +51,40 @@ export function HostsSettingsSidebar({
 		return [
 			{
 				id: "online",
-				title: "Online",
+				title: t({
+					message: "Online",
+				}),
 				rows: sorted.filter((h) => h.isOnline),
 			},
 			{
 				id: "offline",
-				title: "Offline",
+				title: t({
+					message: "Offline",
+				}),
 				rows: sorted.filter((h) => !h.isOnline),
 			},
 		];
-	}, [hostsWithPresence]);
+	}, [hostsWithPresence, t]);
 
 	return (
 		<SettingsListSidebar
-			searchPlaceholder="Filter hosts..."
-			searchAriaLabel="Filter hosts"
+			searchPlaceholder={t({
+				message: "Filter hosts...",
+			})}
+			searchAriaLabel={t({
+				message: "Filter hosts",
+			})}
 			groups={listGroups}
 			filterRow={(row, q) => row.name.toLowerCase().includes(q.toLowerCase())}
 			getRowKey={(row) => row.id}
-			emptyLabel="No hosts yet."
-			noMatchLabel={(q) => `No hosts match "${q}".`}
+			emptyLabel={t({
+				message: "No hosts yet.",
+			})}
+			noMatchLabel={(q) =>
+				t({
+					message: `No hosts match "${q}".`,
+				})
+			}
 			renderRow={(row) => (
 				<Link
 					to="/settings/hosts/$hostId"

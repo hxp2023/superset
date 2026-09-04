@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type {
 	FileTreeRenameEvent,
 	FileTreeRowDecoration,
@@ -32,8 +33,8 @@ import {
 	createPierreTreeStyle,
 	PIERRE_TREE_UNSAFE_CSS,
 } from "renderer/lib/pierreTree";
+import { PierreRowContextMenu } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/PierreRowContextMenu";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
-import { PierreRowContextMenu } from "../PierreRowContextMenu";
 import { FileMenuItems } from "./components/FileMenuItems";
 import { FilesTabDropOverlay } from "./components/FilesTabDropOverlay";
 import { FilesTabHeaderButton } from "./components/FilesTabHeaderButton";
@@ -78,6 +79,7 @@ export function FilesTab({
 	gitStatus,
 	onSearch,
 }: FilesTabProps) {
+	const { t } = useLingui();
 	// Shares the query cache with V2WorkspacePage's workspace.get query, so
 	// the first render after a workspace switch typically already has cached
 	// data from React Query (the parent route resolves it first). staleTime
@@ -311,10 +313,14 @@ export function FilesTab({
 				{workspaceQuery.isLoading ? (
 					<>
 						<Loader2 className="size-3.5 animate-spin" />
-						<span>Loading files...</span>
+						<span>
+							<Trans>Loading files...</Trans>
+						</span>
 					</>
 				) : (
-					"Workspace worktree not available"
+					t({
+						message: "Workspace worktree not available",
+					})
 				)}
 			</div>
 		);
@@ -349,29 +355,39 @@ export function FilesTab({
 									className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 								>
 									<Search className="size-3.5 shrink-0" />
-									<span className="truncate">Search files</span>
+									<span className="truncate">
+										<Trans>Search files</Trans>
+									</span>
 								</button>
 							)}
 							<div className="ml-auto flex items-center gap-0.5">
 								<FilesTabHeaderButton
 									icon={FilePlus}
-									label="New File"
+									label={t({
+										message: "New File",
+									})}
 									onClick={() => void startCreating("file")}
 								/>
 								<FilesTabHeaderButton
 									icon={FolderPlus}
-									label="New Folder"
+									label={t({
+										message: "New Folder",
+									})}
 									onClick={() => void startCreating("folder")}
 								/>
 								<FilesTabHeaderButton
 									icon={RefreshCw}
-									label="Refresh"
+									label={t({
+										message: "Refresh",
+									})}
 									loading={bridge.isRefreshing}
 									onClick={() => void bridge.doRefresh()}
 								/>
 								<FilesTabHeaderButton
 									icon={FoldVertical}
-									label="Collapse All"
+									label={t({
+										message: "Collapse All",
+									})}
 									onClick={collapseAll}
 								/>
 							</div>

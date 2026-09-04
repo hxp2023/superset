@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { ChartConfig } from "@superset/ui/chart";
 import {
 	ChartContainer,
@@ -12,7 +13,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useHostUsageHistory } from "../../hooks/useHostUsageHistory";
 import type { HistoryMetric } from "../UsageHistorySection/constants";
 import {
-	PROVIDER_CHART_CONFIG,
+	AGENT_CHART_CONFIG,
 	RANGE_OPTIONS,
 } from "../UsageHistorySection/constants";
 import {
@@ -37,6 +38,7 @@ export function UsageDrilldownPage({
 	kind: DrilldownKind;
 	entityKey: string;
 }) {
+	const { t } = useLingui();
 	const [days, setDays] = useState<number>(30);
 	const [metric, setMetric] = useState<HistoryMetric>("usd");
 	const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
@@ -57,17 +59,24 @@ export function UsageDrilldownPage({
 				: history.modelDetails[entityKey]) ?? null)
 		: null;
 
-	const provider =
+	const agent =
 		kind === "model"
-			? (entityKey.split("|")[0] as keyof typeof PROVIDER_CHART_CONFIG)
+			? (entityKey.split("|")[0] as keyof typeof AGENT_CHART_CONFIG)
 			: null;
 	const title = kind === "model" ? entityKey.split("|")[1] : entityKey;
 	const seriesColor =
-		provider && PROVIDER_CHART_CONFIG[provider]
-			? PROVIDER_CHART_CONFIG[provider].color
+		agent && AGENT_CHART_CONFIG[agent]
+			? AGENT_CHART_CONFIG[agent].color
 			: "#d06a48";
 	const chartConfig = {
-		value: { label: title ?? "Usage", color: seriesColor },
+		value: {
+			label:
+				title ??
+				t({
+					message: "Usage",
+				}),
+			color: seriesColor,
+		},
 	} satisfies ChartConfig;
 
 	// Zero-fill the sparse per-entity series against the range's day list so
@@ -110,7 +119,7 @@ export function UsageDrilldownPage({
 					className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>
 					<LuArrowLeft className="size-3" />
-					Usage
+					<Trans>Usage</Trans>
 				</Link>
 				<span className="text-muted-foreground/60">/</span>
 				<h1 className="flex items-center gap-2 text-base font-semibold tracking-tight">
@@ -121,7 +130,11 @@ export function UsageDrilldownPage({
 					{title}
 				</h1>
 				<span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
-					{kind}
+					{kind === "workspace" ? (
+						<Trans>workspace</Trans>
+					) : (
+						<Trans>model</Trans>
+					)}
 				</span>
 				<div className="ml-auto flex items-center gap-1.5">
 					<Tabs
@@ -130,10 +143,10 @@ export function UsageDrilldownPage({
 					>
 						<TabsList className="h-6">
 							<TabsTrigger value="usd" className="h-4 px-1.5 text-[10px]">
-								Cost
+								<Trans>Cost</Trans>
 							</TabsTrigger>
 							<TabsTrigger value="tokens" className="h-4 px-1.5 text-[10px]">
-								Tokens
+								<Trans>Tokens</Trans>
 							</TabsTrigger>
 						</TabsList>
 					</Tabs>
@@ -158,11 +171,19 @@ export function UsageDrilldownPage({
 
 			{!history ? (
 				<div className="py-8 text-center text-xs text-muted-foreground">
-					Loading usage history…
+					<Trans>Loading usage history…</Trans>
 				</div>
 			) : !detail ? (
 				<div className="py-8 text-center text-xs text-muted-foreground">
-					No usage recorded for this {kind} in the selected range.
+					{kind === "workspace" ? (
+						<Trans>
+							No usage recorded for this workspace in the selected range.
+						</Trans>
+					) : (
+						<Trans>
+							No usage recorded for this model in the selected range.
+						</Trans>
+					)}
 				</div>
 			) : (
 				<>
@@ -173,10 +194,17 @@ export function UsageDrilldownPage({
 								: formatTokens(detail.tokens)}
 						</span>
 						<span className="text-[11px] text-muted-foreground">
-							{Math.round(100 * shareOfTotal)}% of{" "}
-							{metric === "usd" ? "total cost" : "all tokens"} ·{" "}
-							{formatTokens(detail.tokens)} tokens
-							{metric === "usd" && " · * at API list rates"}
+							{metric === "usd" ? (
+								<Trans>
+									{Math.round(100 * shareOfTotal)}% of total cost ·{" "}
+									{formatTokens(detail.tokens)} tokens · * at API list rates
+								</Trans>
+							) : (
+								<Trans>
+									{Math.round(100 * shareOfTotal)}% of all tokens ·{" "}
+									{formatTokens(detail.tokens)} tokens
+								</Trans>
+							)}
 						</span>
 					</div>
 
@@ -232,9 +260,15 @@ export function UsageDrilldownPage({
 					<div className="flex flex-col gap-1.5">
 						<div className="flex items-baseline justify-between border-b py-1 text-[11px] text-muted-foreground">
 							<span className="font-medium">
-								{kind === "workspace" ? "Models used" : "Workspaces"}
+								{kind === "workspace" ? (
+									<Trans>Models used</Trans>
+								) : (
+									<Trans>Workspaces</Trans>
+								)}
 							</span>
-							<span className="font-medium">Cost</span>
+							<span className="font-medium">
+								<Trans>Cost</Trans>
+							</span>
 						</div>
 						{detail.breakdown.slice(0, 8).map((row) => {
 							const rowTitle =
@@ -258,8 +292,7 @@ export function UsageDrilldownPage({
 											<span
 												className="size-1.5 shrink-0 rounded-[2px]"
 												style={{
-													background:
-														PROVIDER_CHART_CONFIG[row.provider]?.color,
+													background: AGENT_CHART_CONFIG[row.agent]?.color,
 												}}
 											/>
 											{rowTitle}
@@ -276,7 +309,7 @@ export function UsageDrilldownPage({
 											className="h-full rounded-full"
 											style={{
 												width: `${breakdownMax > 0 ? Math.max(1, (100 * row.usd) / breakdownMax) : 0}%`,
-												background: PROVIDER_CHART_CONFIG[row.provider]?.color,
+												background: AGENT_CHART_CONFIG[row.agent]?.color,
 												opacity: 0.6,
 											}}
 										/>
@@ -309,9 +342,13 @@ export function UsageDrilldownPage({
 							<div className="flex flex-col gap-1.5">
 								<div className="flex items-baseline justify-between border-b py-1 text-[11px] text-muted-foreground">
 									<span className="font-medium">
-										Sessions · top {detail.sessions.length} by cost
+										<Trans>
+											Sessions · top {detail.sessions.length} by cost
+										</Trans>
 									</span>
-									<span className="font-medium">Cost</span>
+									<span className="font-medium">
+										<Trans>Cost</Trans>
+									</span>
 								</div>
 								{detail.sessions.map((session) => {
 									const sessionMax = detail.sessions?.[0]?.usd ?? 0;
@@ -321,7 +358,10 @@ export function UsageDrilldownPage({
 											key={session.id}
 											type="button"
 											onClick={() => copySessionId(session.id)}
-											title={`${session.id}\nClick to copy the session ID (resume with \`claude --resume <id>\`).`}
+											title={`${session.id}\n${t({
+												message:
+													"Click to copy the session ID (resume with `claude --resume <id>`).",
+											})}`}
 											className="group flex flex-col gap-0.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
 										>
 											<div className="flex items-baseline justify-between gap-3 text-[11px]">
@@ -330,12 +370,14 @@ export function UsageDrilldownPage({
 														className="size-1.5 shrink-0 rounded-[2px]"
 														style={{
 															background:
-																PROVIDER_CHART_CONFIG[session.provider]?.color,
+																AGENT_CHART_CONFIG[session.agent]?.color,
 														}}
 													/>
 													<span className="truncate">
 														{session.label ??
-															`Session ${session.id.slice(0, 8)}`}
+															t({
+																message: `Session ${session.id.slice(0, 8)}`,
+															})}
 													</span>
 													<span className="shrink-0 text-muted-foreground">
 														{new Date(session.lastMs).toLocaleDateString(
@@ -346,7 +388,7 @@ export function UsageDrilldownPage({
 													{copied ? (
 														<span className="flex shrink-0 items-center gap-1 text-[10px] text-emerald-500">
 															<LuCheck className="size-2.5" />
-															ID copied
+															<Trans>ID copied</Trans>
 														</span>
 													) : (
 														<LuCopy className="size-2.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
@@ -365,7 +407,7 @@ export function UsageDrilldownPage({
 													style={{
 														width: `${sessionMax > 0 ? Math.max(1, (100 * session.usd) / sessionMax) : 0}%`,
 														background:
-															PROVIDER_CHART_CONFIG[session.provider]?.color,
+															AGENT_CHART_CONFIG[session.agent]?.color,
 														opacity: 0.6,
 													}}
 												/>

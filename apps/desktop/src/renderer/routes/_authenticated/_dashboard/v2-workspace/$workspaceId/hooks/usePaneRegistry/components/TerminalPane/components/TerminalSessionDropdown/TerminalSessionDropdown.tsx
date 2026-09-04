@@ -1,3 +1,6 @@
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
+import { i18n } from "@superset/i18n";
 import type { RendererContext } from "@superset/panes";
 import {
 	DropdownMenu,
@@ -56,7 +59,12 @@ interface TerminalPaneLocation {
 const EMPTY_TERMINAL_PANE_LOCATIONS = new Map<string, TerminalPaneLocation[]>();
 
 function formatCreatedAt(createdAt: number | undefined): string {
-	if (!createdAt) return "Creating";
+	if (!createdAt)
+		return i18n._(
+			msg({
+				message: "Creating",
+			}),
+		);
 
 	return getRelativeTime(createdAt, { format: "compact" });
 }
@@ -88,6 +96,7 @@ export function TerminalSessionDropdown({
 	launcher,
 	workspaceId,
 }: TerminalSessionDropdownProps) {
+	const { t } = useLingui();
 	const [isOpen, setIsOpen] = useState(false);
 	const collections = useCollections();
 	const { terminalId } = context.pane.data as TerminalPaneData;
@@ -233,9 +242,15 @@ export function TerminalSessionDropdown({
 
 	const handleRemoveTerminal = (session: VisibleTerminalSession) => {
 		toast.promise(removeTerminalSession(session), {
-			loading: "Removing terminal...",
-			success: "Terminal removed",
-			error: "Failed to remove terminal",
+			loading: t({
+				message: "Removing terminal...",
+			}),
+			success: t({
+				message: "Terminal removed",
+			}),
+			error: t({
+				message: "Failed to remove terminal",
+			}),
 		});
 	};
 
@@ -274,7 +289,9 @@ export function TerminalSessionDropdown({
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					aria-label="Terminal sessions"
+					aria-label={t({
+						message: "Terminal sessions",
+					})}
 					title={triggerTitle}
 					className="flex min-w-32 max-w-96 items-center gap-1.5 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 					onMouseDown={(event) => event.stopPropagation()}
@@ -290,7 +307,9 @@ export function TerminalSessionDropdown({
 										? "size-1.5 shrink-0 rounded-full bg-amber-500"
 										: "size-1.5 shrink-0 rounded-full bg-red-500"
 							}
-							title={`Workspace run: ${workspaceRunState}`}
+							title={t({
+								message: `Workspace run: ${workspaceRunState}`,
+							})}
 						/>
 					)}
 					<span className="min-w-0 flex-1 truncate text-left">
@@ -303,11 +322,17 @@ export function TerminalSessionDropdown({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-96">
 				<DropdownMenuLabel className="flex items-center gap-2 text-xs">
-					<span className="min-w-0 flex-1 truncate">Terminal Sessions</span>
+					<span className="min-w-0 flex-1 truncate">
+						<Trans>Terminal Sessions</Trans>
+					</span>
 					<button
 						type="button"
-						aria-label="New terminal"
-						title="New terminal"
+						aria-label={t({
+							message: "New terminal",
+						})}
+						title={t({
+							message: "New terminal",
+						})}
 						className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 						onClick={(event) => {
 							event.preventDefault();
@@ -328,14 +353,24 @@ export function TerminalSessionDropdown({
 							)?.[0];
 							const createdAtLabel = formatCreatedAt(session.createdAt);
 							const status = isCurrent
-								? "Current"
+								? t({
+										message: "Current",
+									})
 								: workspaceRunTerminals[session.terminalId]
-									? "Run"
+									? t({
+											message: "Run",
+										})
 									: session.pending
-										? "Starting"
+										? t({
+												message: "Starting",
+											})
 										: session.attached
-											? "Attached"
-											: "Detached";
+											? t({
+													message: "Attached",
+												})
+											: t({
+													message: "Detached",
+												});
 							const title = isCurrent
 								? triggerTitle
 								: getTerminalDisplayTitle({
@@ -365,7 +400,15 @@ export function TerminalSessionDropdown({
 									</span>
 									<button
 										type="button"
-										aria-label={`Remove terminal ${session.createdAt ? createdAtLabel : "session"}`}
+										aria-label={
+											session.createdAt
+												? t({
+														message: `Remove terminal ${createdAtLabel}`,
+													})
+												: t({
+														message: "Remove terminal session",
+													})
+										}
 										disabled={killTerminalSession.isPending}
 										className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 group-hover:opacity-100"
 										onClick={(event) => {
@@ -381,7 +424,7 @@ export function TerminalSessionDropdown({
 						})
 					) : (
 						<div className="px-2 py-1.5 text-xs text-muted-foreground">
-							No live sessions
+							<Trans>No live sessions</Trans>
 						</div>
 					)}
 				</div>

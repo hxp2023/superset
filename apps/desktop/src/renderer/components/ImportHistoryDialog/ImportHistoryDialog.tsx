@@ -1,3 +1,5 @@
+import { plural } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { Checkbox } from "@superset/ui/checkbox";
 import {
@@ -52,6 +54,7 @@ export function ImportHistoryDialog({
 	open,
 	onOpenChange,
 }: ImportHistoryDialogProps) {
+	const { t } = useLingui();
 	const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [importHistory, setImportHistory] = useState(true);
@@ -111,10 +114,15 @@ export function ImportHistoryDialog({
 				importedSomething ||= result.imported > 0;
 				messages.push(
 					result.imported === 0
-						? "no history"
-						: `${result.imported.toLocaleString()} history ${
-								result.imported === 1 ? "item" : "items"
-							}`,
+						? t({
+								message: "no history",
+							})
+						: t({
+								message: plural(result.imported, {
+									one: "# history item",
+									other: "# history items",
+								}),
+							}),
 				);
 			}
 
@@ -126,26 +134,47 @@ export function ImportHistoryDialog({
 				if (result.keyUnavailable) {
 					// Nothing was actually written — Keychain denied access — so this
 					// must not count toward importedSomething below.
-					messages.push("logins skipped (Keychain access denied)");
+					messages.push(
+						t({
+							message: "logins skipped (Keychain access denied)",
+						}),
+					);
 				} else {
 					importedSomething ||= result.imported > 0;
 					messages.push(
 						result.imported === 0
-							? "no logins"
-							: `${result.imported.toLocaleString()} ${
-									result.imported === 1 ? "login" : "logins"
-								}`,
+							? t({
+									message: "no logins",
+								})
+							: t({
+									message: plural(result.imported, {
+										one: "# login",
+										other: "# logins",
+									}),
+								}),
 					);
 				}
 			}
 
+			const joinedMessages = messages.join(
+				t({
+					message: " and ",
+				}),
+			);
 			if (importedSomething) {
-				toast.success(`Imported ${messages.join(" and ")}`);
+				toast.success(
+					t({
+						message: `Imported ${joinedMessages}`,
+					}),
+				);
 				dismissImportBanner(BROWSER_IMPORT_BANNER_ID);
 			} else {
-				toast.error("Could not import from browser", {
-					description: messages.join(" and ") || undefined,
-				});
+				toast.error(
+					t({
+						message: "Could not import from browser",
+					}),
+					{ description: joinedMessages || undefined },
+				);
 			}
 			onOpenChange(false);
 		} catch (error: unknown) {
@@ -154,9 +183,12 @@ export function ImportHistoryDialog({
 			// job is done even though the dialog is reporting an error and
 			// staying open for the user to see the failure/retry.
 			if (importedSomething) dismissImportBanner(BROWSER_IMPORT_BANNER_ID);
-			toast.error("Could not import from browser", {
-				description: error instanceof Error ? error.message : undefined,
-			});
+			toast.error(
+				t({
+					message: "Could not import from browser",
+				}),
+				{ description: error instanceof Error ? error.message : undefined },
+			);
 		} finally {
 			setIsImporting(false);
 		}
@@ -182,31 +214,37 @@ export function ImportHistoryDialog({
 		>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Import settings from another browser</DialogTitle>
+					<DialogTitle>
+						<Trans>Import settings from another browser</Trans>
+					</DialogTitle>
 					<DialogDescription>
-						Copy your browsing history and logins from another browser into
-						Superset. Your original browser isn't changed.
+						<Trans>
+							Copy your browsing history and logins from another browser into
+							Superset. Your original browser isn't changed.
+						</Trans>
 					</DialogDescription>
 				</DialogHeader>
 
 				{loadState.status === "loading" && (
 					<p className="py-4 text-sm text-muted-foreground">
-						Looking for installed browsers…
+						<Trans>Looking for installed browsers…</Trans>
 					</p>
 				)}
 
 				{loadState.status === "needs-full-disk-access" && (
 					<div className="flex flex-col gap-3 py-2 text-sm">
 						<p className="text-muted-foreground">
-							Superset needs Full Disk Access to read another browser's data.
-							Grant it in System Settings, then check again.
+							<Trans>
+								Superset needs Full Disk Access to read another browser's data.
+								Grant it in System Settings, then check again.
+							</Trans>
 						</p>
 						<div className="flex gap-2">
 							<Button variant="outline" size="sm" onClick={handleOpenSettings}>
-								Open System Settings
+								<Trans>Open System Settings</Trans>
 							</Button>
 							<Button variant="ghost" size="sm" onClick={loadSources}>
-								Check again
+								<Trans>Check again</Trans>
 							</Button>
 						</div>
 					</div>
@@ -214,7 +252,9 @@ export function ImportHistoryDialog({
 
 				{loadState.status === "ready" && loadState.sources.length === 0 && (
 					<p className="py-4 text-sm text-muted-foreground">
-						No Chrome, Brave, Arc, or other Chromium browsers were found.
+						<Trans>
+							No Chrome, Brave, Arc, or other Chromium browsers were found.
+						</Trans>
 					</p>
 				)}
 
@@ -269,7 +309,7 @@ export function ImportHistoryDialog({
 									onCheckedChange={(v) => setImportHistory(v === true)}
 								/>
 								<Label htmlFor="import-history" className="font-normal">
-									Browsing history
+									<Trans>Browsing history</Trans>
 								</Label>
 							</div>
 							<div className="flex items-start gap-2">
@@ -281,12 +321,17 @@ export function ImportHistoryDialog({
 								/>
 								<div className="flex flex-col gap-0.5">
 									<Label htmlFor="import-logins" className="font-normal">
-										Logins (cookies)
+										<Trans>Logins (cookies)</Trans>
 									</Label>
 									<span className="text-xs text-muted-foreground">
-										{isMac
-											? "Quit the source browser first so its logins are saved to disk. You'll be asked to allow Keychain access."
-											: "Only available on macOS."}
+										{isMac ? (
+											<Trans>
+												Quit the source browser first so its logins are saved to
+												disk. You'll be asked to allow Keychain access.
+											</Trans>
+										) : (
+											<Trans>Only available on macOS.</Trans>
+										)}
 									</span>
 								</div>
 							</div>
@@ -300,10 +345,10 @@ export function ImportHistoryDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isImporting}
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button onClick={handleImport} disabled={isImporting || !canImport}>
-						{isImporting ? "Importing…" : "Import"}
+						{isImporting ? <Trans>Importing…</Trans> : <Trans>Import</Trans>}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

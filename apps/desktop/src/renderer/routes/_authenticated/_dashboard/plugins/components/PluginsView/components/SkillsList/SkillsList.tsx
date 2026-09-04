@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { SUPERSET_MANAGED_SKILLS } from "@superset/shared/plugins";
 import { Badge } from "@superset/ui/badge";
 import { useState } from "react";
@@ -22,8 +23,10 @@ export function SkillsList() {
 	return (
 		<div className="flex flex-col gap-4">
 			<p className="text-sm text-muted-foreground">
-				Skills ship with the Superset plugin and are kept up to date
-				automatically in every agent you use. Click one to preview it.
+				<Trans>
+					Skills ship with the Superset plugin and are kept up to date
+					automatically in every agent you use. Click one to preview it.
+				</Trans>
 			</p>
 			<div className="flex flex-col divide-y divide-border/60 rounded-lg border border-border/60">
 				{SUPERSET_MANAGED_SKILLS.map((skill) => {
@@ -46,11 +49,11 @@ export function SkillsList() {
 							</div>
 							{isDisabled && (
 								<span className="shrink-0 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-									Disabled
+									<Trans>Disabled</Trans>
 								</span>
 							)}
 							<Badge variant="secondary" className="shrink-0">
-								Managed
+								<Trans>Managed</Trans>
 							</Badge>
 						</button>
 					);

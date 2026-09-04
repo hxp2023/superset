@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import type { AppRouter } from "@superset/host-service";
 import { Button } from "@superset/ui/button";
 import {
@@ -74,9 +75,11 @@ export function RangeModal({
 		<Dialog open={open} onOpenChange={onOpenChange} modal>
 			<DialogContent className="overflow-hidden sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Select commit range</DialogTitle>
+					<DialogTitle>
+						<Trans>Select commit range</Trans>
+					</DialogTitle>
 					<DialogDescription>
-						Click two commits to define the range.
+						<Trans>Click two commits to define the range.</Trans>
 					</DialogDescription>
 				</DialogHeader>
 
@@ -104,10 +107,10 @@ export function RangeModal({
 
 				<DialogFooter>
 					<Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button size="sm" disabled={!hasRange} onClick={handleApply}>
-						Apply
+						<Trans>Apply</Trans>
 					</Button>
 				</DialogFooter>
 			</DialogContent>

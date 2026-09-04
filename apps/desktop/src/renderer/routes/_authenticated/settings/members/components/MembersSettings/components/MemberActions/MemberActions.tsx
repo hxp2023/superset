@@ -1,8 +1,10 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+import { errorMessage } from "@superset/i18n/errors";
 import {
 	getAvailableRoleChanges,
 	getRoleLevel,
-	ORGANIZATION_ROLES,
 	type OrganizationRole,
+	organizationRoleName,
 } from "@superset/shared/auth";
 import { alert } from "@superset/ui/atoms/Alert";
 import { Button } from "@superset/ui/button";
@@ -39,6 +41,7 @@ export function MemberActions({
 	isCurrentUser: boolean;
 	canRemove: boolean;
 }) {
+	const { t } = useLingui();
 	const [isChangingRole, setIsChangingRole] = useState(false);
 	const { refetch: refetchSession } = authClient.useSession();
 	const { plan } = useCurrentPlan();
@@ -84,15 +87,35 @@ export function MemberActions({
 	function handleRemove(): void {
 		if (isCurrentUser) {
 			toast.promise(leaveOrganization(), {
-				loading: "Leaving organization...",
-				success: "Left organization",
-				error: (err) => err.message || "Failed to leave organization",
+				loading: t({
+					message: "Leaving organization...",
+				}),
+				success: t({
+					message: "Left organization",
+				}),
+				error: (err) =>
+					errorMessage(
+						err,
+						t({
+							message: "Failed to leave organization",
+						}),
+					),
 			});
 		} else {
 			toast.promise(removeMember(), {
-				loading: "Removing member...",
-				success: "Member removed",
-				error: (err) => err.message || "Failed to remove member",
+				loading: t({
+					message: "Removing member...",
+				}),
+				success: t({
+					message: "Member removed",
+				}),
+				error: (err) =>
+					errorMessage(
+						err,
+						t({
+							message: "Failed to remove member",
+						}),
+					),
 			});
 		}
 	}
@@ -100,18 +123,44 @@ export function MemberActions({
 	const handleRemoveClick = () => {
 		const billingNote =
 			plan === "pro" || plan === "enterprise"
-				? " Your subscription will be adjusted accordingly."
+				? ` ${t({
+						message: "Your subscription will be adjusted accordingly.",
+					})}`
 				: "";
 
+		const memberName = member.name;
+		const memberEmail = member.email;
 		alert({
-			title: isCurrentUser ? "Leave organization?" : "Remove team member?",
+			title: isCurrentUser
+				? t({
+						message: "Leave organization?",
+					})
+				: t({
+						message: "Remove team member?",
+					}),
 			description: isCurrentUser
-				? `Are you sure you want to leave this organization? You will lose access immediately.${billingNote}`
-				: `Are you sure you want to remove ${member.name} (${member.email}) from the organization? They will lose access immediately.${billingNote}`,
+				? t({
+						message: `Are you sure you want to leave this organization? You will lose access immediately.${billingNote}`,
+					})
+				: t({
+						message: `Are you sure you want to remove ${memberName} (${memberEmail}) from the organization? They will lose access immediately.${billingNote}`,
+					}),
 			actions: [
-				{ label: "Cancel", variant: "outline", onClick: () => {} },
 				{
-					label: isCurrentUser ? "Leave Organization" : "Remove Member",
+					label: t({
+						message: "Cancel",
+					}),
+					variant: "outline",
+					onClick: () => {},
+				},
+				{
+					label: isCurrentUser
+						? t({
+								message: "Leave Organization",
+							})
+						: t({
+								message: "Remove Member",
+							}),
 					variant: "destructive",
 					onClick: () => handleRemove(),
 				},
@@ -128,10 +177,20 @@ export function MemberActions({
 				role: newRole,
 			});
 			await utils.organization.listMembers.invalidate();
-			toast.success(`Role changed to ${ORGANIZATION_ROLES[newRole].name}`);
+			const newRoleName = organizationRoleName(newRole);
+			toast.success(
+				t({
+					message: `Role changed to ${newRoleName}`,
+				}),
+			);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to change role",
+				errorMessage(
+					error,
+					t({
+						message: "Failed to change role",
+					}),
+				),
 			);
 		} finally {
 			setIsChangingRole(false);
@@ -143,13 +202,27 @@ export function MemberActions({
 			isCurrentUser && getRoleLevel(newRole) < getRoleLevel(member.role);
 
 		if (isSelfDemotion) {
+			const currentRoleName = organizationRoleName(member.role);
+			const newRoleName = organizationRoleName(newRole);
 			alert({
-				title: "Demote yourself?",
-				description: `You're about to change your role from ${ORGANIZATION_ROLES[member.role].name} to ${ORGANIZATION_ROLES[newRole].name}. Another owner will need to restore your permissions. Are you sure?`,
+				title: t({
+					message: "Demote yourself?",
+				}),
+				description: t({
+					message: `You're about to change your role from ${currentRoleName} to ${newRoleName}. Another owner will need to restore your permissions. Are you sure?`,
+				}),
 				actions: [
-					{ label: "Cancel", variant: "outline", onClick: () => {} },
 					{
-						label: "Yes, demote me",
+						label: t({
+							message: "Cancel",
+						}),
+						variant: "outline",
+						onClick: () => {},
+					},
+					{
+						label: t({
+							message: "Yes, demote me",
+						}),
 						variant: "destructive",
 						onClick: () => handleChangeRole(newRole),
 					},
@@ -171,7 +244,7 @@ export function MemberActions({
 				{availableRoles.length > 0 && (
 					<DropdownMenuSub>
 						<DropdownMenuSubTrigger disabled={isChangingRole}>
-							Change role
+							<Trans>Change role</Trans>
 						</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent>
 							{availableRoles.map((role) => (
@@ -180,7 +253,7 @@ export function MemberActions({
 									onSelect={() => handleRoleSelection(role)}
 									disabled={isChangingRole}
 								>
-									Change to {ORGANIZATION_ROLES[role].name}
+									<Trans>Change to {organizationRoleName(role)}</Trans>
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuSubContent>
@@ -193,7 +266,9 @@ export function MemberActions({
 						onSelect={handleRemoveClick}
 					>
 						<HiOutlineTrash className="h-4 w-4 text-destructive" />
-						<span>Leave organization...</span>
+						<span>
+							<Trans>Leave organization...</Trans>
+						</span>
 					</DropdownMenuItem>
 				) : canRemove ? (
 					<DropdownMenuItem
@@ -201,7 +276,9 @@ export function MemberActions({
 						onSelect={handleRemoveClick}
 					>
 						<HiOutlineTrash className="h-4 w-4 text-destructive" />
-						<span>Remove member</span>
+						<span>
+							<Trans>Remove member</Trans>
+						</span>
 					</DropdownMenuItem>
 				) : null}
 			</DropdownMenuContent>

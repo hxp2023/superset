@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import type { CheckItem } from "@superset/local-db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries } from "@tanstack/react-query";
@@ -221,6 +222,7 @@ function useStableByWorkspaceId<T>(entries: [string, T][]): Map<string, T> {
 export function useAccessibleV2Workspaces(
 	options: UseAccessibleV2WorkspacesOptions = {},
 ): UseAccessibleV2WorkspacesResult {
+	const { t } = useLingui();
 	const searchQuery = options.searchQuery ?? "";
 	const deviceFilter = options.deviceFilter;
 	const projectFilters = options.projectFilters ?? [];
@@ -405,8 +407,12 @@ export function useAccessibleV2Workspaces(
 						hostName:
 							host?.name ??
 							(workspace.hostId === machineId
-								? "This device"
-								: "Unknown device"),
+								? t({
+										message: "This device",
+									})
+								: t({
+										message: "Unknown device",
+									})),
 						hostIsOnline: host?.isOnline ?? workspace.hostReachable,
 						sidebarProjectId: null,
 						sidebarWorkspaceId: sessionSidebarState?.workspaceId ?? null,
@@ -448,7 +454,13 @@ export function useAccessibleV2Workspaces(
 					hostId: workspace.hostId,
 					hostName:
 						host?.name ??
-						(workspace.hostId === machineId ? "This device" : "Unknown device"),
+						(workspace.hostId === machineId
+							? t({
+									message: "This device",
+								})
+							: t({
+									message: "Unknown device",
+								})),
 					hostIsOnline: host?.isOnline ?? workspace.hostReachable,
 					sidebarProjectId: sidebarProjectIds.has(project.projectKey)
 						? project.projectKey
@@ -471,6 +483,7 @@ export function useAccessibleV2Workspaces(
 		sidebarProjectRows,
 		repoRows,
 		creatorRows,
+		t,
 	]);
 
 	// The authoritative link lives in host.db (`workspace.pullRequestId`), not

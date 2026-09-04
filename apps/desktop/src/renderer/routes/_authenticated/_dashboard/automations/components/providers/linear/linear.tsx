@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { isEmptyScope } from "@superset/shared/automation-triggers";
 import { SiLinear } from "react-icons/si";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
@@ -15,7 +17,7 @@ function renderSlot(
 	config: LinearConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "teams":
@@ -26,8 +28,17 @@ function renderSlot(
 					onChange={(v) => set({ teams: v })}
 					className={mark("teams")}
 					options={options.linear?.teams ?? []}
-					emptyLabel="Select teams"
-					anyLabel="Any team"
+					emptyLabel={i18n._(
+						msg({
+							message: "Select teams",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Any team",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -43,8 +54,17 @@ function renderSlot(
 						set({ projects: isEmptyScope(v) ? { mode: "any" } : v })
 					}
 					options={options.linear?.projects ?? []}
-					emptyLabel="Any project"
-					anyLabel="Any project"
+					emptyLabel={i18n._(
+						msg({
+							message: "Any project",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Any project",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -57,8 +77,17 @@ function renderSlot(
 						set({ labels: isEmptyScope(v) ? { mode: "any" } : v })
 					}
 					options={options.linear?.labels ?? []}
-					emptyLabel="Any label"
-					anyLabel="Any label"
+					emptyLabel={i18n._(
+						msg({
+							message: "Any label",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Any label",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -71,8 +100,17 @@ function renderSlot(
 						set({ toStatus: isEmptyScope(v) ? { mode: "any" } : v })
 					}
 					options={options.linear?.statuses ?? []}
-					emptyLabel="Any status"
-					anyLabel="Any status"
+					emptyLabel={i18n._(
+						msg({
+							message: "Any status",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Any status",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -84,8 +122,17 @@ function renderSlot(
 					onChange={(v) => set({ assignee: v })}
 					className={mark("assignee")}
 					options={options.linear?.people ?? []}
-					emptyLabel="Select people"
-					anyLabel="Anyone"
+					emptyLabel={i18n._(
+						msg({
+							message: "Select people",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Anyone",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);

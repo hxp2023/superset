@@ -1,3 +1,4 @@
+import { Plural, Trans } from "@lingui/react/macro";
 import { Button } from "@superset/ui/button";
 import { Checkbox } from "@superset/ui/checkbox";
 import {
@@ -43,11 +44,15 @@ export function ImportWorktreesDialog({
 		>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
-					<DialogTitle>Import untracked worktrees</DialogTitle>
+					<DialogTitle>
+						<Trans>Import untracked worktrees</Trans>
+					</DialogTitle>
 					<DialogDescription>
-						{count === 1
-							? "1 worktree in this repository has no workspace. It will be imported as a workspace."
-							: `${count} worktrees in this repository have no workspace. They will be imported as workspaces.`}
+						<Plural
+							value={count}
+							one="# worktree in this repository has no workspace. It will be imported as a workspace."
+							other="# worktrees in this repository have no workspace. They will be imported as workspaces."
+						/>
 					</DialogDescription>
 				</DialogHeader>
 				<ul className="-mx-2.5 max-h-64 overflow-x-hidden overflow-y-auto overscroll-contain">
@@ -88,7 +93,7 @@ export function ImportWorktreesDialog({
 						htmlFor="import-worktrees-run-setup"
 						className="cursor-pointer text-[13px] font-normal text-muted-foreground"
 					>
-						Run setup script in each imported workspace
+						<Trans>Run setup script in each imported workspace</Trans>
 					</Label>
 				</div>
 				<DialogFooter>
@@ -97,17 +102,21 @@ export function ImportWorktreesDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isImporting}
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<Button
 						onClick={() => onConfirm({ runSetup })}
 						disabled={isImporting}
 					>
-						{isImporting
-							? "Importing…"
-							: count === 1
-								? "Import 1 worktree"
-								: `Import ${count} worktrees`}
+						{isImporting ? (
+							<Trans>Importing…</Trans>
+						) : (
+							<Plural
+								value={count}
+								one="Import # worktree"
+								other="Import # worktrees"
+							/>
+						)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

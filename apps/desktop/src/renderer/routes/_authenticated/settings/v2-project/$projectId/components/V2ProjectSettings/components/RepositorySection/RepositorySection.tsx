@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { parseGitHubRemote } from "@superset/shared/github-remote";
 import { Button } from "@superset/ui/button";
 import { Input } from "@superset/ui/input";
@@ -15,6 +16,7 @@ interface RepositorySectionProps {
  * to change it.
  */
 export function RepositorySection({ repoUrl }: RepositorySectionProps) {
+	const { t } = useLingui();
 	const openUrl = electronTrpc.external.openUrl.useMutation();
 	const parsed = repoUrl ? parseGitHubRemote(repoUrl) : null;
 
@@ -25,7 +27,9 @@ export function RepositorySection({ repoUrl }: RepositorySectionProps) {
 				value={repoUrl ?? ""}
 				readOnly
 				disabled
-				placeholder="No git remote detected"
+				placeholder={t({
+					message: "No git remote detected",
+				})}
 				className="w-full font-mono text-sm pr-9"
 			/>
 			{parsed && (
@@ -37,12 +41,16 @@ export function RepositorySection({ repoUrl }: RepositorySectionProps) {
 							size="icon"
 							className="absolute right-1 top-1 size-7 text-muted-foreground hover:text-foreground"
 							onClick={() => openUrl.mutate(parsed.url)}
-							aria-label="Open in GitHub"
+							aria-label={t({
+								message: "Open in GitHub",
+							})}
 						>
 							<FaGithub className="size-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Open in GitHub</TooltipContent>
+					<TooltipContent>
+						<Trans>Open in GitHub</Trans>
+					</TooltipContent>
 				</Tooltip>
 			)}
 		</div>

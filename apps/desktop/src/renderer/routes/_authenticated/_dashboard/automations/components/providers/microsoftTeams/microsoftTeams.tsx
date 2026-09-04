@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { BsMicrosoftTeams } from "react-icons/bs";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
@@ -14,7 +16,7 @@ function renderSlot(
 	config: MicrosoftTeamsConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "teams":
@@ -25,8 +27,17 @@ function renderSlot(
 					onChange={(v) => set({ teams: v })}
 					className={mark("teams")}
 					options={options.microsoftTeams?.teams ?? []}
-					emptyLabel="Select teams"
-					anyLabel="Any team"
+					emptyLabel={i18n._(
+						msg({
+							message: "Select teams",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Any team",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -38,8 +49,17 @@ function renderSlot(
 					onChange={(v) => set({ channels: v })}
 					className={mark("channels")}
 					options={options.microsoftTeams?.channels ?? []}
-					emptyLabel="Select channels"
-					anyLabel="Any channel"
+					emptyLabel={i18n._(
+						msg({
+							message: "Select channels",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Any channel",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -51,8 +71,17 @@ function renderSlot(
 					onChange={(v) => set({ actor: v })}
 					className={mark("actor")}
 					options={options.microsoftTeams?.people ?? []}
-					emptyLabel="Select people"
-					anyLabel="Anyone"
+					emptyLabel={i18n._(
+						msg({
+							message: "Select people",
+						}),
+					)}
+					anyLabel={i18n._(
+						msg({
+							message: "Anyone",
+						}),
+					)}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -62,8 +91,16 @@ function renderSlot(
 					key={index}
 					value={config.messageFilter}
 					onChange={(v) => set({ messageFilter: v })}
-					emptyLabel="Any message"
-					placeholder="Contains this text..."
+					emptyLabel={i18n._(
+						msg({
+							message: "Any message",
+						}),
+					)}
+					placeholder={i18n._(
+						msg({
+							message: "Contains this text...",
+						}),
+					)}
 					disabled={disabled}
 				/>
 			);
@@ -73,8 +110,16 @@ function renderSlot(
 					key={index}
 					value={config.messageFilter}
 					onChange={(v) => set({ messageFilter: v })}
-					emptyLabel="Any name"
-					placeholder="Name contains..."
+					emptyLabel={i18n._(
+						msg({
+							message: "Any name",
+						}),
+					)}
+					placeholder={i18n._(
+						msg({
+							message: "Name contains...",
+						}),
+					)}
 					disabled={disabled}
 				/>
 			);

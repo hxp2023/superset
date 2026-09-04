@@ -1,3 +1,4 @@
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -43,6 +44,7 @@ function composeReviewPrompt(
 }
 
 export function FinishReviewSheet() {
+	const { t } = useLingui();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const queryClient = useQueryClient();
@@ -86,8 +88,6 @@ export function FinishReviewSheet() {
 					{
 						target: {
 							workspaceId: workspace.id,
-							workspaceName: workspace.name,
-							branch: workspace.branch,
 							hostId: workspace.hostId,
 						},
 						message: { text: prompt, attachments: [] },
@@ -118,7 +118,9 @@ export function FinishReviewSheet() {
 			router.push(`/(authenticated)/workspace/${workspaceId}?tab=${target}`);
 		} catch (cause) {
 			Alert.alert(
-				"Could not send review",
+				t({
+					message: "Could not send review",
+				}),
 				cause instanceof Error ? cause.message : String(cause),
 			);
 		} finally {
@@ -128,11 +130,19 @@ export function FinishReviewSheet() {
 
 	return (
 		<>
-			<Stack.Screen options={{ title: "Finish review" }} />
+			<Stack.Screen
+				options={{
+					title: t({
+						message: "Finish review",
+					}),
+				}}
+			/>
 			<Stack.Toolbar placement="left">
 				<Stack.Toolbar.Button
 					icon="xmark"
-					accessibilityLabel="Close"
+					accessibilityLabel={t({
+						message: "Close",
+					})}
 					onPress={() => router.back()}
 				/>
 			</Stack.Toolbar>
@@ -143,25 +153,33 @@ export function FinishReviewSheet() {
 				contentContainerClassName="pb-10 pt-2"
 			>
 				<Text className="text-muted-foreground px-4 pb-2 text-[12px]">
-					Review message ·{" "}
-					{comments.length === 1
-						? "1 comment attached"
-						: `${comments.length} comments attached`}
+					<Trans>Review message</Trans> ·{" "}
+					<Plural
+						value={comments.length}
+						one="# comment attached"
+						other="# comments attached"
+					/>
 				</Text>
 				<TextInput
 					className="border-border text-foreground mx-3 min-h-20 rounded-xl border px-3.5 py-3 text-[15px]"
 					multiline
 					onChangeText={setMessage}
-					placeholder="Leave a summary…"
+					placeholder={t({
+						message: "Leave a summary…",
+					})}
 					placeholderTextColor="#6b7280"
 					value={message}
 				/>
 				<Text className="text-muted-foreground px-4 pb-2 pt-4 text-[12px]">
-					Send to
+					<Trans>Send to</Trans>
 				</Text>
 				<TargetRow
-					name="New agent session"
-					subtitle="Starts a fresh session in this workspace"
+					name={t({
+						message: "New agent session",
+					})}
+					subtitle={t({
+						message: "Starts a fresh session in this workspace",
+					})}
 					selected={target === "new"}
 					onPress={() => setTarget("new")}
 				/>
@@ -169,7 +187,11 @@ export function FinishReviewSheet() {
 					<TargetRow
 						key={row.terminalId}
 						name={row.title}
-						subtitle={row.attention === "working" ? "Running" : "Idle"}
+						subtitle={
+							row.attention === "working"
+								? t({ message: "Running" })
+								: t({ message: "Idle" })
+						}
 						selected={target === row.terminalId}
 						onPress={() => setTarget(row.terminalId)}
 					/>
@@ -184,7 +206,9 @@ export function FinishReviewSheet() {
 					onPress={() => void submit()}
 				>
 					<Text className="text-primary-foreground font-semibold text-[15px]">
-						{sending ? "Sending…" : "Send review"}
+						{sending
+							? t({ message: "Sending…" })
+							: t({ message: "Send review" })}
 					</Text>
 				</PressableScale>
 			</ScrollView>

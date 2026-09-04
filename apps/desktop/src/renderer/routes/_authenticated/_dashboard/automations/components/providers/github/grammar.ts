@@ -1,3 +1,5 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import type {
 	GithubTriggerEvent,
 	TriggerConfigInput,
@@ -21,6 +23,7 @@ export type Slot =
 	| "labels"
 	| "actor"
 	| "subjectAuthor"
+	| "assignee"
 	| "commentFilter";
 
 export type SentencePart = { text: string } | { slot: Slot };
@@ -46,6 +49,22 @@ export const GITHUB_SENTENCES: Record<GithubTriggerEvent, SentencePart[]> = {
 	],
 	"pull_request.merged": [
 		{ text: "PR merged in" },
+		{ slot: "repositories" },
+		{ text: "by" },
+		{ slot: "actor" },
+	],
+	"pull_request.assigned": [
+		{ text: "PR assigned to" },
+		{ slot: "assignee" },
+		{ text: "in" },
+		{ slot: "repositories" },
+		{ text: "by" },
+		{ slot: "actor" },
+	],
+	"pull_request.review_requested": [
+		{ text: "Review requested from" },
+		{ slot: "assignee" },
+		{ text: "in" },
 		{ slot: "repositories" },
 		{ text: "by" },
 		{ slot: "actor" },
@@ -152,50 +171,175 @@ export const GITHUB_SENTENCES: Record<GithubTriggerEvent, SentencePart[]> = {
  * GitHub event is.
  */
 export const GITHUB_MENU: TriggerMenuEntry<GithubConfig>[] = [
-	leaf("Draft opened", "draft_opened"),
+	leaf(
+		msg({
+			message: "Draft opened",
+		}),
+		"draft_opened",
+	),
 	{
-		label: "Pull request…",
+		label: msg({
+			message: "Pull request…",
+		}),
 		children: [
-			leaf("Opened", "pull_request.opened"),
-			leaf("Pushed", "pull_request.pushed"),
-			leaf("Merged", "pull_request.merged"),
+			leaf(
+				msg({
+					message: "Opened",
+				}),
+				"pull_request.opened",
+			),
+			leaf(
+				msg({
+					message: "Pushed",
+				}),
+				"pull_request.pushed",
+			),
+			leaf(
+				msg({
+					message: "Merged",
+				}),
+				"pull_request.merged",
+			),
+			leaf(
+				msg({
+					message: "Review requested",
+				}),
+				"pull_request.review_requested",
+			),
+			leaf(
+				msg({
+					message: "Assigned",
+				}),
+				"pull_request.assigned",
+			),
 		],
 	},
-	leaf("Comment added", "comment_added"),
-	leaf("New push to branch", "push_to_branch"),
-	leaf("Label change", "label_change"),
-	leaf("Checks completed", "checks_completed"),
-	leaf("Issue comment", "issue_comment"),
-	leaf("PR review comment", "pr_review_comment"),
+	leaf(
+		msg({
+			message: "Comment added",
+		}),
+		"comment_added",
+	),
+	leaf(
+		msg({
+			message: "New push to branch",
+		}),
+		"push_to_branch",
+	),
+	leaf(
+		msg({
+			message: "Label change",
+		}),
+		"label_change",
+	),
+	leaf(
+		msg({
+			message: "Checks completed",
+		}),
+		"checks_completed",
+	),
+	leaf(
+		msg({
+			message: "Issue comment",
+		}),
+		"issue_comment",
+	),
+	leaf(
+		msg({
+			message: "PR review comment",
+		}),
+		"pr_review_comment",
+	),
 	{
-		label: "PR review submitted…",
+		label: msg({
+			message: "PR review submitted…",
+		}),
 		children: [
-			leaf("Approved", "pr_review_submitted.approved"),
-			leaf("Changes requested", "pr_review_submitted.changes_requested"),
-			leaf("Commented", "pr_review_submitted.commented"),
-			leaf("Any review", "pr_review_submitted.any"),
+			leaf(
+				msg({
+					message: "Approved",
+				}),
+				"pr_review_submitted.approved",
+			),
+			leaf(
+				msg({
+					message: "Changes requested",
+				}),
+				"pr_review_submitted.changes_requested",
+			),
+			leaf(
+				msg({
+					message: "Commented",
+				}),
+				"pr_review_submitted.commented",
+			),
+			leaf(
+				msg({
+					message: "Any review",
+				}),
+				"pr_review_submitted.any",
+			),
 		],
 	},
 	{
-		label: "Review thread…",
+		label: msg({
+			message: "Review thread…",
+		}),
 		children: [
-			leaf("Resolved", "review_thread.resolved"),
-			leaf("Unresolved", "review_thread.unresolved"),
-			leaf("Any thread event", "review_thread.any"),
+			leaf(
+				msg({
+					message: "Resolved",
+				}),
+				"review_thread.resolved",
+			),
+			leaf(
+				msg({
+					message: "Unresolved",
+				}),
+				"review_thread.unresolved",
+			),
+			leaf(
+				msg({
+					message: "Any thread event",
+				}),
+				"review_thread.any",
+			),
 		],
 	},
 	{
-		label: "Workflow run completed…",
+		label: msg({
+			message: "Workflow run completed…",
+		}),
 		children: [
-			leaf("Success", "workflow_run.success"),
-			leaf("Failure", "workflow_run.failure"),
-			leaf("Cancelled", "workflow_run.cancelled"),
-			leaf("Any conclusion", "workflow_run.any"),
+			leaf(
+				msg({
+					message: "Success",
+				}),
+				"workflow_run.success",
+			),
+			leaf(
+				msg({
+					message: "Failure",
+				}),
+				"workflow_run.failure",
+			),
+			leaf(
+				msg({
+					message: "Cancelled",
+				}),
+				"workflow_run.cancelled",
+			),
+			leaf(
+				msg({
+					message: "Any conclusion",
+				}),
+				"workflow_run.any",
+			),
 		],
 	},
 ];
 
-function leaf(label: string, event: GithubTriggerEvent) {
+function leaf(label: MessageDescriptor, event: GithubTriggerEvent) {
 	return { label, create: () => createGithubConfig(event) };
 }
 
@@ -203,6 +347,12 @@ function leaf(label: string, event: GithubTriggerEvent) {
 const COMMENT_EVENTS = new Set<GithubTriggerEvent>([
 	"comment_added",
 	"issue_comment",
+]);
+
+/** Events whose sentence names who ended up on the pull request. */
+const ASSIGNMENT_EVENTS = new Set<GithubTriggerEvent>([
+	"pull_request.assigned",
+	"pull_request.review_requested",
 ]);
 
 /**
@@ -236,11 +386,21 @@ export function createGithubConfig(event: GithubTriggerEvent) {
 			commentFilter: null,
 		};
 	}
+	if (ASSIGNMENT_EVENTS.has(event)) {
+		return {
+			...base,
+			event: event as "pull_request.assigned" | "pull_request.review_requested",
+			assignee: { mode: "any" as const },
+		};
+	}
 	return {
 		...base,
 		event: event as Exclude<
 			GithubTriggerEvent,
-			"comment_added" | "issue_comment"
+			| "comment_added"
+			| "issue_comment"
+			| "pull_request.assigned"
+			| "pull_request.review_requested"
 		>,
 	};
 }

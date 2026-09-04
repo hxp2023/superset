@@ -1,5 +1,6 @@
 "use client";
 
+import { Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -55,7 +56,7 @@ export function ConnectionControls({
 			<div className="flex gap-2">
 				<Button onClick={handleConnect}>
 					<RefreshCw className="mr-2 size-4" />
-					Reconnect Google
+					<Trans>Reconnect Google</Trans>
 				</Button>
 				<Button
 					variant="outline"
@@ -63,7 +64,7 @@ export function ConnectionControls({
 					disabled={disconnectMutation.isPending}
 				>
 					<Unplug className="mr-2 size-4" />
-					Remove
+					<Trans>Remove</Trans>
 				</Button>
 			</div>
 		);
@@ -75,23 +76,33 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? (
+							<Trans>Disconnecting...</Trans>
+						) : (
+							<Trans>Disconnect</Trans>
+						)}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect Google?</AlertDialogTitle>
+						<AlertDialogTitle>
+							<Trans>Disconnect Google?</Trans>
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							Calendar and Gmail triggers in this organization will stop firing
-							until an account is connected again.
+							<Trans>
+								Calendar and Gmail triggers in this organization will stop
+								firing until an account is connected again.
+							</Trans>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>
+							<Trans>Cancel</Trans>
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={() => disconnectMutation.mutate({ organizationId })}
 						>
-							Disconnect
+							<Trans>Disconnect</Trans>
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -99,5 +110,9 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Connect Google</Button>;
+	return (
+		<Button onClick={handleConnect}>
+			<Trans>Connect Google</Trans>
+		</Button>
+	);
 }

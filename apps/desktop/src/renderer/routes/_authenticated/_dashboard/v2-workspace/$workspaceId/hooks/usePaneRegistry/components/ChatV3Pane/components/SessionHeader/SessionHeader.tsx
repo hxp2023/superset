@@ -1,23 +1,32 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import type { StreamStatus } from "@superset/chat/client";
 import type { SessionState, SessionStatus } from "@superset/chat/protocol";
+import { i18n } from "@superset/i18n";
 import { Badge } from "@superset/ui/badge";
 import { cn } from "@superset/ui/utils";
 import type { ReactNode } from "react";
 
-const STATUS_LABELS: Record<SessionStatus, string> = {
-	starting: "Starting",
-	running: "Working",
-	awaiting_input: "Needs input",
-	idle: "Idle",
-	not_loaded: "Not loaded",
-	offline: "Offline",
-	dead: "Dead",
+const STATUS_LABELS: Record<SessionStatus, MessageDescriptor> = {
+	starting: msg({ message: "Starting" }),
+	running: msg({ message: "Working" }),
+	awaiting_input: msg({
+		message: "Needs input",
+	}),
+	idle: msg({ message: "Idle" }),
+	not_loaded: msg({
+		message: "Not loaded",
+	}),
+	offline: msg({ message: "Offline" }),
+	dead: msg({ message: "Dead" }),
 };
 
-const CONNECTION_LABELS: Record<StreamStatus, string> = {
-	connecting: "Connecting",
-	open: "Live",
-	closed: "Offline",
+const CONNECTION_LABELS: Record<StreamStatus, MessageDescriptor> = {
+	connecting: msg({
+		message: "Connecting",
+	}),
+	open: msg({ message: "Live" }),
+	closed: msg({ message: "Offline" }),
 };
 
 export function SessionHeader({
@@ -48,7 +57,7 @@ export function SessionHeader({
 							"bg-amber-500/15 text-amber-600 dark:text-amber-400",
 					)}
 				>
-					{STATUS_LABELS[status] ?? status}
+					{STATUS_LABELS[status] ? i18n._(STATUS_LABELS[status]) : status}
 				</Badge>
 			)}
 			<span
@@ -67,7 +76,7 @@ export function SessionHeader({
 						connection === "closed" && "bg-destructive",
 					)}
 				/>
-				{CONNECTION_LABELS[connection]}
+				{i18n._(CONNECTION_LABELS[connection])}
 			</span>
 			{right}
 		</div>

@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { prompt } from "@superset/alert-prompt";
 import { useState } from "react";
 import { View } from "react-native";
@@ -16,6 +17,7 @@ const DEV_NAME = "Local Admin";
  * "Set Password" action to use it here.
  */
 export function DevSignInOptions() {
+	const { t } = useLingui();
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,11 @@ export function DevSignInOptions() {
 			}
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : "Something went wrong";
+				err instanceof Error
+					? err.message
+					: t({
+							message: "Something went wrong",
+						});
 			console.error("[dev-sign-in] Error:", err);
 			setError(message);
 		} finally {
@@ -55,20 +61,22 @@ export function DevSignInOptions() {
 	const handlePromptSignIn = async () => {
 		const email = (
 			await prompt({
-				title: "Dev sign in",
-				message: "Email",
+				title: t({ message: "Dev sign in" }),
+				message: t({ message: "Email" }),
 				defaultValue: DEV_EMAIL,
-				confirmText: "Next",
+				confirmText: t({ message: "Next" }),
 				selectText: true,
 			})
 		)?.trim();
 		if (!email) return;
 
 		const password = await prompt({
-			title: "Dev sign in",
-			message: `Password for ${email}`,
+			title: t({ message: "Dev sign in" }),
+			message: t({
+				message: `Password for ${email}`,
+			}),
 			defaultValue: DEV_PASSWORD,
-			confirmText: "Sign in",
+			confirmText: t({ message: "Sign in" }),
 			selectText: true,
 		});
 		if (!password) return;
@@ -87,7 +95,11 @@ export function DevSignInOptions() {
 				className="w-4/5"
 			>
 				<Text>
-					{isLoading ? "Signing in..." : "Sign in as Local Admin (dev)"}
+					{isLoading
+						? t({ message: "Signing in..." })
+						: t({
+								message: "Sign in as Local Admin (dev)",
+							})}
 				</Text>
 			</Button>
 			<Button
@@ -97,7 +109,9 @@ export function DevSignInOptions() {
 				size="lg"
 				className="w-4/5"
 			>
-				<Text>Sign in with email (dev)</Text>
+				<Text>
+					<Trans>Sign in with email (dev)</Trans>
+				</Text>
 			</Button>
 			{error && (
 				<Text className="text-center text-sm text-destructive">{error}</Text>

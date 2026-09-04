@@ -1,5 +1,7 @@
 "use client";
 
+import { Trans, useLingui } from "@lingui/react/macro";
+import { errorMessage } from "@superset/i18n/errors";
 import { useState } from "react";
 import {
 	AlertDialog,
@@ -28,6 +30,7 @@ export function DeletePageDialog({
 	versionCount,
 	onConfirm,
 }: DeletePageDialogProps) {
+	const { t } = useLingui();
 	const [busy, setBusy] = useState(false);
 
 	const confirm = async () => {
@@ -37,7 +40,12 @@ export function DeletePageDialog({
 			onOpenChange(false);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Could not delete this page",
+				errorMessage(
+					error,
+					t({
+						message: "Could not delete this page",
+					}),
+				),
 			);
 		} finally {
 			setBusy(false);
@@ -48,16 +56,28 @@ export function DeletePageDialog({
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Delete “{title}”?</AlertDialogTitle>
+					<AlertDialogTitle>
+						<Trans>Delete “{title}”?</Trans>
+					</AlertDialogTitle>
 					<AlertDialogDescription>
-						{versionCount > 1
-							? `All ${versionCount} versions and their content are removed. Anyone with the link loses access.`
-							: "The page and its content are removed. Anyone with the link loses access."}{" "}
-						This cannot be undone.
+						{versionCount > 1 ? (
+							<Trans>
+								All {versionCount} versions and their content are removed.
+								Anyone with the link loses access.
+							</Trans>
+						) : (
+							<Trans>
+								The page and its content are removed. Anyone with the link loses
+								access.
+							</Trans>
+						)}{" "}
+						<Trans>This cannot be undone.</Trans>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+					<AlertDialogCancel disabled={busy}>
+						<Trans>Cancel</Trans>
+					</AlertDialogCancel>
 					<AlertDialogAction
 						disabled={busy}
 						onClick={(event) => {
@@ -65,7 +85,7 @@ export function DeletePageDialog({
 							void confirm();
 						}}
 					>
-						{busy ? "Deleting…" : "Delete page"}
+						{busy ? <Trans>Deleting…</Trans> : <Trans>Delete page</Trans>}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

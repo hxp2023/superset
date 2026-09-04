@@ -1,8 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
@@ -49,8 +51,10 @@ function BranchRow({
 }
 
 export function BranchPickerScreen() {
+	const { t } = useLingui();
 	const router = useRouter();
 	const theme = useTheme();
+	const insets = useSafeAreaInsets();
 	const [query, setQuery] = useState("");
 	const params = useLocalSearchParams<{
 		projectId?: string;
@@ -99,7 +103,6 @@ export function BranchPickerScreen() {
 				if (!organizationId) return null;
 				return apiClient.cloudWorkspace.listBranches.query({
 					organizationId,
-					projectId,
 					query: trimmedQuery || undefined,
 				});
 			}
@@ -151,14 +154,19 @@ export function BranchPickerScreen() {
 						autoCorrect={false}
 						className="rounded-full pl-9"
 						onChangeText={setQuery}
-						placeholder="Branches..."
+						placeholder={t({
+							message: "Branches...",
+						})}
 						value={query}
 					/>
 				</View>
 			</View>
 			<ScrollView
 				className="bg-background"
-				contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 24 }}
+				contentContainerStyle={{
+					paddingBottom: insets.bottom + 8,
+					paddingHorizontal: 24,
+				}}
 				keyboardShouldPersistTaps="handled"
 			>
 				{defaultBranch ? (
@@ -167,7 +175,7 @@ export function BranchPickerScreen() {
 							className="pb-1 pt-3 text-sm font-semibold"
 							style={{ color: theme.mutedForeground }}
 						>
-							Default
+							<Trans>Default</Trans>
 						</Text>
 						<BranchRow
 							name={defaultBranch}
@@ -181,7 +189,9 @@ export function BranchPickerScreen() {
 						className="pb-1 pt-3 text-sm font-semibold"
 						style={{ color: theme.mutedForeground }}
 					>
-						{trimmedQuery ? "Branches" : "Recents"}
+						{trimmedQuery
+							? t({ message: "Branches" })
+							: t({ message: "Recents" })}
 					</Text>
 				) : null}
 				{branches.map((branch) => (
@@ -205,7 +215,7 @@ export function BranchPickerScreen() {
 						className="py-6 text-center text-sm"
 						style={{ color: theme.mutedForeground }}
 					>
-						No branches found
+						<Trans>No branches found</Trans>
 					</Text>
 				) : null}
 			</ScrollView>

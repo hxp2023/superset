@@ -1,23 +1,34 @@
+import { msg } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import type { ApprovalRequest, Decision } from "@superset/chat/protocol";
+import { i18n } from "@superset/i18n";
 import { Badge } from "@superset/ui/badge";
 import { Button } from "@superset/ui/button";
 import { ToolContentList } from "../ToolContentList";
 
+const DECISION_ANSWERED = msg({
+	message: "Answered",
+});
+
 function decisionLabel(decision: Decision | undefined): string {
-	if (!decision) return "Answered";
+	if (!decision) return i18n._(DECISION_ANSWERED);
 	switch (decision.type) {
 		case "accept":
-			return "Allowed";
+			return i18n._(msg({ message: "Allowed" }));
 		case "accept_for_session":
-			return "Allowed for session";
+			return i18n._(
+				msg({
+					message: "Allowed for session",
+				}),
+			);
 		case "decline":
-			return "Denied";
+			return i18n._(msg({ message: "Denied" }));
 		case "cancel":
-			return "Canceled";
+			return i18n._(msg({ message: "Canceled" }));
 		case "option":
 			return decision.optionId;
 		default:
-			return "Answered";
+			return i18n._(DECISION_ANSWERED);
 	}
 }
 
@@ -39,7 +50,11 @@ export function ApprovalRow({
 		>
 			<div className="flex items-center gap-2">
 				<span className="text-sm font-medium">{item.title}</span>
-				{item.status === "stale" && <Badge variant="outline">Expired</Badge>}
+				{item.status === "stale" && (
+					<Badge variant="outline">
+						<Trans>Expired</Trans>
+					</Badge>
+				)}
 				{item.status === "answered" && (
 					<Badge variant="secondary">{decisionLabel(item.decision)}</Badge>
 				)}
@@ -70,21 +85,21 @@ export function ApprovalRow({
 							onClick={() => onRespond(item.id, { type: "accept" })}
 							size="sm"
 						>
-							Allow
+							<Trans>Allow</Trans>
 						</Button>
 						<Button
 							onClick={() => onRespond(item.id, { type: "accept_for_session" })}
 							size="sm"
 							variant="outline"
 						>
-							Allow for session
+							<Trans>Allow for session</Trans>
 						</Button>
 						<Button
 							onClick={() => onRespond(item.id, { type: "decline" })}
 							size="sm"
 							variant="outline"
 						>
-							Deny
+							<Trans>Deny</Trans>
 						</Button>
 					</div>
 				))}

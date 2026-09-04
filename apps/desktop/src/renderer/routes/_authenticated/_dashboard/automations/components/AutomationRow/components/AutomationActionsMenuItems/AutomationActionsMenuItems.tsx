@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import {
 	ContextMenuItem,
 	ContextMenuSeparator,
@@ -57,7 +58,7 @@ export function AutomationActionsMenuItems({
 				children: (
 					<>
 						<LuPencil className="size-4" />
-						{isOwner ? "Edit" : "View"}
+						{isOwner ? <Trans>Edit</Trans> : <Trans>View</Trans>}
 					</>
 				),
 			})}
@@ -68,7 +69,7 @@ export function AutomationActionsMenuItems({
 						children: (
 							<>
 								<LuPlay className="size-4" />
-								Run now
+								<Trans>Run now</Trans>
 							</>
 						),
 					})}
@@ -77,12 +78,12 @@ export function AutomationActionsMenuItems({
 						children: enabled ? (
 							<>
 								<LuPause className="size-4" />
-								Pause
+								<Trans>Pause</Trans>
 							</>
 						) : (
 							<>
 								<LuPlay className="size-4" />
-								Resume
+								<Trans>Resume</Trans>
 							</>
 						),
 					})}
@@ -91,7 +92,7 @@ export function AutomationActionsMenuItems({
 						children: (
 							<>
 								<LuClock className="size-4" />
-								Prompt history
+								<Trans>Prompt history</Trans>
 							</>
 						),
 					})}
@@ -106,7 +107,7 @@ export function AutomationActionsMenuItems({
 						children: (
 							<>
 								<LuTrash2 className="size-4" />
-								Delete
+								<Trans>Delete</Trans>
 							</>
 						),
 					})}

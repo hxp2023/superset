@@ -1,15 +1,20 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type ChangesetFile,
 	getChangesetFileKey,
 } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
+import { toRelativeWorkspacePath } from "shared/absolute-paths";
 import type { FoldSignal } from "../../ChangesFileList";
 import { FileRow } from "../FileRow";
 import { FolderHeader } from "./components/FolderHeader";
 
 const ROOT_FOLDER_KEY = "";
-const ROOT_FOLDER_LABEL = "Root Path";
+const ROOT_FOLDER_LABEL = msg({
+	message: "./",
+});
 // FolderHeader and FileRow are single-line rows (`py-1`, `text-xs`); the
 // virtualizer re-measures each one, so this is only the pre-measure estimate.
 const ESTIMATED_ROW_HEIGHT = 26;
@@ -19,6 +24,10 @@ interface ChangesFoldersViewProps {
 	files: ChangesetFile[];
 	workspaceId: string;
 	worktreePath?: string;
+	/** Absolute path of the diff pane's open file — highlights its row. */
+	selectedFilePath?: string;
+	/** Disambiguates a path present in several sections (staged + unstaged). */
+	selectedChangeKey?: string;
 	/** Bumped by the toolbar's expand-all / collapse-all buttons. */
 	foldSignal: FoldSignal;
 	onSelectFile?: (
@@ -63,12 +72,18 @@ export const ChangesFoldersView = memo(function ChangesFoldersView({
 	files,
 	workspaceId,
 	worktreePath,
+	selectedFilePath,
+	selectedChangeKey,
 	foldSignal,
 	onSelectFile,
 	onOpenFile,
 	onOpenInEditor,
 }: ChangesFoldersViewProps) {
 	const groups = useMemo(() => groupFilesByFolder(files), [files]);
+	const selectedRelPath =
+		selectedFilePath && worktreePath
+			? toRelativeWorkspacePath(worktreePath, selectedFilePath)
+			: selectedFilePath;
 	const [closedFolders, setClosedFolders] = useState<Set<string>>(new Set());
 
 	const toggleFolder = useCallback((folderPath: string) => {
@@ -157,7 +172,7 @@ export const ChangesFoldersView = memo(function ChangesFoldersView({
 								<FolderHeader
 									label={
 										row.group.folderPath === ROOT_FOLDER_KEY
-											? ROOT_FOLDER_LABEL
+											? i18n._(ROOT_FOLDER_LABEL)
 											: row.group.folderPath
 									}
 									fileCount={row.group.files.length}
@@ -170,6 +185,11 @@ export const ChangesFoldersView = memo(function ChangesFoldersView({
 									workspaceId={workspaceId}
 									worktreePath={worktreePath}
 									hideDir
+									isSelected={
+										row.file.path === selectedRelPath &&
+										(selectedChangeKey == null ||
+											getChangesetFileKey(row.file) === selectedChangeKey)
+									}
 									onSelect={onSelectFile}
 									onOpenFile={onOpenFile}
 									onOpenInEditor={onOpenInEditor}

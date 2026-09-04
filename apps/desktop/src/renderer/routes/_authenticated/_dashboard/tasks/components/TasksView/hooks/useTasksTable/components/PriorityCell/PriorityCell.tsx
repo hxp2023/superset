@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import type { TaskPriority } from "@superset/db/enums";
 import {
 	DropdownMenu,
@@ -16,15 +17,25 @@ interface PriorityCellProps {
 	info: CellContext<TaskWithStatus, TaskPriority>;
 }
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = {
-	none: "No priority",
-	urgent: "Urgent",
-	high: "High",
-	medium: "Medium",
-	low: "Low",
-};
-
 export function PriorityCell({ info }: PriorityCellProps) {
+	const { t } = useLingui();
+	const priorityLabels: Record<TaskPriority, string> = {
+		none: t({
+			message: "No priority",
+		}),
+		urgent: t({
+			message: "Urgent",
+		}),
+		high: t({
+			message: "High",
+		}),
+		medium: t({
+			message: "Medium",
+		}),
+		low: t({
+			message: "Low",
+		}),
+	};
 	const { tasks: taskActions } = useOptimisticActions();
 	const [open, setOpen] = useState(false);
 
@@ -50,7 +61,7 @@ export function PriorityCell({ info }: PriorityCellProps) {
 				<button
 					type="button"
 					className="group p-0 cursor-pointer border-0 transition-all"
-					title={PRIORITY_LABELS[currentPriority]}
+					title={priorityLabels[currentPriority]}
 					onClick={(e) => e.stopPropagation()}
 				>
 					<PriorityIcon
@@ -72,7 +83,7 @@ export function PriorityCell({ info }: PriorityCellProps) {
 						className="flex items-center gap-3 px-3 py-2"
 					>
 						<PriorityIcon priority={priority} statusType={statusType} />
-						<span className="text-sm flex-1">{PRIORITY_LABELS[priority]}</span>
+						<span className="text-sm flex-1">{priorityLabels[priority]}</span>
 						{priority === currentPriority && <span className="text-sm">✓</span>}
 					</DropdownMenuItem>
 				))}

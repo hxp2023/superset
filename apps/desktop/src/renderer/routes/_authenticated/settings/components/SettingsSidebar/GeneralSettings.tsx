@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import { cn } from "@superset/ui/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -10,6 +13,7 @@ import {
 	HiOutlineComputerDesktop,
 	HiOutlineCpuChip,
 	HiOutlineCreditCard,
+	HiOutlineCube,
 	HiOutlineFolder,
 	HiOutlineGlobeAlt,
 	HiOutlineKey,
@@ -56,12 +60,13 @@ type SettingsRoute =
 	| "/settings/security"
 	| "/settings/permissions"
 	| "/settings/projects"
-	| "/settings/hosts";
+	| "/settings/hosts"
+	| "/settings/environments";
 
 interface SectionItem {
 	id: SettingsRoute;
 	section: SettingsSection;
-	label: string;
+	label: MessageDescriptor;
 	icon: React.ReactNode;
 	macOnly?: boolean;
 	/** Content wants the full pane width instead of the default centered max-w-4xl column. */
@@ -69,60 +74,78 @@ interface SectionItem {
 }
 
 interface SectionGroup {
-	label: string;
+	label: MessageDescriptor;
 	items: SectionItem[];
 }
 
 const SECTION_GROUPS: SectionGroup[] = [
 	{
-		label: "Personal",
+		label: msg({
+			message: "Personal",
+		}),
 		items: [
 			{
 				id: "/settings/account",
 				section: "account",
-				label: "Account",
+				label: msg({
+					message: "Account",
+				}),
 				icon: <HiOutlineUser className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/appearance",
 				section: "appearance",
-				label: "Appearance",
+				label: msg({
+					message: "Appearance",
+				}),
 				icon: <HiOutlinePaintBrush className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/ringtones",
 				section: "ringtones",
-				label: "Notifications",
+				label: msg({
+					message: "Notifications",
+				}),
 				icon: <HiOutlineBell className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/usage",
 				section: "usage",
-				label: "Usage",
+				label: msg({
+					message: "Usage",
+				}),
 				icon: <HiOutlineChartBar className="h-4 w-4" />,
 				fullWidth: true,
 			},
 		],
 	},
 	{
-		label: "Editor & Workflow",
+		label: msg({
+			message: "Editor & Workflow",
+		}),
 		items: [
 			{
 				id: "/settings/behavior",
 				section: "behavior",
-				label: "General",
+				label: msg({
+					message: "General",
+				}),
 				icon: <HiOutlineSparkles className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/keyboard",
 				section: "keyboard",
-				label: "Keyboard",
+				label: msg({
+					message: "Keyboard",
+				}),
 				icon: <LuKeyboard className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/git",
 				section: "git",
-				label: "Git & Worktrees",
+				label: msg({
+					message: "Git & Worktrees",
+				}),
 				icon: <LuGitBranch className="h-4 w-4" />,
 			},
 			{
@@ -134,105 +157,147 @@ const SECTION_GROUPS: SectionGroup[] = [
 			{
 				id: "/settings/agents",
 				section: "agents",
-				label: "Agents",
+				label: msg({
+					message: "Agents",
+				}),
 				icon: <HiOutlineCpuChip className="h-4 w-4" />,
 				fullWidth: true,
 			},
 			{
 				id: "/settings/terminal",
 				section: "terminal",
-				label: "Terminal",
+				label: msg({
+					message: "Terminal",
+				}),
 				icon: <HiOutlineCommandLine className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/links",
 				section: "links",
-				label: "Links",
+				label: msg({
+					message: "Links",
+				}),
 				icon: <HiOutlineLink className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/browser",
 				section: "browser",
-				label: "Browser",
+				label: msg({
+					message: "Browser",
+				}),
 				icon: <HiOutlineGlobeAlt className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/models",
 				section: "models",
-				label: "Models",
+				label: msg({
+					message: "Models",
+				}),
 				icon: <LuBrain className="h-4 w-4" />,
 			},
 		],
 	},
 	{
-		label: "Organization",
+		label: msg({
+			message: "Organization",
+		}),
 		items: [
 			{
 				id: "/settings/organization",
 				section: "organization",
-				label: "Organization",
+				label: msg({
+					message: "Organization",
+				}),
 				icon: <HiOutlineBuildingOffice2 className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/teams",
 				section: "teams",
-				label: "Teams",
+				label: msg({
+					message: "Teams",
+				}),
 				icon: <HiOutlineUserGroup className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/projects",
 				section: "project",
-				label: "Projects",
+				label: msg({
+					message: "Projects",
+				}),
 				icon: <HiOutlineFolder className="h-4 w-4" />,
 				fullWidth: true,
 			},
 			{
 				id: "/settings/hosts",
 				section: "hosts",
-				label: "Hosts",
+				label: msg({
+					message: "Hosts",
+				}),
 				icon: <HiOutlineComputerDesktop className="h-4 w-4" />,
 				fullWidth: true,
 			},
 			{
+				id: "/settings/environments",
+				section: "environments",
+				label: msg({
+					message: "Environments",
+				}),
+				icon: <HiOutlineCube className="h-4 w-4" />,
+			},
+			{
 				id: "/settings/integrations",
 				section: "integrations",
-				label: "Integrations",
+				label: msg({
+					message: "Integrations",
+				}),
 				icon: <HiOutlinePuzzlePiece className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/billing",
 				section: "billing",
-				label: "Billing",
+				label: msg({
+					message: "Billing",
+				}),
 				icon: <HiOutlineCreditCard className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/api-keys",
 				section: "apikeys",
-				label: "API Keys",
+				label: msg({
+					message: "API Keys",
+				}),
 				icon: <HiOutlineKey className="h-4 w-4" />,
 			},
 		],
 	},
 	{
-		label: "System",
+		label: msg({
+			message: "System",
+		}),
 		items: [
 			{
 				id: "/settings/security",
 				section: "security",
-				label: "Remote Workspaces",
+				label: msg({
+					message: "Remote Access",
+				}),
 				icon: <HiOutlineLockClosed className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/permissions",
 				section: "permissions",
-				label: "Permissions",
+				label: msg({
+					message: "Permissions",
+				}),
 				icon: <HiOutlineShieldCheck className="h-4 w-4" />,
 				macOnly: true,
 			},
 			{
 				id: "/settings/experimental",
 				section: "experimental",
-				label: "Experimental",
+				label: msg({
+					message: "Experimental",
+				}),
 				icon: <HiOutlineBeaker className="h-4 w-4" />,
 			},
 		],
@@ -274,9 +339,9 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 				if (filteredItems.length === 0) return null;
 
 				return (
-					<div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
+					<div key={group.label.id} className={cn(groupIndex > 0 && "mt-4")}>
 						<h2 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.075em] px-3 mb-1">
-							{group.label}
+							{i18n._(group.label)}
 						</h2>
 						<nav className="flex flex-col">
 							{filteredItems.map((section) => {
@@ -296,7 +361,7 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 										)}
 									>
 										{section.icon}
-										<span className="flex-1">{section.label}</span>
+										<span className="flex-1">{i18n._(section.label)}</span>
 										{count !== undefined && count > 0 && (
 											<span className="text-xs text-muted-foreground bg-accent/50 px-1.5 py-0.5 rounded">
 												{count}

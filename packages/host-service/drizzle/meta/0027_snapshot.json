@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1f1c1d82-96fc-4d9c-88cf-e1eb0e217e56",
-  "prevId": "147f1e45-d573-4a77-a789-9c00e1cc38e8",
+  "id": "1577d952-42b0-4930-95d7-547d4e03196e",
+  "prevId": "c938c3a9-df79-4c3f-b66d-9770d1d743c7",
   "tables": {
     "host_agent_configs": {
       "name": "host_agent_configs",
@@ -158,20 +158,6 @@
         },
         "default_codex_home": {
           "name": "default_codex_home",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_new_workspaces": {
-          "name": "sandbox_new_workspaces",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_provider": {
-          "name": "sandbox_provider",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -783,6 +769,141 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "workspace_tag_settings": {
+      "name": "workspace_tag_settings",
+      "columns": {
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tab_order": {
+          "name": "tab_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "workspace_tag_settings_project_id_projects_id_fk": {
+          "name": "workspace_tag_settings_project_id_projects_id_fk",
+          "tableFrom": "workspace_tag_settings",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "workspace_tag_settings_project_id_tag_pk": {
+          "columns": [
+            "project_id",
+            "tag"
+          ],
+          "name": "workspace_tag_settings_project_id_tag_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "workspace_tags": {
+      "name": "workspace_tags",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "workspace_tags_tag_idx": {
+          "name": "workspace_tags_tag_idx",
+          "columns": [
+            "tag"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "workspace_tags_workspace_id_workspaces_id_fk": {
+          "name": "workspace_tags_workspace_id_workspaces_id_fk",
+          "tableFrom": "workspace_tags",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "workspace_tags_workspace_id_tag_pk": {
+          "columns": [
+            "workspace_id",
+            "tag"
+          ],
+          "name": "workspace_tags_workspace_id_tag_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "workspaces": {
       "name": "workspaces",
       "columns": {
@@ -914,29 +1035,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "sandbox_enabled": {
-          "name": "sandbox_enabled",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "sandbox_image_digest": {
-          "name": "sandbox_image_digest",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_port_map_json": {
-          "name": "sandbox_port_map_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
         }
       },
       "indexes": {

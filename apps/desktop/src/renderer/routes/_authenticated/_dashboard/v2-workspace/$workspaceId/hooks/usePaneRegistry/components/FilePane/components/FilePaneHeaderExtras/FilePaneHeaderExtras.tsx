@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { RendererContext } from "@superset/panes";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { useCallback } from "react";
@@ -20,6 +21,7 @@ export function FilePaneHeaderExtras({
 	context,
 	workspaceId,
 }: FilePaneHeaderExtrasProps) {
+	const { t } = useLingui();
 	const data = context.pane.data as FilePaneData;
 	const { filePath } = data;
 	const openInExternalEditor = useOpenInExternalEditor(workspaceId);
@@ -67,7 +69,9 @@ export function FilePaneHeaderExtras({
 				<TooltipTrigger asChild>
 					<button
 						type="button"
-						aria-label="Copy path"
+						aria-label={t({
+							message: "Copy path",
+						})}
 						onClick={() => void copyToClipboard(filePath)}
 						className="rounded p-1 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
 					>
@@ -79,34 +83,42 @@ export function FilePaneHeaderExtras({
 					</button>
 				</TooltipTrigger>
 				<TooltipContent side="bottom">
-					{copied ? "Copied" : "Copy path"}
+					{copied ? <Trans>Copied</Trans> : <Trans>Copy path</Trans>}
 				</TooltipContent>
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<button
 						type="button"
-						aria-label="Reveal in Finder"
+						aria-label={t({
+							message: "Reveal in Finder",
+						})}
 						onClick={handleOpenInFinder}
 						className="rounded p-1 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
 					>
 						<TbFolderOpen className="size-3.5" />
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Reveal in Finder</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Reveal in Finder</Trans>
+				</TooltipContent>
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<button
 						type="button"
-						aria-label="Open in editor"
+						aria-label={t({
+							message: "Open in editor",
+						})}
 						onClick={handleOpenExternal}
 						className="rounded p-1 text-muted-foreground/60 transition-colors hover:text-muted-foreground"
 					>
 						<TbExternalLink className="size-3.5" />
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Open in editor</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Open in editor</Trans>
+				</TooltipContent>
 			</Tooltip>
 		</div>
 	);

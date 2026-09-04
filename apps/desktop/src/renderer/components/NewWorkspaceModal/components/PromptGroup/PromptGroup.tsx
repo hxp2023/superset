@@ -1,3 +1,5 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+import { errorMessage, rawErrorMessage } from "@superset/i18n/errors";
 import type { AgentLaunchRequest } from "@superset/shared/agent-launch";
 import { buildPromptAgentLaunchRequest } from "@superset/shared/agent-launch-request";
 import {
@@ -132,7 +134,9 @@ function AttachmentButtons({
 						<PaperclipIcon className="size-3.5" />
 					</PromptInputButton>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Add attachment</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Add attachment</Trans>
+				</TooltipContent>
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger asChild>
@@ -143,7 +147,9 @@ function AttachmentButtons({
 						<GoIssueOpened className="size-3.5" />
 					</PromptInputButton>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Link GitHub issue</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Link GitHub issue</Trans>
+				</TooltipContent>
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger asChild>
@@ -154,7 +160,9 @@ function AttachmentButtons({
 						<LuGitPullRequest className="size-3.5" />
 					</PromptInputButton>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Link pull request</TooltipContent>
+				<TooltipContent side="bottom">
+					<Trans>Link pull request</Trans>
+				</TooltipContent>
 			</Tooltip>
 		</div>
 	);
@@ -173,6 +181,7 @@ function ProjectPickerPill({
 	onImportRepo: () => void;
 	onNewProject: () => void;
 }) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -193,7 +202,7 @@ function ProjectPickerPill({
 						/>
 					)}
 					<span className="truncate">
-						{selectedProject?.name ?? "Select project"}
+						{selectedProject?.name ?? <Trans>Select project</Trans>}
 					</span>
 					<HiChevronUpDown className="size-3 shrink-0 text-muted-foreground" />
 				</PromptInputButton>
@@ -204,9 +213,15 @@ function ProjectPickerPill({
 				onWheel={(event) => event.stopPropagation()}
 			>
 				<Command>
-					<CommandInput placeholder="Search projects..." />
+					<CommandInput
+						placeholder={t({
+							message: "Search projects...",
+						})}
+					/>
 					<CommandList>
-						<CommandEmpty>No projects found.</CommandEmpty>
+						<CommandEmpty>
+							<Trans>No projects found.</Trans>
+						</CommandEmpty>
 						<CommandGroup>
 							{recentProjects.map((project) => (
 								<CommandItem
@@ -242,7 +257,7 @@ function ProjectPickerPill({
 								}}
 							>
 								<LuFolderOpen className="size-4" />
-								Open project
+								<Trans>Open project</Trans>
 							</CommandItem>
 							<CommandItem
 								forceMount
@@ -252,7 +267,7 @@ function ProjectPickerPill({
 								}}
 							>
 								<LuFolderGit className="size-4" />
-								New project
+								<Trans>New project</Trans>
 							</CommandItem>
 						</CommandGroup>
 					</CommandList>
@@ -291,6 +306,7 @@ function CompareBaseBranchPickerInline({
 	onOpenWorktree: (action: OpenableWorktreeAction) => void;
 	onOpenActiveWorkspace: (workspaceId: string) => void;
 }) {
+	const { t } = useLingui();
 	const [open, setOpen] = useState(false);
 	const [branchSearch, setBranchSearch] = useState("");
 	const [filterMode, setFilterMode] = useState<"all" | "worktrees">("all");
@@ -311,7 +327,9 @@ function CompareBaseBranchPickerInline({
 
 	if (isBranchesError) {
 		return (
-			<span className="text-xs text-destructive">Failed to load branches</span>
+			<span className="text-xs text-destructive">
+				<Trans>Failed to load branches</Trans>
+			</span>
 		);
 	}
 
@@ -367,19 +385,27 @@ function CompareBaseBranchPickerInline({
 											: "text-muted-foreground hover:text-foreground",
 									)}
 								>
-									{value === "all" ? "All" : "Worktrees"}
+									{value === "all" ? (
+										<Trans>All</Trans>
+									) : (
+										<Trans>Worktrees</Trans>
+									)}
 									<span className="ml-1 text-foreground/40">{count}</span>
 								</button>
 							);
 						})}
 					</div>
 					<CommandInput
-						placeholder="Search branches..."
+						placeholder={t({
+							message: "Search branches...",
+						})}
 						value={branchSearch}
 						onValueChange={setBranchSearch}
 					/>
 					<CommandList className="max-h-[400px]">
-						<CommandEmpty>No branches found</CommandEmpty>
+						<CommandEmpty>
+							<Trans>No branches found</Trans>
+						</CommandEmpty>
 						{displayBranches.map((branch) => {
 							const openAction = openableWorktrees.get(branch.name);
 							const activeWorkspaceId = activeWorkspacesByBranch.get(
@@ -434,12 +460,12 @@ function CompareBaseBranchPickerInline({
 										<span className="flex items-center gap-1.5 shrink-0">
 											{branch.name === defaultBranch && (
 												<span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-													default
+													<Trans>default</Trans>
 												</span>
 											)}
 											{isExternal && !activeWorkspaceId && (
 												<span className="text-[10px] text-muted-foreground/60 bg-muted/60 px-1.5 py-0.5 rounded">
-													external
+													<Trans>external</Trans>
 												</span>
 											)}
 										</span>
@@ -477,7 +503,7 @@ function CompareBaseBranchPickerInline({
 													}}
 												>
 													<GoArrowUpRight className="size-3.5 mr-1" />
-													Open
+													<Trans>Open</Trans>
 													<span className="ml-1 text-[10px] opacity-60">↵</span>
 												</Button>
 											)}
@@ -493,14 +519,14 @@ function CompareBaseBranchPickerInline({
 												{hasExistingWorkspace ? (
 													<>
 														<PlusIcon className="size-3.5 mr-1" />
-														Create
+														<Trans>Create</Trans>
 														<span className="ml-1 text-[10px] opacity-70">
 															{modKey}↵
 														</span>
 													</>
 												) : (
 													<>
-														Create
+														<Trans>Create</Trans>
 														<span className="ml-1 text-[10px] opacity-70">
 															↵
 														</span>
@@ -527,6 +553,7 @@ function PromptGroupInner({
 	onImportRepo,
 	onNewProject,
 }: PromptGroupProps) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const modKey = PLATFORM === "mac" ? "⌘" : "Ctrl";
 	const isNewWorkspaceModalOpen = useNewWorkspaceModalOpen();
@@ -717,7 +744,11 @@ function PromptGroupInner({
 	const handleCreate = useCallback(
 		async (preConvertedFiles?: ConvertedFile[]) => {
 			if (!projectId) {
-				toast.error("Select a project first");
+				toast.error(
+					t({
+						message: "Select a project first",
+					}),
+				);
 				return;
 			}
 
@@ -769,26 +800,37 @@ function PromptGroupInner({
 					} catch (error) {
 						if (timeoutId) clearTimeout(timeoutId);
 
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
-						if (errorMessage.includes("timeout")) {
+						// Classification needs the stable English message, never the
+						// translated display string.
+						const message = rawErrorMessage(error);
+						if (message.includes("timeout")) {
 							console.warn("[PromptGroup] AI generation timeout");
-							toast.info("Using random branch name (AI generation timed out)");
+							toast.info(
+								t({
+									message: "Using random branch name (AI generation timed out)",
+								}),
+							);
 						} else if (
-							errorMessage.toLowerCase().includes("auth") ||
-							errorMessage.includes("401") ||
-							errorMessage.includes("403")
+							message.toLowerCase().includes("auth") ||
+							message.includes("401") ||
+							message.includes("403")
 						) {
 							console.error("[PromptGroup] AI auth error:", error);
 							toast.error(
-								"AI authentication failed. Please check your AI settings.",
+								t({
+									message:
+										"AI authentication failed. Please check your AI settings.",
+								}),
 							);
 							clearPendingWorkspace(pendingWorkspaceId);
 							return;
 						} else {
 							console.warn("[PromptGroup] AI generation failed:", error);
 							toast.info(
-								"Using random branch name (AI generation unavailable)",
+								t({
+									message:
+										"Using random branch name (AI generation unavailable)",
+								}),
 							);
 						}
 					} finally {
@@ -811,7 +853,9 @@ function PromptGroupInner({
 						toast.error(
 							err instanceof Error
 								? err.message
-								: "Failed to process attachments",
+								: t({
+										message: "Failed to process attachments",
+									}),
 						);
 						return;
 					}
@@ -941,7 +985,9 @@ ${sanitizeText(truncatedBody)}`;
 					toast.error(
 						error instanceof Error
 							? error.message
-							: "Failed to prepare agent launch",
+							: t({
+									message: "Failed to prepare agent launch",
+								}),
 					);
 					return;
 				}
@@ -955,12 +1001,18 @@ ${sanitizeText(truncatedBody)}`;
 							launchRequest ?? undefined,
 						),
 						{
-							loading: `Creating workspace from PR #${linkedPR.prNumber}...`,
-							success: "Workspace created from PR",
+							loading: t({
+								message: `Creating workspace from PR #${linkedPR.prNumber}...`,
+							}),
+							success: t({
+								message: "Workspace created from PR",
+							}),
 							error: (err) =>
 								err instanceof Error
 									? err.message
-									: "Failed to create workspace from PR",
+									: t({
+											message: "Failed to create workspace from PR",
+										}),
 						},
 						{ closeAndReset: false },
 					).finally(() => {
@@ -998,10 +1050,19 @@ ${sanitizeText(truncatedBody)}`;
 						},
 					),
 					{
-						loading: "Creating workspace...",
-						success: "Workspace created",
+						loading: t({
+							message: "Creating workspace...",
+						}),
+						success: t({
+							message: "Workspace created",
+						}),
 						error: (err) =>
-							err instanceof Error ? err.message : "Failed to create workspace",
+							errorMessage(
+								err,
+								t({
+									message: "Failed to create workspace",
+								}),
+							),
 					},
 					{ closeAndReset: false },
 				).finally(() => {
@@ -1035,6 +1096,7 @@ ${sanitizeText(truncatedBody)}`;
 			setPendingWorkspace,
 			setPendingWorkspaceStatus,
 			trimmedPrompt,
+			t,
 			utils,
 			workspaceName,
 			workspaceNameEdited,
@@ -1082,10 +1144,19 @@ ${sanitizeText(truncatedBody)}`;
 						worktreeId: action.worktreeId,
 					}),
 					{
-						loading: "Opening worktree...",
-						success: "Worktree opened",
+						loading: t({
+							message: "Opening worktree...",
+						}),
+						success: t({
+							message: "Worktree opened",
+						}),
 						error: (err) =>
-							err instanceof Error ? err.message : "Failed to open worktree",
+							errorMessage(
+								err,
+								t({
+									message: "Failed to open worktree",
+								}),
+							),
 					},
 				);
 			} else {
@@ -1095,10 +1166,19 @@ ${sanitizeText(truncatedBody)}`;
 						worktreePath: action.worktreePath,
 					}),
 					{
-						loading: "Opening worktree...",
-						success: "Worktree opened",
+						loading: t({
+							message: "Opening worktree...",
+						}),
+						success: t({
+							message: "Worktree opened",
+						}),
 						error: (err) =>
-							err instanceof Error ? err.message : "Failed to open worktree",
+							errorMessage(
+								err,
+								t({
+									message: "Failed to open worktree",
+								}),
+							),
 					},
 				);
 			}
@@ -1108,6 +1188,7 @@ ${sanitizeText(truncatedBody)}`;
 			runAsyncAction,
 			openExternalWorktree.mutateAsync,
 			openTrackedWorktree.mutateAsync,
+			t,
 		],
 	);
 
@@ -1161,7 +1242,9 @@ ${sanitizeText(truncatedBody)}`;
 			<div className="flex items-center">
 				<Input
 					className="border-none bg-transparent dark:bg-transparent shadow-none text-base font-medium px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40 min-w-0 flex-1"
-					placeholder="Workspace name (optional)"
+					placeholder={t({
+						message: "Workspace name (optional)",
+					})}
 					value={workspaceName}
 					onChange={(e) =>
 						updateDraft({
@@ -1180,7 +1263,9 @@ ${sanitizeText(truncatedBody)}`;
 						className={cn(
 							"border-none bg-transparent dark:bg-transparent shadow-none text-xs font-mono text-muted-foreground/60 px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/30 focus:text-muted-foreground text-right placeholder:text-right overflow-hidden text-ellipsis",
 						)}
-						placeholder="branch name"
+						placeholder={t({
+							message: "branch name",
+						})}
 						value={branchName}
 						onChange={(e) =>
 							updateDraft({
@@ -1209,6 +1294,7 @@ ${sanitizeText(truncatedBody)}`;
 				multiple
 				maxFiles={5}
 				maxFileSize={10 * 1024 * 1024}
+				onError={(error) => toast.error(error.message)}
 				className="[&>[data-slot=input-group]]:rounded-[13px] [&>[data-slot=input-group]]:border-[0.5px] [&>[data-slot=input-group]]:shadow-none [&>[data-slot=input-group]]:bg-foreground/[0.02]"
 			>
 				{(linkedPR ||
@@ -1266,7 +1352,9 @@ ${sanitizeText(truncatedBody)}`;
 				)}
 				<PromptInputTextarea
 					autoFocus
-					placeholder="What do you want to do?"
+					placeholder={t({
+						message: "What do you want to do?",
+					})}
 					className="min-h-10"
 					value={prompt}
 					onChange={(e) => updateDraft({ prompt: e.target.value })}
@@ -1276,13 +1364,17 @@ ${sanitizeText(truncatedBody)}`;
 						<AgentSelect<WorkspaceCreateAgent>
 							agents={enabledAgentPresets}
 							value={selectedAgent}
-							placeholder="No agent"
+							placeholder={t({
+								message: "No agent",
+							})}
 							onValueChange={setSelectedAgent}
 							onBeforeConfigureAgents={closeModal}
 							triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}
 							iconClassName="size-3 object-contain"
 							allowNone
-							noneLabel="No agent"
+							noneLabel={t({
+								message: "No agent",
+							})}
 							noneValue="none"
 						/>
 					</PromptInputTools>
@@ -1352,7 +1444,7 @@ ${sanitizeText(truncatedBody)}`;
 								className="flex items-center gap-1 text-xs text-muted-foreground"
 							>
 								<LuGitPullRequest className="size-3 shrink-0" />
-								based off PR #{linkedPR.prNumber}
+								<Trans>based off PR #{linkedPR.prNumber}</Trans>
 							</motion.span>
 						) : (
 							<motion.div
@@ -1383,7 +1475,7 @@ ${sanitizeText(truncatedBody)}`;
 					</AnimatePresence>
 				</div>
 				<span className="text-[11px] text-muted-foreground/50">
-					{modKey}↵ to create
+					<Trans>{modKey}↵ to create</Trans>
 				</span>
 			</div>
 		</div>

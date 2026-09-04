@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "@superset/i18n";
 import {
 	type DesktopNotice,
 	desktopVersionResponseSchema,
@@ -82,7 +84,14 @@ export function useDesktopNotices(): UseDesktopNoticesResult {
 				severity: "blocking",
 				trigger: "immediate",
 				body: data.message,
-				cta: { label: "Install & restart", action: "install-update" },
+				cta: {
+					label: i18n._(
+						msg({
+							message: "Install & restart",
+						}),
+					),
+					action: "install-update",
+				},
 				dismissible: false,
 			});
 		}

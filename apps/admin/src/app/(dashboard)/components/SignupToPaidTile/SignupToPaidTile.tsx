@@ -1,5 +1,6 @@
 "use client";
 
+import { useLingui } from "@lingui/react/macro";
 import {
 	type ChartConfig,
 	ChartContainer,
@@ -14,13 +15,21 @@ import { useTRPC } from "@/trpc/react";
 import { makeDateAxis } from "../../utils/chartAxis";
 import { InsightTileFrame } from "../InsightTileFrame";
 
-const chartConfig = {
-	conversion_pct: { label: "signup → paid ≤30d", color: "var(--chart-1)" },
-	signups: { label: "signups", color: "var(--chart-2)" },
-} satisfies ChartConfig;
-
 export function SignupToPaidTile() {
+	const { t } = useLingui();
 	const trpc = useTRPC();
+	const chartConfig = {
+		conversion_pct: {
+			label: t({
+				message: "signup → paid ≤30d",
+			}),
+			color: "var(--chart-1)",
+		},
+		signups: {
+			label: t({ message: "signups" }),
+			color: "var(--chart-2)",
+		},
+	} satisfies ChartConfig;
 	const query = useQuery(
 		trpc.business.getSignupToPaid.queryOptions({ weeks: 12 }),
 	);
@@ -29,8 +38,13 @@ export function SignupToPaidTile() {
 
 	return (
 		<InsightTileFrame
-			title="Signup → paid within 30d"
-			description="Weekly signup cohorts (Neon); cohorts younger than 30d excluded"
+			title={t({
+				message: "Signup → paid within 30d",
+			})}
+			description={t({
+				message:
+					"Weekly signup cohorts (Neon); cohorts younger than 30d excluded",
+			})}
 			isLoading={query.isLoading}
 			error={query.error}
 			empty={data.length === 0}

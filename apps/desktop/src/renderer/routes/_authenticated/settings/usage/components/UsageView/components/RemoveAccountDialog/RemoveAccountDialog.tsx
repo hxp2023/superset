@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -30,13 +31,22 @@ export function RemoveAccountDialog({
 			<EnterEnabledAlertDialogContent className="max-w-[380px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Remove {label}?
+						<Trans>Remove {label}?</Trans>
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						{account?.provider === "codex"
-							? `Deletes the ${account.sourceLabel} profile, its saved sign-in on this machine, and its local Codex session history. The account itself is unaffected.`
-							: `Deletes the ${account?.sourceLabel} profile and its saved sign-in on this machine. The account itself is unaffected.`}{" "}
-						Running agents on this profile lose access.
+						{account?.agent === "codex" ? (
+							<Trans>
+								Deletes the {account.sourceLabel} profile, its saved sign-in on
+								this machine, and its local Codex session history. The account
+								itself is unaffected.
+							</Trans>
+						) : (
+							<Trans>
+								Deletes the {account?.sourceLabel} profile and its saved sign-in
+								on this machine. The account itself is unaffected.
+							</Trans>
+						)}{" "}
+						<Trans>Running agents on this profile lose access.</Trans>
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter className="flex-row justify-end gap-2 px-4 pt-2 pb-4">
@@ -46,7 +56,7 @@ export function RemoveAccountDialog({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						<Trans>Cancel</Trans>
 					</Button>
 					<AlertDialogAction
 						variant="destructive"
@@ -55,7 +65,7 @@ export function RemoveAccountDialog({
 						disabled={isRemoving}
 						onClick={onConfirm}
 					>
-						Remove
+						<Trans>Remove</Trans>
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</EnterEnabledAlertDialogContent>

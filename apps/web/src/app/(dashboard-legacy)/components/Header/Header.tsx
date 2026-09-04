@@ -1,5 +1,6 @@
 "use client";
 
+import { Trans, useLingui } from "@lingui/react/macro";
 import { authClient } from "@superset/auth/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
 import {
@@ -22,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/react";
 
 export function Header() {
+	const { t } = useLingui();
 	const { data: session } = authClient.useSession();
 	const router = useRouter();
 	const trpc = useTRPC();
@@ -37,7 +39,8 @@ export function Header() {
 		(org) => org.id === activeOrganizationId,
 	);
 
-	const displayName = activeOrganization?.name ?? "Organization";
+	const displayName =
+		activeOrganization?.name ?? t({ message: "Organization" });
 
 	const handleSignOut = async () => {
 		await authClient.signOut();
@@ -53,7 +56,7 @@ export function Header() {
 	return (
 		<header className="sticky left-0 top-0 z-40 w-full border-b border-border/50 bg-background py-4">
 			<div className="mx-auto flex min-h-8 w-[95vw] max-w-screen-2xl items-center justify-between">
-				<Link href="/" aria-label="Go to home">
+				<Link href="/" aria-label={t({ message: "Go to home" })}>
 					<Image
 						src="/title.svg"
 						alt="Superset"
@@ -67,7 +70,9 @@ export function Header() {
 						<button
 							type="button"
 							className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-secondary/50 px-3 py-1.5 transition-all duration-150 hover:border-border hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							aria-label="Organization menu"
+							aria-label={t({
+								message: "Organization menu",
+							})}
 						>
 							<Avatar className="size-5">
 								<AvatarImage
@@ -96,7 +101,9 @@ export function Header() {
 							<>
 								<DropdownMenuSub>
 									<DropdownMenuSubTrigger className="cursor-pointer">
-										<span>Switch organization</span>
+										<span>
+											<Trans>Switch organization</Trans>
+										</span>
 									</DropdownMenuSubTrigger>
 									<DropdownMenuSubContent>
 										<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
@@ -111,7 +118,12 @@ export function Header() {
 												<Avatar className="size-4">
 													<AvatarImage
 														src={org.logo ?? undefined}
-														alt={org.name ?? "Organization"}
+														alt={
+															org.name ??
+															t({
+																message: "Organization",
+															})
+														}
 													/>
 													<AvatarFallback className="text-[8px]">
 														{org.name?.charAt(0) ?? "O"}
@@ -133,7 +145,9 @@ export function Header() {
 							onClick={handleSignOut}
 						>
 							<LogOut className="size-4" />
-							<span>Log out</span>
+							<span>
+								<Trans>Log out</Trans>
+							</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

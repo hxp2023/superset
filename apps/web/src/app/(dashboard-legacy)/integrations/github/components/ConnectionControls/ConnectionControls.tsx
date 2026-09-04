@@ -1,5 +1,6 @@
 "use client";
 
+import { Trans } from "@lingui/react/macro";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -58,22 +59,32 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? (
+							<Trans>Disconnecting...</Trans>
+						) : (
+							<Trans>Disconnect</Trans>
+						)}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect GitHub?</AlertDialogTitle>
+						<AlertDialogTitle>
+							<Trans>Disconnect GitHub?</Trans>
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will disconnect GitHub from your organization. The GitHub App
-							will remain installed but will no longer sync data. You can
-							reconnect at any time.
+							<Trans>
+								This will disconnect GitHub from your organization. The GitHub
+								App will remain installed but will no longer sync data. You can
+								reconnect at any time.
+							</Trans>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>
+							<Trans>Cancel</Trans>
+						</AlertDialogCancel>
 						<AlertDialogAction onClick={handleDisconnect}>
-							Disconnect
+							<Trans>Disconnect</Trans>
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -81,5 +92,9 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Install GitHub App</Button>;
+	return (
+		<Button onClick={handleConnect}>
+			<Trans>Install GitHub App</Trans>
+		</Button>
+	);
 }

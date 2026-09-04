@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { getPresetById } from "@superset/shared/host-agent-presets";
 import {
 	DropdownMenu,
@@ -39,6 +40,7 @@ export function AgentPicker({
 	className,
 	disabled,
 }: AgentPickerProps) {
+	const { t } = useLingui();
 	const navigate = useNavigate();
 	const hostUrl = useHostUrl(hostId);
 	const { agents } = useV2AgentChoices(hostUrl);
@@ -68,7 +70,12 @@ export function AgentPicker({
 							<LuCpu className="size-4 shrink-0" />
 						)
 					}
-					label={selectedLabel ?? "Select agent"}
+					label={
+						selectedLabel ??
+						t({
+							message: "Select agent",
+						})
+					}
 				/>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-56">
@@ -96,7 +103,9 @@ export function AgentPicker({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onSelect={() => navigate({ to: "/settings/agents" })}>
 					<LuSettings className="size-4 shrink-0" />
-					<span className="flex-1">Configure agents…</span>
+					<span className="flex-1">
+						<Trans>Configure agents…</Trans>
+					</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import { cn } from "@superset/ui/utils";
 import { LuCircleMinus } from "react-icons/lu";
 import { CHECK_STATUS_ICONS } from "renderer/routes/_authenticated/_dashboard/utils/checkStatusIcons";
@@ -20,18 +21,29 @@ const STATUS_CONFIG = {
 export function PullRequestChecksSummary({
 	checks,
 }: PullRequestChecksSummaryProps) {
+	const { t } = useLingui();
 	const summary = summarizePullRequestChecks(checks);
 	const { Icon, className } = STATUS_CONFIG[summary.status];
 	const label =
 		summary.status === "none"
 			? checks.length === 0
-				? "No checks reported"
-				: "All checks skipped or cancelled"
+				? t({
+						message: "No checks reported",
+					})
+				: t({
+						message: "All checks skipped or cancelled",
+					})
 			: summary.status === "success"
-				? `All ${summary.relevantChecks.length} checks passed`
+				? t({
+						message: `All ${summary.relevantChecks.length} checks passed`,
+					})
 				: summary.status === "failure"
-					? `${summary.failing} of ${summary.relevantChecks.length} checks failed`
-					: `${summary.pending} of ${summary.relevantChecks.length} checks running`;
+					? t({
+							message: `${summary.failing} of ${summary.relevantChecks.length} checks failed`,
+						})
+					: t({
+							message: `${summary.pending} of ${summary.relevantChecks.length} checks running`,
+						});
 
 	return (
 		<output
@@ -47,11 +59,15 @@ export function PullRequestChecksSummary({
 				)}
 			/>
 			<span className="hidden tabular-nums @lg:inline">
-				{summary.status === "none"
-					? checks.length === 0
-						? "No checks"
-						: "Skipped"
-					: `${summary.passing}/${summary.relevantChecks.length}`}
+				{summary.status === "none" ? (
+					checks.length === 0 ? (
+						<Trans>No checks</Trans>
+					) : (
+						<Trans>Skipped</Trans>
+					)
+				) : (
+					`${summary.passing}/${summary.relevantChecks.length}`
+				)}
 			</span>
 		</output>
 	);

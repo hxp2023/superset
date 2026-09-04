@@ -1,3 +1,4 @@
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -19,6 +20,7 @@ export function TerminalIdCopyMenu({
 	workspaceId,
 	terminalId,
 }: TerminalIdCopyMenuProps) {
+	const { t } = useLingui();
 	const binding = useTerminalAgentBinding(workspaceId, terminalId);
 	const agentSessionId = binding?.agentSessionId;
 	const { copyToClipboard, copied } = useCopyToClipboard();
@@ -30,14 +32,24 @@ export function TerminalIdCopyMenu({
 	};
 
 	const tooltipLabel =
-		copiedLabel && copied ? `Copied ${copiedLabel}` : "Copy IDs";
+		copiedLabel && copied
+			? t({
+					message: `Copied ${copiedLabel}`,
+				})
+			: t({
+					message: "Copy IDs",
+				});
 	const buttonClassName =
 		"rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-muted-foreground";
 
 	if (!agentSessionId) {
 		const terminalTooltipLabel = copied
-			? "Copied terminal ID"
-			: "Copy terminal ID";
+			? t({
+					message: "Copied terminal ID",
+				})
+			: t({
+					message: "Copy terminal ID",
+				});
 
 		return (
 			<Tooltip>
@@ -46,7 +58,14 @@ export function TerminalIdCopyMenu({
 						type="button"
 						aria-label={terminalTooltipLabel}
 						className={buttonClassName}
-						onClick={() => copyId(terminalId, "terminal ID")}
+						onClick={() =>
+							copyId(
+								terminalId,
+								t({
+									message: "terminal ID",
+								}),
+							)
+						}
 					>
 						{copied ? (
 							<Check className="size-3.5" />
@@ -81,15 +100,31 @@ export function TerminalIdCopyMenu({
 				<TooltipContent side="bottom">{tooltipLabel}</TooltipContent>
 			</Tooltip>
 			<DropdownMenuContent align="end" className="w-52">
-				<DropdownMenuItem onSelect={() => copyId(terminalId, "terminal ID")}>
+				<DropdownMenuItem
+					onSelect={() =>
+						copyId(
+							terminalId,
+							t({
+								message: "terminal ID",
+							}),
+						)
+					}
+				>
 					<TerminalSquare />
-					Copy terminal ID
+					<Trans>Copy terminal ID</Trans>
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					onSelect={() => copyId(agentSessionId, "agent session ID")}
+					onSelect={() =>
+						copyId(
+							agentSessionId,
+							t({
+								message: "agent session ID",
+							}),
+						)
+					}
 				>
 					<Bot />
-					Copy agent session ID
+					<Trans>Copy agent session ID</Trans>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

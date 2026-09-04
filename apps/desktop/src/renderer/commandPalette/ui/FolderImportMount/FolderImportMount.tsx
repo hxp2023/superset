@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { toast } from "@superset/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
@@ -5,20 +6,34 @@ import { useFolderFirstImport } from "renderer/routes/_authenticated/_dashboard/
 import { useFolderImportIntent } from "renderer/stores/folder-import-intent";
 
 export function FolderImportMount() {
+	const { t } = useLingui();
 	const tick = useFolderImportIntent((s) => s.tick);
 	const navigate = useNavigate();
 	const folderImport = useFolderFirstImport({
 		onError: (message) => {
-			toast.error(`Import failed: ${message}`);
+			toast.error(
+				t({
+					message: `Import failed: ${message}`,
+				}),
+			);
 		},
 		onMultipleProjects: ({ candidates }) => {
-			toast.error("Import failed", {
-				description: `Multiple projects use this repository (${candidates.length}). Choose the project in settings to set it up on this device.`,
-				action: {
-					label: "Open Projects",
-					onClick: () => navigate({ to: "/settings/projects" }),
+			toast.error(
+				t({
+					message: "Import failed",
+				}),
+				{
+					description: t({
+						message: `Multiple projects use this repository (${candidates.length}). Choose the project in settings to set it up on this device.`,
+					}),
+					action: {
+						label: t({
+							message: "Open Projects",
+						}),
+						onClick: () => navigate({ to: "/settings/projects" }),
+					},
 				},
-			});
+			);
 		},
 	});
 	const folderImportRef = useRef(folderImport);
@@ -32,10 +47,14 @@ export function FolderImportMount() {
 		lastTickRef.current = tick;
 		void folderImportRef.current.start().then((result) => {
 			if (result) {
-				toast.success("Project ready — open it from the sidebar.");
+				toast.success(
+					t({
+						message: "Project ready — open it from the sidebar.",
+					}),
+				);
 			}
 		});
-	}, [tick]);
+	}, [tick, t]);
 
 	return null;
 }

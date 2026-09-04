@@ -14,7 +14,10 @@ import {
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
 import { useHostWorkspaces } from "renderer/routes/_authenticated/providers/HostWorkspacesProvider";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
-import { useSandboxAccess } from "renderer/routes/_authenticated/providers/SandboxAccessProvider";
+import {
+	deriveTagFolders,
+	useTagFolderContext,
+} from "renderer/routes/_authenticated/utils/workspaceTagFolders";
 import { useWorkspaceTransactionsStore } from "renderer/stores/workspace-creates";
 import type {
 	DashboardSidebarPinnedWorkspace,
@@ -24,7 +27,7 @@ import type {
 import {
 	buildDashboardSidebarPinnedWorkspaces,
 	buildDashboardSidebarProjects,
-	buildDashboardSidebarSessionWorkspaces,
+	buildDashboardSidebarSessions,
 	partitionSidebarWorkspacesByPinned,
 } from "./buildDashboardSidebarProjects";
 import {
@@ -232,7 +235,7 @@ export function useDashboardSidebarData() {
 		});
 	}, [orderedSidebarProjectRows, hostProjects]);
 
-	const { data: sidebarSections = [] } = useLiveQuery(
+	const { data: storedSidebarSections = [] } = useLiveQuery(
 		(q) =>
 			q
 				.from({ sidebarSections: collections.v2SidebarSections })
@@ -240,22 +243,56 @@ export function useDashboardSidebarData() {
 				.orderBy(({ sidebarSections }) => sidebarSections.tabOrder, "asc")
 				.orderBy(({ sidebarSections }) => sidebarSections.sectionId, "asc")
 				.select(({ sidebarSections }) => ({
-					id: sidebarSections.sectionId,
+					sectionId: sidebarSections.sectionId,
 					projectId: sidebarSections.projectId,
 					name: sidebarSections.name,
 					createdAt: sidebarSections.createdAt,
 					isCollapsed: sidebarSections.isCollapsed,
 					tabOrder: sidebarSections.tabOrder,
 					color: sidebarSections.color,
+					tag: sidebarSections.tag,
 				})),
 		[collections],
 	);
 
-	const { workspaces: hostWorkspaces } = useHostWorkspaces();
-	const { targets: sandboxes } = useSandboxAccess();
+	const { workspaces: allHostWorkspaces, cache: hostWorkspacesCache } =
+		useHostWorkspaces();
+	// Cloud workspaces render in the Cloud section only, whatever placement
+	// their local-state row carries.
+	const hostWorkspaces = useMemo(
+		() =>
+			allHostWorkspaces.filter(
+				(workspace) => !hostWorkspacesCache.isSandboxHost(workspace.hostId),
+			),
+		[allHostWorkspaces, hostWorkspacesCache],
+	);
 	const hostWorkspacesById = useMemo(
 		() => new Map(hostWorkspaces.map((workspace) => [workspace.id, workspace])),
 		[hostWorkspaces],
+	);
+
+	// The section lane the builder consumes is the deriveTagFolders union:
+	// stored presentation rows PLUS folders that exist only because some
+	// workspace carries the tag. A folder must exist because a workspace
+	// carries the tag, not because a local row does.
+	const tagFolderContext = useTagFolderContext();
+	const sidebarSections = useMemo(
+		() =>
+			deriveTagFolders(
+				storedSidebarSections,
+				hostWorkspaces,
+				tagFolderContext,
+			).map((section) => ({
+				id: section.sectionId,
+				projectId: section.projectId,
+				name: section.name,
+				createdAt: section.createdAt,
+				isCollapsed: section.isCollapsed,
+				tabOrder: section.tabOrder,
+				color: section.color,
+				tag: section.tag,
+			})),
+		[hostWorkspaces, storedSidebarSections, tagFolderContext],
 	);
 
 	const { data: sidebarLocalStateRows = [] } = useLiveQuery(
@@ -297,8 +334,10 @@ export function useDashboardSidebarData() {
 						taskId: workspace.taskId,
 						createdAt: workspace.createdAt,
 						updatedAt: workspace.updatedAt,
+						lastActivityAt: workspace.lastActivityAt,
 						tabOrder: localState.tabOrder,
 						sectionId: localState.sectionId,
+						tags: workspace.tags,
 						isHidden: localState.isHidden,
 						pinnedAt: localState.pinnedAt,
 						sandboxed: workspace.sandboxed,
@@ -348,13 +387,15 @@ export function useDashboardSidebarData() {
 					taskId: workspace.taskId,
 					createdAt: workspace.createdAt,
 					updatedAt: workspace.updatedAt,
-					sandboxed: workspace.sandboxed,
-					sandboxStatus: workspace.sandboxStatus,
+					lastActivityAt: workspace.lastActivityAt,
 					tabOrder: MAIN_WORKSPACE_TAB_ORDER,
 					sectionId: null as string | null,
+					tags: workspace.tags,
 					// Auto-included mains have no local-state row; pinning one
 					// creates a row first (see setWorkspacePinned).
 					pinnedAt: null as number | null,
+					sandboxed: workspace.sandboxed,
+					sandboxStatus: workspace.sandboxStatus,
 				})),
 		[hostWorkspaces],
 	);
@@ -401,7 +442,6 @@ export function useDashboardSidebarData() {
 					(workspace) => workspace.projectId !== null,
 				),
 				fallbackOrganizationId: knownHostsOrgId,
-				sandboxes,
 			}),
 		[
 			activeHostUrl,
@@ -409,7 +449,6 @@ export function useDashboardSidebarData() {
 			knownHostsOrgId,
 			machineId,
 			relayUrl,
-			sandboxes,
 			visibleSidebarWorkspaces,
 		],
 	);
@@ -512,16 +551,18 @@ export function useDashboardSidebarData() {
 	);
 	const groups = useStableDashboardSidebarProjects(computedGroups);
 
-	const computedSessionWorkspaces = useMemo<DashboardSidebarWorkspace[]>(
+	const computedSessions = useMemo(
 		() =>
-			buildDashboardSidebarSessionWorkspaces({
+			buildDashboardSidebarSessions({
 				sessionSidebarWorkspaces: sessionRows,
+				sidebarSections,
 				machineId,
 				pullRequestsByWorkspaceId,
 			}),
-		[machineId, pullRequestsByWorkspaceId, sessionRows],
+		[machineId, pullRequestsByWorkspaceId, sessionRows, sidebarSections],
 	);
-	const sessionWorkspaces = useJsonStable(computedSessionWorkspaces);
+	const sessions = useJsonStable(computedSessions);
+	const sessionWorkspaces = sessions.workspaces;
 
 	const computedPinnedWorkspaces = useMemo<DashboardSidebarPinnedWorkspace[]>(
 		() =>
@@ -539,6 +580,7 @@ export function useDashboardSidebarData() {
 		groups,
 		pinnedWorkspaces,
 		sessionWorkspaces,
+		sessionChildren: sessions.children,
 		refreshWorkspacePullRequest,
 		toggleProjectCollapsed,
 	};
