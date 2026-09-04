@@ -247,6 +247,17 @@ space are volumes (one per sandbox, attached at creation, not forkable) and
 Agent Drive; neither fits the golden-and-fork model, which is why memory is the
 lever.
 
+**A fork takes its env on the fork request, and again on the boot script.**
+`@blaxel/core` 0.3.19 accepts `envs` on `fork()`, which replaced the spec
+update (and the restart it caused) that used to hand a fork its identity. The
+values reach processes only when the sandbox runtime baked into the image is
+current: on a golden built 2026-09-02 they landed in the spec and no process
+saw them, PID 1 included; on one rebuilt 2026-09-03 every process did, and
+fork plus get took under half a second. The `/app/start.sh` exec carries the
+same env for goldens from before that rebuild, since everything the workspace
+runs descends from it. A fork can only set or add variables, never drop one,
+so promoting a workspace blanks its identity with empty values instead.
+
 **A fork can never have the egress proxy.** The proxy routing that injects
 the org's model keys (`network.proxy.routing`) exists only on sandboxes created
 with it: Blaxel's docs say enabling the proxy on a sandbox created without it
