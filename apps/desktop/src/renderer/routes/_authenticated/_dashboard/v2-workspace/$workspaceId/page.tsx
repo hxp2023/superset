@@ -198,6 +198,7 @@ function V2WorkspaceContent() {
 	const {
 		openDiffPane,
 		addTerminalTab,
+		addTerminalTabWithCommand,
 		addChatV3Tab,
 		addBrowserTab,
 		openChangesPane,
@@ -451,6 +452,7 @@ function V2WorkspaceContent() {
 								onSelectFile={openFilePaneFromTreeClick}
 								onSelectDiffFile={openDiffPane}
 								onOpenComment={openCommentPane}
+								onRunCommand={addTerminalTabWithCommand}
 								onSearch={handleQuickOpen}
 								selectedFilePath={selectedFilePath}
 								selectedDiffTarget={diffPaneTarget}

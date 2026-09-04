@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} is onder deze branch gemerged"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Blok"
 msgid "blocked"
 msgstr "geblokkeerd"
 
+msgid "Blocked at #{number}"
+msgstr "Geblokkeerd bij #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Geblokkeerd door branchregels"
 
@@ -2708,8 +2714,14 @@ msgstr "Checks afgerond"
 msgid "Checks failed"
 msgstr "Checks mislukt"
 
+msgid "Checks failing"
+msgstr "Checks mislukt"
+
 msgid "Checks passed"
 msgstr "Checks geslaagd"
+
+msgid "Checks running"
+msgstr "Checks bezig"
 
 msgid "Checks Skipped"
 msgstr "Checks overgeslagen"
@@ -3269,6 +3281,9 @@ msgstr "Run-commando van werkruimte configureren"
 
 msgid "Confirm before quitting"
 msgstr "Bevestigen voor afsluiten"
+
+msgid "Conflicts"
+msgstr "Conflicten"
 
 msgid "Connect"
 msgstr "Verbinden"
@@ -5145,6 +5160,12 @@ msgstr "Elke vrijdag om 16.00 uur: stel release notes op uit de gemergede PR's v
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Elke vrijdag om 16.00 uur: stel release notes op uit de gemergede PR's van deze week."
+
+msgid "Every layer has landed"
+msgstr "Alle lagen zijn gemerged"
+
+msgid "Every layer is ready to land"
+msgstr "Alle lagen zijn klaar om te mergen"
 
 msgid "Every minute"
 msgstr "Elke minuut"
@@ -7251,6 +7272,9 @@ msgstr "Start dit terminalscript wanneer er een nieuwe werkruimte wordt aangemaa
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Start dit terminalscript telkens als er een nieuw terminaltabblad opent."
 
+msgid "Layer {position} of {size}"
+msgstr "Laag {position} van {size}"
+
 msgid "Layout"
 msgstr "Indeling"
 
@@ -9228,6 +9252,9 @@ msgstr "Openen in {0}"
 msgid "Open in {app}"
 msgstr "Openen in {app}"
 
+msgid "Open in a new workspace"
+msgstr "Openen in een nieuwe werkruimte"
+
 msgid "Open in any IDE"
 msgstr "Openen in elke IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Abonnementsgebruik lezen…"
 msgid "Reading your local usage…"
 msgstr "Je lokale gebruik wordt gelezen…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Klaar"
+
 msgid "Ready for review"
 msgstr "Klaar voor review"
 
@@ -10579,6 +10610,9 @@ msgstr "Klaar voor review"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Markeren als klaar voor review mislukt: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Klaar om te mergen tot en met #{number}"
 
 msgid "Ready to Merge"
 msgstr "Klaar om te mergen"
@@ -11065,6 +11099,15 @@ msgstr "Resources"
 
 msgid "Response"
 msgstr "Response"
+
+msgid "Restack"
+msgstr "Opnieuw stapelen"
+
+msgid "Restack onto {trunk}"
+msgstr "Opnieuw stapelen op {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Stapel opnieuw om de commits van deze branch bovenop {trunk} opnieuw toe te passen en de conflicten op te lossen."
 
 msgid "Restart"
 msgstr "Opnieuw starten"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Stabiliteitsverbeteringen"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Gestapeld"
 
@@ -13893,6 +13940,9 @@ msgstr "Hiermee worden de sessie en het onderliggende proces beëindigd."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Hiermee worden alle gestagede wijzigingen ge-unstaged en teruggedraaid. Gestagede nieuwe bestanden worden verwijderd. Dit kan niet ongedaan worden gemaakt."
+
+msgid "This workspace"
+msgstr "Deze werkruimte"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Deze werkruimte staat op een apparaat dat Superset nu niet kan bereiken. Terminals, bestanden en agents blijven staan — ze komen terug zodra de verbinding er weer is."

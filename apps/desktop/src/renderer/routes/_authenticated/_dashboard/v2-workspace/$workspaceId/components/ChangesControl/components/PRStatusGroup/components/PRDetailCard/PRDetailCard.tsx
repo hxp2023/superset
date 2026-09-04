@@ -8,7 +8,13 @@ import {
 	LuCircleDashed,
 	LuCircleX,
 	LuGitBranch,
+	LuLayers,
 } from "react-icons/lu";
+import {
+	PullRequestStackRail,
+	type PullRequestStackView,
+	StackReadinessLine,
+} from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/PullRequestStack";
 import type { ChecksRollup } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/utils/computeChecksStatus";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
 import type { PullRequest } from "../../../../utils/getPRFlowState";
@@ -17,6 +23,8 @@ interface PRDetailCardProps {
 	pr: PullRequest;
 	checks: ChecksRollup;
 	linkState: PRState;
+	/** The PR's stack, when it is part of one. */
+	stack?: PullRequestStackView | null;
 }
 
 /**
@@ -25,8 +33,15 @@ interface PRDetailCardProps {
  * about the PR without leaving the workspace. Wide enough (320px) to fit a
  * reasonable PR title on two lines.
  */
-export function PRDetailCard({ pr, checks, linkState }: PRDetailCardProps) {
+export function PRDetailCard({
+	pr,
+	checks,
+	linkState,
+	stack = null,
+}: PRDetailCardProps) {
 	const { t } = useLingui();
+	const position = stack?.currentPosition ?? 0;
+	const size = stack?.layers.length ?? 0;
 	const stateLabel = pr.isDraft
 		? t({ message: "Draft" })
 		: pr.state === "merged"
@@ -80,6 +95,27 @@ export function PRDetailCard({ pr, checks, linkState }: PRDetailCardProps) {
 			<div className="flex flex-col gap-1.5 border-t border-border/60 px-3 py-2.5">
 				<ChecksLine checks={checks} />
 			</div>
+
+			{stack && (
+				<div className="border-t border-border/60 px-3 py-2.5">
+					<div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+						<span className="flex shrink-0 items-center gap-1 font-medium text-foreground">
+							<LuLayers
+								aria-hidden="true"
+								className="size-3 text-muted-foreground"
+							/>
+							<Trans>
+								Layer {position} of {size}
+							</Trans>
+						</span>
+						<StackReadinessLine
+							readiness={stack.readiness}
+							className="min-w-0"
+						/>
+					</div>
+					<PullRequestStackRail stack={stack} variant="compact" />
+				</div>
+			)}
 
 			{updatedRelative && (
 				<div className="border-t border-border/60 px-3 py-2 text-[11px] text-muted-foreground">

@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} scalono poniżej tej gałęzi"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Blok"
 msgid "blocked"
 msgstr "zablokowane"
 
+msgid "Blocked at #{number}"
+msgstr "Zablokowane na #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Zablokowany przez reguły gałęzi"
 
@@ -2708,8 +2714,14 @@ msgstr "Kontrole zakończone"
 msgid "Checks failed"
 msgstr "Kontrole nie przeszły"
 
+msgid "Checks failing"
+msgstr "Kontrole nieudane"
+
 msgid "Checks passed"
 msgstr "Kontrole przeszły"
+
+msgid "Checks running"
+msgstr "Kontrole w toku"
 
 msgid "Checks Skipped"
 msgstr "Kontrole pominięte"
@@ -3269,6 +3281,9 @@ msgstr "Skonfiguruj polecenie uruchamiania obszaru roboczego"
 
 msgid "Confirm before quitting"
 msgstr "Potwierdzaj przed zamknięciem"
+
+msgid "Conflicts"
+msgstr "Konflikty"
 
 msgid "Connect"
 msgstr "Połącz"
@@ -5145,6 +5160,12 @@ msgstr "W każdy piątek o 16:00 przygotuj notatki wydania z PR-ów scalonych w 
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "W każdy piątek o 16:00 przygotuj notatki wydania z PR-ów scalonych w tym tygodniu."
+
+msgid "Every layer has landed"
+msgstr "Wszystkie warstwy zostały scalone"
+
+msgid "Every layer is ready to land"
+msgstr "Wszystkie warstwy są gotowe do scalenia"
 
 msgid "Every minute"
 msgstr "Co minutę"
@@ -7251,6 +7272,9 @@ msgstr "Uruchamiaj ten skrypt terminala przy tworzeniu nowego obszaru roboczego.
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Uruchamiaj ten skrypt terminala przy każdym otwarciu nowej karty terminala."
 
+msgid "Layer {position} of {size}"
+msgstr "Warstwa {position} z {size}"
+
 msgid "Layout"
 msgstr "Układ"
 
@@ -9228,6 +9252,9 @@ msgstr "Otwórz w {0}"
 msgid "Open in {app}"
 msgstr "Otwórz w {app}"
 
+msgid "Open in a new workspace"
+msgstr "Otwórz w nowym obszarze roboczym"
+
 msgid "Open in any IDE"
 msgstr "Otwórz w dowolnym IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Odczytywanie zużycia subskrypcji…"
 msgid "Reading your local usage…"
 msgstr "Odczytywanie lokalnego zużycia…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Gotowy"
+
 msgid "Ready for review"
 msgstr "Gotowe do przeglądu"
 
@@ -10579,6 +10610,9 @@ msgstr "Gotowe do przeglądu"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Oznaczenie jako gotowe do recenzji nie powiodło się: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Gotowe do scalenia do #{number}"
 
 msgid "Ready to Merge"
 msgstr "Gotowy do scalenia"
@@ -11065,6 +11099,15 @@ msgstr "Zasoby"
 
 msgid "Response"
 msgstr "Odpowiedź"
+
+msgid "Restack"
+msgstr "Przestaw stos"
+
+msgid "Restack onto {trunk}"
+msgstr "Przestaw stos na {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Przestaw stos, aby ponownie nałożyć commity tej gałęzi na {trunk} i usunąć konflikty."
 
 msgid "Restart"
 msgstr "Uruchom ponownie"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Poprawki stabilności"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stos"
+
 msgid "Stacked"
 msgstr "Ułożone w stos"
 
@@ -13893,6 +13940,9 @@ msgstr "Zakończy to sesję i jej proces bazowy."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Usunie to z indeksu i cofnie wszystkie zaindeksowane zmiany. Zaindeksowane nowe pliki zostaną usunięte. Tej operacji nie można cofnąć."
+
+msgid "This workspace"
+msgstr "Ten obszar roboczy"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Ten obszar roboczy żyje na urządzeniu, którego Superset teraz nie dosięga. Terminale, pliki i agenci pozostają na miejscu — wrócą, gdy tylko wróci połączenie."

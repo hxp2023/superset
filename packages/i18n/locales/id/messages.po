@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} di-merge di bawah branch ini"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Blok"
 msgid "blocked"
 msgstr "terblokir"
 
+msgid "Blocked at #{number}"
+msgstr "Terhambat di #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Terblokir oleh Aturan Branch"
 
@@ -2708,8 +2714,14 @@ msgstr "Check selesai"
 msgid "Checks failed"
 msgstr "Check gagal"
 
+msgid "Checks failing"
+msgstr "Check gagal"
+
 msgid "Checks passed"
 msgstr "Check lulus"
+
+msgid "Checks running"
+msgstr "Check berjalan"
 
 msgid "Checks Skipped"
 msgstr "Check Dilewati"
@@ -3269,6 +3281,9 @@ msgstr "Atur perintah run workspace"
 
 msgid "Confirm before quitting"
 msgstr "Konfirmasi sebelum keluar"
+
+msgid "Conflicts"
+msgstr "Konflik"
 
 msgid "Connect"
 msgstr "Hubungkan"
@@ -5145,6 +5160,12 @@ msgstr "Tiap Jumat jam 4 sore, susun draf catatan rilis dari PR yang di-merge mi
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Tiap Jumat jam 4 sore, susun draf catatan rilis dari PR yang di-merge minggu ini."
+
+msgid "Every layer has landed"
+msgstr "Semua lapisan sudah di-merge"
+
+msgid "Every layer is ready to land"
+msgstr "Semua lapisan siap di-merge"
 
 msgid "Every minute"
 msgstr "Tiap menit"
@@ -7251,6 +7272,9 @@ msgstr "Jalankan skrip terminal ini saat workspace baru dibuat."
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Jalankan skrip terminal ini setiap kali tab terminal baru dibuka."
 
+msgid "Layer {position} of {size}"
+msgstr "Lapisan {position} dari {size}"
+
 msgid "Layout"
 msgstr "Tata letak"
 
@@ -9228,6 +9252,9 @@ msgstr "Buka di {0}"
 msgid "Open in {app}"
 msgstr "Buka di {app}"
 
+msgid "Open in a new workspace"
+msgstr "Buka di workspace baru"
+
 msgid "Open in any IDE"
 msgstr "Buka di IDE mana pun"
 
@@ -10570,6 +10597,10 @@ msgstr "Membaca penggunaan langganan…"
 msgid "Reading your local usage…"
 msgstr "Membaca penggunaan lokal Anda…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Siap"
+
 msgid "Ready for review"
 msgstr "Siap direview"
 
@@ -10579,6 +10610,9 @@ msgstr "Siap Direview"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Gagal menandai siap ditinjau: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Siap di-merge hingga #{number}"
 
 msgid "Ready to Merge"
 msgstr "Siap Di-merge"
@@ -11065,6 +11099,15 @@ msgstr "Sumber daya"
 
 msgid "Response"
 msgstr "Respons"
+
+msgid "Restack"
+msgstr "Susun ulang"
+
+msgid "Restack onto {trunk}"
+msgstr "Susun ulang ke {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Susun ulang untuk menerapkan kembali commit branch ini di atas {trunk} dan membersihkan konflik."
 
 msgid "Restart"
 msgstr "Restart"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Peningkatan stabilitas"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Bertumpuk"
 
@@ -13893,6 +13940,9 @@ msgstr "Ini akan menghentikan sesi beserta proses di baliknya."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Ini akan meng-unstage dan mengembalikan semua perubahan yang di-stage. File baru yang di-stage akan dihapus. Ini tidak bisa dibatalkan."
+
+msgid "This workspace"
+msgstr "Workspace ini"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Workspace ini ada di perangkat yang tidak bisa dijangkau Superset saat ini. Terminal, file, dan agen tetap di tempatnya — semuanya kembali begitu koneksinya pulih."

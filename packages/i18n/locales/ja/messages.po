@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "これは {2} にマージされ、ここでは取り消せません。"
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} がこのブランチの下でマージされました"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "ブロック"
 msgid "blocked"
 msgstr "ブロック"
 
+msgid "Blocked at #{number}"
+msgstr "#{number} でブロック中"
+
 msgid "Blocked by Branch Rules"
 msgstr "ブランチルールによりブロック"
 
@@ -2708,8 +2714,14 @@ msgstr "チェック完了"
 msgid "Checks failed"
 msgstr "チェックが失敗しました"
 
+msgid "Checks failing"
+msgstr "チェック失敗"
+
 msgid "Checks passed"
 msgstr "チェックが成功しました"
+
+msgid "Checks running"
+msgstr "チェック実行中"
 
 msgid "Checks Skipped"
 msgstr "チェックをスキップ"
@@ -3269,6 +3281,9 @@ msgstr "ワークスペースの実行コマンドを設定"
 
 msgid "Confirm before quitting"
 msgstr "終了前に確認"
+
+msgid "Conflicts"
+msgstr "コンフリクト"
 
 msgid "Connect"
 msgstr "接続"
@@ -5145,6 +5160,12 @@ msgstr "毎週金曜午後4時に、今週マージされたPRからリリース
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "毎週金曜午後4時に、今週マージされたPRからリリースノートの下書きを作成する。"
+
+msgid "Every layer has landed"
+msgstr "すべてのレイヤーがマージされました"
+
+msgid "Every layer is ready to land"
+msgstr "すべてのレイヤーをマージできます"
 
 msgid "Every minute"
 msgstr "毎分"
@@ -7251,6 +7272,9 @@ msgstr "新しいワークスペースが作成されたときにこのターミ
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "新しいターミナルタブを開くたびにこのターミナルスクリプトを起動します。"
 
+msgid "Layer {position} of {size}"
+msgstr "レイヤー {position}/{size}"
+
 msgid "Layout"
 msgstr "レイアウト"
 
@@ -9228,6 +9252,9 @@ msgstr "{0}で開く"
 msgid "Open in {app}"
 msgstr "{app}で開く"
 
+msgid "Open in a new workspace"
+msgstr "新しいワークスペースで開く"
+
 msgid "Open in any IDE"
 msgstr "どのIDEでも開ける"
 
@@ -10570,6 +10597,10 @@ msgstr "サブスクリプション使用量を読み取り中…"
 msgid "Reading your local usage…"
 msgstr "ローカルの使用量を読み取り中…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "準備完了"
+
 msgid "Ready for review"
 msgstr "レビュー可能"
 
@@ -10579,6 +10610,9 @@ msgstr "レビュー待ち"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "レビュー準備完了にできませんでした: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "#{number} までマージできます"
 
 msgid "Ready to Merge"
 msgstr "マージ可能"
@@ -11065,6 +11099,15 @@ msgstr "リソース"
 
 msgid "Response"
 msgstr "レスポンス"
+
+msgid "Restack"
+msgstr "リスタック"
+
+msgid "Restack onto {trunk}"
+msgstr "{trunk} にリスタック"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "リスタックして、このブランチのコミットを {trunk} の上に適用し直し、コンフリクトを解消します。"
 
 msgid "Restart"
 msgstr "再起動"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "安定性の改善"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "スタック"
+
 msgid "Stacked"
 msgstr "積み重ね"
 
@@ -13893,6 +13940,9 @@ msgstr "セッションとその基盤プロセスを終了します。"
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "ステージ済みの変更をすべてステージ解除して元に戻します。ステージ済みの新規ファイルは削除されます。元に戻せません。"
+
+msgid "This workspace"
+msgstr "このワークスペース"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "このワークスペースは、Supersetが現在接続できないデバイス上にあります。ターミナル、ファイル、エージェントはそのまま残り、接続が回復し次第戻ります。"

@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} se fusionó debajo de esta rama"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Bloque"
 msgid "blocked"
 msgstr "bloqueada"
 
+msgid "Blocked at #{number}"
+msgstr "Bloqueado en #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Bloqueada por reglas de rama"
 
@@ -2708,8 +2714,14 @@ msgstr "Comprobaciones completadas"
 msgid "Checks failed"
 msgstr "Comprobaciones fallidas"
 
+msgid "Checks failing"
+msgstr "Comprobaciones fallidas"
+
 msgid "Checks passed"
 msgstr "Comprobaciones superadas"
+
+msgid "Checks running"
+msgstr "Comprobaciones en curso"
 
 msgid "Checks Skipped"
 msgstr "Comprobaciones omitidas"
@@ -3269,6 +3281,9 @@ msgstr "Configurar el comando de ejecución del espacio de trabajo"
 
 msgid "Confirm before quitting"
 msgstr "Confirmar antes de salir"
+
+msgid "Conflicts"
+msgstr "Conflictos"
 
 msgid "Connect"
 msgstr "Conectar"
@@ -5145,6 +5160,12 @@ msgstr "Cada viernes a las 16:00, redacta las notas de la versión a partir de l
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Cada viernes a las 16:00, redacta las notas de la versión a partir de los PR fusionados esta semana."
+
+msgid "Every layer has landed"
+msgstr "Todas las capas se han fusionado"
+
+msgid "Every layer is ready to land"
+msgstr "Todas las capas están listas para fusionarse"
 
 msgid "Every minute"
 msgstr "Cada minuto"
@@ -7251,6 +7272,9 @@ msgstr "Lanza este script de terminal cuando se cree un espacio de trabajo nuevo
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Lanza este script de terminal cada vez que se abra una pestaña de terminal nueva."
 
+msgid "Layer {position} of {size}"
+msgstr "Capa {position} de {size}"
+
 msgid "Layout"
 msgstr "Diseño"
 
@@ -9228,6 +9252,9 @@ msgstr "Abrir en {0}"
 msgid "Open in {app}"
 msgstr "Abrir en {app}"
 
+msgid "Open in a new workspace"
+msgstr "Abrir en un nuevo espacio de trabajo"
+
 msgid "Open in any IDE"
 msgstr "Abrir en cualquier IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Leyendo el uso de la suscripción…"
 msgid "Reading your local usage…"
 msgstr "Leyendo el uso local…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Lista"
+
 msgid "Ready for review"
 msgstr "Lista para revisión"
 
@@ -10579,6 +10610,9 @@ msgstr "Lista para revisión"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Error al marcar como listo para revisión: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Listo para fusionar hasta #{number}"
 
 msgid "Ready to Merge"
 msgstr "Lista para fusionar"
@@ -11065,6 +11099,15 @@ msgstr "Recursos"
 
 msgid "Response"
 msgstr "Respuesta"
+
+msgid "Restack"
+msgstr "Reapilar"
+
+msgid "Restack onto {trunk}"
+msgstr "Reapilar sobre {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Reapila para volver a aplicar los commits de esta rama sobre {trunk} y resolver los conflictos."
 
 msgid "Restart"
 msgstr "Reiniciar"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Mejoras de estabilidad"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Pila"
+
 msgid "Stacked"
 msgstr "Apilado"
 
@@ -13893,6 +13940,9 @@ msgstr "Esto terminará la sesión y su proceso subyacente."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Esto quitará de preparados y revertirá todos los cambios preparados. Los archivos nuevos preparados se eliminarán. Esto no se puede deshacer."
+
+msgid "This workspace"
+msgstr "Este espacio de trabajo"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Este espacio de trabajo vive en un dispositivo con el que Superset no puede contactar ahora mismo. Las terminales, los archivos y los agentes siguen donde están: vuelven en cuanto lo haga la conexión."

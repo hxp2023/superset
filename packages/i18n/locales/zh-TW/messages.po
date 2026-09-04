@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} 已在此分支之下合併"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "方塊"
 msgid "blocked"
 msgstr "已阻止"
 
+msgid "Blocked at #{number}"
+msgstr "在 #{number} 處受阻"
+
 msgid "Blocked by Branch Rules"
 msgstr "被分支規則阻止"
 
@@ -2708,8 +2714,14 @@ msgstr "檢查完成"
 msgid "Checks failed"
 msgstr "檢查失敗"
 
+msgid "Checks failing"
+msgstr "檢查失敗"
+
 msgid "Checks passed"
 msgstr "檢查通過"
+
+msgid "Checks running"
+msgstr "檢查進行中"
 
 msgid "Checks Skipped"
 msgstr "檢查已跳過"
@@ -3269,6 +3281,9 @@ msgstr "配置工作區執行命令"
 
 msgid "Confirm before quitting"
 msgstr "退出前確認"
+
+msgid "Conflicts"
+msgstr "衝突"
 
 msgid "Connect"
 msgstr "連線"
@@ -5145,6 +5160,12 @@ msgstr "每週五下午4點，根據本週合併的PR起草釋出說明"
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "每週五下午4點，根據本週合併的PR起草釋出說明。"
+
+msgid "Every layer has landed"
+msgstr "所有層均已合併"
+
+msgid "Every layer is ready to land"
+msgstr "所有層均可合併"
 
 msgid "Every minute"
 msgstr "每分鐘"
@@ -7251,6 +7272,9 @@ msgstr "建立新工作區時啟動此終端指令碼。"
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "每當開啟新的終端分頁時啟動此終端指令碼。"
 
+msgid "Layer {position} of {size}"
+msgstr "第 {position} 層，共 {size} 層"
+
 msgid "Layout"
 msgstr "佈局"
 
@@ -9228,6 +9252,9 @@ msgstr "在{0}中開啟"
 msgid "Open in {app}"
 msgstr "在{app}中開啟"
 
+msgid "Open in a new workspace"
+msgstr "在新工作區中開啟"
+
 msgid "Open in any IDE"
 msgstr "在任意IDE中開啟"
 
@@ -10570,6 +10597,10 @@ msgstr "正在讀取訂閱用量…"
 msgid "Reading your local usage…"
 msgstr "正在讀取本地用量…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "就緒"
+
 msgid "Ready for review"
 msgstr "待審查"
 
@@ -10579,6 +10610,9 @@ msgstr "待審查"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "標記為可審查失敗：{0}"
+
+msgid "Ready to land through #{number}"
+msgstr "可合併至 #{number}"
 
 msgid "Ready to Merge"
 msgstr "可以合併"
@@ -11065,6 +11099,15 @@ msgstr "資源"
 
 msgid "Response"
 msgstr "響應"
+
+msgid "Restack"
+msgstr "重新堆疊"
+
+msgid "Restack onto {trunk}"
+msgstr "重新堆疊到 {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "重新堆疊，將此分支的提交重放到 {trunk} 之上並清除衝突。"
 
 msgid "Restart"
 msgstr "重啟"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "穩定性改進"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "堆疊"
+
 msgid "Stacked"
 msgstr "堆疊"
 
@@ -13893,6 +13940,9 @@ msgstr "這將終止該會話及其底層處理程序。"
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "這將取消暫存並還原所有已暫存的更改。已暫存的新檔案將被刪除。此操作無法復原。"
+
+msgid "This workspace"
+msgstr "目前工作區"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "此工作區位於Superset目前無法連線的裝置上。終端、檔案和代理程式都會保持原樣 — 連線一恢復它們就會回來。"

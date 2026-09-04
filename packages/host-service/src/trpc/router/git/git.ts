@@ -47,6 +47,17 @@ import {
 	parseGraphQLThreads,
 	REVIEW_THREADS_QUERY,
 } from "./utils/graphql";
+import {
+	assemblePullRequestStack,
+	createStackFetchers,
+	findMergedLayerBelow,
+	type MergedLayerBelow,
+	type MergedPullRequestNode,
+	type PullRequestStack,
+	resolveStackShape,
+	runStackRootQuery,
+	type StackGraphqlRunner,
+} from "./utils/pull-request-stack";
 import { resolveWorktreePath } from "./utils/resolve-worktree";
 import { attachSpawnFailureDiagnostics } from "./utils/spawn-failure-diagnostics";
 
@@ -93,6 +104,57 @@ function resolveGitTaskEnv(
 	worktreePath: string,
 ): Promise<Record<string, string>> {
 	return createGitEnvResolver(ctx.credentials)(worktreePath);
+}
+
+/**
+ * Looks in the worktree for a merged layer's commits. A missing worktree, or
+ * a trunk that was never fetched into this clone, means the answer cannot be
+ * known: the stack still renders, only without the restack hint.
+ */
+async function probeMergedLayerBelow(
+	ctx: Parameters<typeof resolveWorktreePath>[0],
+	workspaceId: string,
+	params: {
+		current: { number: number; headRefName: string };
+		trunk: string;
+		/** Deferred: the merged list is only worth fetching once git can answer. */
+		listMerged: () => Promise<MergedPullRequestNode[]>;
+	},
+): Promise<MergedLayerBelow | null> {
+	let worktreePath: string;
+	try {
+		worktreePath = resolveWorktreePath(ctx, workspaceId);
+	} catch (error) {
+		if (error instanceof TRPCError) return null;
+		throw error;
+	}
+	const gitEnv = await resolveGitTaskEnv(ctx, worktreePath);
+	const git = createUserSimpleGit(worktreePath).env(gitEnv);
+	const trunkRef = `origin/${params.trunk}`;
+	const trunkExists = await git
+		.raw(["rev-parse", "--verify", "--quiet", `${trunkRef}^{commit}`])
+		.then(() => true)
+		.catch(() => false);
+	if (!trunkExists) return null;
+	const merged = await params.listMerged();
+	if (merged.length === 0) return null;
+	// A stale trunk ref would report a merge-commit merge as missing from the
+	// trunk. The shared TTL keeps this to one fetch per common git dir per
+	// window, whatever the poll rate.
+	void scheduleBaseRefFetch(git, worktreePath, {
+		remote: "origin",
+		branch: params.trunk,
+	});
+	return findMergedLayerBelow({
+		current: params.current,
+		merged,
+		trunkRef,
+		isAncestor: (oid, ref) =>
+			git
+				.raw(["merge-base", "--is-ancestor", oid, ref])
+				.then(() => true)
+				.catch(() => false),
+	});
 }
 
 /** Delete for a discard. Recursive because an untracked or staged-as-added
@@ -856,6 +918,75 @@ export const gitRouter = router({
 				repoOwner: pr.repoOwner,
 				repoName: pr.repoName,
 			};
+		}),
+
+	/**
+	 * The stack this workspace's PR belongs to — GitHub's own when the PR is
+	 * in one, otherwise the base-branch chain through the repo's open PRs —
+	 * plus a merged layer the branch still carries, recovered from git.
+	 * Null for a PR that stands alone. Degrades to null, never an error, when
+	 * the project has no GitHub remote: a missing stack is not a fault.
+	 */
+	getPullRequestStack: queryProcedure
+		.meta({ timeoutMs: 30_000 })
+		.input(z.object({ workspaceId: z.string() }))
+		.query(async ({ ctx, input }): Promise<PullRequestStack | null> => {
+			const workspace = ctx.db.query.workspaces
+				.findFirst({ where: eq(workspaces.id, input.workspaceId) })
+				.sync();
+			if (!workspace) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Workspace not found",
+				});
+			}
+			// Session workspaces (null projectId) have no GitHub remote.
+			if (!workspace.pullRequestId || workspace.projectId === null) {
+				return null;
+			}
+			const pr = ctx.db.query.pullRequests
+				.findFirst({ where: eq(pullRequests.id, workspace.pullRequestId) })
+				.sync();
+			if (!pr) return null;
+
+			let repo: { owner: string; name: string };
+			try {
+				repo = await resolveGithubRepo(ctx, workspace.projectId);
+			} catch (err) {
+				if (err instanceof TRPCError) return null;
+				throw err;
+			}
+
+			const octokit = await ctx.github();
+			const graphql: StackGraphqlRunner = (query, variables) =>
+				octokit.graphql(query, variables);
+			const repoVariables = { owner: repo.owner, name: repo.name };
+			const root = await runStackRootQuery(graphql, {
+				...repoVariables,
+				number: pr.prNumber,
+			});
+			if (!root) return null;
+			const fetchers = createStackFetchers(graphql, repoVariables);
+			const shape = await resolveStackShape(root, pr.prNumber, fetchers);
+			if (!shape) return null;
+
+			const current = shape.layers.find((layer) => layer.isCurrent);
+			const stillOpen =
+				current?.state === "open" ||
+				current?.state === "draft" ||
+				current?.state === "queued";
+			const mergedBelow =
+				shape.probeMergedBelow && stillOpen
+					? await probeMergedLayerBelow(ctx, input.workspaceId, {
+							current: {
+								number: pr.prNumber,
+								headRefName: pr.headBranch ?? "",
+							},
+							trunk: shape.baseRefName,
+							listMerged: () => fetchers.findMergedInto(shape.baseRefName),
+						})
+					: null;
+			return assemblePullRequestStack(shape, mergedBelow);
 		}),
 
 	getCheckJobLogs: queryProcedure

@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} byl sloučen pod touto větví"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Blok"
 msgid "blocked"
 msgstr "zablokováno"
 
+msgid "Blocked at #{number}"
+msgstr "Blokováno na #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Zablokováno pravidly větve"
 
@@ -2708,8 +2714,14 @@ msgstr "Kontroly dokončeny"
 msgid "Checks failed"
 msgstr "Kontroly selhaly"
 
+msgid "Checks failing"
+msgstr "Kontroly selhávají"
+
 msgid "Checks passed"
 msgstr "Kontroly prošly"
+
+msgid "Checks running"
+msgstr "Kontroly probíhají"
 
 msgid "Checks Skipped"
 msgstr "Kontroly přeskočeny"
@@ -3269,6 +3281,9 @@ msgstr "Nastavit spouštěcí příkaz pracovního prostoru"
 
 msgid "Confirm before quitting"
 msgstr "Potvrdit před ukončením"
+
+msgid "Conflicts"
+msgstr "Konflikty"
 
 msgid "Connect"
 msgstr "Připojit"
@@ -5145,6 +5160,12 @@ msgstr "Každý pátek v 16:00 sepiš poznámky k vydání ze sloučených PR za
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Každý pátek v 16:00 sepiš poznámky k vydání ze sloučených PR za tento týden."
+
+msgid "Every layer has landed"
+msgstr "Všechny vrstvy jsou sloučené"
+
+msgid "Every layer is ready to land"
+msgstr "Všechny vrstvy jsou připravené ke sloučení"
 
 msgid "Every minute"
 msgstr "Každou minutu"
@@ -7251,6 +7272,9 @@ msgstr "Spustit tento terminálový skript při vytvoření nového pracovního 
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Spustit tento terminálový skript při každém otevření nové karty terminálu."
 
+msgid "Layer {position} of {size}"
+msgstr "Vrstva {position} z {size}"
+
 msgid "Layout"
 msgstr "Rozložení"
 
@@ -9228,6 +9252,9 @@ msgstr "Otevřít v {0}"
 msgid "Open in {app}"
 msgstr "Otevřít v {app}"
 
+msgid "Open in a new workspace"
+msgstr "Otevřít v novém pracovním prostoru"
+
 msgid "Open in any IDE"
 msgstr "Otevřete v jakémkoli IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Načítám využití předplatného…"
 msgid "Reading your local usage…"
 msgstr "Načítám vaše lokální využití…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Připraveno"
+
 msgid "Ready for review"
 msgstr "Připraveno k revizi"
 
@@ -10579,6 +10610,9 @@ msgstr "Připraveno k revizi"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Označení jako připravené k revizi se nezdařilo: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Připraveno ke sloučení až po #{number}"
 
 msgid "Ready to Merge"
 msgstr "Připraveno ke sloučení"
@@ -11065,6 +11099,15 @@ msgstr "Prostředky"
 
 msgid "Response"
 msgstr "Odpověď"
+
+msgid "Restack"
+msgstr "Přeskládat stack"
+
+msgid "Restack onto {trunk}"
+msgstr "Přeskládat na {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Přeskládejte stack, aby se commity této větve znovu aplikovaly na {trunk} a konflikty zmizely."
 
 msgid "Restart"
 msgstr "Restartovat"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Vylepšení stability"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Nad sebou"
 
@@ -13893,6 +13940,9 @@ msgstr "Tímto se ukončí relace i její proces."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Tímto zrušíte přípravu a vrátíte všechny připravené změny. Připravené nové soubory budou smazány. Tuto akci nelze vrátit zpět."
+
+msgid "This workspace"
+msgstr "Tento pracovní prostor"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Tento pracovní prostor je na zařízení, na které Superset právě nedosáhne. Terminály, soubory i agenti zůstávají, kde jsou — vrátí se, jakmile se obnoví spojení."

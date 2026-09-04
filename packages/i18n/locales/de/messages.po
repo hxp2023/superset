@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "Dies wird in {2} gemergt und kann hier nicht rückgängig gemacht werden."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} wurde unter diesem Branch zusammengeführt"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Block"
 msgid "blocked"
 msgstr "blockiert"
 
+msgid "Blocked at #{number}"
+msgstr "Blockiert bei #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Durch Branch-Regeln blockiert"
 
@@ -2708,8 +2714,14 @@ msgstr "Prüfungen abgeschlossen"
 msgid "Checks failed"
 msgstr "Prüfungen fehlgeschlagen"
 
+msgid "Checks failing"
+msgstr "Prüfungen fehlgeschlagen"
+
 msgid "Checks passed"
 msgstr "Prüfungen bestanden"
+
+msgid "Checks running"
+msgstr "Prüfungen laufen"
 
 msgid "Checks Skipped"
 msgstr "Prüfungen übersprungen"
@@ -3269,6 +3281,9 @@ msgstr "Run-Befehl des Arbeitsbereichs konfigurieren"
 
 msgid "Confirm before quitting"
 msgstr "Vor dem Beenden bestätigen"
+
+msgid "Conflicts"
+msgstr "Konflikte"
 
 msgid "Connect"
 msgstr "Verbinden"
@@ -5145,6 +5160,12 @@ msgstr "Jeden Freitag um 16 Uhr Release Notes aus den diese Woche gemergten PRs 
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Jeden Freitag um 16 Uhr Release Notes aus den diese Woche gemergten PRs entwerfen."
+
+msgid "Every layer has landed"
+msgstr "Alle Ebenen sind zusammengeführt"
+
+msgid "Every layer is ready to land"
+msgstr "Alle Ebenen können zusammengeführt werden"
 
 msgid "Every minute"
 msgstr "Jede Minute"
@@ -7251,6 +7272,9 @@ msgstr "Dieses Terminal-Skript starten, wenn ein neuer Arbeitsbereich erstellt w
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Dieses Terminal-Skript starten, sobald ein neuer Terminal-Tab geöffnet wird."
 
+msgid "Layer {position} of {size}"
+msgstr "Ebene {position} von {size}"
+
 msgid "Layout"
 msgstr "Layout"
 
@@ -9228,6 +9252,9 @@ msgstr "In {0} öffnen"
 msgid "Open in {app}"
 msgstr "In {app} öffnen"
 
+msgid "Open in a new workspace"
+msgstr "In neuem Arbeitsbereich öffnen"
+
 msgid "Open in any IDE"
 msgstr "In jeder IDE öffnen"
 
@@ -10570,6 +10597,10 @@ msgstr "Abo-Nutzung wird gelesen…"
 msgid "Reading your local usage…"
 msgstr "Lokale Nutzungsdaten werden gelesen…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Bereit"
+
 msgid "Ready for review"
 msgstr "Bereit für Review"
 
@@ -10579,6 +10610,9 @@ msgstr "Bereit für Review"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Als bereit zur Review markieren fehlgeschlagen: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Bis #{number} bereit zum Zusammenführen"
 
 msgid "Ready to Merge"
 msgstr "Bereit zum Zusammenführen"
@@ -11065,6 +11099,15 @@ msgstr "Ressourcen"
 
 msgid "Response"
 msgstr "Response"
+
+msgid "Restack"
+msgstr "Neu stapeln"
+
+msgid "Restack onto {trunk}"
+msgstr "Auf {trunk} neu stapeln"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Neu stapeln, um die Commits dieses Branches auf {trunk} neu anzuwenden und die Konflikte aufzulösen."
 
 msgid "Restart"
 msgstr "Neu starten"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Stabilitätsverbesserungen"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Gestapelt"
 
@@ -13893,6 +13940,9 @@ msgstr "Damit werden die Sitzung und ihr zugrunde liegender Prozess beendet."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Damit werden alle gestageden Änderungen aus dem Index genommen und zurückgesetzt. Gestagede neue Dateien werden gelöscht. Das lässt sich nicht rückgängig machen."
+
+msgid "This workspace"
+msgstr "Dieser Arbeitsbereich"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Dieser Arbeitsbereich liegt auf einem Gerät, das Superset gerade nicht erreicht. Terminals, Dateien und Agenten bleiben, wo sie sind — sie kommen zurück, sobald die Verbindung wieder steht."

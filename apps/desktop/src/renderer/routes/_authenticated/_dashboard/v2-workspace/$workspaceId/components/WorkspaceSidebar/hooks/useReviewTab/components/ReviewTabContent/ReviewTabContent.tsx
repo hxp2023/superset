@@ -1,10 +1,12 @@
 import { Trans } from "@lingui/react/macro";
 import { memo } from "react";
 import type { CommentPaneData, DiffFocusSide } from "../../../../../../types";
+import type { RunTerminalCommand } from "../../../../types";
 import type { NormalizedComment, NormalizedPR } from "../../types";
 import { ChecksSection } from "../ChecksSection";
 import { CommentsSection } from "../CommentsSection";
 import { PRHeader } from "../PRHeader";
+import { StackSection } from "../StackSection";
 
 interface ReviewTabContentProps {
 	workspaceId: string;
@@ -14,6 +16,7 @@ interface ReviewTabContentProps {
 	isError: boolean;
 	isCommentsLoading: boolean;
 	onOpenComment?: (comment: CommentPaneData) => void;
+	onRunCommand?: RunTerminalCommand;
 	onOpenInDiff?: (
 		path: string,
 		line?: number,
@@ -30,6 +33,7 @@ export const ReviewTabContent = memo(function ReviewTabContent({
 	isError,
 	isCommentsLoading,
 	onOpenComment,
+	onRunCommand,
 	onOpenInDiff,
 }: ReviewTabContentProps) {
 	if (isError) {
@@ -63,6 +67,8 @@ export const ReviewTabContent = memo(function ReviewTabContent({
 			<PRHeader pr={pr} />
 
 			<div className="my-1 border-b border-border/70" />
+
+			<StackSection workspaceId={workspaceId} onRunCommand={onRunCommand} />
 
 			<ChecksSection
 				workspaceId={workspaceId}

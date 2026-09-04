@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} объединён ниже этой ветки"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Блок"
 msgid "blocked"
 msgstr "заблокирован"
 
+msgid "Blocked at #{number}"
+msgstr "Заблокировано на #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Заблокирован правилами ветки"
 
@@ -2708,8 +2714,14 @@ msgstr "Проверки завершены"
 msgid "Checks failed"
 msgstr "Проверки не пройдены"
 
+msgid "Checks failing"
+msgstr "Проверки не пройдены"
+
 msgid "Checks passed"
 msgstr "Проверки пройдены"
+
+msgid "Checks running"
+msgstr "Проверки выполняются"
 
 msgid "Checks Skipped"
 msgstr "Проверки пропущены"
@@ -3269,6 +3281,9 @@ msgstr "Настроить команду запуска рабочей обла
 
 msgid "Confirm before quitting"
 msgstr "Подтверждать выход"
+
+msgid "Conflicts"
+msgstr "Конфликты"
 
 msgid "Connect"
 msgstr "Подключить"
@@ -5145,6 +5160,12 @@ msgstr "Каждую пятницу в 16:00 готовь черновик relea
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Каждую пятницу в 16:00 готовь черновик release notes по объединённым за неделю PR."
+
+msgid "Every layer has landed"
+msgstr "Все слои объединены"
+
+msgid "Every layer is ready to land"
+msgstr "Все слои готовы к объединению"
 
 msgid "Every minute"
 msgstr "Каждую минуту"
@@ -7251,6 +7272,9 @@ msgstr "Запускать этот скрипт терминала при со�
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Запускать этот скрипт терминала при открытии новой вкладки терминала."
 
+msgid "Layer {position} of {size}"
+msgstr "Слой {position} из {size}"
+
 msgid "Layout"
 msgstr "Раскладка"
 
@@ -9228,6 +9252,9 @@ msgstr "Открыть в {0}"
 msgid "Open in {app}"
 msgstr "Открыть в {app}"
 
+msgid "Open in a new workspace"
+msgstr "Открыть в новой рабочей области"
+
 msgid "Open in any IDE"
 msgstr "Открывайте в любой IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Чтение использования подписки…"
 msgid "Reading your local usage…"
 msgstr "Чтение локальной статистики…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Готов"
+
 msgid "Ready for review"
 msgstr "Готово к ревью"
 
@@ -10579,6 +10610,9 @@ msgstr "Готово к ревью"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Не удалось пометить как готово к ревью: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Готово к объединению до #{number} включительно"
 
 msgid "Ready to Merge"
 msgstr "Готов к слиянию"
@@ -11065,6 +11099,15 @@ msgstr "Ресурсы"
 
 msgid "Response"
 msgstr "Ответ"
+
+msgid "Restack"
+msgstr "Перестроить стек"
+
+msgid "Restack onto {trunk}"
+msgstr "Перестроить на {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Перестройте стек, чтобы заново применить коммиты этой ветки поверх {trunk} и устранить конфликты."
 
 msgid "Restart"
 msgstr "Перезапустить"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Улучшения стабильности"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Стек"
+
 msgid "Stacked"
 msgstr "Стопкой"
 
@@ -13893,6 +13940,9 @@ msgstr "Это завершит сессию и связанный с ней п�
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Это снимет индексацию и откатит все проиндексированные изменения. Проиндексированные новые файлы будут удалены. Отменить нельзя."
+
+msgid "This workspace"
+msgstr "Эта рабочая область"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Эта рабочая область находится на устройстве, до которого Superset сейчас не может достучаться. Терминалы, файлы и агенты остаются на месте — они вернутся, как только вернётся соединение."

@@ -9,7 +9,7 @@ import {
 	coerceCheckStatus,
 	computeChecksRollup,
 } from "../../../../utils/computeChecksStatus";
-import type { SidebarTabDefinition } from "../../types";
+import type { RunTerminalCommand, SidebarTabDefinition } from "../../types";
 import { ReviewTabContent } from "./components/ReviewTabContent";
 import type { NormalizedComment, NormalizedPR } from "./types";
 
@@ -19,6 +19,7 @@ type V2ThreadsData = RouterOutputs["git"]["getPullRequestThreads"];
 interface UseReviewTabParams {
 	workspaceId: string;
 	onOpenComment?: (comment: CommentPaneData) => void;
+	onRunCommand?: RunTerminalCommand;
 	onOpenInDiff?: (
 		path: string,
 		line?: number,
@@ -30,6 +31,7 @@ interface UseReviewTabParams {
 export function useReviewTab({
 	workspaceId,
 	onOpenComment,
+	onRunCommand,
 	onOpenInDiff,
 }: UseReviewTabParams): SidebarTabDefinition {
 	const { t } = useLingui();
@@ -94,6 +96,7 @@ export function useReviewTab({
 			isError={prQuery.isError}
 			isCommentsLoading={threadsQuery.isLoading}
 			onOpenComment={onOpenComment}
+			onRunCommand={onRunCommand}
 			onOpenInDiff={onOpenInDiff}
 		/>
 	);

@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} è stata unita sotto questo branch"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Blocco"
 msgid "blocked"
 msgstr "bloccata"
 
+msgid "Blocked at #{number}"
+msgstr "Bloccato a #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Bloccata dalle regole del branch"
 
@@ -2708,8 +2714,14 @@ msgstr "Controlli completati"
 msgid "Checks failed"
 msgstr "Controlli falliti"
 
+msgid "Checks failing"
+msgstr "Controlli falliti"
+
 msgid "Checks passed"
 msgstr "Controlli superati"
+
+msgid "Checks running"
+msgstr "Controlli in corso"
 
 msgid "Checks Skipped"
 msgstr "Controlli saltati"
@@ -3269,6 +3281,9 @@ msgstr "Configura il comando di esecuzione del workspace"
 
 msgid "Confirm before quitting"
 msgstr "Chiedi conferma prima di uscire"
+
+msgid "Conflicts"
+msgstr "Conflitti"
 
 msgid "Connect"
 msgstr "Collega"
@@ -5145,6 +5160,12 @@ msgstr "Ogni venerdì alle 16, prepara le note di rilascio dalle PR unite questa
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Ogni venerdì alle 16, prepara le note di rilascio dalle PR unite questa settimana."
+
+msgid "Every layer has landed"
+msgstr "Tutti i livelli sono stati uniti"
+
+msgid "Every layer is ready to land"
+msgstr "Tutti i livelli sono pronti per il merge"
 
 msgid "Every minute"
 msgstr "Ogni minuto"
@@ -7251,6 +7272,9 @@ msgstr "Avvia questo script del terminale alla creazione di un nuovo workspace."
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Avvia questo script del terminale ogni volta che si apre una nuova scheda del terminale."
 
+msgid "Layer {position} of {size}"
+msgstr "Livello {position} di {size}"
+
 msgid "Layout"
 msgstr "Layout"
 
@@ -9228,6 +9252,9 @@ msgstr "Apri in {0}"
 msgid "Open in {app}"
 msgstr "Apri in {app}"
 
+msgid "Open in a new workspace"
+msgstr "Apri in un nuovo workspace"
+
 msgid "Open in any IDE"
 msgstr "Apri in qualsiasi IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Lettura dell'utilizzo dell'abbonamento…"
 msgid "Reading your local usage…"
 msgstr "Lettura dell'utilizzo locale…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Pronta"
+
 msgid "Ready for review"
 msgstr "Pronto per la revisione"
 
@@ -10579,6 +10610,9 @@ msgstr "Pronto per la revisione"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Contrassegno come pronta per la revisione non riuscito: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Pronto per il merge fino a #{number}"
 
 msgid "Ready to Merge"
 msgstr "Pronta per il merge"
@@ -11065,6 +11099,15 @@ msgstr "Risorse"
 
 msgid "Response"
 msgstr "Risposta"
+
+msgid "Restack"
+msgstr "Reimpila"
+
+msgid "Restack onto {trunk}"
+msgstr "Reimpila su {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Reimpila per riapplicare i commit di questo branch su {trunk} e risolvere i conflitti."
 
 msgid "Restart"
 msgstr "Riavvia"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Miglioramenti di stabilità"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Impilato"
 
@@ -13893,6 +13940,9 @@ msgstr "Questo terminerà la sessione e il suo processo sottostante."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Questo toglierà dallo stage e annullerà tutte le modifiche in stage. I nuovi file in stage verranno eliminati. L'operazione non può essere annullata."
+
+msgid "This workspace"
+msgstr "Questo workspace"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Questo workspace si trova su un dispositivo che Superset non riesce a raggiungere ora. Terminali, file e agenti restano dove sono — tornano appena torna la connessione."

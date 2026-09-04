@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} đã được merge bên dưới nhánh này"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Khối"
 msgid "blocked"
 msgstr "bị chặn"
 
+msgid "Blocked at #{number}"
+msgstr "Bị chặn tại #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Bị chặn bởi quy tắc nhánh"
 
@@ -2708,8 +2714,14 @@ msgstr "Check hoàn tất"
 msgid "Checks failed"
 msgstr "Check thất bại"
 
+msgid "Checks failing"
+msgstr "Check thất bại"
+
 msgid "Checks passed"
 msgstr "Check đã qua"
+
+msgid "Checks running"
+msgstr "Check đang chạy"
 
 msgid "Checks Skipped"
 msgstr "Check đã bỏ qua"
@@ -3269,6 +3281,9 @@ msgstr "Cấu hình lệnh chạy của workspace"
 
 msgid "Confirm before quitting"
 msgstr "Xác nhận trước khi thoát"
+
+msgid "Conflicts"
+msgstr "Xung đột"
 
 msgid "Connect"
 msgstr "Kết nối"
@@ -5145,6 +5160,12 @@ msgstr "Mỗi thứ Sáu lúc 4h chiều, soạn ghi chú phát hành từ các 
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Mỗi thứ Sáu lúc 4h chiều, soạn ghi chú phát hành từ các PR đã merge trong tuần."
+
+msgid "Every layer has landed"
+msgstr "Tất cả các lớp đã được merge"
+
+msgid "Every layer is ready to land"
+msgstr "Tất cả các lớp đã sẵn sàng để merge"
 
 msgid "Every minute"
 msgstr "Mỗi phút"
@@ -7251,6 +7272,9 @@ msgstr "Chạy script terminal này khi tạo workspace mới."
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Chạy script terminal này mỗi khi mở tab terminal mới."
 
+msgid "Layer {position} of {size}"
+msgstr "Lớp {position} trên {size}"
+
 msgid "Layout"
 msgstr "Bố cục"
 
@@ -9228,6 +9252,9 @@ msgstr "Mở trong {0}"
 msgid "Open in {app}"
 msgstr "Mở trong {app}"
 
+msgid "Open in a new workspace"
+msgstr "Mở trong workspace mới"
+
 msgid "Open in any IDE"
 msgstr "Mở trong mọi IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Đang đọc mức dùng của gói đăng ký…"
 msgid "Reading your local usage…"
 msgstr "Đang đọc mức sử dụng cục bộ của bạn…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Sẵn sàng"
+
 msgid "Ready for review"
 msgstr "Sẵn sàng review"
 
@@ -10579,6 +10610,9 @@ msgstr "Sẵn sàng review"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Đánh dấu sẵn sàng để review thất bại: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Sẵn sàng merge đến #{number}"
 
 msgid "Ready to Merge"
 msgstr "Sẵn sàng merge"
@@ -11065,6 +11099,15 @@ msgstr "Tài nguyên"
 
 msgid "Response"
 msgstr "Phản hồi"
+
+msgid "Restack"
+msgstr "Xếp lại stack"
+
+msgid "Restack onto {trunk}"
+msgstr "Xếp lại lên {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Xếp lại để áp dụng lại các commit của nhánh này lên {trunk} và xóa xung đột."
 
 msgid "Restart"
 msgstr "Khởi động lại"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Cải thiện độ ổn định"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Xếp chồng"
 
@@ -13893,6 +13940,9 @@ msgstr "Thao tác này sẽ kết thúc phiên và tiến trình bên dưới n�
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Thao tác này sẽ bỏ stage và hoàn nguyên toàn bộ thay đổi đã stage. Các tệp mới đã stage sẽ bị xóa. Không thể hoàn tác."
+
+msgid "This workspace"
+msgstr "Workspace này"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Workspace này nằm trên một thiết bị mà Superset hiện không kết nối được. Terminal, tệp và agent vẫn nguyên đó — chúng trở lại ngay khi có kết nối."

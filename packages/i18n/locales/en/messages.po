@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} merged below this branch"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Block"
 msgid "blocked"
 msgstr "blocked"
 
+msgid "Blocked at #{number}"
+msgstr "Blocked at #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Blocked by Branch Rules"
 
@@ -2708,8 +2714,14 @@ msgstr "Checks completed"
 msgid "Checks failed"
 msgstr "Checks failed"
 
+msgid "Checks failing"
+msgstr "Checks failing"
+
 msgid "Checks passed"
 msgstr "Checks passed"
+
+msgid "Checks running"
+msgstr "Checks running"
 
 msgid "Checks Skipped"
 msgstr "Checks Skipped"
@@ -3269,6 +3281,9 @@ msgstr "Configure workspace run command"
 
 msgid "Confirm before quitting"
 msgstr "Confirm before quitting"
+
+msgid "Conflicts"
+msgstr "Conflicts"
 
 msgid "Connect"
 msgstr "Connect"
@@ -5145,6 +5160,12 @@ msgstr "Every Friday at 4pm, draft release notes from this week's merged PRs"
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Every Friday at 4pm, draft release notes from this week's merged PRs."
+
+msgid "Every layer has landed"
+msgstr "Every layer has landed"
+
+msgid "Every layer is ready to land"
+msgstr "Every layer is ready to land"
 
 msgid "Every minute"
 msgstr "Every minute"
@@ -7251,6 +7272,9 @@ msgstr "Launch this terminal script when a new workspace is created."
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Launch this terminal script whenever a new terminal tab opens."
 
+msgid "Layer {position} of {size}"
+msgstr "Layer {position} of {size}"
+
 msgid "Layout"
 msgstr "Layout"
 
@@ -9228,6 +9252,9 @@ msgstr "Open in {0}"
 msgid "Open in {app}"
 msgstr "Open in {app}"
 
+msgid "Open in a new workspace"
+msgstr "Open in a new workspace"
+
 msgid "Open in any IDE"
 msgstr "Open in any IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Reading subscription usage…"
 msgid "Reading your local usage…"
 msgstr "Reading your local usage…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Ready"
+
 msgid "Ready for review"
 msgstr "Ready for review"
 
@@ -10579,6 +10610,9 @@ msgstr "Ready for Review"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Ready for review failed: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Ready to land through #{number}"
 
 msgid "Ready to Merge"
 msgstr "Ready to Merge"
@@ -11065,6 +11099,15 @@ msgstr "Resources"
 
 msgid "Response"
 msgstr "Response"
+
+msgid "Restack"
+msgstr "Restack"
+
+msgid "Restack onto {trunk}"
+msgstr "Restack onto {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
 
 msgid "Restart"
 msgstr "Restart"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Stability improvements"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Stack"
+
 msgid "Stacked"
 msgstr "Stacked"
 
@@ -13893,6 +13940,9 @@ msgstr "This will terminate the session and its underlying process."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
+
+msgid "This workspace"
+msgstr "This workspace"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."

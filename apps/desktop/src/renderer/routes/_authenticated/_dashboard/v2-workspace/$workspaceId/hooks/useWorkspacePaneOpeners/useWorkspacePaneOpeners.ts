@@ -52,6 +52,11 @@ export function useWorkspacePaneOpeners({
 		changeKey?: string,
 	) => void;
 	addTerminalTab: () => Promise<void>;
+	/** A new terminal tab that starts by running `command`, titled `title`. */
+	addTerminalTabWithCommand: (args: {
+		command: string;
+		title?: string;
+	}) => Promise<void>;
 	addChatV3Tab: () => void;
 	addBrowserTab: () => void;
 	openChangesPane: () => void;
@@ -157,6 +162,24 @@ export function useWorkspacePaneOpeners({
 		}
 	}, [addBlankTerminalTab, executePreset, newTabPresets]);
 
+	const addTerminalTabWithCommand = useCallback(
+		async ({ command, title }: { command: string; title?: string }) => {
+			// The command rides along on session creation, so unlike a blank
+			// tab the session is awaited before the pane lands in the store.
+			const terminalId = await launcher.create({ command });
+			store.getState().addTab({
+				panes: [
+					{
+						kind: "terminal",
+						titleOverride: title,
+						data: { terminalId } as TerminalPaneData,
+					},
+				],
+			});
+		},
+		[store, launcher],
+	);
+
 	const addChatV3Tab = useCallback(() => {
 		store.getState().addTab({
 			panes: [
@@ -243,6 +266,7 @@ export function useWorkspacePaneOpeners({
 	return {
 		openDiffPane,
 		addTerminalTab,
+		addTerminalTabWithCommand,
 		addChatV3Tab,
 		addBrowserTab,
 		openChangesPane,

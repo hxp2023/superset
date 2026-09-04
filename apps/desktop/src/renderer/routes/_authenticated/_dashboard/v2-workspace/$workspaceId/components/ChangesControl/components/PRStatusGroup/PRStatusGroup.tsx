@@ -17,7 +17,7 @@ import { cn } from "@superset/ui/utils";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { LuArrowUpRight } from "react-icons/lu";
+import { LuArrowUpRight, LuLayers } from "react-icons/lu";
 import {
 	VscChevronDown,
 	VscGitMerge,
@@ -25,6 +25,7 @@ import {
 	VscLoading,
 } from "react-icons/vsc";
 import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
+import { usePullRequestStack } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/PullRequestStack";
 import { computeChecksRollup } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/utils/computeChecksStatus";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
@@ -77,6 +78,11 @@ export function PRStatusGroup({
 			: state.kind === "busy" || state.kind === "error"
 				? state.pr
 				: null;
+	const { stack } = usePullRequestStack({
+		workspaceId,
+		enabled: pr != null,
+	});
+	const utils = workspaceTrpc.useUtils();
 
 	// Triggers a GitHub→host-service-DB sync for this workspace's PR. Without
 	// this, post-merge UI state lags by up to ~30s waiting for the next
@@ -103,6 +109,8 @@ export function PRStatusGroup({
 					}),
 				);
 			} finally {
+				// A merge moves every layer above it: retarget, rebase, readiness.
+				void utils.git.getPullRequestStack.invalidate({ workspaceId });
 				onRefresh?.();
 			}
 		},
@@ -144,6 +152,7 @@ export function PRStatusGroup({
 						}),
 					);
 				} finally {
+					void utils.git.getPullRequestStack.invalidate({ workspaceId });
 					onRefresh?.();
 				}
 			},
@@ -191,6 +200,16 @@ export function PRStatusGroup({
 
 	const tint = stateTintClasses(linkState);
 
+	// GitHub's own PR list marks a stacked PR "2/3"; the same shorthand here
+	// tells you at a glance that merging this one is not the whole story.
+	const position = stack?.currentPosition ?? 0;
+	const size = stack?.layers.length ?? 0;
+	const stackLabel = stack
+		? t({
+				message: `Layer ${position} of ${size}`,
+			})
+		: undefined;
+
 	const badgeContent = (
 		<>
 			<PRIcon state={linkState} className="size-4" />
@@ -204,6 +223,21 @@ export function PRStatusGroup({
 			>
 				#{pr.number}
 			</span>
+			{stack && (
+				<span
+					className="flex items-center gap-0.5 text-muted-foreground"
+					title={stackLabel}
+				>
+					<LuLayers className="size-3" aria-hidden="true" />
+					<span
+						className="font-mono text-[10px] tabular-nums"
+						aria-hidden="true"
+					>
+						{position}/{size}
+					</span>
+					<span className="sr-only">{stackLabel}</span>
+				</span>
+			)}
 			{showIndicators && <PRStatusIndicators checks={checks} />}
 		</>
 	);
@@ -255,7 +289,12 @@ export function PRStatusGroup({
 					sideOffset={8}
 					className="w-80 overflow-hidden p-0"
 				>
-					<PRDetailCard pr={pr} checks={checks} linkState={linkState} />
+					<PRDetailCard
+						pr={pr}
+						checks={checks}
+						linkState={linkState}
+						stack={stack}
+					/>
 				</HoverCardContent>
 			</HoverCard>
 

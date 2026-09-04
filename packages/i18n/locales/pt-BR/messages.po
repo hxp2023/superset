@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} foi mesclado abaixo deste branch"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Bloco"
 msgid "blocked"
 msgstr "bloqueada"
 
+msgid "Blocked at #{number}"
+msgstr "Bloqueado em #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Bloqueado por regras da branch"
 
@@ -2708,8 +2714,14 @@ msgstr "Verificações concluídas"
 msgid "Checks failed"
 msgstr "As verificações falharam"
 
+msgid "Checks failing"
+msgstr "Verificações falhando"
+
 msgid "Checks passed"
 msgstr "As verificações passaram"
+
+msgid "Checks running"
+msgstr "Verificações em andamento"
 
 msgid "Checks Skipped"
 msgstr "Verificações ignoradas"
@@ -3269,6 +3281,9 @@ msgstr "Configurar o comando de execução da área de trabalho"
 
 msgid "Confirm before quitting"
 msgstr "Confirmar antes de encerrar"
+
+msgid "Conflicts"
+msgstr "Conflitos"
 
 msgid "Connect"
 msgstr "Conectar"
@@ -5145,6 +5160,12 @@ msgstr "Toda sexta às 16h, escreva as notas de versão a partir dos PRs mesclad
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Toda sexta às 16h, escreva as notas de versão a partir dos PRs mesclados da semana."
+
+msgid "Every layer has landed"
+msgstr "Todas as camadas foram mescladas"
+
+msgid "Every layer is ready to land"
+msgstr "Todas as camadas estão prontas para o merge"
 
 msgid "Every minute"
 msgstr "A cada minuto"
@@ -7251,6 +7272,9 @@ msgstr "Executa este script de terminal quando uma nova área de trabalho é cri
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Executa este script de terminal sempre que uma nova aba de terminal abrir."
 
+msgid "Layer {position} of {size}"
+msgstr "Camada {position} de {size}"
+
 msgid "Layout"
 msgstr "Layout"
 
@@ -9228,6 +9252,9 @@ msgstr "Abrir no {0}"
 msgid "Open in {app}"
 msgstr "Abrir no {app}"
 
+msgid "Open in a new workspace"
+msgstr "Abrir em uma nova área de trabalho"
+
 msgid "Open in any IDE"
 msgstr "Abra em qualquer IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Lendo o uso da assinatura…"
 msgid "Reading your local usage…"
 msgstr "Lendo seu uso local…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Pronta"
+
 msgid "Ready for review"
 msgstr "Pronta para revisão"
 
@@ -10579,6 +10610,9 @@ msgstr "Pronto para revisão"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Falha ao marcar como pronto para revisão: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Pronto para o merge até #{number}"
 
 msgid "Ready to Merge"
 msgstr "Pronto para merge"
@@ -11065,6 +11099,15 @@ msgstr "Recursos"
 
 msgid "Response"
 msgstr "Resposta"
+
+msgid "Restack"
+msgstr "Reempilhar"
+
+msgid "Restack onto {trunk}"
+msgstr "Reempilhar sobre {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Reempilhe para reaplicar os commits deste branch sobre {trunk} e resolver os conflitos."
 
 msgid "Restart"
 msgstr "Reiniciar"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Melhorias de estabilidade"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Pilha"
+
 msgid "Stacked"
 msgstr "Empilhado"
 
@@ -13893,6 +13940,9 @@ msgstr "Isso encerra a sessão e o processo por trás dela."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Isso remove do stage e reverte todas as alterações no stage. Arquivos novos no stage serão excluídos. Não dá para desfazer."
+
+msgid "This workspace"
+msgstr "Esta área de trabalho"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Esta área de trabalho está em um dispositivo que o Superset não consegue alcançar agora. Terminais, arquivos e agentes continuam no lugar — eles voltam assim que a conexão voltar."

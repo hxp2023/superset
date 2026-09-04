@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "Ceci fusionne dans {2} et ne peut pas être annulé ici."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} a été fusionnée sous cette branche"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Bloc"
 msgid "blocked"
 msgstr "bloquée"
 
+msgid "Blocked at #{number}"
+msgstr "Bloqué à #{number}"
+
 msgid "Blocked by Branch Rules"
 msgstr "Bloquée par les règles de branche"
 
@@ -2708,8 +2714,14 @@ msgstr "Vérifications terminées"
 msgid "Checks failed"
 msgstr "Vérifications en échec"
 
+msgid "Checks failing"
+msgstr "Vérifications en échec"
+
 msgid "Checks passed"
 msgstr "Vérifications réussies"
+
+msgid "Checks running"
+msgstr "Vérifications en cours"
 
 msgid "Checks Skipped"
 msgstr "Vérifications ignorées"
@@ -3269,6 +3281,9 @@ msgstr "Configurer la commande d'exécution de l'espace de travail"
 
 msgid "Confirm before quitting"
 msgstr "Confirmer avant de quitter"
+
+msgid "Conflicts"
+msgstr "Conflits"
 
 msgid "Connect"
 msgstr "Connecter"
@@ -5145,6 +5160,12 @@ msgstr "Chaque vendredi à 16 h, rédige les notes de version à partir des pull
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Chaque vendredi à 16 h, rédige les notes de version à partir des pull requests fusionnées cette semaine."
+
+msgid "Every layer has landed"
+msgstr "Toutes les couches ont été fusionnées"
+
+msgid "Every layer is ready to land"
+msgstr "Toutes les couches sont prêtes à être fusionnées"
 
 msgid "Every minute"
 msgstr "Chaque minute"
@@ -7251,6 +7272,9 @@ msgstr "Lancer ce script de terminal à la création d'un nouvel espace de trava
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Lancer ce script de terminal à chaque ouverture d'un nouvel onglet de terminal."
 
+msgid "Layer {position} of {size}"
+msgstr "Couche {position} sur {size}"
+
 msgid "Layout"
 msgstr "Disposition"
 
@@ -9228,6 +9252,9 @@ msgstr "Ouvrir dans {0}"
 msgid "Open in {app}"
 msgstr "Ouvrir dans {app}"
 
+msgid "Open in a new workspace"
+msgstr "Ouvrir dans un nouvel espace de travail"
+
 msgid "Open in any IDE"
 msgstr "Ouvrir dans n'importe quel IDE"
 
@@ -10570,6 +10597,10 @@ msgstr "Lecture de l'utilisation de l'abonnement…"
 msgid "Reading your local usage…"
 msgstr "Lecture de votre utilisation locale…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Prête"
+
 msgid "Ready for review"
 msgstr "Prêt pour la revue"
 
@@ -10579,6 +10610,9 @@ msgstr "Prêt pour la revue"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "Échec du marquage comme prêt pour la revue : {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "Prêt à fusionner jusqu'à #{number}"
 
 msgid "Ready to Merge"
 msgstr "Prête à fusionner"
@@ -11065,6 +11099,15 @@ msgstr "Ressources"
 
 msgid "Response"
 msgstr "Réponse"
+
+msgid "Restack"
+msgstr "Réempiler"
+
+msgid "Restack onto {trunk}"
+msgstr "Réempiler sur {trunk}"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Réempilez pour rejouer les commits de cette branche sur {trunk} et résoudre les conflits."
 
 msgid "Restart"
 msgstr "Redémarrer"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Améliorations de la stabilité"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Pile"
+
 msgid "Stacked"
 msgstr "Empilé"
 
@@ -13893,6 +13940,9 @@ msgstr "Cette action arrêtera la session et son processus sous-jacent."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Cette action désindexera et annulera toutes les modifications indexées. Les nouveaux fichiers indexés seront supprimés. Cette action est irréversible."
+
+msgid "This workspace"
+msgstr "Cet espace de travail"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Cet espace de travail se trouve sur un appareil que Superset ne peut pas joindre pour le moment. Les terminaux, les fichiers et les agents restent en place — ils reviennent dès que la connexion revient."

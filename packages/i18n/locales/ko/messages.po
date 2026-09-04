@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number}이(가) 이 브랜치 아래에서 머지되었습니다"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "블록"
 msgid "blocked"
 msgstr "차단됨"
 
+msgid "Blocked at #{number}"
+msgstr "#{number}에서 막힘"
+
 msgid "Blocked by Branch Rules"
 msgstr "브랜치 규칙으로 차단됨"
 
@@ -2708,8 +2714,14 @@ msgstr "검사 완료"
 msgid "Checks failed"
 msgstr "검사 실패"
 
+msgid "Checks failing"
+msgstr "검사 실패"
+
 msgid "Checks passed"
 msgstr "검사 통과"
+
+msgid "Checks running"
+msgstr "검사 진행 중"
 
 msgid "Checks Skipped"
 msgstr "검사 건너뜀"
@@ -3269,6 +3281,9 @@ msgstr "워크스페이스 실행 명령 구성"
 
 msgid "Confirm before quitting"
 msgstr "종료 전 확인"
+
+msgid "Conflicts"
+msgstr "충돌"
 
 msgid "Connect"
 msgstr "연결"
@@ -5145,6 +5160,12 @@ msgstr "매주 금요일 오후 4시에 이번 주 머지된 PR로 릴리스 노
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "매주 금요일 오후 4시에 이번 주 머지된 PR로 릴리스 노트 초안을 작성합니다."
+
+msgid "Every layer has landed"
+msgstr "모든 레이어가 머지되었습니다"
+
+msgid "Every layer is ready to land"
+msgstr "모든 레이어를 머지할 수 있습니다"
 
 msgid "Every minute"
 msgstr "1분마다"
@@ -7251,6 +7272,9 @@ msgstr "새 워크스페이스가 만들어질 때 이 터미널 스크립트를
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "새 터미널 탭이 열릴 때마다 이 터미널 스크립트를 실행합니다."
 
+msgid "Layer {position} of {size}"
+msgstr "레이어 {position}/{size}"
+
 msgid "Layout"
 msgstr "레이아웃"
 
@@ -9228,6 +9252,9 @@ msgstr "{0}에서 열기"
 msgid "Open in {app}"
 msgstr "{app}에서 열기"
 
+msgid "Open in a new workspace"
+msgstr "새 워크스페이스에서 열기"
+
 msgid "Open in any IDE"
 msgstr "어떤 IDE에서든 열기"
 
@@ -10570,6 +10597,10 @@ msgstr "구독 사용량을 읽는 중…"
 msgid "Reading your local usage…"
 msgstr "로컬 사용량을 읽는 중…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "준비됨"
+
 msgid "Ready for review"
 msgstr "리뷰 준비됨"
 
@@ -10579,6 +10610,9 @@ msgstr "리뷰 준비됨"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "리뷰 준비 완료 표시 실패: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "#{number}까지 머지할 수 있습니다"
 
 msgid "Ready to Merge"
 msgstr "머지 준비됨"
@@ -11065,6 +11099,15 @@ msgstr "리소스"
 
 msgid "Response"
 msgstr "응답"
+
+msgid "Restack"
+msgstr "리스택"
+
+msgid "Restack onto {trunk}"
+msgstr "{trunk} 위로 리스택"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "리스택하여 이 브랜치의 커밋을 {trunk} 위에 다시 적용하고 충돌을 해결하세요."
 
 msgid "Restart"
 msgstr "다시 시작"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "안정성 개선"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "스택"
+
 msgid "Stacked"
 msgstr "스택"
 
@@ -13893,6 +13940,9 @@ msgstr "이 세션과 그 하위 프로세스를 종료합니다."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "스테이징된 변경 사항을 모두 스테이징 해제하고 되돌립니다. 스테이징된 새 파일은 삭제됩니다. 되돌릴 수 없습니다."
+
+msgid "This workspace"
+msgstr "이 워크스페이스"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "이 워크스페이스는 Superset이 지금 연결할 수 없는 기기에 있습니다. 터미널, 파일, 에이전트는 그대로 남아 있으며 연결이 복구되면 바로 돌아옵니다."

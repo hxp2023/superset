@@ -796,6 +796,9 @@ msgstr "#{0} {1}\n"
 "\n"
 "This merges into {2} and cannot be undone here."
 
+msgid "#{number} merged below this branch"
+msgstr "#{number} bu dalın altında birleştirildi"
+
 msgid "#engineering"
 msgstr "#engineering"
 
@@ -2212,6 +2215,9 @@ msgstr "Blok"
 msgid "blocked"
 msgstr "engellendi"
 
+msgid "Blocked at #{number}"
+msgstr "#{number} noktasında engellendi"
+
 msgid "Blocked by Branch Rules"
 msgstr "Dal kurallarınca engellendi"
 
@@ -2708,8 +2714,14 @@ msgstr "Kontroller tamamlandı"
 msgid "Checks failed"
 msgstr "Kontroller başarısız"
 
+msgid "Checks failing"
+msgstr "Kontroller başarısız"
+
 msgid "Checks passed"
 msgstr "Kontroller geçti"
+
+msgid "Checks running"
+msgstr "Kontroller çalışıyor"
 
 msgid "Checks Skipped"
 msgstr "Kontroller atlandı"
@@ -3269,6 +3281,9 @@ msgstr "Çalışma alanı çalıştırma komutunu yapılandır"
 
 msgid "Confirm before quitting"
 msgstr "Çıkmadan önce onay iste"
+
+msgid "Conflicts"
+msgstr "Çakışmalar"
 
 msgid "Connect"
 msgstr "Bağla"
@@ -5145,6 +5160,12 @@ msgstr "Her cuma 16.00'da bu haftanın birleştirilen PR'larından sürüm notla
 
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Her cuma 16.00'da bu haftanın birleştirilen PR'larından sürüm notları taslağı hazırla."
+
+msgid "Every layer has landed"
+msgstr "Tüm katmanlar birleştirildi"
+
+msgid "Every layer is ready to land"
+msgstr "Tüm katmanlar birleştirmeye hazır"
 
 msgid "Every minute"
 msgstr "Her dakika"
@@ -7251,6 +7272,9 @@ msgstr "Yeni bir çalışma alanı oluşturulduğunda bu terminal betiğini baş
 msgid "Launch this terminal script whenever a new terminal tab opens."
 msgstr "Yeni bir terminal sekmesi açıldığında bu terminal betiğini başlat."
 
+msgid "Layer {position} of {size}"
+msgstr "Katman {position}/{size}"
+
 msgid "Layout"
 msgstr "Düzen"
 
@@ -9228,6 +9252,9 @@ msgstr "{0} ile aç"
 msgid "Open in {app}"
 msgstr "{app} ile aç"
 
+msgid "Open in a new workspace"
+msgstr "Yeni çalışma alanında aç"
+
 msgid "Open in any IDE"
 msgstr "Herhangi bir IDE'de açın"
 
@@ -10570,6 +10597,10 @@ msgstr "Abonelik kullanımı okunuyor…"
 msgid "Reading your local usage…"
 msgstr "Yerel kullanımınız okunuyor…"
 
+msgctxt "stack layer"
+msgid "Ready"
+msgstr "Hazır"
+
 msgid "Ready for review"
 msgstr "İncelemeye hazır"
 
@@ -10579,6 +10610,9 @@ msgstr "İncelemeye hazır"
 #. placeholder {0}: error.message
 msgid "Ready for review failed: {0}"
 msgstr "İncelemeye hazır olarak işaretlenemedi: {0}"
+
+msgid "Ready to land through #{number}"
+msgstr "#{number} dahil birleştirmeye hazır"
 
 msgid "Ready to Merge"
 msgstr "Birleştirmeye hazır"
@@ -11065,6 +11099,15 @@ msgstr "Kaynaklar"
 
 msgid "Response"
 msgstr "Yanıt"
+
+msgid "Restack"
+msgstr "Yığını yeniden kur"
+
+msgid "Restack onto {trunk}"
+msgstr "{trunk} üzerine yeniden kur"
+
+msgid "Restack to replay this branch's commits on top of {trunk} and clear the conflicts."
+msgstr "Bu dalın commit'lerini {trunk} üzerine yeniden uygulamak ve çakışmaları gidermek için yığını yeniden kurun."
 
 msgid "Restart"
 msgstr "Yeniden başlat"
@@ -12602,6 +12645,10 @@ msgstr "SSO/SAML"
 msgid "Stability improvements"
 msgstr "Kararlılık iyileştirmeleri"
 
+msgctxt "pull request stack"
+msgid "Stack"
+msgstr "Yığın"
+
 msgid "Stacked"
 msgstr "Üst üste"
 
@@ -13893,6 +13940,9 @@ msgstr "Bu işlem oturumu ve altındaki süreci sonlandırır."
 
 msgid "This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone."
 msgstr "Bu işlem, hazırlanmış tüm değişiklikleri hazırlıktan çıkarır ve geri alır. Hazırlanmış yeni dosyalar silinir. Bu geri alınamaz."
+
+msgid "This workspace"
+msgstr "Bu çalışma alanı"
 
 msgid "This workspace lives on a device Superset can't reach right now. Terminals, files, and agents stay put — they come back as soon as the connection does."
 msgstr "Bu çalışma alanı, Superset'in şu anda erişemediği bir cihazda bulunuyor. Terminaller, dosyalar ve ajanlar yerinde kalır — bağlantı geri geldiğinde onlar da geri gelir."

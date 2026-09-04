@@ -23,7 +23,7 @@ import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
 import { type SelectedDiffTarget, useChangesTab } from "./hooks/useChangesTab";
 import { useReviewTab } from "./hooks/useReviewTab";
-import type { SidebarTabDefinition } from "./types";
+import type { RunTerminalCommand, SidebarTabDefinition } from "./types";
 
 const LABELLED_TAB_WIDTH = 88;
 const LABEL_HYSTERESIS = 20;
@@ -49,6 +49,8 @@ interface WorkspaceSidebarProps {
 		changeKey?: string,
 	) => void;
 	onOpenComment?: (comment: CommentPaneData) => void;
+	/** Lets the Review tab start a terminal command (a stack restack). */
+	onRunCommand?: RunTerminalCommand;
 	onSearch?: () => void;
 	selectedFilePath?: string;
 	/** The diff pane's current file, highlighted in the Changes tab. */
@@ -61,6 +63,7 @@ export function WorkspaceSidebar({
 	onSelectFile,
 	onSelectDiffFile,
 	onOpenComment,
+	onRunCommand,
 	onSearch,
 	selectedFilePath,
 	selectedDiffTarget,
@@ -130,6 +133,7 @@ export function WorkspaceSidebar({
 	const reviewTab = useReviewTab({
 		workspaceId,
 		onOpenComment,
+		onRunCommand,
 		onOpenInDiff: onSelectDiffFile
 			? (path, line, openInNewTab, side) => {
 					// Force annotations on so the user lands on the comment, not an empty line.
