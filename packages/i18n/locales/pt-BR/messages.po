@@ -31263,7 +31263,6 @@ msgid "workspace.addTabMenu.terminal"
 msgstr "Terminal"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.activeSessions"
 msgstr "Sessões ativas"
@@ -31324,7 +31323,6 @@ msgid "workspace.agentCommentComposer.sending"
 msgstr "Enviando…"
 
 #. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.startNewSession"
 msgstr "Iniciar nova sessão"
@@ -34514,6 +34512,16 @@ msgid "workspace.runButton.stopAria"
 msgstr "Parar o comando de execução da área de trabalho"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.agentComposerHint"
+msgstr "O agente nomeia, descreve e abre o pull request."
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.agentComposerHintDirty"
+msgstr "O agente faz commit das suas alterações e depois nomeia, descreve e abre o pull request."
+
+#. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/hooks/useCreatePrWithAgent/useCreatePrWithAgent.ts
 msgid "workspace.shipControl.agentCreatingPr"
 msgstr "O agente está criando o pull request…"
@@ -34628,16 +34636,6 @@ msgstr "Criar PR manualmente…"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-msgid "workspace.shipControl.createPrWithAgentDirtyTitle"
-msgstr "Deixar {targetLabel} fazer commit das alterações e depois nomear, descrever e abrir o pull request"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-msgid "workspace.shipControl.createPrWithAgentTitle"
-msgstr "Deixar {targetLabel} nomear, descrever e abrir o pull request"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.creatingPr"
 msgstr "Criando PR…"
 
@@ -34650,12 +34648,6 @@ msgstr "{workingLabel} está criando o pull request"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.draft"
 msgstr "Rascunho"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: config.label
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-msgid "workspace.shipControl.newSessionTargetLabel"
-msgstr "uma nova sessão do {0}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
@@ -34722,16 +34714,6 @@ msgstr "Falha no push: {0}"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.pushing"
 msgstr "Fazendo push…"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-msgid "workspace.shipControl.sendTo"
-msgstr "Enviar para…"
-
-#. js-lingui-explicit-id
-#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
-msgid "workspace.shipControl.sendToTarget"
-msgstr "Enviar para {targetLabel}"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx

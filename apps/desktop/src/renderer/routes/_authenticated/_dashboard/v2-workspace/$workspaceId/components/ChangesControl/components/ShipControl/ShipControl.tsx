@@ -1,17 +1,10 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { AGENT_IDENTITY_LABELS } from "@superset/shared/agent-catalog";
 import { Checkbox } from "@superset/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuRadioGroup,
-	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import { Input } from "@superset/ui/input";
@@ -30,18 +23,16 @@ import {
 	VscGitPullRequestCreate,
 	VscLoading,
 	VscRepoPush,
-	VscSend,
 	VscTerminal,
 } from "react-icons/vsc";
-import { usePresetIcon } from "renderer/assets/app-icons/preset-icons";
 import { useTerminalAgentBindings } from "renderer/hooks/host-service/useTerminalAgentBindings";
 import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHostUrl";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
 import { usePullRequestsSplitViewStore } from "renderer/routes/_authenticated/_dashboard/pull-requests/stores/pullRequestsSplitViewStore";
 import {
+	AgentPickerSelect,
+	AgentPlacementToggle,
 	type AgentSessionPlacement,
-	EXISTING_PREFIX,
-	NEW_PREFIX,
 	useDiffCommentTarget,
 } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
@@ -72,16 +63,16 @@ interface ShipControlProps {
  * request. Full mode shows one face; compact mode (diff stats own the face)
  * folds the same actions into the chevron menu.
  *
- * Create PR hands the branch to an agent (`useCreatePrWithAgent`) and is the
- * face whenever the project can open PRs — the agent commits a dirty tree
- * first, so Commit and Push become chevron entries. The target is the diff
- * composer's model, picked and remembered by `useDiffCommentTarget` and
- * shown in the chevron's "Send to" submenu: a live agent terminal in the
- * workspace, or a new agent terminal launched with the prompt. The face
- * shows "Creating PR…" until the PR is confirmed (the control then flips to
- * its PR badge), the agent finishes without one, or the wait times out.
- * "Create PR manually…" keeps today's title/description popover (which
- * pushes first when the branch is unpublished or ahead) as the by-hand path.
+ * Create PR is the face whenever the project can open PRs. It opens the same
+ * composer the Changes pane's comments use — the agent picker (a live agent
+ * session in this workspace, or a new session with its split/tab placement)
+ * and a submit — then `useCreatePrWithAgent` injects the prompt into that
+ * session or launches the new pane. The agent commits a dirty tree first, so
+ * Commit and Push become chevron entries. The face shows "Creating PR…"
+ * until the PR is confirmed (the control then flips to its PR badge), the
+ * agent finishes without one, or the wait times out. "Create PR manually…"
+ * keeps today's title/description popover (which pushes first when the
+ * branch is unpublished or ahead) as the by-hand path.
  *
  * Session workspaces (null projectId) can't create PRs — the PR route and
  * repo resolution are project-scoped — so they only ever see Commit/Push.
@@ -105,7 +96,7 @@ export function ShipControl({
 
 	// Which popover form is open; both anchor to the whole segment so the
 	// compact menu items and the full-mode faces share one Popover.
-	const [view, setView] = useState<"commit" | "pr" | null>(null);
+	const [view, setView] = useState<"commit" | "pr" | "agent" | null>(null);
 	// A compact menu item can't open the popover directly: the menu content
 	// stays mounted (and keeps reclaiming focus) through its exit animation,
 	// so a popover opened on click loses its autofocused field a few
@@ -113,7 +104,7 @@ export function ShipControl({
 	// record the intent; the menu's onCloseAutoFocus — which fires once its
 	// focus scope is genuinely torn down — opens the popover and suppresses
 	// the focus-return to the chevron (equally focus-outside).
-	const pendingViewRef = useRef<"commit" | "pr" | null>(null);
+	const pendingViewRef = useRef<"commit" | "pr" | "agent" | null>(null);
 	const [commitMessage, setCommitMessage] = useState("");
 	const [prTitle, setPrTitle] = useState("");
 	const [prBody, setPrBody] = useState("");
@@ -249,23 +240,6 @@ export function ShipControl({
 		canCreatePr ? hostUrl : null,
 	);
 	const agentTarget = useDiffCommentTarget({ sessions, configs });
-	const targetLabel = useMemo(() => {
-		const resolved = agentTarget.resolved;
-		if (!resolved) return null;
-		if (resolved.kind === "existing") {
-			const session = sessions.find(
-				(s) => s.terminalId === resolved.terminalId,
-			);
-			return session ? sessionLabel(session.agentId, session.terminalId) : null;
-		}
-		const config = configs.find((c) => c.id === resolved.configId);
-		return config
-			? t({
-					id: "workspace.shipControl.newSessionTargetLabel",
-					message: `a new ${config.label} session`,
-				})
-			: null;
-	}, [agentTarget.resolved, configs, sessions, t]);
 
 	const agentPr = useCreatePrWithAgent({
 		workspaceId,
@@ -282,15 +256,17 @@ export function ShipControl({
 	const canDispatch = hasSomethingToShip && agentTarget.resolved !== null;
 	// Plain identifiers so Lingui names the placeholders for translators.
 	const workingLabel = agentPr.status?.agentLabel;
-	const handleCreatePrWithAgent = () => {
+	// Opens the agent composer; the dispatch happens from its submit.
+	const openAgentView = () => {
 		if (!hasSomethingToShip) {
 			toast.info(noCommitsTooltip);
 			return;
 		}
-		if (!agentTarget.resolved) {
-			toast.info(noAgentTooltip);
-			return;
-		}
+		setView("agent");
+	};
+	const submitAgentPr = () => {
+		if (!canDispatch) return;
+		setView(null);
 		void agentPr.dispatch();
 	};
 
@@ -452,69 +428,6 @@ export function ShipControl({
 			</DropdownMenuItem>
 		</>
 	) : null;
-	// Where the prompt goes — the diff composer's picker as a submenu, so the
-	// choice (and that a new session would be started) is visible before
-	// clicking, and switchable.
-	const targetSubmenu = (
-		<DropdownMenuSub>
-			<DropdownMenuSubTrigger className="text-xs">
-				<VscSend className="mr-2 size-3.5" />
-				<span className="truncate">
-					{targetLabel
-						? t({
-								id: "workspace.shipControl.sendToTarget",
-								message: `Send to ${targetLabel}`,
-							})
-						: t({ id: "workspace.shipControl.sendTo", message: "Send to…" })}
-				</span>
-			</DropdownMenuSubTrigger>
-			<DropdownMenuSubContent className="w-56">
-				<DropdownMenuRadioGroup
-					value={agentTarget.value ?? undefined}
-					onValueChange={agentTarget.onValueChange}
-				>
-					{sessions.length > 0 && (
-						<DropdownMenuLabel className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground/70">
-							<Trans id="workspace.agentCommentComposer.activeSessions">
-								Active sessions
-							</Trans>
-						</DropdownMenuLabel>
-					)}
-					{sessions.map((session) => (
-						<DropdownMenuRadioItem
-							key={session.terminalId}
-							value={`${EXISTING_PREFIX}${session.terminalId}`}
-							className="text-xs"
-						>
-							<TargetOption
-								presetId={session.agentId}
-								label={sessionLabel(session.agentId, session.terminalId)}
-							/>
-						</DropdownMenuRadioItem>
-					))}
-					{sessions.length > 0 && configs.length > 0 && (
-						<DropdownMenuSeparator />
-					)}
-					{configs.length > 0 && (
-						<DropdownMenuLabel className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground/70">
-							<Trans id="workspace.agentCommentComposer.startNewSession">
-								Start new session
-							</Trans>
-						</DropdownMenuLabel>
-					)}
-					{configs.map((config) => (
-						<DropdownMenuRadioItem
-							key={config.id}
-							value={`${NEW_PREFIX}${config.id}`}
-							className="text-xs"
-						>
-							<TargetOption presetId={config.presetId} label={config.label} />
-						</DropdownMenuRadioItem>
-					))}
-				</DropdownMenuRadioGroup>
-			</DropdownMenuSubContent>
-		</DropdownMenuSub>
-	);
 	// The manual steps, one level down now that the agent commits and pushes
 	// by default.
 	const commitItem = (
@@ -614,19 +527,24 @@ export function ShipControl({
 										    explains itself with a toast. */}
 										<DropdownMenuItem
 											className={
-												canDispatch
+												hasSomethingToShip
 													? "text-xs"
 													: "text-xs text-muted-foreground focus:text-muted-foreground"
 											}
 											disabled={isShipping}
-											onClick={handleCreatePrWithAgent}
+											onClick={() => {
+												if (!hasSomethingToShip) {
+													toast.info(noCommitsTooltip);
+													return;
+												}
+												pendingViewRef.current = "agent";
+											}}
 										>
 											<VscGitPullRequestCreate className="size-3.5" />
 											<Trans id="workspace.shipControl.createPr">
 												Create PR
 											</Trans>
 										</DropdownMenuItem>
-										{targetSubmenu}
 										{manualCreatePrItem}
 									</>
 								) : null}
@@ -651,7 +569,7 @@ export function ShipControl({
 								<button
 									type="button"
 									className={mainButtonClass}
-									disabled={!canDispatch || agentBusy}
+									disabled={!hasSomethingToShip || agentBusy}
 									title={
 										workingLabel
 											? t({
@@ -660,19 +578,9 @@ export function ShipControl({
 												})
 											: !hasSomethingToShip
 												? noCommitsTooltip
-												: !targetLabel
-													? noAgentTooltip
-													: needsCommit
-														? t({
-																id: "workspace.shipControl.createPrWithAgentDirtyTitle",
-																message: `Have ${targetLabel} commit the changes, then name, describe, and open the pull request`,
-															})
-														: t({
-																id: "workspace.shipControl.createPrWithAgentTitle",
-																message: `Have ${targetLabel} name, describe, and open the pull request`,
-															})
+												: undefined
 									}
-									onClick={handleCreatePrWithAgent}
+									onClick={openAgentView}
 								>
 									{isShipping || agentBusy ? (
 										<VscLoading className="size-3.5 animate-spin" />
@@ -728,14 +636,7 @@ export function ShipControl({
 												<DropdownMenuSeparator />
 											)}
 											{showCreatePr &&
-												(agentBusy ? (
-													agentWaitItems
-												) : (
-													<>
-														{targetSubmenu}
-														{manualCreatePrItem}
-													</>
-												))}
+												(agentBusy ? agentWaitItems : manualCreatePrItem)}
 										</DropdownMenuContent>
 									</DropdownMenu>
 								</>
@@ -747,9 +648,56 @@ export function ShipControl({
 			<PopoverContent
 				align="end"
 				sideOffset={8}
-				className={view === "pr" ? "w-96 p-3" : "w-80 p-3"}
+				className={view === "commit" ? "w-80 p-3" : "w-96 p-3"}
 			>
-				{view === "commit" ? (
+				{view === "agent" ? (
+					// The comment composer's footer, minus the comment: pick the
+					// session (or a new one and where its pane opens), then submit.
+					<div className="flex flex-col gap-2">
+						<p className="text-xs text-muted-foreground">
+							{!agentTarget.resolved
+								? noAgentTooltip
+								: needsCommit
+									? t({
+											id: "workspace.shipControl.agentComposerHintDirty",
+											message:
+												"The agent commits your changes, then names, describes, and opens the pull request.",
+										})
+									: t({
+											id: "workspace.shipControl.agentComposerHint",
+											message:
+												"The agent names, describes, and opens the pull request.",
+										})}
+						</p>
+						<div className="flex flex-wrap items-center gap-2">
+							<AgentPickerSelect
+								value={agentTarget.value}
+								onValueChange={agentTarget.onValueChange}
+								sessions={sessions}
+								configs={configs}
+							/>
+							{agentTarget.resolved?.kind === "new" ? (
+								<AgentPlacementToggle
+									value={agentTarget.placement}
+									onValueChange={agentTarget.onPlacementChange}
+								/>
+							) : null}
+							<button
+								type="button"
+								onClick={submitAgentPr}
+								disabled={!canDispatch || agentPr.isDispatching}
+								className="ml-auto flex h-7 items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+							>
+								{agentPr.isDispatching && (
+									<VscLoading className="size-3.5 animate-spin" />
+								)}
+								<Trans id="workspace.shipControl.createPrAction">
+									Create pull request
+								</Trans>
+							</button>
+						</div>
+					</div>
+				) : view === "commit" ? (
 					<div className="flex flex-col gap-2">
 						<Textarea
 							autoFocus
@@ -824,35 +772,5 @@ export function ShipControl({
 				)}
 			</PopoverContent>
 		</Popover>
-	);
-}
-
-function sessionLabel(agentId: string, terminalId: string): string {
-	const label =
-		(AGENT_IDENTITY_LABELS as Record<string, string | undefined>)[agentId] ??
-		agentId;
-	return `${label} · ${terminalId.slice(0, 6)}`;
-}
-
-function TargetOption({
-	presetId,
-	label,
-}: {
-	presetId: string;
-	label: string;
-}) {
-	const iconSrc = usePresetIcon(presetId);
-	return (
-		<span className="inline-flex min-w-0 items-center gap-1.5">
-			{iconSrc ? (
-				<img
-					src={iconSrc}
-					alt=""
-					className="size-3 shrink-0"
-					draggable={false}
-				/>
-			) : null}
-			<span className="truncate">{label}</span>
-		</span>
 	);
 }
