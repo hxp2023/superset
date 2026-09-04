@@ -9,6 +9,7 @@ import {
 	CollapsibleTrigger,
 } from "@superset/ui/collapsible";
 import { toast } from "@superset/ui/sonner";
+import { Textarea } from "@superset/ui/textarea";
 import { cn } from "@superset/ui/utils";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { useEffect, useState } from "react";
@@ -38,6 +39,10 @@ interface CommentThreadProps {
 	isOutdated?: boolean;
 	url?: string;
 	comments: Comment[];
+	/** REST databaseId of a comment already in the thread — replies thread
+	 *  onto it regardless of which comment they target. Undefined only if
+	 *  GitHub ever returns a thread with zero comments (shouldn't happen). */
+	replyToCommentId?: number;
 	/** Force-expand the bubble whenever this changes — lets jump-to-line
 	 *  reveal a collapsed (resolved/outdated) thread. */
 	focusTick?: number;
@@ -50,6 +55,7 @@ export function CommentThread({
 	isOutdated,
 	url,
 	comments,
+	replyToCommentId,
 	focusTick,
 }: CommentThreadProps) {
 	const { t } = useLingui();
@@ -105,6 +111,45 @@ export function CommentThread({
 			},
 		},
 	);
+	const [replyText, setReplyText] = useState("");
+	const replyToThread = workspaceTrpc.git.replyToReviewThread.useMutation({
+		onSuccess: () => {
+			void utils.git.getPullRequestThreads.invalidate({ workspaceId });
+		},
+		onError: (error, variables) => {
+			// The draft is cleared as soon as it's sent; hand it back so a
+			// rejected reply isn't retyped — unless a new one is already
+			// underway.
+			setReplyText((current) => (current.trim() ? current : variables.body));
+			toast.error(
+				t({
+					message: "Couldn't post reply",
+				}),
+				{
+					description: errorMessage(error),
+				},
+			);
+		},
+	});
+	const handleReplySubmit = () => {
+		const body = replyText.trim();
+		if (!body || replyToThread.isPending) return;
+		if (replyToCommentId == null) {
+			toast.error(
+				t({
+					message: "Couldn't send reply",
+				}),
+				{
+					description: t({
+						message: "This thread has no comment to reply to.",
+					}),
+				},
+			);
+			return;
+		}
+		replyToThread.mutate({ workspaceId, commentId: replyToCommentId, body });
+		setReplyText("");
+	};
 
 	return (
 		<Collapsible
@@ -195,29 +240,57 @@ export function CommentThread({
 						<CommentRow key={comment.id} comment={comment} />
 					))}
 				</ul>
-				<div className="flex items-center justify-end border-t border-border bg-muted/30 px-2.5 py-1.5">
-					<Button
-						type="button"
-						size="xs"
-						variant="outline"
-						disabled={setResolution.isPending}
-						onClick={() =>
-							setResolution.mutate({
-								workspaceId,
-								threadId,
-								resolved: !isResolved,
-							})
-						}
-					>
-						{setResolution.isPending && (
-							<LuLoaderCircle className="size-3 animate-spin" />
-						)}
-						{isResolved ? (
-							<Trans>Unresolve</Trans>
-						) : (
-							<Trans>Resolve conversation</Trans>
-						)}
-					</Button>
+				<div className="flex flex-col gap-2 border-t border-border bg-muted/30 px-2.5 py-2">
+					<Textarea
+						value={replyText}
+						onChange={(e) => setReplyText(e.target.value)}
+						onKeyDown={(e) => {
+							if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+								e.preventDefault();
+								handleReplySubmit();
+							}
+						}}
+						placeholder={t({
+							message: "Write a reply…",
+						})}
+						rows={2}
+						className="resize-none bg-background text-xs"
+					/>
+					<div className="flex items-center justify-end gap-2">
+						<Button
+							type="button"
+							size="xs"
+							variant="outline"
+							disabled={setResolution.isPending}
+							onClick={() =>
+								setResolution.mutate({
+									workspaceId,
+									threadId,
+									resolved: !isResolved,
+								})
+							}
+						>
+							{setResolution.isPending && (
+								<LuLoaderCircle className="size-3 animate-spin" />
+							)}
+							{isResolved ? (
+								<Trans>Unresolve</Trans>
+							) : (
+								<Trans>Resolve conversation</Trans>
+							)}
+						</Button>
+						<Button
+							type="button"
+							size="xs"
+							disabled={!replyText.trim() || replyToThread.isPending}
+							onClick={handleReplySubmit}
+						>
+							{replyToThread.isPending && (
+								<LuLoaderCircle className="size-3 animate-spin" />
+							)}
+							<Trans>Reply</Trans>
+						</Button>
+					</div>
 				</div>
 			</CollapsibleContent>
 		</Collapsible>

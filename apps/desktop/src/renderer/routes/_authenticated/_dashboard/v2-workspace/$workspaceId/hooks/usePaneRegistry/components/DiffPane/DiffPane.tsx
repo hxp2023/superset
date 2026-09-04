@@ -722,6 +722,7 @@ export function DiffPane({
 					isOutdated={m.isOutdated}
 					url={m.url}
 					comments={m.comments}
+					replyToCommentId={m.replyToCommentId}
 					focusTick={
 						focused
 							? data.focusTick
