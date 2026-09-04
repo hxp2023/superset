@@ -17,8 +17,8 @@ import {
 import type { TRPCRouterRecord } from "@trpc/server";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { emitAppFirstOpened } from "../../lib/activation-events";
 import { env } from "../../env";
+import { emitAppFirstOpened } from "../../lib/activation-events";
 import { fetchRelayPresence } from "../../lib/relay-presence";
 import { jwtProcedure, userError } from "../../trpc";
 
