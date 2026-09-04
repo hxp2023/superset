@@ -31263,6 +31263,7 @@ msgid "workspace.addTabMenu.terminal"
 msgstr "Terminal"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.activeSessions"
 msgstr "Etkin oturumlar"
@@ -31298,6 +31299,7 @@ msgid "workspace.agentCommentComposer.placementNewTabAria"
 msgstr "Yeni sekmede aç"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementNewTabTitle"
 msgstr "Yeni sekme"
@@ -31313,6 +31315,7 @@ msgid "workspace.agentCommentComposer.placementSplitAria"
 msgstr "Bölünmüş bölmede aç"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementSplitTitle"
 msgstr "Bölünmüş bölme"
@@ -31323,6 +31326,7 @@ msgid "workspace.agentCommentComposer.sending"
 msgstr "Gönderiliyor…"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.startNewSession"
 msgstr "Yeni oturum başlat"
@@ -34648,6 +34652,11 @@ msgstr "{workingLabel} pull request oluşturuyor"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.draft"
 msgstr "Taslak"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.newSessionPlacementLabel"
+msgstr "Yeni oturumu şurada aç"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx

@@ -31263,6 +31263,7 @@ msgid "workspace.addTabMenu.terminal"
 msgstr "터미널"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.activeSessions"
 msgstr "활성 세션"
@@ -31298,6 +31299,7 @@ msgid "workspace.agentCommentComposer.placementNewTabAria"
 msgstr "새 탭에서 열기"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementNewTabTitle"
 msgstr "새 탭"
@@ -31313,6 +31315,7 @@ msgid "workspace.agentCommentComposer.placementSplitAria"
 msgstr "분할 패널에서 열기"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementSplitTitle"
 msgstr "분할 패널"
@@ -31323,6 +31326,7 @@ msgid "workspace.agentCommentComposer.sending"
 msgstr "보내는 중…"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.startNewSession"
 msgstr "새 세션 시작"
@@ -34648,6 +34652,11 @@ msgstr "{workingLabel} 에이전트가 풀 리퀘스트를 만들고 있습니�
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.draft"
 msgstr "초안"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.newSessionPlacementLabel"
+msgstr "새 세션을 열 위치"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx

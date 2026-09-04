@@ -31263,6 +31263,7 @@ msgid "workspace.addTabMenu.terminal"
 msgstr "Terminal"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.activeSessions"
 msgstr "Sesi aktif"
@@ -31298,6 +31299,7 @@ msgid "workspace.agentCommentComposer.placementNewTabAria"
 msgstr "Buka di tab baru"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementNewTabTitle"
 msgstr "Tab baru"
@@ -31313,6 +31315,7 @@ msgid "workspace.agentCommentComposer.placementSplitAria"
 msgstr "Buka di panel terbagi"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementSplitTitle"
 msgstr "Panel terbagi"
@@ -31323,6 +31326,7 @@ msgid "workspace.agentCommentComposer.sending"
 msgstr "Mengirim…"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.startNewSession"
 msgstr "Mulai sesi baru"
@@ -34648,6 +34652,11 @@ msgstr "{workingLabel} sedang membuat pull request"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.draft"
 msgstr "Draf"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.newSessionPlacementLabel"
+msgstr "Buka sesi baru di"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx

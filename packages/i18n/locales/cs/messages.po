@@ -31263,6 +31263,7 @@ msgid "workspace.addTabMenu.terminal"
 msgstr "Terminál"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.activeSessions"
 msgstr "Aktivní relace"
@@ -31298,6 +31299,7 @@ msgid "workspace.agentCommentComposer.placementNewTabAria"
 msgstr "Otevřít na nové kartě"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementNewTabTitle"
 msgstr "Nová karta"
@@ -31313,6 +31315,7 @@ msgid "workspace.agentCommentComposer.placementSplitAria"
 msgstr "Otevřít v rozděleném panelu"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPlacementToggle/AgentPlacementToggle.tsx
 msgid "workspace.agentCommentComposer.placementSplitTitle"
 msgstr "Rozdělený panel"
@@ -31323,6 +31326,7 @@ msgid "workspace.agentCommentComposer.sending"
 msgstr "Odesílám…"
 
 #. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/AgentCommentComposer/components/AgentPickerSelect/AgentPickerSelect.tsx
 msgid "workspace.agentCommentComposer.startNewSession"
 msgstr "Spustit novou relaci"
@@ -34648,6 +34652,11 @@ msgstr "{workingLabel} vytváří pull request"
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
 msgid "workspace.shipControl.draft"
 msgstr "Návrh"
+
+#. js-lingui-explicit-id
+#: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
+msgid "workspace.shipControl.newSessionPlacementLabel"
+msgstr "Otevřít novou relaci v"
 
 #. js-lingui-explicit-id
 #: ../../apps/desktop/src/renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/ChangesControl/components/ShipControl/ShipControl.tsx
