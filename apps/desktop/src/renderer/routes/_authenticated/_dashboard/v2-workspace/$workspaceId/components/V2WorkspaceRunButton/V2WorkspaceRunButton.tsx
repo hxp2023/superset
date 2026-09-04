@@ -8,7 +8,7 @@ import {
 } from "@superset/ui/dropdown-menu";
 import { cn } from "@superset/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronDown, Play, Settings, Square, X } from "lucide-react";
+import { ChevronDown, Loader2, Play, Settings, Square, X } from "lucide-react";
 import { useCallback } from "react";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { useSetSettingsSearchQuery } from "renderer/stores/settings-state";
@@ -25,6 +25,14 @@ interface V2WorkspaceRunButtonProps {
 	onForceStop: () => void | Promise<void>;
 }
 
+/**
+ * Top-bar Run control: one split pill like its neighbours (the Changes
+ * control, Background terminals) — a bordered `bg-muted/30` shell with a
+ * hairline divider between the action face and the chevron, `text-xs`
+ * faces, `hover:bg-accent/60`. The face is Run / Stop / Set Run, tinted
+ * emerald while the command runs the way an open PR badge is; the chevron
+ * holds Force Stop and Configure.
+ */
 export function V2WorkspaceRunButton({
 	projectId,
 	definition,
@@ -67,10 +75,40 @@ export function V2WorkspaceRunButton({
 		: hasRunCommand
 			? t({ id: "workspace.runButton.run", message: "Run" })
 			: t({ id: "workspace.runButton.setRun", message: "Set Run" });
-	const Icon = isRunning ? Square : hasRunCommand ? Play : Settings;
+	const Icon = isPending
+		? Loader2
+		: isRunning
+			? Square
+			: hasRunCommand
+				? Play
+				: Settings;
+
+	// Same tint recipe as the PR badge's "open" state: fill on the shell,
+	// stronger fill on hover, the divider in the same hue.
+	const tint = isRunning
+		? {
+				container: "border-emerald-500/30 bg-emerald-500/10",
+				face: "text-emerald-600 [.dark_&]:text-[#34d399]",
+				hover: "hover:bg-emerald-500/15",
+				divider: "bg-emerald-500/30",
+			}
+		: {
+				container: "border-border/60 bg-muted/30",
+				face: hasRunCommand
+					? "text-foreground"
+					: "text-muted-foreground hover:text-foreground",
+				hover: "hover:bg-accent/60",
+				divider: "bg-border/60",
+			};
 
 	return (
-		<div className="flex shrink-0 items-center no-drag">
+		<div
+			className={cn(
+				"flex h-7 shrink-0 items-stretch overflow-hidden rounded-md border no-drag",
+				tint.container,
+			)}
+			aria-busy={isPending}
+		>
 			<button
 				type="button"
 				onClick={() => {
@@ -82,14 +120,9 @@ export function V2WorkspaceRunButton({
 				}}
 				disabled={isPending}
 				className={cn(
-					"group flex h-6 items-center gap-1.5 rounded-l-md border border-r-0 border-border/50 bg-transparent px-2 text-xs font-medium text-foreground transition-colors",
-					"hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-					isPending && "pointer-events-none opacity-50",
-					isRunning
-						? "border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]"
-						: hasRunCommand
-							? "text-foreground"
-							: "text-muted-foreground/80 hover:text-foreground",
+					"flex h-full items-center gap-1.5 px-2 text-xs font-medium outline-none transition-colors disabled:opacity-50",
+					tint.face,
+					tint.hover,
 				)}
 				aria-label={
 					isRunning
@@ -108,7 +141,9 @@ export function V2WorkspaceRunButton({
 								})
 				}
 			>
-				<Icon className="size-3 shrink-0" />
+				<Icon
+					className={cn("size-3.5 shrink-0", isPending && "animate-spin")}
+				/>
 				<span>{label}</span>
 				{hotkeyText && hotkeyText !== "Unassigned" && (
 					<span className="hidden text-[10px] tracking-wide text-muted-foreground/60 sm:inline">
@@ -117,41 +152,39 @@ export function V2WorkspaceRunButton({
 				)}
 			</button>
 
+			<div className={cn("h-full w-px", tint.divider)} />
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<button
 						type="button"
 						disabled={isPending}
 						className={cn(
-							"flex size-6 items-center justify-center rounded-r-md border border-border/50 bg-transparent text-muted-foreground transition-colors",
-							"hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-							isPending && "pointer-events-none opacity-50",
-							isRunning &&
-								"border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]",
+							"flex h-full items-center px-1 outline-none transition-colors disabled:opacity-50",
+							tint.hover,
 						)}
 						aria-label={t({
 							id: "workspace.runButton.optionsAria",
 							message: "Workspace run options",
 						})}
 					>
-						<ChevronDown className="size-3" />
+						<ChevronDown className="size-3 text-muted-foreground" />
 					</button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start" className="w-44">
+				<DropdownMenuContent align="end" className="w-44">
 					{canForceStop && (
 						<>
 							<DropdownMenuItem
 								onClick={() => void onForceStop()}
-								className="text-destructive focus:text-destructive"
+								className="text-xs text-destructive focus:text-destructive"
 							>
-								<X className="mr-2 size-4 text-destructive" />
+								<X className="size-3.5 text-destructive" />
 								<Trans id="workspace.runButton.forceStop">Force Stop</Trans>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 						</>
 					)}
-					<DropdownMenuItem onClick={handleConfigureClick}>
-						<Settings className="mr-2 size-4" />
+					<DropdownMenuItem onClick={handleConfigureClick} className="text-xs">
+						<Settings className="size-3.5" />
 						{definition?.source === "terminal-preset"
 							? t({
 									id: "workspace.runButton.editRunScript",
