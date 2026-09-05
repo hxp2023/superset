@@ -140,6 +140,10 @@ msgstr "{0, plural, one {파일 #개} other {파일 #개}}"
 msgid "{0, plural, one {# File} other {# Files}}"
 msgstr "{0, plural, one {파일 #개} other {파일 #개}}"
 
+#. placeholder {0}: projects.length
+msgid "{0, plural, one {# hidden project} other {# hidden projects}}"
+msgstr "{0, plural, one {숨긴 프로젝트 #개} other {숨긴 프로젝트 #개}}"
+
 #. placeholder {0}: result.imported
 msgid "{0, plural, one {# history item} other {# history items}}"
 msgstr "{0, plural, one {기록 #개} other {기록 #개}}"
@@ -155,6 +159,10 @@ msgstr "{0, plural, one {#개 통과} other {#개 통과}}"
 #. placeholder {0}: selectedProjects.length
 msgid "{0, plural, one {# project selected.} other {# projects selected.}}"
 msgstr "{0, plural, one {프로젝트 #개를 선택했습니다.} other {프로젝트 #개를 선택했습니다.}}"
+
+#. placeholder {0}: projectFilters.length
+msgid "{0, plural, one {# project} other {# projects}}"
+msgstr "{0, plural, one {프로젝트 #개} other {프로젝트 #개}}"
 
 #. placeholder {0}: repositories.length
 #. placeholder {0}: selectedProjects.length
@@ -269,6 +277,10 @@ msgstr "{0} – {1} · 로컬 세션 로그 기반 API 요금 추정치"
 msgid "{0} — try the Superset tray menu > Host Service > Restart."
 msgstr "{0} — Superset 트레이 메뉴 > Host Service > Restart를 사용해 보세요."
 
+#. placeholder {0}: creator.name
+msgid "{0} (you)"
+msgstr "{0} (나)"
+
 #. placeholder {0}: actor.login
 msgid "{0} {actorVerb}"
 msgstr "{0} {actorVerb}"
@@ -297,7 +309,7 @@ msgstr "{0} 비활성화됨"
 
 #. placeholder {0}: displayName(variables.name)
 #. placeholder {0}: plugin.interface.displayName
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: skill.name
 msgid "{0} enabled"
 msgstr "{0} 활성화됨"
 
@@ -340,6 +352,11 @@ msgstr "{0}은(는) Free 플랜을 사용 중입니다. Superset Mobile은 Pro �
 #. placeholder {2}: hostCompatibility.minVersion
 msgid "{0} is running host service {1} — this app needs {2} or newer. Update Superset on that machine."
 msgstr "{0}에서 호스트 서비스 {1}을(를) 실행 중입니다 — 이 앱에는 {2} 이상이 필요합니다. 해당 컴퓨터에서 Superset을 업데이트하세요."
+
+#. placeholder {0}: displayName(name)
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} is set up on this machine, but not on your account"
+msgstr "{0}이(가) 이 컴퓨터에는 설정되어 있지만 계정에는 없습니다"
 
 #. placeholder {0}: v.toLocaleString()
 msgid "{0} mo"
@@ -410,6 +427,10 @@ msgstr "최근 30일간 토큰 {0}개. <0>{handle}</0>(으)로 게시 중."
 #. placeholder {0}: displayName(variables.name)
 msgid "{0} uninstalled"
 msgstr "{0} 제거됨"
+
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} updated"
+msgstr "{0} 업데이트됨"
 
 #. placeholder {0}: file.path
 msgid "{0} was deleted in this change."
@@ -618,6 +639,9 @@ msgstr "{level} · {gate} · {statusLabel}"
 msgid "{level} {gate}: {statusLabel}"
 msgstr "{level} {gate}: {statusLabel}"
 
+msgid "{localHostName} (this device)"
+msgstr "{localHostName} (이 기기)"
+
 #. placeholder {0}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} result for &ldquo;{query}&rdquo; </>
 #. placeholder {1}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} results for &ldquo;{query}&rdquo; </>
 msgid "{matchCount, plural, one {{0}} other {{1}}}"
@@ -644,11 +668,26 @@ msgstr "{months}개월 전"
 msgid "{myFailedCount} of your automations failed their last run"
 msgstr "내 자동화 {myFailedCount}개가 마지막 실행에 실패했습니다"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceBuiltinRemove"
+msgstr "{name}은(는) 기본 제공이라 제거할 수 없습니다"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceReserved"
+msgstr "{name}은(는) 기본 제공이라 교체할 수 없습니다"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotAdded"
+msgstr "{name}이(가) 추가되지 않았습니다"
+
 msgid "{noun, select, person {Specify at least one person, or choose {choice}.} sender {Specify at least one sender, or choose {choice}.} other {Specify at least one entry, or choose {choice}.}}"
 msgstr "{noun, select, person {사람을 한 명 이상 지정하거나 {choice} 옵션을 선택하세요.} sender {발신자를 한 명 이상 지정하거나 {choice} 옵션을 선택하세요.} other {항목을 하나 이상 지정하거나 {choice} 옵션을 선택하세요.}}"
 
 msgid "{noun, select, repository {Specify at least one repository.} channel {Specify at least one channel.} reaction {Specify at least one reaction.} dataSource {Specify at least one data source.} team {Specify at least one team.} project {Specify at least one project.} calendar {Specify at least one calendar.} other {Specify at least one entry.}}"
 msgstr "{noun, select, repository {리포지토리를 하나 이상 지정하세요.} channel {채널을 하나 이상 지정하세요.} reaction {리액션을 하나 이상 지정하세요.} dataSource {데이터 소스를 하나 이상 지정하세요.} team {팀을 하나 이상 지정하세요.} project {프로젝트를 하나 이상 지정하세요.} calendar {캘린더를 하나 이상 지정하세요.} other {항목을 하나 이상 지정하세요.}}"
+
+msgid "{offlineHostCount, plural, one {# device is offline and keeps its copy.} other {# devices are offline and keep their copy.}}"
+msgstr "{offlineHostCount, plural, one {기기 #대가 오프라인 상태이며 사본을 그대로 유지합니다.} other {기기 #대가 오프라인 상태이며 사본을 그대로 유지합니다.}}"
 
 msgid "{openCount} open"
 msgstr "{openCount}개 열림"
@@ -687,6 +726,14 @@ msgstr "{provider} 로고"
 
 msgid "{readPercent}% read"
 msgstr "{readPercent}% 읽음"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.ambiguousPlugin"
+msgstr "{reason}"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.dispatchFailed"
+msgstr "{reason}"
 
 msgid "{received} of {total}"
 msgstr "{total} 중 {received}"
@@ -773,6 +820,9 @@ msgstr "{workspaceName}: 호스트를 사용할 수 없습니다"
 
 msgid "{workspaceName}: teardown failed"
 msgstr "{workspaceName}: 정리에 실패했습니다"
+
+msgid "{worktreeCount, plural, one {This removes the project and its # workspace from every reachable device, and deletes that worktree from disk.} other {This removes the project and its # workspaces from every reachable device, and deletes their worktrees from disk.}}"
+msgstr "{worktreeCount, plural, one {연결 가능한 모든 기기에서 프로젝트와 워크스페이스 #개를 제거하고, 해당 worktree를 디스크에서 삭제합니다.} other {연결 가능한 모든 기기에서 프로젝트와 워크스페이스 #개를 제거하고, 해당 worktree를 디스크에서 삭제합니다.}}"
 
 msgid "{years}y ago"
 msgstr "{years}년 전"
@@ -1070,6 +1120,13 @@ msgstr "이 자동화의 실행이 이미 진행 중입니다."
 msgid "A selection of integrations curated by our team."
 msgstr "저희 팀이 엄선한 연동 모음입니다."
 
+#. placeholder {0}: AGENT_LABELS[agent]
+msgid "A separate pay-per-token profile. The key stays in the {0} CLI."
+msgstr "토큰 단위로 과금되는 별도 프로필입니다. 키는 {0} CLI 안에 남습니다."
+
+msgid "A separate profile that shares your skills, plugins, MCP servers, and settings."
+msgstr "스킬, 플러그인, MCP 서버, 설정을 공유하는 별도 프로필입니다."
+
 msgid "a teammate"
 msgstr "팀원"
 
@@ -1117,6 +1174,10 @@ msgstr "아코디언"
 
 msgid "Account"
 msgstr "계정"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotResolvable"
+msgstr "계정 설치는 자체 매니페스트만 해석하므로 {marketplace}의 {plugin}은(는) 아직 계정에 설치할 수 없습니다. 이 컴퓨터에는 설치된 상태로 남습니다."
 
 msgid "Account is pending deletion."
 msgstr "계정이 삭제 대기 중입니다."
@@ -1248,6 +1309,9 @@ msgstr "사이드바 메뉴에서 하나 추가해 시작하세요."
 msgid "Add photos or files"
 msgstr "사진 또는 파일 추가"
 
+msgid "Add plugin"
+msgstr "플러그인 추가"
+
 msgid "Add project"
 msgstr "프로젝트 추가"
 
@@ -1302,9 +1366,6 @@ msgstr "프롬프트와 함께 실행할 때만 추가됩니다 — 예: <0>--</
 msgid "Adding members will increase your subscription cost, prorated to your billing cycle."
 msgstr "멤버를 추가하면 결제 주기에 비례해 구독 요금이 늘어납니다."
 
-msgid "Additional env vars"
-msgstr "추가 환경 변수"
-
 msgid "Address Comments with Agent"
 msgstr "에이전트로 코멘트 처리"
 
@@ -1326,11 +1387,11 @@ msgstr "관리자는 소유자를 변경할 수 없습니다"
 msgid "Admins cannot promote members to owner"
 msgstr "관리자는 멤버를 소유자로 승격할 수 없습니다"
 
-msgid "Advanced"
-msgstr "고급"
-
 msgid "Advanced options"
 msgstr "고급 옵션"
+
+msgid "After"
+msgstr "변경 후"
 
 msgid "Against base"
 msgstr "기준 대비"
@@ -1676,18 +1737,6 @@ msgstr "다른 기기"
 msgid "Answered"
 msgstr "응답함"
 
-msgid "Anthropic API key cleared"
-msgstr "Anthropic API 키를 지웠습니다"
-
-msgid "Anthropic API key updated"
-msgstr "Anthropic API 키를 업데이트했습니다"
-
-msgid "Anthropic settings updated"
-msgstr "Anthropic 설정을 업데이트했습니다"
-
-msgid "Anthropic usually returns a full callback URL. Pasting either format works."
-msgstr "Anthropic은 보통 전체 콜백 URL을 반환합니다. 두 형식 모두 붙여넣을 수 있습니다."
-
 msgid "Any calendar"
 msgstr "모든 캘린더"
 
@@ -1751,6 +1800,9 @@ msgstr "모든 내용"
 msgid "AP"
 msgstr "AP"
 
+msgid "API"
+msgstr "API"
+
 msgid "API key"
 msgstr "API 키"
 
@@ -1798,12 +1850,6 @@ msgstr "적용"
 
 msgid "Approve"
 msgstr "승인"
-
-msgid "Approve access in your browser, then paste the callback URL or `code#state` here."
-msgstr "브라우저에서 접근을 승인한 다음, 콜백 URL 또는 `code#state`를 여기에 붙여넣으세요."
-
-msgid "Approve access in your browser. If the callback does not finish, paste the redirected callback URL below."
-msgstr "브라우저에서 접근을 승인하세요. 콜백이 완료되지 않으면 리디렉션된 콜백 URL을 아래에 붙여넣으세요."
 
 msgid "Approved"
 msgstr "승인됨"
@@ -1934,8 +1980,8 @@ msgstr "감사 로그"
 msgid "Aug 2026"
 msgstr "2026년 8월"
 
-msgid "Auth token"
-msgstr "인증 토큰"
+msgid "Authenticate your {displayName} account"
+msgstr "{displayName} 계정 인증"
 
 msgid "Authentication"
 msgstr "인증"
@@ -1951,9 +1997,6 @@ msgstr "작성자"
 
 msgid "Author: {label}"
 msgstr "작성자: {label}"
-
-msgid "Authorization code"
-msgstr "인증 코드"
 
 msgid "Authorization failed"
 msgstr "인증에 실패했습니다"
@@ -2154,9 +2197,6 @@ msgstr "{selectedHostLabel}에서 새 worktree를 만들 기본 디렉터리입�
 msgid "Base directory for new worktrees on {selectedHostName}."
 msgstr "{selectedHostName}에서 새 worktree를 만들 기본 디렉터리입니다."
 
-msgid "Base URL"
-msgstr "기본 URL"
-
 #. placeholder {0}: draft.linkedPR.prNumber
 #. placeholder {0}: linkedPR.prNumber
 msgid "based off PR #{0}"
@@ -2166,6 +2206,9 @@ msgstr "PR #{0} 기반"
 #. placeholder {1}: preview.providers.join(" and ")
 msgid "Based on {0} tokens in the last 30 days, counting {1}."
 msgstr "최근 30일간 토큰 {0}개 기준이며, {1}을(를) 집계했습니다."
+
+msgid "Before"
+msgstr "변경 전"
 
 msgid "Behavior"
 msgstr "동작 방식"
@@ -2184,6 +2227,9 @@ msgstr "그 너머: F5는 단기 전망이 아닙니다"
 
 msgid "Billed monthly"
 msgstr "월간 결제"
+
+msgid "Billed per token."
+msgstr "토큰 단위 과금."
 
 msgid "Billed yearly"
 msgstr "연간 결제"
@@ -2451,9 +2497,6 @@ msgstr "캘린더"
 msgid "Calendar and Gmail triggers in this organization will stop firing until an account is connected again."
 msgstr "계정을 다시 연결할 때까지 이 조직의 Calendar 및 Gmail 트리거가 실행되지 않습니다."
 
-msgid "Callback URL (optional)"
-msgstr "콜백 URL (선택)"
-
 msgid "Camera access is not allowed"
 msgstr "카메라 접근이 허용되지 않았습니다"
 
@@ -2539,6 +2582,9 @@ msgstr "현금 — 총 잔액 (Mercury)"
 msgid "Cash ÷ net burn at the current run rate"
 msgstr "현재 실행률 기준 현금 ÷ 순 소진액"
 
+msgid "Category"
+msgstr "카테고리"
+
 msgid "Certificate Authority Invalid"
 msgstr "인증 기관이 올바르지 않음"
 
@@ -2608,9 +2654,6 @@ msgstr "변경 요청됨"
 
 msgid "Changes saved"
 msgstr "변경 사항이 저장되었습니다"
-
-msgid "Changes take effect in new agent sessions."
-msgstr "변경 사항은 새 에이전트 세션부터 적용됩니다."
 
 msgid "Changing..."
 msgstr "변경하는 중..."
@@ -2773,9 +2816,6 @@ msgstr "오래된 TODO 정리…"
 
 msgid "Cleaner, denser sidebar"
 msgstr "더 깔끔하고 촘촘한 사이드바"
-
-msgid "Clear"
-msgstr "지우기"
 
 msgid "Clear browsing data"
 msgstr "인터넷 사용 기록 삭제"
@@ -3282,9 +3322,6 @@ msgstr "Google 계정을 연결하세요. 캘린더와 메일함은 읽기 전�
 msgid "Connect a microphone to use dictation"
 msgstr "받아쓰기를 사용하려면 마이크를 연결하세요"
 
-msgid "Connect Anthropic"
-msgstr "Anthropic 연결"
-
 msgid "Connect any AI agent to Superset."
 msgstr "어떤 AI 에이전트든 Superset에 연결하세요."
 
@@ -3314,9 +3351,6 @@ msgstr "Notion 연결"
 
 msgid "Connect Notion to run automations when rows change in a data source or someone comments on a page."
 msgstr "Notion을 연결하면 데이터 소스의 행이 바뀌거나 누군가 페이지에 댓글을 달 때 자동화를 실행할 수 있습니다."
-
-msgid "Connect OpenAI"
-msgstr "OpenAI 연결"
 
 msgid "Connect repos and sync pull requests."
 msgstr "리포지토리를 연결하고 풀 리퀘스트를 동기화합니다."
@@ -3351,26 +3385,18 @@ msgstr "Slack 워크스페이스를 연결해 대화에서 바로 작업을 관�
 msgid "Connected"
 msgstr "연결됨"
 
+#. placeholder {0}: formatDate(new Date(connection.createdAt))
+msgid "connected {0}"
+msgstr "{0}에 연결됨"
+
 msgid "Connected as"
 msgstr "연결 계정"
-
-msgid "Connected in Superset"
-msgstr "Superset에서 연결됨"
 
 msgid "Connected to"
 msgstr "연결 대상"
 
 msgid "Connected to {connectedOrgName}"
 msgstr "{connectedOrgName}에 연결됨"
-
-msgid "Connected via ChatGPT"
-msgstr "ChatGPT로 연결됨"
-
-msgid "Connected via Claude"
-msgstr "Claude로 연결됨"
-
-msgid "Connected with API key"
-msgstr "API 키로 연결됨"
 
 msgid "Connected, but Microsoft Graph refused the notification subscriptions."
 msgstr "연결되었지만 Microsoft Graph가 알림 구독을 거부했습니다."
@@ -3390,9 +3416,6 @@ msgstr "데스크톱에 연결하는 중…"
 msgid "Connecting to the workspace"
 msgstr "워크스페이스에 연결하는 중"
 
-msgid "Connecting..."
-msgstr "연결 중..."
-
 msgid "Connecting…"
 msgstr "연결 중…"
 
@@ -3405,11 +3428,18 @@ msgstr "연결이 닫힘"
 msgid "Connection failed."
 msgstr "연결에 실패했습니다."
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.connectionNotFound"
+msgstr "연결을 찾을 수 없습니다"
+
 msgid "Connection Refused"
 msgstr "연결이 거부됨"
 
 msgid "Connection Timed Out"
 msgstr "연결 시간 초과"
+
+msgid "Connections"
+msgstr "연결"
 
 msgid "Consent finished but Microsoft did not issue a token for the tenant."
 msgstr "동의는 완료되었지만 Microsoft가 테넌트용 토큰을 발급하지 않았습니다."
@@ -3715,6 +3745,9 @@ msgstr "환경을 불러오지 못했습니다"
 msgid "Could not load environments."
 msgstr "환경을 불러오지 못했습니다."
 
+msgid "Could not load plugins. Check your connection and try again."
+msgstr "플러그인을 불러오지 못했습니다. 연결을 확인하고 다시 시도하세요."
+
 msgid "Could not load presets from the host"
 msgstr "호스트에서 프리셋을 불러올 수 없습니다"
 
@@ -3807,6 +3840,10 @@ msgstr "스킬을 업데이트할 수 없습니다"
 
 msgid "Could not update the branch"
 msgstr "브랜치를 업데이트할 수 없습니다"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.credentialUnverified"
+msgstr "자격 증명을 확인하지 못했습니다: {reason}"
 
 msgid "Could not watch this page"
 msgstr "이 페이지를 감시할 수 없습니다"
@@ -4086,6 +4123,9 @@ msgstr "생성됨 <0>· 7일</0>"
 msgid "Created 1 folder in {where}"
 msgstr "{where}에 폴더 1개를 만들었습니다"
 
+msgid "Created by"
+msgstr "만든 사람"
+
 msgid "Created team \"{trimmedName}\""
 msgstr "\"{trimmedName}\" 팀을 만들었습니다"
 
@@ -4290,6 +4330,9 @@ msgstr "기본값({defaultWorktreePath})"
 msgid "default browser"
 msgstr "기본 브라우저"
 
+msgid "Default Browser"
+msgstr "기본 브라우저"
+
 msgid "Default effort"
 msgstr "기본 강도"
 
@@ -4398,6 +4441,9 @@ msgstr "페이지 삭제"
 
 msgid "Delete project"
 msgstr "프로젝트 삭제"
+
+msgid "Delete Project…"
+msgstr "프로젝트 삭제…"
 
 msgid "Delete script"
 msgstr "스크립트 삭제"
@@ -4546,9 +4592,6 @@ msgstr "분리됨"
 msgid "Details"
 msgstr "세부 정보"
 
-msgid "Detected in your agent configs"
-msgstr "에이전트 설정에서 감지됨"
-
 msgid "Dev"
 msgstr "개발"
 
@@ -4563,9 +4606,6 @@ msgstr "개발자"
 
 msgid "Developers"
 msgstr "개발자"
-
-msgid "Device"
-msgstr "기기"
 
 msgid "Device: {selectedLabel}"
 msgstr "기기: {selectedLabel}"
@@ -4611,9 +4651,6 @@ msgstr "스킬 비활성화"
 
 msgid "Disabled"
 msgstr "비활성화됨"
-
-msgid "Disabled — kept installed, but Superset writes nothing into your agent configs."
-msgstr "비활성화됨 — 설치는 유지되지만 Superset이 에이전트 설정에 아무것도 쓰지 않습니다."
 
 msgid "Disabled toggle"
 msgstr "비활성화된 토글"
@@ -4666,6 +4703,10 @@ msgstr "버렸습니다 — 다시 묻지 않습니다"
 
 msgid "Disconnect"
 msgstr "연결 해제"
+
+#. placeholder {0}: connection.account ?? displayName
+msgid "Disconnect {0}"
+msgstr "{0} 연결 해제"
 
 msgid "Disconnect GitHub?"
 msgstr "GitHub 연결을 해제할까요?"
@@ -4977,6 +5018,9 @@ msgstr "파일 수정 중..."
 msgid "editor"
 msgstr "에디터"
 
+msgid "Editor"
+msgstr "에디터"
+
 msgid "Editor & Workflow"
 msgstr "편집기 및 워크플로"
 
@@ -5041,9 +5085,6 @@ msgstr "릴레이 접근 활성화…"
 msgid "Enable skill"
 msgstr "스킬 활성화"
 
-msgid "Enabled — servers are written into your agent configs."
-msgstr "활성화됨 — 서버가 에이전트 설정에 기록됩니다."
-
 msgid "Engineering deep-dives and launches."
 msgstr "엔지니어링 심층 글과 출시 소식."
 
@@ -5076,12 +5117,6 @@ msgstr "엔터프라이즈"
 
 msgid "Enterprise ARR by account"
 msgstr "계정별 엔터프라이즈 ARR"
-
-msgid "Entries you added yourself stay active in your agent config."
-msgstr "직접 추가한 항목은 에이전트 설정에서 계속 활성 상태로 유지됩니다."
-
-msgid "Entries you added yourself stay in your agent config."
-msgstr "직접 추가한 항목은 에이전트 설정에 그대로 남습니다."
 
 msgid "Environment"
 msgstr "환경"
@@ -5340,9 +5375,6 @@ msgstr "업데이트를 확인하지 못했습니다: {message}"
 
 msgid "Failed to check for updates. Please try again later."
 msgstr "업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요."
-
-msgid "Failed to clear"
-msgstr "지우지 못했습니다"
 
 #. placeholder {0}: errorMessage(error, "Unknown error")
 msgid "Failed to clear agent status: {0}"
@@ -5854,6 +5886,9 @@ msgstr "에이전트 필터..."
 msgid "Filter by @{normalizedSearch}"
 msgstr "@{normalizedSearch}(으)로 필터링"
 
+msgid "Filter by device"
+msgstr "기기별 필터"
+
 msgid "Filter by reviews"
 msgstr "리뷰로 필터링"
 
@@ -5916,6 +5951,9 @@ msgstr "최근 변경되었지만 커버리지가 낮은 코드를 찾아 제대
 
 msgid "Find stale TODO/FIXME comments and resolve the quick ones."
 msgstr "오래된 TODO/FIXME 주석을 찾아 간단한 것부터 해결합니다."
+
+msgid "Finder"
+msgstr "Finder"
 
 msgid "Finish review"
 msgstr "리뷰 마치기"
@@ -6379,6 +6417,10 @@ msgstr "도움말 및 문서"
 msgid "Henry Ford"
 msgstr "Henry Ford"
 
+#. placeholder {0}: project.name
+msgid "Hid \"{0}\" from the sidebar"
+msgstr "\"{0}\"을(를) 사이드바에서 숨겼습니다"
+
 msgid "Hidden"
 msgstr "숨김"
 
@@ -6726,6 +6768,9 @@ msgstr "차이 뷰어 개선"
 msgid "in a terminal on this host."
 msgstr "(이 호스트의 터미널에서)"
 
+msgid "In all projects"
+msgstr "모든 프로젝트"
+
 msgid "In just a few months, <0>tens of thousands of engineers</0> run Superset as their primary IDE, at companies like Wix, DoorDash, and Netflix."
 msgstr "몇 달 만에 <0>수만 명의 엔지니어</0>가 Wix, DoorDash, Netflix 같은 회사에서 Superset을 주력 IDE로 사용하고 있습니다."
 
@@ -6742,6 +6787,9 @@ msgid "In the Superset desktop app, open Settings → Remote Access and turn on 
 msgstr "Superset 데스크톱 앱에서 설정 → 원격 액세스을 열고 “릴레이를 통해 이 기기에 원격 액세스 허용”을 켜세요."
 
 msgid "in-app browser"
+msgstr "앱 내 브라우저"
+
+msgid "In-App Browser"
 msgstr "앱 내 브라우저"
 
 msgid "In-app PR merge"
@@ -6769,6 +6817,9 @@ msgid "Industry median, our estimate. Dashed is forecast. The first F4 teams cro
 msgstr "업계 중앙값, 자체 추정치. 점선은 전망입니다. 최초의 F4 팀은 이보다 먼저 관문을 넘습니다."
 
 msgid "Info"
+msgstr "정보"
+
+msgid "Information"
 msgstr "정보"
 
 msgid "Initialize Git"
@@ -6817,9 +6868,6 @@ msgstr "병렬 코딩 에이전트와 개발자 생산성에 대한 Superset 팀
 msgid "Inspecting {0}"
 msgstr "{0} 검사 중"
 
-msgid "Install"
-msgstr "설치"
-
 msgid "Install & restart"
 msgstr "설치 후 재시작"
 
@@ -6847,9 +6895,9 @@ msgstr "모든 워크스페이스의 MCP 서버를 한곳에서 설치하고, �
 msgid "Installed"
 msgstr "설치됨"
 
-#. placeholder {0}: record.installedAt.slice(0, 10)
-msgid "installed {0}"
-msgstr "{0}에 설치됨"
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceHasInstalls"
+msgstr "설치된 플러그인이 {name}에서 왔습니다: {plugins}. 먼저 제거하세요."
 
 msgid "Installing..."
 msgstr "설치 중..."
@@ -6956,8 +7004,8 @@ msgstr "데이터는 안전한가요?"
 msgid "is now signed in here."
 msgstr "이(가) 여기에 로그인되었습니다."
 
-msgid "is signed in and will show its quota here."
-msgstr "이(가) 로그인되었으며 여기에 할당량이 표시됩니다."
+msgid "is signed in."
+msgstr "이(가) 로그인되었습니다."
 
 msgid "Is Superset free to use?"
 msgstr "Superset은 무료로 쓸 수 있나요?"
@@ -7296,9 +7344,6 @@ msgstr "팀 나가기"
 msgid "Leave the leaderboard?"
 msgstr "리더보드에서 나갈까요?"
 
-msgid "Leave this empty if browser login finishes on its own."
-msgstr "브라우저 로그인이 자체적으로 완료되면 비워 두세요."
-
 msgid "Leaving organization..."
 msgstr "조직에서 나가는 중..."
 
@@ -7319,6 +7364,9 @@ msgstr "1분 이내"
 
 msgid "Letter spacing (px)"
 msgstr "자간(px)"
+
+msgid "License"
+msgstr "라이선스"
 
 msgid "Lifecycle scripts"
 msgstr "라이프사이클 스크립트"
@@ -7683,9 +7731,6 @@ msgstr "플랜 관리"
 msgid "Manage plugins"
 msgstr "플러그인 관리"
 
-msgid "Manage provider accounts, API keys, and overrides. Connecting Anthropic or OpenAI below is also what powers automatic workspace naming — without one connected, new workspaces fall back to a name derived from your prompt."
-msgstr "제공업체 계정, API 키, 재정의 설정을 관리합니다. 아래에서 Anthropic이나 OpenAI를 연결하면 워크스페이스 이름도 자동으로 지어집니다. 연결하지 않으면 새 워크스페이스는 프롬프트에서 가져온 이름을 사용합니다."
-
 msgid "Manage sessions"
 msgstr "세션 관리"
 
@@ -7780,9 +7825,6 @@ msgid "MCP manager"
 msgstr "MCP 관리자"
 
 msgid "MCP Server"
-msgstr "MCP 서버"
-
-msgid "MCP servers"
 msgstr "MCP 서버"
 
 msgid "Mean"
@@ -7944,6 +7986,10 @@ msgstr "필수 인증 매개변수가 없습니다."
 
 msgid "Missing required fields."
 msgstr "필수 항목이 비어 있습니다."
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.missingInput"
+msgstr "필수 입력 {input}이(가) 없습니다"
 
 msgid "Mobile"
 msgstr "모바일"
@@ -8189,6 +8235,9 @@ msgstr "새 자동화"
 
 msgid "New Browser"
 msgstr "새 브라우저"
+
+msgid "New Browser Tab"
+msgstr "새 브라우저 탭"
 
 msgid "New chat"
 msgstr "새 채팅"
@@ -8544,6 +8593,9 @@ msgstr "이슈를 찾을 수 없습니다."
 msgid "No items"
 msgstr "항목 없음"
 
+msgid "No known creators"
+msgstr "알려진 만든 사람이 없습니다"
+
 msgid "No labels"
 msgstr "레이블 없음"
 
@@ -8552,9 +8604,6 @@ msgstr "활성 세션 없음"
 
 msgid "no logins"
 msgstr "로그인 없음"
-
-msgid "no longer in the catalog"
-msgstr "더 이상 카탈로그에 없음"
 
 msgid "No match"
 msgstr "일치 항목 없음"
@@ -8615,6 +8664,9 @@ msgstr "대기 중인 초대가 없습니다"
 
 msgid "No people found."
 msgstr "사용자를 찾을 수 없습니다."
+
+msgid "No plugins available yet."
+msgstr "아직 사용할 수 있는 플러그인이 없습니다."
 
 #. placeholder {0}: search.trim()
 msgid "No plugins match \"{0}\""
@@ -8966,6 +9018,9 @@ msgstr "이제 소프트웨어 공장을 위한 플랫폼을 만들기 위해 �
 msgid "Numbered list"
 msgstr "번호 매기기 목록"
 
+msgid "OAuth 2.0"
+msgstr "OAuth 2.0"
+
 msgid "OAuth by default, API keys for CI"
 msgstr "기본은 OAuth, CI에는 API 키"
 
@@ -9122,6 +9177,10 @@ msgstr "열림"
 msgid "Open {0}"
 msgstr "{0} 열기"
 
+#. placeholder {0}: plugin.interface.displayName
+msgid "Open {0} website"
+msgstr "{0} 웹사이트 열기"
+
 msgid "Open {filePath}"
 msgstr "{filePath} 열기"
 
@@ -9157,9 +9216,6 @@ msgstr "GitHub에서 브랜치 열기"
 
 msgid "Open Browser"
 msgstr "브라우저 열기"
-
-msgid "Open browser again"
-msgstr "브라우저 다시 열기"
 
 msgid "Open changes"
 msgstr "변경 열기"
@@ -9497,12 +9553,6 @@ msgstr "워크스페이스 열기"
 msgid "Open workspace in external app (Cursor, VS Code, etc.)"
 msgstr "외부 앱(Cursor, VS Code 등)에서 워크스페이스를 엽니다"
 
-msgid "OpenAI API key cleared"
-msgstr "OpenAI API 키를 지웠습니다"
-
-msgid "OpenAI API key updated"
-msgstr "OpenAI API 키를 업데이트했습니다"
-
 msgid "Opened"
 msgstr "열림"
 
@@ -9799,12 +9849,6 @@ msgstr "지난 한 주"
 msgid "Paste"
 msgstr "붙여넣기"
 
-msgid "Paste callback URL"
-msgstr "콜백 URL 붙여넣기"
-
-msgid "Paste callback URL or code#state"
-msgstr "콜백 URL 또는 code#state 붙여넣기"
-
 msgid "Paste this into Superset CLI:"
 msgstr "Superset CLI에 붙여 넣으세요:"
 
@@ -10003,6 +10047,14 @@ msgstr "조직을 선택해 주세요"
 msgid "Please try signing in again from the desktop app."
 msgstr "데스크톱 앱에서 다시 로그인해 주세요."
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.noApiKeyAuth"
+msgstr "플러그인 {plugin}은(는) api_key 인증을 사용하지 않습니다"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.notInstalled"
+msgstr "플러그인 {plugin}이(가) 설치되지 않았습니다"
+
 msgid "Plugin marketplace"
 msgstr "플러그인 마켓플레이스"
 
@@ -10100,12 +10152,6 @@ msgstr "접두사"
 
 msgid "Preparing"
 msgstr "준비 중"
-
-msgid "Preparing Anthropic browser login..."
-msgstr "Anthropic 브라우저 로그인을 준비하는 중..."
-
-msgid "Preparing OpenAI browser login..."
-msgstr "OpenAI 브라우저 로그인 준비 중..."
 
 msgid "Preserve commit history"
 msgstr "커밋 기록 유지"
@@ -10366,9 +10412,6 @@ msgstr "속성"
 msgid "Provide either id or slug"
 msgstr "id 또는 슬러그 중 하나를 제공하세요"
 
-msgid "Provided by entries in your own agent config."
-msgstr "직접 작성한 에이전트 설정 항목에서 제공됩니다."
-
 #. placeholder {0}: sourceConfig?.label ?? binding.agentId
 msgid "Provider: {0}"
 msgstr "제공자: {0}"
@@ -10561,8 +10604,8 @@ msgstr "병렬 코딩 에이전트 가이드 읽기"
 msgid "Read the setup guide"
 msgstr "설정 가이드 읽기"
 
-msgid "Reading subscription usage…"
-msgstr "구독 사용량을 읽는 중…"
+msgid "Reading usage…"
+msgstr "사용량 읽는 중…"
 
 msgid "Reading your local usage…"
 msgstr "로컬 사용량을 읽는 중…"
@@ -10685,6 +10728,9 @@ msgstr "지표 새로 고침"
 msgid "Refresh pull requests"
 msgstr "풀 리퀘스트 새로 고침"
 
+msgid "Refreshes when Claude Code next runs."
+msgstr "다음에 Claude Code를 실행하면 갱신됩니다."
+
 msgid "Register any CLI agent alongside the built-ins, each with its own name, icon, and launch command."
 msgstr "기본 제공 에이전트 옆에 어떤 CLI 에이전트든 이름, 아이콘, 실행 명령과 함께 등록하세요."
 
@@ -10739,9 +10785,6 @@ msgstr "원격 액세스"
 msgid "Remote MCP server — connects over HTTP"
 msgstr "원격 MCP 서버 — HTTP로 연결합니다"
 
-msgid "Remote servers sign you in the first time an agent uses them."
-msgstr "원격 서버는 에이전트가 처음 사용할 때 로그인을 요청합니다."
-
 msgid "Remote workspace"
 msgstr "원격 워크스페이스"
 
@@ -10793,9 +10836,6 @@ msgstr "{path} 멘션 제거"
 
 msgid "Remove PR Link"
 msgstr "PR 링크 제거"
-
-msgid "Remove project from sidebar?"
-msgstr "사이드바에서 프로젝트를 제거할까요?"
 
 msgid "Remove script"
 msgstr "스크립트 제거"
@@ -11010,6 +11050,9 @@ msgid "Reset worktree location"
 msgstr "worktree 위치 초기화"
 
 msgid "Reset zoom"
+msgstr "확대/축소 초기화"
+
+msgid "Reset Zoom"
 msgstr "확대/축소 초기화"
 
 msgid "Resets in {countdown} · {absolute}"
@@ -11345,6 +11388,12 @@ msgstr "명령을 실행하고 앱을 탐색합니다."
 msgid "Run History"
 msgstr "실행 기록"
 
+msgid "Run in a terminal on this host; paste your key when asked:"
+msgstr "이 호스트의 터미널에서 실행하고, 요청되면 키를 붙여 넣으세요:"
+
+msgid "Run in a terminal on this host:"
+msgstr "이 호스트의 터미널에서 실행하세요:"
+
 msgid "Run in Workspace"
 msgstr "워크스페이스에서 실행"
 
@@ -11371,9 +11420,6 @@ msgstr "터미널 명령을 실행하고 다른 애플리케이션과 상호작�
 
 msgid "Run the agent in the Workspace Setup terminal once setup finishes instead of starting a second terminal alongside it"
 msgstr "터미널을 하나 더 띄우는 대신, 설정이 끝난 뒤 워크스페이스 설정 터미널에서 에이전트를 실행합니다"
-
-msgid "Run this in any terminal on this host, then finish the sign-in in your browser:"
-msgstr "이 호스트의 아무 터미널에서 다음을 실행한 뒤 브라우저에서 로그인을 마치세요:"
 
 msgid "Run workspace command"
 msgstr "워크스페이스 명령 실행"
@@ -11474,15 +11520,6 @@ msgstr "저장됨"
 #. placeholder {0}: created?.name
 msgid "Saved \"{0}\" as an environment"
 msgstr "\"{0}\"을(를) 환경으로 저장했습니다"
-
-msgid "Saved Anthropic API key"
-msgstr "저장된 Anthropic API 키"
-
-msgid "Saved on blur."
-msgstr "포커스를 벗어나면 저장됩니다."
-
-msgid "Saved OpenAI API key"
-msgstr "저장된 OpenAI API 키"
 
 msgid "Saved to Downloads"
 msgstr "다운로드 폴더에 저장했습니다"
@@ -12260,20 +12297,11 @@ msgstr "로컬 관리자로 로그인 (dev)"
 msgid "Sign in to {0}"
 msgstr "{0}에 로그인"
 
-msgid "Sign in to a second subscription as a separate profile. Your current login is untouched, and the new profile shares your skills, plugins, MCP servers, and settings."
-msgstr "두 번째 구독에 별도 프로필로 로그인하세요. 현재 로그인은 그대로 유지되며, 새 프로필은 스킬, 플러그인, MCP 서버, 설정을 공유합니다."
-
 msgid "Sign in to continue to Superset"
 msgstr "Superset을 계속 사용하려면 로그인하세요"
 
 msgid "Sign in to get started"
 msgstr "로그인하고 시작하세요"
-
-msgid "Sign in with ChatGPT or use an API key."
-msgstr "ChatGPT로 로그인하거나 API 키를 사용하세요."
-
-msgid "Sign in with Claude or use an API key."
-msgstr "Claude로 로그인하거나 API 키를 사용하세요."
 
 msgid "Sign in with email"
 msgstr "이메일로 로그인"
@@ -12838,6 +12866,9 @@ msgstr "구독하기"
 msgid "Subscribe on YouTube"
 msgstr "YouTube에서 구독하기"
 
+msgid "Subscription"
+msgstr "구독"
+
 msgid "Success"
 msgstr "성공"
 
@@ -13277,6 +13308,9 @@ msgstr "터미널 파일 링크"
 msgid "Terminal font size"
 msgstr "터미널 글꼴 크기"
 
+msgid "Terminal font size when a terminal is focused, page zoom in a browser pane, otherwise the whole app"
+msgstr "터미널에 포커스가 있으면 터미널 글꼴 크기, 브라우저 패널에서는 페이지 확대/축소, 그 외에는 앱 전체"
+
 msgid "terminal ID"
 msgstr "터미널 ID"
 
@@ -13556,6 +13590,9 @@ msgstr "원격 브랜치가 갈라졌습니다. 계속하기 전에 pull하세�
 msgid "The renderer crashed during startup. Please check logs for details."
 msgstr "시작 중에 렌더러가 충돌했습니다. 자세한 내용은 로그를 확인하세요."
 
+msgid "The repository folder itself is kept."
+msgstr "저장소 폴더 자체는 유지됩니다."
+
 msgid "The request failed."
 msgstr "요청이 실패했습니다."
 
@@ -13674,9 +13711,6 @@ msgstr "이 워크스페이스를 포함한 모든 워크스페이스의 터미�
 msgid "This closes every terminal session for your organization{runningCountSuffix} and starts a fresh daemon."
 msgstr "조직의 모든 터미널 세션{runningCountSuffix}이 닫히고 새 데몬이 시작됩니다."
 
-msgid "This deletes the project and all of its workspaces from <0>every reachable device</0> where it is set up. This cannot be undone."
-msgstr "프로젝트가 설정된 <0>연결 가능한 모든 기기</0>에서 이 프로젝트와 모든 워크스페이스를 삭제합니다. 되돌릴 수 없습니다."
-
 msgid "This deletes the saved scrollback used for reboot/crash recovery."
 msgstr "재부팅/충돌 복구에 사용하는 저장된 스크롤백을 삭제합니다."
 
@@ -13779,6 +13813,9 @@ msgstr "이 경로는 있지만 디렉터리가 아닙니다."
 msgid "This path is a directory"
 msgstr "이 경로는 디렉터리입니다"
 
+msgid "This plugin needs no account — its skills are ready to use."
+msgstr "이 플러그인은 계정이 필요 없습니다 — 스킬을 바로 사용할 수 있습니다."
+
 msgid "This port is still in use"
 msgstr "이 포트는 아직 사용 중입니다"
 
@@ -13799,6 +13836,9 @@ msgstr "선택한 worktree를 디스크에서 모두 제거하고 해당 워크�
 
 msgid "This removes the host, its access, and its workspaces. Files on the machine stay. A running host may reappear. This can’t be undone."
 msgstr "호스트와 그 접근 권한, 워크스페이스가 제거됩니다. 컴퓨터의 파일은 그대로 남습니다. 호스트가 실행 중이면 다시 나타날 수 있습니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "This removes the project from every reachable device."
+msgstr "연결 가능한 모든 기기에서 프로젝트를 제거합니다."
 
 msgid "This removes the worktree from disk. The cloud workspace record will also be removed."
 msgstr "worktree를 디스크에서 제거합니다. 클라우드 워크스페이스 기록도 함께 제거됩니다."
@@ -13872,9 +13912,6 @@ msgstr "조직과 Notion 사이의 연결이 제거됩니다. 언제든지 다�
 
 msgid "This will remove the connection between your organization and Slack. You can reconnect at any time."
 msgstr "조직과 Slack 사이의 연결이 제거됩니다. 언제든지 다시 연결할 수 있습니다."
-
-msgid "This will remove workspaces from the sidebar and delete all project sections. The workspaces or projects won't be deleted."
-msgstr "사이드바에서 워크스페이스를 제거하고 모든 프로젝트 섹션을 삭제합니다. 워크스페이스나 프로젝트 자체는 삭제되지 않습니다."
 
 msgid "This will revert all changes to this file. This action cannot be undone."
 msgstr "이 파일의 모든 변경 사항을 되돌립니다. 되돌릴 수 없습니다."
@@ -14264,10 +14301,7 @@ msgstr "선택한 워크스페이스 그룹 해제"
 msgid "Unified view"
 msgstr "통합 보기"
 
-msgid "Uninstall"
-msgstr "제거"
-
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: plugin.interface.displayName
 msgid "Uninstall {0}"
 msgstr "{0} 제거"
 
@@ -14304,6 +14338,10 @@ msgstr "알 수 없는 호스트"
 
 msgid "Unknown Host"
 msgstr "알 수 없는 호스트"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.unknownPlugin"
+msgstr "알 수 없는 플러그인 {plugin}"
 
 msgid "Unknown project"
 msgstr "알 수 없는 프로젝트"
@@ -14380,6 +14418,9 @@ msgstr "다음 실행"
 
 msgid "Up Next"
 msgstr "다음 차례"
+
+msgid "Update"
+msgstr "업데이트"
 
 msgid "Update available"
 msgstr "업데이트 있음"
@@ -14660,6 +14701,9 @@ msgstr "GitHub에서 릴리스 보기"
 msgid "View Superset repository on GitHub"
 msgstr "GitHub에서 Superset 리포지토리 보기"
 
+msgid "View usage"
+msgstr "사용량 보기"
+
 msgid "Volume"
 msgstr "볼륨"
 
@@ -14675,8 +14719,8 @@ msgstr "검사 대기 중"
 msgid "Waiting for Review"
 msgstr "리뷰 대기 중"
 
-msgid "Waiting for the sign-in to complete — this updates automatically."
-msgstr "로그인이 완료되기를 기다리는 중입니다 — 자동으로 갱신됩니다."
+msgid "Waiting for sign-in…"
+msgstr "로그인 대기 중…"
 
 msgid "Want something sooner? <0>Tell us in Discord</0>. Much of what's here started as a user request."
 msgstr "더 빨리 필요한 기능이 있나요? <0>Discord에서 알려 주세요</0>. 여기 있는 항목 상당수가 사용자 요청에서 시작했습니다."
@@ -15044,6 +15088,9 @@ msgstr "worktree가 동기화되지 않음"
 msgid "Worktrees"
 msgstr "worktree"
 
+msgid "Worktrees with uncommitted changes are left on disk."
+msgstr "커밋되지 않은 변경 사항이 있는 worktree는 디스크에 남습니다."
+
 msgid "Would you like to reassign it?"
 msgstr "다시 지정할까요?"
 
@@ -15103,9 +15150,6 @@ msgstr "나"
 
 msgid "YOU"
 msgstr "나"
-
-msgid "You added these yourself — Superset never touches them, and never writes duplicates of servers you already have."
-msgstr "직접 추가한 항목입니다. Superset은 이 항목을 건드리지 않으며, 이미 가지고 있는 서버를 중복해서 쓰지 않습니다."
 
 msgid "You appear to be offline"
 msgstr "오프라인 상태로 보입니다"
@@ -15245,7 +15289,13 @@ msgstr "확대/축소"
 msgid "Zoom in"
 msgstr "확대"
 
+msgid "Zoom In"
+msgstr "확대"
+
 msgid "Zoom out"
+msgstr "축소"
+
+msgid "Zoom Out"
 msgstr "축소"
 
 msgid "zsh"

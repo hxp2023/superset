@@ -140,6 +140,10 @@ msgstr "{0, plural, one {#ファイル} other {#ファイル}}"
 msgid "{0, plural, one {# File} other {# Files}}"
 msgstr "{0, plural, one {#ファイル} other {#ファイル}}"
 
+#. placeholder {0}: projects.length
+msgid "{0, plural, one {# hidden project} other {# hidden projects}}"
+msgstr "{0, plural, one {非表示のプロジェクト #件} other {非表示のプロジェクト #件}}"
+
 #. placeholder {0}: result.imported
 msgid "{0, plural, one {# history item} other {# history items}}"
 msgstr "{0, plural, one {#件の履歴} other {#件の履歴}}"
@@ -155,6 +159,10 @@ msgstr "{0, plural, one {#件成功} other {#件成功}}"
 #. placeholder {0}: selectedProjects.length
 msgid "{0, plural, one {# project selected.} other {# projects selected.}}"
 msgstr "{0, plural, one {#件のプロジェクトを選択中。} other {#件のプロジェクトを選択中。}}"
+
+#. placeholder {0}: projectFilters.length
+msgid "{0, plural, one {# project} other {# projects}}"
+msgstr "{0, plural, one {# 件のプロジェクト} other {# 件のプロジェクト}}"
 
 #. placeholder {0}: repositories.length
 #. placeholder {0}: selectedProjects.length
@@ -269,6 +277,10 @@ msgstr "{0} – {1} · ローカルセッションログからのAPI定価換算
 msgid "{0} — try the Superset tray menu > Host Service > Restart."
 msgstr "{0} — Supersetのトレイメニュー > ホストサービス > 再起動をお試しください。"
 
+#. placeholder {0}: creator.name
+msgid "{0} (you)"
+msgstr "{0}（自分）"
+
 #. placeholder {0}: actor.login
 msgid "{0} {actorVerb}"
 msgstr "{0}が{actorVerb}"
@@ -297,7 +309,7 @@ msgstr "{0}を無効にしました"
 
 #. placeholder {0}: displayName(variables.name)
 #. placeholder {0}: plugin.interface.displayName
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: skill.name
 msgid "{0} enabled"
 msgstr "{0}を有効化"
 
@@ -340,6 +352,11 @@ msgstr "{0}はFreeプランです。Superset MobileはProプランの組織で�
 #. placeholder {2}: hostCompatibility.minVersion
 msgid "{0} is running host service {1} — this app needs {2} or newer. Update Superset on that machine."
 msgstr "{0}のホストサービスは{1}です — このアプリには{2}以降が必要です。そのマシンでSupersetを更新してください。"
+
+#. placeholder {0}: displayName(name)
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} is set up on this machine, but not on your account"
+msgstr "{0} はこのマシンには設定されていますが、アカウントには設定されていません"
 
 #. placeholder {0}: v.toLocaleString()
 msgid "{0} mo"
@@ -410,6 +427,10 @@ msgstr "直近30日間で{0}トークン。<0>{handle}</0>として公開中。"
 #. placeholder {0}: displayName(variables.name)
 msgid "{0} uninstalled"
 msgstr "{0}をアンインストールしました"
+
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} updated"
+msgstr "{0} を更新しました"
 
 #. placeholder {0}: file.path
 msgid "{0} was deleted in this change."
@@ -618,6 +639,9 @@ msgstr "{level} · {gate} · {statusLabel}"
 msgid "{level} {gate}: {statusLabel}"
 msgstr "{level} {gate}: {statusLabel}"
 
+msgid "{localHostName} (this device)"
+msgstr "{localHostName}（このデバイス）"
+
 #. placeholder {0}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} result for &ldquo;{query}&rdquo; </>
 #. placeholder {1}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} results for &ldquo;{query}&rdquo; </>
 msgid "{matchCount, plural, one {{0}} other {{1}}}"
@@ -644,11 +668,26 @@ msgstr "{months}か月前"
 msgid "{myFailedCount} of your automations failed their last run"
 msgstr "自分のオートメーションのうち{myFailedCount}件が前回の実行に失敗しました"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceBuiltinRemove"
+msgstr "{name} は組み込みのため削除できません"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceReserved"
+msgstr "{name} は組み込みのため置き換えられません"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotAdded"
+msgstr "{name} は追加されていません"
+
 msgid "{noun, select, person {Specify at least one person, or choose {choice}.} sender {Specify at least one sender, or choose {choice}.} other {Specify at least one entry, or choose {choice}.}}"
 msgstr "{noun, select, person {人を1人以上指定するか、{choice}を選択してください。} sender {送信者を1人以上指定するか、{choice}を選択してください。} other {項目を1つ以上指定するか、{choice}を選択してください。}}"
 
 msgid "{noun, select, repository {Specify at least one repository.} channel {Specify at least one channel.} reaction {Specify at least one reaction.} dataSource {Specify at least one data source.} team {Specify at least one team.} project {Specify at least one project.} calendar {Specify at least one calendar.} other {Specify at least one entry.}}"
 msgstr "{noun, select, repository {リポジトリを1つ以上指定してください。} channel {チャンネルを1つ以上指定してください。} reaction {リアクションを1つ以上指定してください。} dataSource {データソースを1つ以上指定してください。} team {チームを1つ以上指定してください。} project {プロジェクトを1つ以上指定してください。} calendar {カレンダーを1つ以上指定してください。} other {項目を1つ以上指定してください。}}"
+
+msgid "{offlineHostCount, plural, one {# device is offline and keeps its copy.} other {# devices are offline and keep their copy.}}"
+msgstr "{offlineHostCount, plural, one {#台のデバイスがオフラインのため、そのコピーは残ります。} other {#台のデバイスがオフラインのため、そのコピーは残ります。}}"
 
 msgid "{openCount} open"
 msgstr "{openCount}件通過"
@@ -687,6 +726,14 @@ msgstr "{provider}のロゴ"
 
 msgid "{readPercent}% read"
 msgstr "{readPercent}%読了"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.ambiguousPlugin"
+msgstr "{reason}"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.dispatchFailed"
+msgstr "{reason}"
 
 msgid "{received} of {total}"
 msgstr "{received}/{total}"
@@ -773,6 +820,9 @@ msgstr "{workspaceName}: ホストが利用できません"
 
 msgid "{workspaceName}: teardown failed"
 msgstr "{workspaceName}: ティアダウンに失敗しました"
+
+msgid "{worktreeCount, plural, one {This removes the project and its # workspace from every reachable device, and deletes that worktree from disk.} other {This removes the project and its # workspaces from every reachable device, and deletes their worktrees from disk.}}"
+msgstr "{worktreeCount, plural, one {到達可能なすべてのデバイスからプロジェクトと#件のワークスペースを削除し、それらのワークツリーをディスクから削除します。} other {到達可能なすべてのデバイスからプロジェクトと#件のワークスペースを削除し、それらのワークツリーをディスクから削除します。}}"
 
 msgid "{years}y ago"
 msgstr "{years}年前"
@@ -1070,6 +1120,13 @@ msgstr "このオートメーションの実行はすでに進行中です。"
 msgid "A selection of integrations curated by our team."
 msgstr "チームが厳選した連携です。"
 
+#. placeholder {0}: AGENT_LABELS[agent]
+msgid "A separate pay-per-token profile. The key stays in the {0} CLI."
+msgstr "トークン単位で課金される別プロファイルです。キーは{0} CLI内に保持されます。"
+
+msgid "A separate profile that shares your skills, plugins, MCP servers, and settings."
+msgstr "スキル、プラグイン、MCPサーバー、設定を共有する別プロファイルです。"
+
 msgid "a teammate"
 msgstr "チームメンバー"
 
@@ -1117,6 +1174,10 @@ msgstr "Accordion"
 
 msgid "Account"
 msgstr "アカウント"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotResolvable"
+msgstr "アカウントへのインストールはファーストパーティのマニフェストのみを解決するため、{marketplace} の {plugin} はまだアカウントにインストールできません。このマシンにはインストールされたままです。"
 
 msgid "Account is pending deletion."
 msgstr "アカウントは削除待ちです。"
@@ -1248,6 +1309,9 @@ msgstr "サイドバーのメニューから追加して始めましょう。"
 msgid "Add photos or files"
 msgstr "写真やファイルを追加"
 
+msgid "Add plugin"
+msgstr "プラグインを追加"
+
 msgid "Add project"
 msgstr "プロジェクトを追加"
 
@@ -1302,9 +1366,6 @@ msgstr "プロンプト付きで起動するときのみ追加されます — �
 msgid "Adding members will increase your subscription cost, prorated to your billing cycle."
 msgstr "メンバーを追加するとサブスクリプション費用が増え、請求サイクルに応じて日割り計算されます。"
 
-msgid "Additional env vars"
-msgstr "追加の環境変数"
-
 msgid "Address Comments with Agent"
 msgstr "エージェントでコメントに対応"
 
@@ -1326,11 +1387,11 @@ msgstr "管理者はオーナーを変更できません"
 msgid "Admins cannot promote members to owner"
 msgstr "管理者はメンバーをオーナーに昇格できません"
 
-msgid "Advanced"
-msgstr "詳細設定"
-
 msgid "Advanced options"
 msgstr "詳細オプション"
+
+msgid "After"
+msgstr "変更後"
 
 msgid "Against base"
 msgstr "ベースとの差分"
@@ -1676,18 +1737,6 @@ msgstr "別のデバイス"
 msgid "Answered"
 msgstr "回答済み"
 
-msgid "Anthropic API key cleared"
-msgstr "Anthropic APIキーをクリアしました"
-
-msgid "Anthropic API key updated"
-msgstr "Anthropic APIキーを更新しました"
-
-msgid "Anthropic settings updated"
-msgstr "Anthropicの設定を更新しました"
-
-msgid "Anthropic usually returns a full callback URL. Pasting either format works."
-msgstr "Anthropicは通常、完全なコールバックURLを返します。どちらの形式でも貼り付けられます。"
-
 msgid "Any calendar"
 msgstr "すべてのカレンダー"
 
@@ -1751,6 +1800,9 @@ msgstr "何でも"
 msgid "AP"
 msgstr "AP"
 
+msgid "API"
+msgstr "API"
+
 msgid "API key"
 msgstr "APIキー"
 
@@ -1798,12 +1850,6 @@ msgstr "適用"
 
 msgid "Approve"
 msgstr "承認"
-
-msgid "Approve access in your browser, then paste the callback URL or `code#state` here."
-msgstr "ブラウザでアクセスを許可し、コールバックURLまたは`code#state`をここに貼り付けてください。"
-
-msgid "Approve access in your browser. If the callback does not finish, paste the redirected callback URL below."
-msgstr "ブラウザでアクセスを許可してください。コールバックが完了しない場合は、リダイレクト先のコールバックURLを下に貼り付けてください。"
 
 msgid "Approved"
 msgstr "承認"
@@ -1934,8 +1980,8 @@ msgstr "監査ログ"
 msgid "Aug 2026"
 msgstr "2026年8月"
 
-msgid "Auth token"
-msgstr "認証トークン"
+msgid "Authenticate your {displayName} account"
+msgstr "{displayName} アカウントを認証"
 
 msgid "Authentication"
 msgstr "認証"
@@ -1951,9 +1997,6 @@ msgstr "作成者"
 
 msgid "Author: {label}"
 msgstr "作成者: {label}"
-
-msgid "Authorization code"
-msgstr "認証コード"
 
 msgid "Authorization failed"
 msgstr "認可に失敗しました"
@@ -2154,9 +2197,6 @@ msgstr "{selectedHostLabel}の新規ワークツリーのベースディレク�
 msgid "Base directory for new worktrees on {selectedHostName}."
 msgstr "{selectedHostName}の新規ワークツリーのベースディレクトリ。"
 
-msgid "Base URL"
-msgstr "ベースURL"
-
 #. placeholder {0}: draft.linkedPR.prNumber
 #. placeholder {0}: linkedPR.prNumber
 msgid "based off PR #{0}"
@@ -2166,6 +2206,9 @@ msgstr "PR #{0} をベースに"
 #. placeholder {1}: preview.providers.join(" and ")
 msgid "Based on {0} tokens in the last 30 days, counting {1}."
 msgstr "過去30日間の{0}トークンに基づく({1}を集計)。"
+
+msgid "Before"
+msgstr "変更前"
 
 msgid "Behavior"
 msgstr "全般"
@@ -2184,6 +2227,9 @@ msgstr "その先:F5は近い将来の主張ではない"
 
 msgid "Billed monthly"
 msgstr "月払い"
+
+msgid "Billed per token."
+msgstr "トークン単位で課金。"
 
 msgid "Billed yearly"
 msgstr "年払い"
@@ -2451,9 +2497,6 @@ msgstr "Calendar"
 msgid "Calendar and Gmail triggers in this organization will stop firing until an account is connected again."
 msgstr "この組織のCalendarとGmailのトリガーは、アカウントを再接続するまで動作しなくなります。"
 
-msgid "Callback URL (optional)"
-msgstr "コールバックURL(任意)"
-
 msgid "Camera access is not allowed"
 msgstr "カメラへのアクセスが許可されていません"
 
@@ -2539,6 +2582,9 @@ msgstr "現金 — 総残高(Mercury)"
 msgid "Cash ÷ net burn at the current run rate"
 msgstr "現在のランレートでの現金 ÷ ネットバーン"
 
+msgid "Category"
+msgstr "カテゴリ"
+
 msgid "Certificate Authority Invalid"
 msgstr "認証局が無効です"
 
@@ -2608,9 +2654,6 @@ msgstr "変更がリクエストされています"
 
 msgid "Changes saved"
 msgstr "変更を保存しました"
-
-msgid "Changes take effect in new agent sessions."
-msgstr "変更は新しいエージェントセッションから有効になります。"
 
 msgid "Changing..."
 msgstr "変更中..."
@@ -2773,9 +2816,6 @@ msgstr "古いTODOを整理…"
 
 msgid "Cleaner, denser sidebar"
 msgstr "すっきり高密度なサイドバー"
-
-msgid "Clear"
-msgstr "クリア"
 
 msgid "Clear browsing data"
 msgstr "閲覧データを消去"
@@ -3282,9 +3322,6 @@ msgstr "Googleアカウントを接続します。カレンダーとメールボ
 msgid "Connect a microphone to use dictation"
 msgstr "音声入力を使うにはマイクを接続してください"
 
-msgid "Connect Anthropic"
-msgstr "Anthropicを接続"
-
 msgid "Connect any AI agent to Superset."
 msgstr "どのAIエージェントでもSupersetに接続。"
 
@@ -3314,9 +3351,6 @@ msgstr "Notionを接続"
 
 msgid "Connect Notion to run automations when rows change in a data source or someone comments on a page."
 msgstr "Notionを接続して、データソースの行が変わったときやページにコメントが付いたときにオートメーションを実行します。"
-
-msgid "Connect OpenAI"
-msgstr "OpenAIを接続"
 
 msgid "Connect repos and sync pull requests."
 msgstr "リポジトリを接続し、プルリクエストを同期します。"
@@ -3351,26 +3385,18 @@ msgstr "Slackのワークスペースを接続して、会話からタスクを�
 msgid "Connected"
 msgstr "接続済み"
 
+#. placeholder {0}: formatDate(new Date(connection.createdAt))
+msgid "connected {0}"
+msgstr "{0} に接続"
+
 msgid "Connected as"
 msgstr "接続アカウント"
-
-msgid "Connected in Superset"
-msgstr "Supersetで接続済み"
 
 msgid "Connected to"
 msgstr "接続先"
 
 msgid "Connected to {connectedOrgName}"
 msgstr "{connectedOrgName}に接続済み"
-
-msgid "Connected via ChatGPT"
-msgstr "ChatGPT経由で接続済み"
-
-msgid "Connected via Claude"
-msgstr "Claude経由で接続済み"
-
-msgid "Connected with API key"
-msgstr "APIキーで接続済み"
 
 msgid "Connected, but Microsoft Graph refused the notification subscriptions."
 msgstr "接続しましたが、Microsoft Graphが通知サブスクリプションを拒否しました。"
@@ -3390,9 +3416,6 @@ msgstr "デスクトップに接続しています…"
 msgid "Connecting to the workspace"
 msgstr "ワークスペースに接続中"
 
-msgid "Connecting..."
-msgstr "接続中..."
-
 msgid "Connecting…"
 msgstr "接続中…"
 
@@ -3405,11 +3428,18 @@ msgstr "接続が閉じられました"
 msgid "Connection failed."
 msgstr "接続に失敗しました。"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.connectionNotFound"
+msgstr "接続が見つかりません"
+
 msgid "Connection Refused"
 msgstr "接続が拒否されました"
 
 msgid "Connection Timed Out"
 msgstr "接続がタイムアウトしました"
+
+msgid "Connections"
+msgstr "接続"
 
 msgid "Consent finished but Microsoft did not issue a token for the tenant."
 msgstr "同意は完了しましたが、Microsoftがテナント用のトークンを発行しませんでした。"
@@ -3715,6 +3745,9 @@ msgstr "環境を読み込めませんでした"
 msgid "Could not load environments."
 msgstr "環境を読み込めませんでした。"
 
+msgid "Could not load plugins. Check your connection and try again."
+msgstr "プラグインを読み込めませんでした。接続を確認して再試行してください。"
+
 msgid "Could not load presets from the host"
 msgstr "ホストからプリセットを読み込めませんでした"
 
@@ -3807,6 +3840,10 @@ msgstr "スキルを更新できませんでした"
 
 msgid "Could not update the branch"
 msgstr "ブランチを更新できませんでした"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.credentialUnverified"
+msgstr "認証情報を確認できませんでした: {reason}"
 
 msgid "Could not watch this page"
 msgstr "このページを監視できませんでした"
@@ -4086,6 +4123,9 @@ msgstr "作成 <0>· 7日</0>"
 msgid "Created 1 folder in {where}"
 msgstr "1件のフォルダを{where}に作成しました"
 
+msgid "Created by"
+msgstr "作成者"
+
 msgid "Created team \"{trimmedName}\""
 msgstr "チーム「{trimmedName}」を作成しました"
 
@@ -4290,6 +4330,9 @@ msgstr "デフォルト({defaultWorktreePath})"
 msgid "default browser"
 msgstr "既定のブラウザ"
 
+msgid "Default Browser"
+msgstr "既定のブラウザ"
+
 msgid "Default effort"
 msgstr "デフォルトのエフォート"
 
@@ -4398,6 +4441,9 @@ msgstr "ページを削除"
 
 msgid "Delete project"
 msgstr "プロジェクトを削除"
+
+msgid "Delete Project…"
+msgstr "プロジェクトを削除…"
 
 msgid "Delete script"
 msgstr "スクリプトを削除"
@@ -4546,9 +4592,6 @@ msgstr "切断中"
 msgid "Details"
 msgstr "詳細"
 
-msgid "Detected in your agent configs"
-msgstr "エージェント設定から検出"
-
 msgid "Dev"
 msgstr "開発"
 
@@ -4563,9 +4606,6 @@ msgstr "開発者"
 
 msgid "Developers"
 msgstr "開発者"
-
-msgid "Device"
-msgstr "デバイス"
 
 msgid "Device: {selectedLabel}"
 msgstr "デバイス: {selectedLabel}"
@@ -4611,9 +4651,6 @@ msgstr "スキルを無効にする"
 
 msgid "Disabled"
 msgstr "無効"
-
-msgid "Disabled — kept installed, but Superset writes nothing into your agent configs."
-msgstr "無効 — インストールされたままですが、Supersetはエージェント設定に何も書き込みません。"
 
 msgid "Disabled toggle"
 msgstr "無効なトグル"
@@ -4666,6 +4703,10 @@ msgstr "破棄しました — 今後は確認しません"
 
 msgid "Disconnect"
 msgstr "切断"
+
+#. placeholder {0}: connection.account ?? displayName
+msgid "Disconnect {0}"
+msgstr "{0} を切断"
 
 msgid "Disconnect GitHub?"
 msgstr "GitHubの接続を解除しますか?"
@@ -4977,6 +5018,9 @@ msgstr "ファイルを編集中..."
 msgid "editor"
 msgstr "エディタ"
 
+msgid "Editor"
+msgstr "エディタ"
+
 msgid "Editor & Workflow"
 msgstr "エディタとワークフロー"
 
@@ -5041,9 +5085,6 @@ msgstr "リレーアクセスを有効にする…"
 msgid "Enable skill"
 msgstr "スキルを有効にする"
 
-msgid "Enabled — servers are written into your agent configs."
-msgstr "有効 — サーバーがエージェント設定に書き込まれます。"
-
 msgid "Engineering deep-dives and launches."
 msgstr "技術の深掘りとリリース情報。"
 
@@ -5076,12 +5117,6 @@ msgstr "エンタープライズ"
 
 msgid "Enterprise ARR by account"
 msgstr "アカウント別エンタープライズARR"
-
-msgid "Entries you added yourself stay active in your agent config."
-msgstr "ご自身で追加したエントリはエージェント設定で有効なまま残ります。"
-
-msgid "Entries you added yourself stay in your agent config."
-msgstr "ご自身で追加したエントリはエージェント設定に残ります。"
 
 msgid "Environment"
 msgstr "環境"
@@ -5340,9 +5375,6 @@ msgstr "更新を確認できませんでした: {message}"
 
 msgid "Failed to check for updates. Please try again later."
 msgstr "アップデートを確認できませんでした。しばらくしてからもう一度お試しください。"
-
-msgid "Failed to clear"
-msgstr "クリアに失敗しました"
 
 #. placeholder {0}: errorMessage(error, "Unknown error")
 msgid "Failed to clear agent status: {0}"
@@ -5854,6 +5886,9 @@ msgstr "エージェントを絞り込み..."
 msgid "Filter by @{normalizedSearch}"
 msgstr "@{normalizedSearch}で絞り込む"
 
+msgid "Filter by device"
+msgstr "デバイスで絞り込む"
+
 msgid "Filter by reviews"
 msgstr "レビューで絞り込む"
 
@@ -5916,6 +5951,9 @@ msgstr "最近変更されたカバレッジの薄いコードを見つけて、
 
 msgid "Find stale TODO/FIXME comments and resolve the quick ones."
 msgstr "古いTODO/FIXMEコメントを見つけて、すぐ直せるものを解消します。"
+
+msgid "Finder"
+msgstr "Finder"
 
 msgid "Finish review"
 msgstr "レビューを完了"
@@ -6379,6 +6417,10 @@ msgstr "ヘルプとドキュメント"
 msgid "Henry Ford"
 msgstr "Henry Ford"
 
+#. placeholder {0}: project.name
+msgid "Hid \"{0}\" from the sidebar"
+msgstr "「{0}」をサイドバーから非表示にしました"
+
 msgid "Hidden"
 msgstr "非表示"
 
@@ -6726,6 +6768,9 @@ msgstr "差分ビューアの改善"
 msgid "in a terminal on this host."
 msgstr "このホストのターミナルで実行してください。"
 
+msgid "In all projects"
+msgstr "すべてのプロジェクト"
+
 msgid "In just a few months, <0>tens of thousands of engineers</0> run Superset as their primary IDE, at companies like Wix, DoorDash, and Netflix."
 msgstr "わずか数か月で、Wix、DoorDash、Netflixといった企業を含め<0>数万人のエンジニア</0>がSupersetを主要なIDEとして使っています。"
 
@@ -6742,6 +6787,9 @@ msgid "In the Superset desktop app, open Settings → Remote Access and turn on 
 msgstr "Supersetデスクトップアプリで設定 → リモートアクセスを開き、「リレー経由でこのデバイスへのリモートアクセスを許可」をオンにしてください。"
 
 msgid "in-app browser"
+msgstr "アプリ内ブラウザ"
+
+msgid "In-App Browser"
 msgstr "アプリ内ブラウザ"
 
 msgid "In-app PR merge"
@@ -6769,6 +6817,9 @@ msgid "Industry median, our estimate. Dashed is forecast. The first F4 teams cro
 msgstr "業界中央値、当社推定。破線は予測です。最初のF4チームはこれより早くゲートを超えます。"
 
 msgid "Info"
+msgstr "情報"
+
+msgid "Information"
 msgstr "情報"
 
 msgid "Initialize Git"
@@ -6817,9 +6868,6 @@ msgstr "並列コーディングエージェントと開発者の生産性につ
 msgid "Inspecting {0}"
 msgstr "{0}を検査中"
 
-msgid "Install"
-msgstr "インストール"
-
 msgid "Install & restart"
 msgstr "インストールして再起動"
 
@@ -6847,9 +6895,9 @@ msgstr "すべてのワークスペースにまたがるMCPサーバーのイン
 msgid "Installed"
 msgstr "インストール済み"
 
-#. placeholder {0}: record.installedAt.slice(0, 10)
-msgid "installed {0}"
-msgstr "{0}をインストールしました"
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceHasInstalls"
+msgstr "インストール済みのプラグインが {name} 由来です: {plugins}。先に削除してください。"
 
 msgid "Installing..."
 msgstr "インストール中..."
@@ -6956,8 +7004,8 @@ msgstr "データは安全ですか?"
 msgid "is now signed in here."
 msgstr "がここにサインインしました。"
 
-msgid "is signed in and will show its quota here."
-msgstr "がサインインしており、クォータがここに表示されます。"
+msgid "is signed in."
+msgstr "がサインインしました。"
 
 msgid "Is Superset free to use?"
 msgstr "Supersetは無料で使えますか?"
@@ -7296,9 +7344,6 @@ msgstr "チームから退出"
 msgid "Leave the leaderboard?"
 msgstr "リーダーボードから退出しますか?"
 
-msgid "Leave this empty if browser login finishes on its own."
-msgstr "ブラウザログインが自動的に完了する場合は空のままにしてください。"
-
 msgid "Leaving organization..."
 msgstr "組織から退出中..."
 
@@ -7319,6 +7364,9 @@ msgstr "1分未満前"
 
 msgid "Letter spacing (px)"
 msgstr "字間 (px)"
+
+msgid "License"
+msgstr "ライセンス"
 
 msgid "Lifecycle scripts"
 msgstr "ライフサイクルスクリプト"
@@ -7683,9 +7731,6 @@ msgstr "プランを管理"
 msgid "Manage plugins"
 msgstr "プラグインを管理"
 
-msgid "Manage provider accounts, API keys, and overrides. Connecting Anthropic or OpenAI below is also what powers automatic workspace naming — without one connected, new workspaces fall back to a name derived from your prompt."
-msgstr "プロバイダーアカウント、APIキー、オーバーライドを管理します。下でAnthropicまたはOpenAIを接続すると、ワークスペースの自動命名も有効になります — 未接続の場合、新規ワークスペースはプロンプトから導出された名前になります。"
-
 msgid "Manage sessions"
 msgstr "セッションを管理"
 
@@ -7780,9 +7825,6 @@ msgid "MCP manager"
 msgstr "MCPマネージャー"
 
 msgid "MCP Server"
-msgstr "MCPサーバー"
-
-msgid "MCP servers"
 msgstr "MCPサーバー"
 
 msgid "Mean"
@@ -7944,6 +7986,10 @@ msgstr "必要な認可パラメーターがありません。"
 
 msgid "Missing required fields."
 msgstr "必須項目が入力されていません。"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.missingInput"
+msgstr "必須の入力 {input} がありません"
 
 msgid "Mobile"
 msgstr "モバイル"
@@ -8189,6 +8235,9 @@ msgstr "新規オートメーション"
 
 msgid "New Browser"
 msgstr "新規ブラウザ"
+
+msgid "New Browser Tab"
+msgstr "新しいブラウザタブ"
 
 msgid "New chat"
 msgstr "新しいチャット"
@@ -8544,6 +8593,9 @@ msgstr "Issueが見つかりません。"
 msgid "No items"
 msgstr "項目なし"
 
+msgid "No known creators"
+msgstr "既知の作成者はいません"
+
 msgid "No labels"
 msgstr "ラベルなし"
 
@@ -8552,9 +8604,6 @@ msgstr "ライブセッションはありません"
 
 msgid "no logins"
 msgstr "ログイン情報なし"
-
-msgid "no longer in the catalog"
-msgstr "カタログから削除されました"
 
 msgid "No match"
 msgstr "一致なし"
@@ -8615,6 +8664,9 @@ msgstr "保留中の招待はありません"
 
 msgid "No people found."
 msgstr "該当するユーザーがいません。"
+
+msgid "No plugins available yet."
+msgstr "利用できるプラグインはまだありません。"
 
 #. placeholder {0}: search.trim()
 msgid "No plugins match \"{0}\""
@@ -8966,6 +9018,9 @@ msgstr "そしていま、ソフトウェア工場のためのプラットフォ
 msgid "Numbered list"
 msgstr "番号付きリスト"
 
+msgid "OAuth 2.0"
+msgstr "OAuth 2.0"
+
 msgid "OAuth by default, API keys for CI"
 msgstr "既定はOAuth、CIにはAPIキー"
 
@@ -9122,6 +9177,10 @@ msgstr "オープン"
 msgid "Open {0}"
 msgstr "{0}を開く"
 
+#. placeholder {0}: plugin.interface.displayName
+msgid "Open {0} website"
+msgstr "{0} のウェブサイトを開く"
+
 msgid "Open {filePath}"
 msgstr "{filePath}を開く"
 
@@ -9157,9 +9216,6 @@ msgstr "GitHubでブランチを開く"
 
 msgid "Open Browser"
 msgstr "ブラウザを開く"
-
-msgid "Open browser again"
-msgstr "ブラウザを再度開く"
 
 msgid "Open changes"
 msgstr "変更を開く"
@@ -9497,12 +9553,6 @@ msgstr "ワークスペースを開く"
 msgid "Open workspace in external app (Cursor, VS Code, etc.)"
 msgstr "ワークスペースを外部アプリ (Cursor、VS Codeなど) で開く"
 
-msgid "OpenAI API key cleared"
-msgstr "OpenAI APIキーをクリアしました"
-
-msgid "OpenAI API key updated"
-msgstr "OpenAI APIキーを更新しました"
-
 msgid "Opened"
 msgstr "オープン"
 
@@ -9799,12 +9849,6 @@ msgstr "過去1週間"
 msgid "Paste"
 msgstr "貼り付け"
 
-msgid "Paste callback URL"
-msgstr "コールバックURLを貼り付け"
-
-msgid "Paste callback URL or code#state"
-msgstr "コールバックURLまたはcode#stateを貼り付け"
-
 msgid "Paste this into Superset CLI:"
 msgstr "これをSuperset CLIに貼り付けてください:"
 
@@ -10003,6 +10047,14 @@ msgstr "組織を選択してください"
 msgid "Please try signing in again from the desktop app."
 msgstr "デスクトップアプリからもう一度サインインしてください。"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.noApiKeyAuth"
+msgstr "プラグイン {plugin} は api_key 認証を使用していません"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.notInstalled"
+msgstr "プラグイン {plugin} はインストールされていません"
+
 msgid "Plugin marketplace"
 msgstr "プラグインマーケットプレイス"
 
@@ -10100,12 +10152,6 @@ msgstr "プレフィックス"
 
 msgid "Preparing"
 msgstr "準備中"
-
-msgid "Preparing Anthropic browser login..."
-msgstr "Anthropicのブラウザログインを準備中..."
-
-msgid "Preparing OpenAI browser login..."
-msgstr "OpenAIのブラウザログインを準備中..."
 
 msgid "Preserve commit history"
 msgstr "コミット履歴を保持"
@@ -10366,9 +10412,6 @@ msgstr "プロパティ"
 msgid "Provide either id or slug"
 msgstr "idまたはslugのいずれかを指定してください"
 
-msgid "Provided by entries in your own agent config."
-msgstr "ご自身のエージェント設定のエントリによって提供されています。"
-
 #. placeholder {0}: sourceConfig?.label ?? binding.agentId
 msgid "Provider: {0}"
 msgstr "プロバイダー: {0}"
@@ -10561,8 +10604,8 @@ msgstr "並列コーディングエージェントのガイドを読む"
 msgid "Read the setup guide"
 msgstr "セットアップガイドを読む"
 
-msgid "Reading subscription usage…"
-msgstr "サブスクリプション使用量を読み取り中…"
+msgid "Reading usage…"
+msgstr "使用量を取得中…"
 
 msgid "Reading your local usage…"
 msgstr "ローカルの使用量を読み取り中…"
@@ -10685,6 +10728,9 @@ msgstr "メトリクスを更新"
 msgid "Refresh pull requests"
 msgstr "プルリクエストを更新"
 
+msgid "Refreshes when Claude Code next runs."
+msgstr "次に Claude Code を実行すると更新されます。"
+
 msgid "Register any CLI agent alongside the built-ins, each with its own name, icon, and launch command."
 msgstr "組み込みのエージェントと並べて、任意のCLIエージェントを登録できます。名前、アイコン、起動コマンドはそれぞれ設定できます。"
 
@@ -10739,9 +10785,6 @@ msgstr "リモートアクセス"
 msgid "Remote MCP server — connects over HTTP"
 msgstr "リモートMCPサーバー — HTTP経由で接続"
 
-msgid "Remote servers sign you in the first time an agent uses them."
-msgstr "リモートサーバーは、エージェントが最初に使用するときにサインインを求めます。"
-
 msgid "Remote workspace"
 msgstr "リモートワークスペース"
 
@@ -10793,9 +10836,6 @@ msgstr "メンション{path}を削除"
 
 msgid "Remove PR Link"
 msgstr "PRリンクを解除"
-
-msgid "Remove project from sidebar?"
-msgstr "プロジェクトをサイドバーから削除しますか?"
 
 msgid "Remove script"
 msgstr "スクリプトを削除"
@@ -11010,6 +11050,9 @@ msgid "Reset worktree location"
 msgstr "ワークツリーの場所をリセット"
 
 msgid "Reset zoom"
+msgstr "ズームをリセット"
+
+msgid "Reset Zoom"
 msgstr "ズームをリセット"
 
 msgid "Resets in {countdown} · {absolute}"
@@ -11345,6 +11388,12 @@ msgstr "コマンドを実行し、アプリ内を移動します。"
 msgid "Run History"
 msgstr "実行履歴"
 
+msgid "Run in a terminal on this host; paste your key when asked:"
+msgstr "このホストのターミナルで実行し、求められたらキーを貼り付けてください:"
+
+msgid "Run in a terminal on this host:"
+msgstr "このホストのターミナルで実行してください:"
+
 msgid "Run in Workspace"
 msgstr "ワークスペースで実行"
 
@@ -11371,9 +11420,6 @@ msgstr "ターミナルコマンドの実行や他のアプリケーションと
 
 msgid "Run the agent in the Workspace Setup terminal once setup finishes instead of starting a second terminal alongside it"
 msgstr "2つ目のターミナルを並行して起動する代わりに、セットアップ完了後にワークスペースセットアップのターミナルでエージェントを実行します"
-
-msgid "Run this in any terminal on this host, then finish the sign-in in your browser:"
-msgstr "このホストの任意のターミナルで実行し、ブラウザでサインインを完了してください:"
 
 msgid "Run workspace command"
 msgstr "ワークスペースのコマンドを実行"
@@ -11474,15 +11520,6 @@ msgstr "保存済み"
 #. placeholder {0}: created?.name
 msgid "Saved \"{0}\" as an environment"
 msgstr "「{0}」を環境として保存しました"
-
-msgid "Saved Anthropic API key"
-msgstr "保存済みのAnthropic APIキー"
-
-msgid "Saved on blur."
-msgstr "フォーカスを外すと保存されます。"
-
-msgid "Saved OpenAI API key"
-msgstr "保存済みのOpenAI APIキー"
 
 msgid "Saved to Downloads"
 msgstr "ダウンロードフォルダに保存しました"
@@ -12260,20 +12297,11 @@ msgstr "ローカル管理者としてサインイン(開発用)"
 msgid "Sign in to {0}"
 msgstr "{0}にサインイン"
 
-msgid "Sign in to a second subscription as a separate profile. Your current login is untouched, and the new profile shares your skills, plugins, MCP servers, and settings."
-msgstr "別のプロファイルとして2つ目のサブスクリプションにサインインします。現在のログインはそのまま、新しいプロファイルはスキル、プラグイン、MCPサーバー、設定を共有します。"
-
 msgid "Sign in to continue to Superset"
 msgstr "サインインしてSupersetに進む"
 
 msgid "Sign in to get started"
 msgstr "サインインして始めましょう"
-
-msgid "Sign in with ChatGPT or use an API key."
-msgstr "ChatGPTでサインインするか、APIキーを使用します。"
-
-msgid "Sign in with Claude or use an API key."
-msgstr "Claudeでサインインするか、APIキーを使用します。"
 
 msgid "Sign in with email"
 msgstr "メールでサインイン"
@@ -12838,6 +12866,9 @@ msgstr "登録する"
 msgid "Subscribe on YouTube"
 msgstr "YouTubeで登録"
 
+msgid "Subscription"
+msgstr "サブスクリプション"
+
 msgid "Success"
 msgstr "成功"
 
@@ -13277,6 +13308,9 @@ msgstr "ターミナルのファイルリンク"
 msgid "Terminal font size"
 msgstr "ターミナルのフォントサイズ"
 
+msgid "Terminal font size when a terminal is focused, page zoom in a browser pane, otherwise the whole app"
+msgstr "ターミナルにフォーカスがあるときはターミナルのフォントサイズ、ブラウザペインではページのズーム、それ以外はアプリ全体"
+
 msgid "terminal ID"
 msgstr "ターミナルID"
 
@@ -13556,6 +13590,9 @@ msgstr "リモートブランチが分岐しています。続ける前にpull�
 msgid "The renderer crashed during startup. Please check logs for details."
 msgstr "起動中にレンダラーがクラッシュしました。詳細はログを確認してください。"
 
+msgid "The repository folder itself is kept."
+msgstr "リポジトリのフォルダ自体は残ります。"
+
 msgid "The request failed."
 msgstr "リクエストに失敗しました。"
 
@@ -13674,9 +13711,6 @@ msgstr "このワークスペースと他のワークスペースのすべての
 msgid "This closes every terminal session for your organization{runningCountSuffix} and starts a fresh daemon."
 msgstr "組織のすべてのターミナルセッション{runningCountSuffix}を閉じ、新しいデーモンを起動します。"
 
-msgid "This deletes the project and all of its workspaces from <0>every reachable device</0> where it is set up. This cannot be undone."
-msgstr "このプロジェクトとそのすべてのワークスペースを、セットアップ済みの<0>到達可能なすべてのデバイス</0>から削除します。この操作は元に戻せません。"
-
 msgid "This deletes the saved scrollback used for reboot/crash recovery."
 msgstr "再起動やクラッシュからの復旧に使う保存済みスクロールバックを削除します。"
 
@@ -13779,6 +13813,9 @@ msgstr "このパスは存在しますが、ディレクトリではありませ
 msgid "This path is a directory"
 msgstr "このパスはディレクトリです"
 
+msgid "This plugin needs no account — its skills are ready to use."
+msgstr "このプラグインにアカウントは不要です — スキルはすぐに使えます。"
+
 msgid "This port is still in use"
 msgstr "このポートはまだ使用中です"
 
@@ -13799,6 +13836,9 @@ msgstr "選択したすべてのワークツリーをディスクから削除し
 
 msgid "This removes the host, its access, and its workspaces. Files on the machine stay. A running host may reappear. This can’t be undone."
 msgstr "ホストとそのアクセス権、ワークスペースを削除します。マシン上のファイルは残ります。稼働中のホストは再表示されることがあります。この操作は元に戻せません。"
+
+msgid "This removes the project from every reachable device."
+msgstr "到達可能なすべてのデバイスからプロジェクトを削除します。"
 
 msgid "This removes the worktree from disk. The cloud workspace record will also be removed."
 msgstr "ワークツリーをディスクから削除します。クラウドワークスペースの記録も削除されます。"
@@ -13872,9 +13912,6 @@ msgstr "組織とNotionの接続を解除します。いつでも再接続でき
 
 msgid "This will remove the connection between your organization and Slack. You can reconnect at any time."
 msgstr "組織とSlackの接続を解除します。いつでも再接続できます。"
-
-msgid "This will remove workspaces from the sidebar and delete all project sections. The workspaces or projects won't be deleted."
-msgstr "サイドバーからワークスペースを削除し、プロジェクトのセクションをすべて削除します。ワークスペースやプロジェクト自体は削除されません。"
 
 msgid "This will revert all changes to this file. This action cannot be undone."
 msgstr "このファイルへの変更をすべて元に戻します。この操作は元に戻せません。"
@@ -14264,10 +14301,7 @@ msgstr "選択したワークスペースをグループ解除"
 msgid "Unified view"
 msgstr "統合表示"
 
-msgid "Uninstall"
-msgstr "アンインストール"
-
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: plugin.interface.displayName
 msgid "Uninstall {0}"
 msgstr "{0}をアンインストール"
 
@@ -14304,6 +14338,10 @@ msgstr "不明なホスト"
 
 msgid "Unknown Host"
 msgstr "不明なホスト"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.unknownPlugin"
+msgstr "不明なプラグイン {plugin}"
 
 msgid "Unknown project"
 msgstr "不明なプロジェクト"
@@ -14380,6 +14418,9 @@ msgstr "次の実行"
 
 msgid "Up Next"
 msgstr "次に着手"
+
+msgid "Update"
+msgstr "更新"
 
 msgid "Update available"
 msgstr "アップデートあり"
@@ -14660,6 +14701,9 @@ msgstr "GitHubでリリースを見る"
 msgid "View Superset repository on GitHub"
 msgstr "GitHubでSupersetのリポジトリを見る"
 
+msgid "View usage"
+msgstr "使用量を表示"
+
 msgid "Volume"
 msgstr "音量"
 
@@ -14675,8 +14719,8 @@ msgstr "チェックを待機中"
 msgid "Waiting for Review"
 msgstr "レビューを待機中"
 
-msgid "Waiting for the sign-in to complete — this updates automatically."
-msgstr "サインイン完了を待っています — 自動的に更新されます。"
+msgid "Waiting for sign-in…"
+msgstr "サインインを待機中…"
 
 msgid "Want something sooner? <0>Tell us in Discord</0>. Much of what's here started as a user request."
 msgstr "もっと早く欲しいものがありますか?<0>Discordで教えてください</0>。ここにあるものの多くは、ユーザーの要望から始まりました。"
@@ -15044,6 +15088,9 @@ msgstr "ワークツリーが同期していません"
 msgid "Worktrees"
 msgstr "ワークツリー"
 
+msgid "Worktrees with uncommitted changes are left on disk."
+msgstr "未コミットの変更があるワークツリーはディスクに残ります。"
+
 msgid "Would you like to reassign it?"
 msgstr "割り当て直しますか?"
 
@@ -15103,9 +15150,6 @@ msgstr "あなた"
 
 msgid "YOU"
 msgstr "あなた"
-
-msgid "You added these yourself — Superset never touches them, and never writes duplicates of servers you already have."
-msgstr "これらはご自身で追加したものです — Supersetが変更することはなく、既存のサーバーと重複して書き込むこともありません。"
 
 msgid "You appear to be offline"
 msgstr "オフラインのようです"
@@ -15245,7 +15289,13 @@ msgstr "ズーム"
 msgid "Zoom in"
 msgstr "拡大"
 
+msgid "Zoom In"
+msgstr "拡大"
+
 msgid "Zoom out"
+msgstr "縮小"
+
+msgid "Zoom Out"
 msgstr "縮小"
 
 msgid "zsh"

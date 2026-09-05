@@ -24,6 +24,7 @@ function makeSnapshot(
 		updatedAt: 1_700_000_000_000,
 		lastActivityAt: 1_700_000_050_000,
 		tags: [],
+		sandboxed: false,
 		...overrides,
 	};
 }

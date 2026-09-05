@@ -26,7 +26,7 @@ import {
 	HiOutlineUser,
 	HiOutlineUserGroup,
 } from "react-icons/hi2";
-import { LuBrain, LuContainer, LuGitBranch, LuKeyboard } from "react-icons/lu";
+import { LuContainer, LuGitBranch, LuKeyboard } from "react-icons/lu";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { SettingsSection } from "renderer/stores/settings-state";
@@ -52,7 +52,6 @@ type SettingsRoute =
 	| "/settings/agents"
 	| "/settings/terminal"
 	| "/settings/links"
-	| "/settings/models"
 	| "/settings/experimental"
 	| "/settings/integrations"
 	| "/settings/billing"
@@ -151,7 +150,9 @@ const SECTION_GROUPS: SectionGroup[] = [
 			{
 				id: "/settings/sandboxes",
 				section: "sandboxes",
-				label: "Sandboxes",
+				label: msg({
+					message: "Sandboxes",
+				}),
 				icon: <LuContainer className="h-4 w-4" />,
 			},
 			{
@@ -186,14 +187,6 @@ const SECTION_GROUPS: SectionGroup[] = [
 					message: "Browser",
 				}),
 				icon: <HiOutlineGlobeAlt className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/models",
-				section: "models",
-				label: msg({
-					message: "Models",
-				}),
-				icon: <LuBrain className="h-4 w-4" />,
 			},
 		],
 	},

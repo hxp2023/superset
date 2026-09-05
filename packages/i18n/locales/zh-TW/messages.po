@@ -140,6 +140,10 @@ msgstr "{0, plural, one {#個檔案} other {#個檔案}}"
 msgid "{0, plural, one {# File} other {# Files}}"
 msgstr "{0, plural, one {#個檔案} other {#個檔案}}"
 
+#. placeholder {0}: projects.length
+msgid "{0, plural, one {# hidden project} other {# hidden projects}}"
+msgstr "{0, plural, one {# 個已隱藏的專案} other {# 個已隱藏的專案}}"
+
 #. placeholder {0}: result.imported
 msgid "{0, plural, one {# history item} other {# history items}}"
 msgstr "{0, plural, one {#條歷史記錄} other {#條歷史記錄}}"
@@ -155,6 +159,10 @@ msgstr "{0, plural, one {#項通過} other {#項通過}}"
 #. placeholder {0}: selectedProjects.length
 msgid "{0, plural, one {# project selected.} other {# projects selected.}}"
 msgstr "{0, plural, one {已選擇#個專案。} other {已選擇#個專案。}}"
+
+#. placeholder {0}: projectFilters.length
+msgid "{0, plural, one {# project} other {# projects}}"
+msgstr "{0, plural, one {# 個專案} other {# 個專案}}"
 
 #. placeholder {0}: repositories.length
 #. placeholder {0}: selectedProjects.length
@@ -269,6 +277,10 @@ msgstr "{0} – {1} · 根據本地會話日誌按API價格估算"
 msgid "{0} — try the Superset tray menu > Host Service > Restart."
 msgstr "{0} — 請嘗試Superset托盤選單 > 主機服務 > 重啟。"
 
+#. placeholder {0}: creator.name
+msgid "{0} (you)"
+msgstr "{0}（你）"
+
 #. placeholder {0}: actor.login
 msgid "{0} {actorVerb}"
 msgstr "{0}{actorVerb}"
@@ -297,7 +309,7 @@ msgstr "{0}已停用"
 
 #. placeholder {0}: displayName(variables.name)
 #. placeholder {0}: plugin.interface.displayName
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: skill.name
 msgid "{0} enabled"
 msgstr "{0}已啟用"
 
@@ -340,6 +352,11 @@ msgstr "{0}使用的是免費版。Superset Mobile面向使用專業版的組織
 #. placeholder {2}: hostCompatibility.minVersion
 msgid "{0} is running host service {1} — this app needs {2} or newer. Update Superset on that machine."
 msgstr "{0}執行的主機服務是{1} — 此應用需要{2}或更新版本。請在那臺機器上更新Superset。"
+
+#. placeholder {0}: displayName(name)
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} is set up on this machine, but not on your account"
+msgstr "{0} 已在本機設定，但未在你的帳戶中設定"
 
 #. placeholder {0}: v.toLocaleString()
 msgid "{0} mo"
@@ -410,6 +427,10 @@ msgstr "最近30天 {0} 個 tokens。以 <0>{handle}</0> 身分發布。"
 #. placeholder {0}: displayName(variables.name)
 msgid "{0} uninstalled"
 msgstr "{0}已解除安裝"
+
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} updated"
+msgstr "{0} 已更新"
 
 #. placeholder {0}: file.path
 msgid "{0} was deleted in this change."
@@ -618,6 +639,9 @@ msgstr "{level} · {gate} · {statusLabel}"
 msgid "{level} {gate}: {statusLabel}"
 msgstr "{level} {gate}：{statusLabel}"
 
+msgid "{localHostName} (this device)"
+msgstr "{localHostName}（此裝置）"
+
 #. placeholder {0}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} result for &ldquo;{query}&rdquo; </>
 #. placeholder {1}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} results for &ldquo;{query}&rdquo; </>
 msgid "{matchCount, plural, one {{0}} other {{1}}}"
@@ -644,11 +668,26 @@ msgstr "{months}個月前"
 msgid "{myFailedCount} of your automations failed their last run"
 msgstr "你有{myFailedCount}個自動化上次執行失敗"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceBuiltinRemove"
+msgstr "{name} 是內建的，無法移除"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceReserved"
+msgstr "{name} 是內建的，無法取代"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotAdded"
+msgstr "{name} 尚未新增"
+
 msgid "{noun, select, person {Specify at least one person, or choose {choice}.} sender {Specify at least one sender, or choose {choice}.} other {Specify at least one entry, or choose {choice}.}}"
 msgstr "{noun, select, person {請至少指定一個人員，或選擇{choice}。} sender {請至少指定一個寄件者，或選擇{choice}。} other {請至少指定一個項目，或選擇{choice}。}}"
 
 msgid "{noun, select, repository {Specify at least one repository.} channel {Specify at least one channel.} reaction {Specify at least one reaction.} dataSource {Specify at least one data source.} team {Specify at least one team.} project {Specify at least one project.} calendar {Specify at least one calendar.} other {Specify at least one entry.}}"
 msgstr "{noun, select, repository {請至少指定一個倉庫。} channel {請至少指定一個頻道。} reaction {請至少指定一個回應。} dataSource {請至少指定一個資料來源。} team {請至少指定一個團隊。} project {請至少指定一個專案。} calendar {請至少指定一個日曆。} other {請至少指定一個項目。}}"
+
+msgid "{offlineHostCount, plural, one {# device is offline and keeps its copy.} other {# devices are offline and keep their copy.}}"
+msgstr "{offlineHostCount, plural, one {# 台裝置處於離線狀態，將保留其副本。} other {# 台裝置處於離線狀態，將保留其副本。}}"
 
 msgid "{openCount} open"
 msgstr "{openCount}項已開啟"
@@ -687,6 +726,14 @@ msgstr "{provider}標誌"
 
 msgid "{readPercent}% read"
 msgstr "已讀{readPercent}%"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.ambiguousPlugin"
+msgstr "{reason}"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.dispatchFailed"
+msgstr "{reason}"
 
 msgid "{received} of {total}"
 msgstr "{received}/{total}"
@@ -773,6 +820,9 @@ msgstr "{workspaceName}：主機不可用"
 
 msgid "{workspaceName}: teardown failed"
 msgstr "{workspaceName}：清理失敗"
+
+msgid "{worktreeCount, plural, one {This removes the project and its # workspace from every reachable device, and deletes that worktree from disk.} other {This removes the project and its # workspaces from every reachable device, and deletes their worktrees from disk.}}"
+msgstr "{worktreeCount, plural, one {這會從所有可連線的裝置中移除該專案及其 # 個工作區，並從磁碟刪除它們的worktree。} other {這會從所有可連線的裝置中移除該專案及其 # 個工作區，並從磁碟刪除它們的worktree。}}"
 
 msgid "{years}y ago"
 msgstr "{years}年前"
@@ -1070,6 +1120,13 @@ msgstr "此自動化已有一次執行正在進行中。"
 msgid "A selection of integrations curated by our team."
 msgstr "我們團隊精選的一組整合。"
 
+#. placeholder {0}: AGENT_LABELS[agent]
+msgid "A separate pay-per-token profile. The key stays in the {0} CLI."
+msgstr "按 token 計費的獨立配置檔案。金鑰保存在 {0} CLI 中。"
+
+msgid "A separate profile that shares your skills, plugins, MCP servers, and settings."
+msgstr "共享你的技能、外掛、MCP伺服器和設定的獨立配置檔案。"
+
 msgid "a teammate"
 msgstr "某位隊友"
 
@@ -1117,6 +1174,10 @@ msgstr "手風琴"
 
 msgid "Account"
 msgstr "帳戶"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotResolvable"
+msgstr "帳戶安裝僅解析第一方資訊清單，因此來自 {marketplace} 的 {plugin} 尚無法安裝到你的帳戶。它仍安裝在本機上。"
 
 msgid "Account is pending deletion."
 msgstr "帳戶正在等待刪除。"
@@ -1248,6 +1309,9 @@ msgstr "從側邊欄選單中新增一個即可開始。"
 msgid "Add photos or files"
 msgstr "新增照片或檔案"
 
+msgid "Add plugin"
+msgstr "新增外掛"
+
 msgid "Add project"
 msgstr "新增專案"
 
@@ -1302,9 +1366,6 @@ msgstr "僅在帶提示詞啟動時新增，例如<0>--</0>、<1>--prompt</1>、
 msgid "Adding members will increase your subscription cost, prorated to your billing cycle."
 msgstr "新增成員會增加訂閱費用，並按帳單週期按比例計算。"
 
-msgid "Additional env vars"
-msgstr "額外環境變數"
-
 msgid "Address Comments with Agent"
 msgstr "用代理程式處理評論"
 
@@ -1326,11 +1387,11 @@ msgstr "管理員不能修改擁有者"
 msgid "Admins cannot promote members to owner"
 msgstr "管理員不能將成員提升為擁有者"
 
-msgid "Advanced"
-msgstr "進階"
-
 msgid "Advanced options"
 msgstr "進階選項"
+
+msgid "After"
+msgstr "變更後"
 
 msgid "Against base"
 msgstr "對比基準分支"
@@ -1676,18 +1737,6 @@ msgstr "另一臺裝置"
 msgid "Answered"
 msgstr "已回答"
 
-msgid "Anthropic API key cleared"
-msgstr "已清除Anthropic API金鑰"
-
-msgid "Anthropic API key updated"
-msgstr "已更新Anthropic API金鑰"
-
-msgid "Anthropic settings updated"
-msgstr "已更新Anthropic設定"
-
-msgid "Anthropic usually returns a full callback URL. Pasting either format works."
-msgstr "Anthropic通常會返回完整的回呼URL。兩種格式都可以貼上。"
-
 msgid "Any calendar"
 msgstr "任意日曆"
 
@@ -1751,6 +1800,9 @@ msgstr "任意內容"
 msgid "AP"
 msgstr "AP"
 
+msgid "API"
+msgstr "API"
+
 msgid "API key"
 msgstr "API金鑰"
 
@@ -1798,12 +1850,6 @@ msgstr "應用"
 
 msgid "Approve"
 msgstr "批准"
-
-msgid "Approve access in your browser, then paste the callback URL or `code#state` here."
-msgstr "在瀏覽器中批准存取，然後把回呼URL或`code#state`貼上到這裡。"
-
-msgid "Approve access in your browser. If the callback does not finish, paste the redirected callback URL below."
-msgstr "在瀏覽器中批准存取。如果回呼沒有完成，請把重新導向後的回呼URL貼上到下面。"
 
 msgid "Approved"
 msgstr "已批准"
@@ -1934,8 +1980,8 @@ msgstr "審計日誌"
 msgid "Aug 2026"
 msgstr "2026年8月"
 
-msgid "Auth token"
-msgstr "認證權杖"
+msgid "Authenticate your {displayName} account"
+msgstr "驗證你的 {displayName} 帳戶"
 
 msgid "Authentication"
 msgstr "認證"
@@ -1951,9 +1997,6 @@ msgstr "作者"
 
 msgid "Author: {label}"
 msgstr "作者：{label}"
-
-msgid "Authorization code"
-msgstr "授權碼"
 
 msgid "Authorization failed"
 msgstr "授權失敗"
@@ -2154,9 +2197,6 @@ msgstr "{selectedHostLabel}上新建worktree的基準目錄"
 msgid "Base directory for new worktrees on {selectedHostName}."
 msgstr "{selectedHostName}上新建worktree的基準目錄。"
 
-msgid "Base URL"
-msgstr "基礎URL"
-
 #. placeholder {0}: draft.linkedPR.prNumber
 #. placeholder {0}: linkedPR.prNumber
 msgid "based off PR #{0}"
@@ -2166,6 +2206,9 @@ msgstr "基於PR #{0}"
 #. placeholder {1}: preview.providers.join(" and ")
 msgid "Based on {0} tokens in the last 30 days, counting {1}."
 msgstr "基於最近30天的{0}個token，統計{1}。"
+
+msgid "Before"
+msgstr "變更前"
 
 msgid "Behavior"
 msgstr "行為"
@@ -2184,6 +2227,9 @@ msgstr "再往後：F5不是近期的主張"
 
 msgid "Billed monthly"
 msgstr "按月計費"
+
+msgid "Billed per token."
+msgstr "按 token 計費。"
 
 msgid "Billed yearly"
 msgstr "按年計費"
@@ -2451,9 +2497,6 @@ msgstr "日曆"
 msgid "Calendar and Gmail triggers in this organization will stop firing until an account is connected again."
 msgstr "在重新連線帳戶之前，此組織中的日曆和Gmail觸發器將停止觸發。"
 
-msgid "Callback URL (optional)"
-msgstr "回呼URL（可選）"
-
 msgid "Camera access is not allowed"
 msgstr "相機存取未獲允許"
 
@@ -2539,6 +2582,9 @@ msgstr "現金 — 總餘額（Mercury）"
 msgid "Cash ÷ net burn at the current run rate"
 msgstr "按目前速率計算的現金 ÷ 淨支出"
 
+msgid "Category"
+msgstr "分類"
+
 msgid "Certificate Authority Invalid"
 msgstr "證書頒發機構無效"
 
@@ -2608,9 +2654,6 @@ msgstr "已要求修改"
 
 msgid "Changes saved"
 msgstr "更改已儲存"
-
-msgid "Changes take effect in new agent sessions."
-msgstr "改動會在新的代理程式會話中生效。"
 
 msgid "Changing..."
 msgstr "正在更改..."
@@ -2773,9 +2816,6 @@ msgstr "清理過期的TODO…"
 
 msgid "Cleaner, denser sidebar"
 msgstr "更清爽緊湊的側邊欄"
-
-msgid "Clear"
-msgstr "清除"
 
 msgid "Clear browsing data"
 msgstr "清除瀏覽資料"
@@ -3282,9 +3322,6 @@ msgstr "連線一個Google帳戶。它的日曆和電子郵件均為唯讀，觸
 msgid "Connect a microphone to use dictation"
 msgstr "請連線麥克風以使用語音輸入"
 
-msgid "Connect Anthropic"
-msgstr "連線Anthropic"
-
 msgid "Connect any AI agent to Superset."
 msgstr "把任意AI代理程式接入Superset。"
 
@@ -3314,9 +3351,6 @@ msgstr "連線Notion"
 
 msgid "Connect Notion to run automations when rows change in a data source or someone comments on a page."
 msgstr "連線Notion，在資料來源中的行發生變化或有人評論頁面時執行自動化。"
-
-msgid "Connect OpenAI"
-msgstr "連線OpenAI"
 
 msgid "Connect repos and sync pull requests."
 msgstr "連線儲存庫並同步拉取請求。"
@@ -3351,26 +3385,18 @@ msgstr "連線你的Slack工作區，直接在對話中管理任務。"
 msgid "Connected"
 msgstr "已連線"
 
+#. placeholder {0}: formatDate(new Date(connection.createdAt))
+msgid "connected {0}"
+msgstr "連線於 {0}"
+
 msgid "Connected as"
 msgstr "已連線為"
-
-msgid "Connected in Superset"
-msgstr "已在Superset中連線"
 
 msgid "Connected to"
 msgstr "已連線到"
 
 msgid "Connected to {connectedOrgName}"
 msgstr "已連線到{connectedOrgName}"
-
-msgid "Connected via ChatGPT"
-msgstr "已通過ChatGPT連線"
-
-msgid "Connected via Claude"
-msgstr "已通過Claude連線"
-
-msgid "Connected with API key"
-msgstr "已使用API金鑰連線"
 
 msgid "Connected, but Microsoft Graph refused the notification subscriptions."
 msgstr "已連線，但Microsoft Graph拒絕了通知訂閱。"
@@ -3390,9 +3416,6 @@ msgstr "正在連線至桌面…"
 msgid "Connecting to the workspace"
 msgstr "正在連線工作區"
 
-msgid "Connecting..."
-msgstr "正在連線..."
-
 msgid "Connecting…"
 msgstr "正在連線…"
 
@@ -3405,11 +3428,18 @@ msgstr "連線已關閉"
 msgid "Connection failed."
 msgstr "連線失敗。"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.connectionNotFound"
+msgstr "找不到連線"
+
 msgid "Connection Refused"
 msgstr "連線被拒絕"
 
 msgid "Connection Timed Out"
 msgstr "連線逾時"
+
+msgid "Connections"
+msgstr "連線"
 
 msgid "Consent finished but Microsoft did not issue a token for the tenant."
 msgstr "授權同意已完成，但Microsoft沒有為該租戶簽發權杖。"
@@ -3715,6 +3745,9 @@ msgstr "無法載入環境"
 msgid "Could not load environments."
 msgstr "無法載入環境。"
 
+msgid "Could not load plugins. Check your connection and try again."
+msgstr "無法載入外掛。請檢查連線後再試一次。"
+
 msgid "Could not load presets from the host"
 msgstr "無法從主機載入預設"
 
@@ -3807,6 +3840,10 @@ msgstr "無法更新技能"
 
 msgid "Could not update the branch"
 msgstr "無法更新分支"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.credentialUnverified"
+msgstr "無法驗證憑證：{reason}"
 
 msgid "Could not watch this page"
 msgstr "無法關注此頁面"
@@ -4086,6 +4123,9 @@ msgstr "已建立 <0>· 7天</0>"
 msgid "Created 1 folder in {where}"
 msgstr "已在{where}建立1個資料夾"
 
+msgid "Created by"
+msgstr "建立者"
+
 msgid "Created team \"{trimmedName}\""
 msgstr "已建立團隊「{trimmedName}」"
 
@@ -4290,6 +4330,9 @@ msgstr "預設（{defaultWorktreePath}）"
 msgid "default browser"
 msgstr "預設瀏覽器"
 
+msgid "Default Browser"
+msgstr "預設瀏覽器"
+
 msgid "Default effort"
 msgstr "預設推理強度"
 
@@ -4398,6 +4441,9 @@ msgstr "刪除頁面"
 
 msgid "Delete project"
 msgstr "刪除專案"
+
+msgid "Delete Project…"
+msgstr "刪除專案…"
 
 msgid "Delete script"
 msgstr "刪除指令碼"
@@ -4546,9 +4592,6 @@ msgstr "已分離"
 msgid "Details"
 msgstr "詳情"
 
-msgid "Detected in your agent configs"
-msgstr "在你的代理程式配置中檢測到"
-
 msgid "Dev"
 msgstr "開發"
 
@@ -4563,9 +4606,6 @@ msgstr "開發者"
 
 msgid "Developers"
 msgstr "開發者"
-
-msgid "Device"
-msgstr "裝置"
 
 msgid "Device: {selectedLabel}"
 msgstr "裝置：{selectedLabel}"
@@ -4611,9 +4651,6 @@ msgstr "停用技能"
 
 msgid "Disabled"
 msgstr "已停用"
-
-msgid "Disabled — kept installed, but Superset writes nothing into your agent configs."
-msgstr "已停用，外掛仍保留安裝，但Superset不會向你的代理程式配置寫入任何內容。"
 
 msgid "Disabled toggle"
 msgstr "停用的切換控制項"
@@ -4666,6 +4703,10 @@ msgstr "已放棄——不再詢問"
 
 msgid "Disconnect"
 msgstr "斷開連線"
+
+#. placeholder {0}: connection.account ?? displayName
+msgid "Disconnect {0}"
+msgstr "斷開 {0}"
 
 msgid "Disconnect GitHub?"
 msgstr "斷開GitHub連線？"
@@ -4977,6 +5018,9 @@ msgstr "正在編輯檔案..."
 msgid "editor"
 msgstr "編輯器"
 
+msgid "Editor"
+msgstr "編輯器"
+
 msgid "Editor & Workflow"
 msgstr "編輯器與工作流"
 
@@ -5041,9 +5085,6 @@ msgstr "啟用中繼存取…"
 msgid "Enable skill"
 msgstr "啟用技能"
 
-msgid "Enabled — servers are written into your agent configs."
-msgstr "已啟用，伺服器會寫入你的代理程式配置。"
-
 msgid "Engineering deep-dives and launches."
 msgstr "工程深度文章與新功能釋出。"
 
@@ -5076,12 +5117,6 @@ msgstr "企業版"
 
 msgid "Enterprise ARR by account"
 msgstr "按客戶劃分的企業版ARR"
-
-msgid "Entries you added yourself stay active in your agent config."
-msgstr "你自己新增的條目在代理程式配置裡仍然有效。"
-
-msgid "Entries you added yourself stay in your agent config."
-msgstr "你自己新增的條目會保留在代理程式配置裡。"
 
 msgid "Environment"
 msgstr "環境"
@@ -5340,9 +5375,6 @@ msgstr "檢查更新失敗：{message}"
 
 msgid "Failed to check for updates. Please try again later."
 msgstr "檢查更新失敗。請稍後重試。"
-
-msgid "Failed to clear"
-msgstr "清除失敗"
 
 #. placeholder {0}: errorMessage(error, "Unknown error")
 msgid "Failed to clear agent status: {0}"
@@ -5854,6 +5886,9 @@ msgstr "篩選代理程式..."
 msgid "Filter by @{normalizedSearch}"
 msgstr "按@{normalizedSearch}篩選"
 
+msgid "Filter by device"
+msgstr "依裝置篩選"
+
 msgid "Filter by reviews"
 msgstr "按審查篩選"
 
@@ -5916,6 +5951,9 @@ msgstr "找出最近改動過、覆蓋率薄弱的程式碼，好好補上測試
 
 msgid "Find stale TODO/FIXME comments and resolve the quick ones."
 msgstr "找出過期的TODO/FIXME註釋，把好處理的解決掉。"
+
+msgid "Finder"
+msgstr "Finder"
 
 msgid "Finish review"
 msgstr "完成審查"
@@ -6379,6 +6417,10 @@ msgstr "幫助與文件"
 msgid "Henry Ford"
 msgstr "Henry Ford"
 
+#. placeholder {0}: project.name
+msgid "Hid \"{0}\" from the sidebar"
+msgstr "已從側邊欄隱藏「{0}」"
+
 msgid "Hidden"
 msgstr "已隱藏"
 
@@ -6726,6 +6768,9 @@ msgstr "更好的差異檢視器"
 msgid "in a terminal on this host."
 msgstr "（在此主機的終端中）。"
 
+msgid "In all projects"
+msgstr "全部專案"
+
 msgid "In just a few months, <0>tens of thousands of engineers</0> run Superset as their primary IDE, at companies like Wix, DoorDash, and Netflix."
 msgstr "短短幾個月，<0>數萬名工程師</0>把Superset當作主力IDE，他們來自Wix、DoorDash、Netflix這樣的公司。"
 
@@ -6742,6 +6787,9 @@ msgid "In the Superset desktop app, open Settings → Remote Access and turn on 
 msgstr "在Superset桌面應用程式中開啟「設定 → 遠端存取」，開啟「允許遠端工作區通過中繼存取此裝置」。"
 
 msgid "in-app browser"
+msgstr "應用程式內瀏覽器"
+
+msgid "In-App Browser"
 msgstr "應用程式內瀏覽器"
 
 msgid "In-app PR merge"
@@ -6769,6 +6817,9 @@ msgid "Industry median, our estimate. Dashed is forecast. The first F4 teams cro
 msgstr "行業中位數，為我們的估計。虛線為預測。第一批F4團隊會更早越過這道關卡。"
 
 msgid "Info"
+msgstr "資訊"
+
+msgid "Information"
 msgstr "資訊"
 
 msgid "Initialize Git"
@@ -6817,9 +6868,6 @@ msgstr "來自Superset團隊的洞見，關於並行編碼代理程式與開發�
 msgid "Inspecting {0}"
 msgstr "正在檢查{0}"
 
-msgid "Install"
-msgstr "安裝"
-
 msgid "Install & restart"
 msgstr "安裝並重啟"
 
@@ -6847,9 +6895,9 @@ msgstr "在一處為所有工作區安裝、授權並劃定MCP伺服器的權限
 msgid "Installed"
 msgstr "已安裝"
 
-#. placeholder {0}: record.installedAt.slice(0, 10)
-msgid "installed {0}"
-msgstr "安裝於{0}"
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceHasInstalls"
+msgstr "已安裝的外掛來自 {name}：{plugins}。請先移除它們。"
 
 msgid "Installing..."
 msgstr "正在安裝..."
@@ -6956,8 +7004,8 @@ msgstr "我的資料安全嗎？"
 msgid "is now signed in here."
 msgstr "現已在此登入。"
 
-msgid "is signed in and will show its quota here."
-msgstr "已登入，其配額會顯示在這裡。"
+msgid "is signed in."
+msgstr "已登入。"
 
 msgid "Is Superset free to use?"
 msgstr "Superset免費嗎？"
@@ -7296,9 +7344,6 @@ msgstr "退出團隊"
 msgid "Leave the leaderboard?"
 msgstr "退出排行榜？"
 
-msgid "Leave this empty if browser login finishes on its own."
-msgstr "如果瀏覽器登入能自行完成，請留空。"
-
 msgid "Leaving organization..."
 msgstr "正在退出組織..."
 
@@ -7319,6 +7364,9 @@ msgstr "不到一分鐘前"
 
 msgid "Letter spacing (px)"
 msgstr "字間距（px）"
+
+msgid "License"
+msgstr "授權"
 
 msgid "Lifecycle scripts"
 msgstr "生命週期指令碼"
@@ -7683,9 +7731,6 @@ msgstr "管理方案"
 msgid "Manage plugins"
 msgstr "管理外掛"
 
-msgid "Manage provider accounts, API keys, and overrides. Connecting Anthropic or OpenAI below is also what powers automatic workspace naming — without one connected, new workspaces fall back to a name derived from your prompt."
-msgstr "管理提供方帳戶、API金鑰和覆蓋配置。在下方連線Anthropic或OpenAI也為工作區自動命名提供支援——兩者都未連線時，新工作區會回退到根據你的提示詞生成的名稱。"
-
 msgid "Manage sessions"
 msgstr "管理會話"
 
@@ -7780,9 +7825,6 @@ msgid "MCP manager"
 msgstr "MCP管理器"
 
 msgid "MCP Server"
-msgstr "MCP伺服器"
-
-msgid "MCP servers"
 msgstr "MCP伺服器"
 
 msgid "Mean"
@@ -7944,6 +7986,10 @@ msgstr "缺少必需的授權引數。"
 
 msgid "Missing required fields."
 msgstr "缺少必填欄位。"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.missingInput"
+msgstr "缺少必填輸入 {input}"
 
 msgid "Mobile"
 msgstr "行動裝置"
@@ -8189,6 +8235,9 @@ msgstr "新建自動化"
 
 msgid "New Browser"
 msgstr "新建瀏覽器"
+
+msgid "New Browser Tab"
+msgstr "新瀏覽器分頁"
 
 msgid "New chat"
 msgstr "新建聊天"
@@ -8544,6 +8593,9 @@ msgstr "未找到議題。"
 msgid "No items"
 msgstr "暫無條目"
 
+msgid "No known creators"
+msgstr "沒有已知的建立者"
+
 msgid "No labels"
 msgstr "無標籤"
 
@@ -8552,9 +8604,6 @@ msgstr "沒有活動會話"
 
 msgid "no logins"
 msgstr "無登入資訊"
-
-msgid "no longer in the catalog"
-msgstr "已不在目錄中"
 
 msgid "No match"
 msgstr "無匹配項"
@@ -8615,6 +8664,9 @@ msgstr "沒有待處理的邀請"
 
 msgid "No people found."
 msgstr "未找到成員。"
+
+msgid "No plugins available yet."
+msgstr "尚無可用的外掛。"
 
 #. placeholder {0}: search.trim()
 msgid "No plugins match \"{0}\""
@@ -8966,6 +9018,9 @@ msgstr "如今，我們已從矽谷最好的投資人那裡融資<0>1100萬美�
 msgid "Numbered list"
 msgstr "編號列表"
 
+msgid "OAuth 2.0"
+msgstr "OAuth 2.0"
+
 msgid "OAuth by default, API keys for CI"
 msgstr "預設用OAuth，CI用API金鑰"
 
@@ -9122,6 +9177,10 @@ msgstr "開啟"
 msgid "Open {0}"
 msgstr "開啟{0}"
 
+#. placeholder {0}: plugin.interface.displayName
+msgid "Open {0} website"
+msgstr "開啟 {0} 官網"
+
 msgid "Open {filePath}"
 msgstr "開啟{filePath}"
 
@@ -9157,9 +9216,6 @@ msgstr "在GitHub上開啟分支"
 
 msgid "Open Browser"
 msgstr "開啟瀏覽器"
-
-msgid "Open browser again"
-msgstr "重新開啟瀏覽器"
 
 msgid "Open changes"
 msgstr "開啟更改"
@@ -9497,12 +9553,6 @@ msgstr "開啟工作區"
 msgid "Open workspace in external app (Cursor, VS Code, etc.)"
 msgstr "在外部應用中開啟工作區（Cursor、VS Code等）"
 
-msgid "OpenAI API key cleared"
-msgstr "已清除OpenAI API金鑰"
-
-msgid "OpenAI API key updated"
-msgstr "已更新OpenAI API金鑰"
-
 msgid "Opened"
 msgstr "已建立"
 
@@ -9799,12 +9849,6 @@ msgstr "過去一週"
 msgid "Paste"
 msgstr "貼上"
 
-msgid "Paste callback URL"
-msgstr "貼上回呼URL"
-
-msgid "Paste callback URL or code#state"
-msgstr "貼上回呼URL或code#state"
-
 msgid "Paste this into Superset CLI:"
 msgstr "把它貼上到Superset CLI："
 
@@ -10003,6 +10047,14 @@ msgstr "請選擇一個組織"
 msgid "Please try signing in again from the desktop app."
 msgstr "請從桌面應用程式重新登入。"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.noApiKeyAuth"
+msgstr "外掛 {plugin} 未使用 api_key 認證"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.notInstalled"
+msgstr "外掛 {plugin} 未安裝"
+
 msgid "Plugin marketplace"
 msgstr "外掛市場"
 
@@ -10100,12 +10152,6 @@ msgstr "字首"
 
 msgid "Preparing"
 msgstr "正在準備"
-
-msgid "Preparing Anthropic browser login..."
-msgstr "正在準備Anthropic瀏覽器登入..."
-
-msgid "Preparing OpenAI browser login..."
-msgstr "正在準備OpenAI瀏覽器登入..."
 
 msgid "Preserve commit history"
 msgstr "保留提交歷史"
@@ -10366,9 +10412,6 @@ msgstr "屬性"
 msgid "Provide either id or slug"
 msgstr "請提供id或slug"
 
-msgid "Provided by entries in your own agent config."
-msgstr "由你自己的代理程式配置中的條目提供。"
-
 #. placeholder {0}: sourceConfig?.label ?? binding.agentId
 msgid "Provider: {0}"
 msgstr "供應商：{0}"
@@ -10561,8 +10604,8 @@ msgstr "閱讀並行編碼代理程式指南"
 msgid "Read the setup guide"
 msgstr "閱讀設定指南"
 
-msgid "Reading subscription usage…"
-msgstr "正在讀取訂閱用量…"
+msgid "Reading usage…"
+msgstr "正在讀取用量…"
 
 msgid "Reading your local usage…"
 msgstr "正在讀取本地用量…"
@@ -10685,6 +10728,9 @@ msgstr "重新整理指標"
 msgid "Refresh pull requests"
 msgstr "重新整理拉取請求"
 
+msgid "Refreshes when Claude Code next runs."
+msgstr "下次執行 Claude Code 時重新整理。"
+
 msgid "Register any CLI agent alongside the built-ins, each with its own name, icon, and launch command."
 msgstr "在內建代理程式之外註冊任意CLI代理程式，各自擁有名稱、圖示和啟動命令。"
 
@@ -10739,9 +10785,6 @@ msgstr "遠端存取"
 msgid "Remote MCP server — connects over HTTP"
 msgstr "遠端MCP伺服器，通過HTTP連線"
 
-msgid "Remote servers sign you in the first time an agent uses them."
-msgstr "遠端伺服器會在代理程式第一次使用時讓你登入。"
-
 msgid "Remote workspace"
 msgstr "遠端工作區"
 
@@ -10793,9 +10836,6 @@ msgstr "移除提及{path}"
 
 msgid "Remove PR Link"
 msgstr "移除PR連結"
-
-msgid "Remove project from sidebar?"
-msgstr "從側邊欄移除專案？"
 
 msgid "Remove script"
 msgstr "移除指令碼"
@@ -11010,6 +11050,9 @@ msgid "Reset worktree location"
 msgstr "重置worktree位置"
 
 msgid "Reset zoom"
+msgstr "重置縮放"
+
+msgid "Reset Zoom"
 msgstr "重置縮放"
 
 msgid "Resets in {countdown} · {absolute}"
@@ -11345,6 +11388,12 @@ msgstr "執行命令並在應用中導航。"
 msgid "Run History"
 msgstr "執行歷史"
 
+msgid "Run in a terminal on this host; paste your key when asked:"
+msgstr "在此主機的終端中執行，出現提示時貼上你的金鑰："
+
+msgid "Run in a terminal on this host:"
+msgstr "在此主機的終端中執行："
+
 msgid "Run in Workspace"
 msgstr "在工作區中執行"
 
@@ -11371,9 +11420,6 @@ msgstr "執行終端命令並與其他應用程式程式互動。"
 
 msgid "Run the agent in the Workspace Setup terminal once setup finishes instead of starting a second terminal alongside it"
 msgstr "設定完成後在「工作區設定」終端中執行代理程式，而不是另外啟動第二個終端"
-
-msgid "Run this in any terminal on this host, then finish the sign-in in your browser:"
-msgstr "在此主機的任意終端中執行以下命令，然後在瀏覽器中完成登入："
 
 msgid "Run workspace command"
 msgstr "執行工作區命令"
@@ -11474,15 +11520,6 @@ msgstr "已儲存"
 #. placeholder {0}: created?.name
 msgid "Saved \"{0}\" as an environment"
 msgstr "已將「{0}」儲存為環境"
-
-msgid "Saved Anthropic API key"
-msgstr "已儲存的Anthropic API金鑰"
-
-msgid "Saved on blur."
-msgstr "失焦時自動儲存。"
-
-msgid "Saved OpenAI API key"
-msgstr "已儲存的OpenAI API金鑰"
 
 msgid "Saved to Downloads"
 msgstr "已儲存到「下載」資料夾"
@@ -12260,20 +12297,11 @@ msgstr "以本地管理員身份登入（開發）"
 msgid "Sign in to {0}"
 msgstr "登入{0}"
 
-msgid "Sign in to a second subscription as a separate profile. Your current login is untouched, and the new profile shares your skills, plugins, MCP servers, and settings."
-msgstr "以獨立配置檔案登入第二個訂閱。你目前的登入不受影響，新配置檔案共享你的技能、外掛、MCP伺服器和設定。"
-
 msgid "Sign in to continue to Superset"
 msgstr "登入以繼續使用Superset"
 
 msgid "Sign in to get started"
 msgstr "登入即可開始"
-
-msgid "Sign in with ChatGPT or use an API key."
-msgstr "使用ChatGPT登入或使用API金鑰。"
-
-msgid "Sign in with Claude or use an API key."
-msgstr "使用Claude登入或使用API金鑰。"
 
 msgid "Sign in with email"
 msgstr "使用電子郵件登入"
@@ -12838,6 +12866,9 @@ msgstr "訂閱"
 msgid "Subscribe on YouTube"
 msgstr "在YouTube上訂閱"
 
+msgid "Subscription"
+msgstr "訂閱"
+
 msgid "Success"
 msgstr "成功"
 
@@ -13277,6 +13308,9 @@ msgstr "終端檔案連結"
 msgid "Terminal font size"
 msgstr "終端字型大小"
 
+msgid "Terminal font size when a terminal is focused, page zoom in a browser pane, otherwise the whole app"
+msgstr "終端取得焦點時調整終端字型大小，瀏覽器窗格中調整頁面縮放，其他情況下縮放整個應用程式"
+
 msgid "terminal ID"
 msgstr "終端ID"
 
@@ -13556,6 +13590,9 @@ msgstr "遠端分支已分叉。請先拉取再繼續。"
 msgid "The renderer crashed during startup. Please check logs for details."
 msgstr "渲染處理程序在啟動時崩潰。請檢視日誌瞭解詳情。"
 
+msgid "The repository folder itself is kept."
+msgstr "儲存庫資料夾本身會保留。"
+
 msgid "The request failed."
 msgstr "請求失敗。"
 
@@ -13674,9 +13711,6 @@ msgstr "這會關閉所有終端會話 — 包括此工作區和其他工作區�
 msgid "This closes every terminal session for your organization{runningCountSuffix} and starts a fresh daemon."
 msgstr "這會關閉你組織的所有終端會話{runningCountSuffix}並啟動全新的守護程式。"
 
-msgid "This deletes the project and all of its workspaces from <0>every reachable device</0> where it is set up. This cannot be undone."
-msgstr "這將從設定過該專案的<0>每一臺可存取裝置</0>上刪除該專案及其所有工作區。此操作無法復原。"
-
 msgid "This deletes the saved scrollback used for reboot/crash recovery."
 msgstr "這將刪除用於重啟/崩潰恢復的已儲存回滾緩衝。"
 
@@ -13779,6 +13813,9 @@ msgstr "此路徑存在，但不是目錄。"
 msgid "This path is a directory"
 msgstr "該路徑是一個目錄"
 
+msgid "This plugin needs no account — its skills are ready to use."
+msgstr "此外掛不需要帳戶 — 它的技能可直接使用。"
+
 msgid "This port is still in use"
 msgstr "此埠仍在使用中"
 
@@ -13799,6 +13836,9 @@ msgstr "這會把每個選中的worktree從磁碟上移除，並刪除它的工�
 
 msgid "This removes the host, its access, and its workspaces. Files on the machine stay. A running host may reappear. This can’t be undone."
 msgstr "這將移除該主機、其存取權限及其工作區。機器上的檔案會保留。執行中的主機可能會重新出現。此操作無法復原。"
+
+msgid "This removes the project from every reachable device."
+msgstr "這會從所有可連線的裝置中移除該專案。"
 
 msgid "This removes the worktree from disk. The cloud workspace record will also be removed."
 msgstr "這會把worktree從磁碟上移除。雲端的工作區記錄也會一併移除。"
@@ -13872,9 +13912,6 @@ msgstr "這會移除你的組織與Notion之間的連線。你可以隨時重新
 
 msgid "This will remove the connection between your organization and Slack. You can reconnect at any time."
 msgstr "這會移除你的組織與Slack之間的連線。你可以隨時重新連線。"
-
-msgid "This will remove workspaces from the sidebar and delete all project sections. The workspaces or projects won't be deleted."
-msgstr "這會從側邊欄移除工作區，並刪除所有專案分區。工作區和專案本身不會被刪除。"
 
 msgid "This will revert all changes to this file. This action cannot be undone."
 msgstr "這將還原對此檔案的所有更改。此操作無法復原。"
@@ -14264,10 +14301,7 @@ msgstr "取消選中工作區的群組"
 msgid "Unified view"
 msgstr "統一檢視"
 
-msgid "Uninstall"
-msgstr "解除安裝"
-
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: plugin.interface.displayName
 msgid "Uninstall {0}"
 msgstr "解除安裝{0}"
 
@@ -14304,6 +14338,10 @@ msgstr "未知主機"
 
 msgid "Unknown Host"
 msgstr "未知主機"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.unknownPlugin"
+msgstr "未知的外掛 {plugin}"
 
 msgid "Unknown project"
 msgstr "未知專案"
@@ -14380,6 +14418,9 @@ msgstr "即將執行"
 
 msgid "Up Next"
 msgstr "即將開始"
+
+msgid "Update"
+msgstr "更新"
 
 msgid "Update available"
 msgstr "有可用更新"
@@ -14660,6 +14701,9 @@ msgstr "在GitHub上檢視釋出"
 msgid "View Superset repository on GitHub"
 msgstr "在GitHub上檢視Superset儲存庫"
 
+msgid "View usage"
+msgstr "檢視用量"
+
 msgid "Volume"
 msgstr "音量"
 
@@ -14675,8 +14719,8 @@ msgstr "等待檢查"
 msgid "Waiting for Review"
 msgstr "等待審查"
 
-msgid "Waiting for the sign-in to complete — this updates automatically."
-msgstr "正在等待登入完成——此處會自動更新。"
+msgid "Waiting for sign-in…"
+msgstr "等待登入…"
 
 msgid "Want something sooner? <0>Tell us in Discord</0>. Much of what's here started as a user request."
 msgstr "想讓某件事早點做？<0>在Discord上告訴我們</0>。這裡的很多條目最初都來自使用者的請求。"
@@ -15044,6 +15088,9 @@ msgstr "worktree不同步"
 msgid "Worktrees"
 msgstr "Worktree"
 
+msgid "Worktrees with uncommitted changes are left on disk."
+msgstr "有未提交變更的worktree會保留在磁碟上。"
+
 msgid "Would you like to reassign it?"
 msgstr "要重新分配嗎？"
 
@@ -15103,9 +15150,6 @@ msgstr "你"
 
 msgid "YOU"
 msgstr "你"
-
-msgid "You added these yourself — Superset never touches them, and never writes duplicates of servers you already have."
-msgstr "這些是你自己新增的，Superset從不改動它們，也不會為你已有的伺服器寫入重複項。"
 
 msgid "You appear to be offline"
 msgstr "你似乎處於離線狀態"
@@ -15245,7 +15289,13 @@ msgstr "縮放"
 msgid "Zoom in"
 msgstr "放大"
 
+msgid "Zoom In"
+msgstr "放大"
+
 msgid "Zoom out"
+msgstr "縮小"
+
+msgid "Zoom Out"
 msgstr "縮小"
 
 msgid "zsh"

@@ -102,7 +102,7 @@ export function SandboxSettings({ hostId }: SandboxSettingsProps) {
 			if (!targetHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "update sandbox settings",
+						action: "updateSandboxSettings",
 					}),
 				);
 			}

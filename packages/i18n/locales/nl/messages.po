@@ -140,6 +140,10 @@ msgstr "{0, plural, one {# bestand} other {# bestanden}}"
 msgid "{0, plural, one {# File} other {# Files}}"
 msgstr "{0, plural, one {# bestand} other {# bestanden}}"
 
+#. placeholder {0}: projects.length
+msgid "{0, plural, one {# hidden project} other {# hidden projects}}"
+msgstr "{0, plural, one {# verborgen project} other {# verborgen projecten}}"
+
 #. placeholder {0}: result.imported
 msgid "{0, plural, one {# history item} other {# history items}}"
 msgstr "{0, plural, one {# item uit de geschiedenis} other {# items uit de geschiedenis}}"
@@ -155,6 +159,10 @@ msgstr "{0, plural, one {# geslaagd} other {# geslaagd}}"
 #. placeholder {0}: selectedProjects.length
 msgid "{0, plural, one {# project selected.} other {# projects selected.}}"
 msgstr "{0, plural, one {# project geselecteerd.} other {# projecten geselecteerd.}}"
+
+#. placeholder {0}: projectFilters.length
+msgid "{0, plural, one {# project} other {# projects}}"
+msgstr "{0, plural, one {# project} other {# projecten}}"
 
 #. placeholder {0}: repositories.length
 #. placeholder {0}: selectedProjects.length
@@ -269,6 +277,10 @@ msgstr "{0} – {1} · schatting op API-tarief uit lokale sessielogs"
 msgid "{0} — try the Superset tray menu > Host Service > Restart."
 msgstr "{0} — probeer het Superset-menu in de menubalk > Hostservice > Opnieuw starten."
 
+#. placeholder {0}: creator.name
+msgid "{0} (you)"
+msgstr "{0} (jij)"
+
 #. placeholder {0}: actor.login
 msgid "{0} {actorVerb}"
 msgstr "{0} {actorVerb}"
@@ -297,7 +309,7 @@ msgstr "{0} uitgeschakeld"
 
 #. placeholder {0}: displayName(variables.name)
 #. placeholder {0}: plugin.interface.displayName
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: skill.name
 msgid "{0} enabled"
 msgstr "{0} ingeschakeld"
 
@@ -340,6 +352,11 @@ msgstr "{0} zit op het Free-plan. Superset Mobile is beschikbaar voor organisati
 #. placeholder {2}: hostCompatibility.minVersion
 msgid "{0} is running host service {1} — this app needs {2} or newer. Update Superset on that machine."
 msgstr "{0} draait hostservice {1} — deze app heeft {2} of nieuwer nodig. Werk Superset op die machine bij."
+
+#. placeholder {0}: displayName(name)
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} is set up on this machine, but not on your account"
+msgstr "{0} is ingesteld op deze machine, maar niet op je account"
 
 #. placeholder {0}: v.toLocaleString()
 msgid "{0} mo"
@@ -410,6 +427,10 @@ msgstr "{0} tokens in de laatste 30 dagen. Gepubliceerd als <0>{handle}</0>."
 #. placeholder {0}: displayName(variables.name)
 msgid "{0} uninstalled"
 msgstr "{0} verwijderd"
+
+#. placeholder {0}: displayName(variables.name)
+msgid "{0} updated"
+msgstr "{0} bijgewerkt"
 
 #. placeholder {0}: file.path
 msgid "{0} was deleted in this change."
@@ -618,6 +639,9 @@ msgstr "{level} · {gate} · {statusLabel}"
 msgid "{level} {gate}: {statusLabel}"
 msgstr "{level} {gate}: {statusLabel}"
 
+msgid "{localHostName} (this device)"
+msgstr "{localHostName} (dit apparaat)"
+
 #. placeholder {0}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} result for &ldquo;{query}&rdquo; </>
 #. placeholder {1}: <> <span className="tabular-nums font-medium text-foreground"> # </span>{" "} results for &ldquo;{query}&rdquo; </>
 msgid "{matchCount, plural, one {{0}} other {{1}}}"
@@ -644,11 +668,26 @@ msgstr "{months}mnd geleden"
 msgid "{myFailedCount} of your automations failed their last run"
 msgstr "Bij {myFailedCount} van je automatiseringen is de laatste run mislukt"
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceBuiltinRemove"
+msgstr "{name} is ingebouwd en kan niet worden verwijderd"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceReserved"
+msgstr "{name} is ingebouwd en kan niet worden vervangen"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotAdded"
+msgstr "{name} is niet toegevoegd"
+
 msgid "{noun, select, person {Specify at least one person, or choose {choice}.} sender {Specify at least one sender, or choose {choice}.} other {Specify at least one entry, or choose {choice}.}}"
 msgstr "{noun, select, person {Geef minstens één persoon op, of kies {choice}.} sender {Geef minstens één afzender op, of kies {choice}.} other {Geef minstens één item op, of kies {choice}.}}"
 
 msgid "{noun, select, repository {Specify at least one repository.} channel {Specify at least one channel.} reaction {Specify at least one reaction.} dataSource {Specify at least one data source.} team {Specify at least one team.} project {Specify at least one project.} calendar {Specify at least one calendar.} other {Specify at least one entry.}}"
 msgstr "{noun, select, repository {Geef minstens één repository op.} channel {Geef minstens één kanaal op.} reaction {Geef minstens één reactie op.} dataSource {Geef minstens één gegevensbron op.} team {Geef minstens één team op.} project {Geef minstens één project op.} calendar {Geef minstens één agenda op.} other {Geef minstens één item op.}}"
+
+msgid "{offlineHostCount, plural, one {# device is offline and keeps its copy.} other {# devices are offline and keep their copy.}}"
+msgstr "{offlineHostCount, plural, one {# apparaat is offline en behoudt zijn kopie.} other {# apparaten zijn offline en behouden hun kopie.}}"
 
 msgid "{openCount} open"
 msgstr "{openCount} open"
@@ -687,6 +726,14 @@ msgstr "logo van {provider}"
 
 msgid "{readPercent}% read"
 msgstr "{readPercent}% gelezen"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.ambiguousPlugin"
+msgstr "{reason}"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.dispatchFailed"
+msgstr "{reason}"
 
 msgid "{received} of {total}"
 msgstr "{received} van {total}"
@@ -773,6 +820,9 @@ msgstr "{workspaceName}: host is niet beschikbaar"
 
 msgid "{workspaceName}: teardown failed"
 msgstr "{workspaceName}: teardown mislukt"
+
+msgid "{worktreeCount, plural, one {This removes the project and its # workspace from every reachable device, and deletes that worktree from disk.} other {This removes the project and its # workspaces from every reachable device, and deletes their worktrees from disk.}}"
+msgstr "{worktreeCount, plural, one {Dit verwijdert het project en zijn # werkruimte van elk bereikbaar apparaat en wist die worktree van de schijf.} other {Dit verwijdert het project en zijn # werkruimten van elk bereikbaar apparaat en wist hun worktrees van de schijf.}}"
 
 msgid "{years}y ago"
 msgstr "{years}j geleden"
@@ -1070,6 +1120,13 @@ msgstr "Er loopt al een run voor deze automatisering."
 msgid "A selection of integrations curated by our team."
 msgstr "Een selectie van integraties die ons team heeft samengesteld."
 
+#. placeholder {0}: AGENT_LABELS[agent]
+msgid "A separate pay-per-token profile. The key stays in the {0} CLI."
+msgstr "Een apart profiel dat per token wordt afgerekend. De sleutel blijft in de {0}-CLI."
+
+msgid "A separate profile that shares your skills, plugins, MCP servers, and settings."
+msgstr "Een apart profiel dat je skills, plugins, MCP-servers en instellingen deelt."
+
 msgid "a teammate"
 msgstr "een teamgenoot"
 
@@ -1117,6 +1174,10 @@ msgstr "Accordion"
 
 msgid "Account"
 msgstr "Account"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceNotResolvable"
+msgstr "Installatie op het account werkt alleen met eigen manifests, dus {plugin} uit {marketplace} kan nog niet op je account worden geïnstalleerd. Hij blijft op deze machine geïnstalleerd."
 
 msgid "Account is pending deletion."
 msgstr "Account wordt verwijderd."
@@ -1248,6 +1309,9 @@ msgstr "Voeg er een toe via het menu in de zijbalk om te beginnen."
 msgid "Add photos or files"
 msgstr "Foto's of bestanden toevoegen"
 
+msgid "Add plugin"
+msgstr "Plugin toevoegen"
+
 msgid "Add project"
 msgstr "Project toevoegen"
 
@@ -1302,9 +1366,6 @@ msgstr "Alleen toegevoegd bij starten met een prompt — bijv. <0>--</0>, <1>--p
 msgid "Adding members will increase your subscription cost, prorated to your billing cycle."
 msgstr "Leden toevoegen verhoogt de kosten van je abonnement, naar rato van je factuurcyclus."
 
-msgid "Additional env vars"
-msgstr "Extra omgevingsvariabelen"
-
 msgid "Address Comments with Agent"
 msgstr "Opmerkingen afhandelen met agent"
 
@@ -1326,11 +1387,11 @@ msgstr "Beheerders kunnen eigenaren niet wijzigen"
 msgid "Admins cannot promote members to owner"
 msgstr "Beheerders kunnen leden niet tot eigenaar promoveren"
 
-msgid "Advanced"
-msgstr "Geavanceerd"
-
 msgid "Advanced options"
 msgstr "Geavanceerde opties"
+
+msgid "After"
+msgstr "Na"
 
 msgid "Against base"
 msgstr "Ten opzichte van basis"
@@ -1676,18 +1737,6 @@ msgstr "een ander apparaat"
 msgid "Answered"
 msgstr "Beantwoord"
 
-msgid "Anthropic API key cleared"
-msgstr "Anthropic API-sleutel gewist"
-
-msgid "Anthropic API key updated"
-msgstr "Anthropic API-sleutel bijgewerkt"
-
-msgid "Anthropic settings updated"
-msgstr "Anthropic-instellingen bijgewerkt"
-
-msgid "Anthropic usually returns a full callback URL. Pasting either format works."
-msgstr "Anthropic geeft meestal een volledige callback-URL terug. Beide formaten werken."
-
 msgid "Any calendar"
 msgstr "Elke agenda"
 
@@ -1751,6 +1800,9 @@ msgstr "wat dan ook"
 msgid "AP"
 msgstr "AP"
 
+msgid "API"
+msgstr "API"
+
 msgid "API key"
 msgstr "API-sleutel"
 
@@ -1798,12 +1850,6 @@ msgstr "Toepassen"
 
 msgid "Approve"
 msgstr "Goedkeuren"
-
-msgid "Approve access in your browser, then paste the callback URL or `code#state` here."
-msgstr "Keur de toegang goed in je browser en plak hier de callback-URL of `code#state`."
-
-msgid "Approve access in your browser. If the callback does not finish, paste the redirected callback URL below."
-msgstr "Keur de toegang goed in je browser. Als de callback niet wordt voltooid, plak dan hieronder de doorgestuurde callback-URL."
 
 msgid "Approved"
 msgstr "Goedgekeurd"
@@ -1934,8 +1980,8 @@ msgstr "Auditlogs"
 msgid "Aug 2026"
 msgstr "Aug 2026"
 
-msgid "Auth token"
-msgstr "Auth-token"
+msgid "Authenticate your {displayName} account"
+msgstr "Verifieer je {displayName}-account"
 
 msgid "Authentication"
 msgstr "Authenticatie"
@@ -1951,9 +1997,6 @@ msgstr "Auteur"
 
 msgid "Author: {label}"
 msgstr "Auteur: {label}"
-
-msgid "Authorization code"
-msgstr "Autorisatiecode"
 
 msgid "Authorization failed"
 msgstr "Autorisatie mislukt"
@@ -2154,9 +2197,6 @@ msgstr "Basismap voor nieuwe worktrees op {selectedHostLabel}"
 msgid "Base directory for new worktrees on {selectedHostName}."
 msgstr "Basismap voor nieuwe worktrees op {selectedHostName}."
 
-msgid "Base URL"
-msgstr "Basis-URL"
-
 #. placeholder {0}: draft.linkedPR.prNumber
 #. placeholder {0}: linkedPR.prNumber
 msgid "based off PR #{0}"
@@ -2166,6 +2206,9 @@ msgstr "gebaseerd op PR #{0}"
 #. placeholder {1}: preview.providers.join(" and ")
 msgid "Based on {0} tokens in the last 30 days, counting {1}."
 msgstr "Op basis van {0} tokens in de laatste 30 dagen, gerekend over {1}."
+
+msgid "Before"
+msgstr "Voor"
 
 msgid "Behavior"
 msgstr "Gedrag"
@@ -2184,6 +2227,9 @@ msgstr "Verder: F5 is geen claim voor de korte termijn"
 
 msgid "Billed monthly"
 msgstr "Maandelijks gefactureerd"
+
+msgid "Billed per token."
+msgstr "Afgerekend per token."
 
 msgid "Billed yearly"
 msgstr "Jaarlijks gefactureerd"
@@ -2451,9 +2497,6 @@ msgstr "Agenda"
 msgid "Calendar and Gmail triggers in this organization will stop firing until an account is connected again."
 msgstr "Calendar- en Gmail-triggers in deze organisatie stoppen tot er weer een account is verbonden."
 
-msgid "Callback URL (optional)"
-msgstr "Callback-URL (optioneel)"
-
 msgid "Camera access is not allowed"
 msgstr "Toegang tot de camera is niet toegestaan"
 
@@ -2539,6 +2582,9 @@ msgstr "Cash — totaal saldo (Mercury)"
 msgid "Cash ÷ net burn at the current run rate"
 msgstr "Cash ÷ netto burn tegen het huidige tempo"
 
+msgid "Category"
+msgstr "Categorie"
+
 msgid "Certificate Authority Invalid"
 msgstr "Certificaatautoriteit ongeldig"
 
@@ -2608,9 +2654,6 @@ msgstr "Wijzigingen gevraagd"
 
 msgid "Changes saved"
 msgstr "Wijzigingen opgeslagen"
-
-msgid "Changes take effect in new agent sessions."
-msgstr "Wijzigingen gelden voor nieuwe agentsessies."
 
 msgid "Changing..."
 msgstr "Wijzigen..."
@@ -2773,9 +2816,6 @@ msgstr "Ruim verouderde TODO's op…"
 
 msgid "Cleaner, denser sidebar"
 msgstr "Strakkere, compactere zijbalk"
-
-msgid "Clear"
-msgstr "Wissen"
 
 msgid "Clear browsing data"
 msgstr "Browsegegevens wissen"
@@ -3282,9 +3322,6 @@ msgstr "Verbind een Google-account. De agenda's en mailbox worden alleen gelezen
 msgid "Connect a microphone to use dictation"
 msgstr "Sluit een microfoon aan om te dicteren"
 
-msgid "Connect Anthropic"
-msgstr "Anthropic verbinden"
-
 msgid "Connect any AI agent to Superset."
 msgstr "Verbind elke AI-agent met Superset."
 
@@ -3314,9 +3351,6 @@ msgstr "Notion verbinden"
 
 msgid "Connect Notion to run automations when rows change in a data source or someone comments on a page."
 msgstr "Verbind Notion om automatiseringen te draaien wanneer rijen in een databron wijzigen of iemand op een pagina reageert."
-
-msgid "Connect OpenAI"
-msgstr "OpenAI verbinden"
 
 msgid "Connect repos and sync pull requests."
 msgstr "Koppel repo's en synchroniseer pull requests."
@@ -3351,26 +3385,18 @@ msgstr "Verbind je Slack-werkruimte om taken vanuit gesprekken te beheren."
 msgid "Connected"
 msgstr "Verbonden"
 
+#. placeholder {0}: formatDate(new Date(connection.createdAt))
+msgid "connected {0}"
+msgstr "verbonden {0}"
+
 msgid "Connected as"
 msgstr "Verbonden als"
-
-msgid "Connected in Superset"
-msgstr "Verbonden in Superset"
 
 msgid "Connected to"
 msgstr "Verbonden met"
 
 msgid "Connected to {connectedOrgName}"
 msgstr "Verbonden met {connectedOrgName}"
-
-msgid "Connected via ChatGPT"
-msgstr "Verbonden via ChatGPT"
-
-msgid "Connected via Claude"
-msgstr "Verbonden via Claude"
-
-msgid "Connected with API key"
-msgstr "Verbonden met API-sleutel"
 
 msgid "Connected, but Microsoft Graph refused the notification subscriptions."
 msgstr "Verbonden, maar Microsoft Graph heeft de meldingsabonnementen geweigerd."
@@ -3390,9 +3416,6 @@ msgstr "Verbinden met het bureaublad…"
 msgid "Connecting to the workspace"
 msgstr "Verbinden met de werkruimte"
 
-msgid "Connecting..."
-msgstr "Verbinden..."
-
 msgid "Connecting…"
 msgstr "Verbinden…"
 
@@ -3405,11 +3428,18 @@ msgstr "Verbinding gesloten"
 msgid "Connection failed."
 msgstr "Verbinding mislukt."
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.connectionNotFound"
+msgstr "Verbinding niet gevonden"
+
 msgid "Connection Refused"
 msgstr "Verbinding geweigerd"
 
 msgid "Connection Timed Out"
 msgstr "Verbinding verlopen"
+
+msgid "Connections"
+msgstr "Verbindingen"
 
 msgid "Consent finished but Microsoft did not issue a token for the tenant."
 msgstr "De toestemming is afgerond, maar Microsoft heeft geen token voor de tenant afgegeven."
@@ -3715,6 +3745,9 @@ msgstr "Kan omgevingen niet laden"
 msgid "Could not load environments."
 msgstr "Kon omgevingen niet laden."
 
+msgid "Could not load plugins. Check your connection and try again."
+msgstr "Plugins konden niet worden geladen. Controleer je verbinding en probeer het opnieuw."
+
 msgid "Could not load presets from the host"
 msgstr "Kan presets van de host niet laden"
 
@@ -3807,6 +3840,10 @@ msgstr "Kan skill niet bijwerken"
 
 msgid "Could not update the branch"
 msgstr "Kan de branch niet bijwerken"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.credentialUnverified"
+msgstr "Kon de inloggegevens niet verifiëren: {reason}"
 
 msgid "Could not watch this page"
 msgstr "Kon deze pagina niet volgen"
@@ -4086,6 +4123,9 @@ msgstr "Aangemaakt <0>· 7d</0>"
 msgid "Created 1 folder in {where}"
 msgstr "1 map aangemaakt in {where}"
 
+msgid "Created by"
+msgstr "Gemaakt door"
+
 msgid "Created team \"{trimmedName}\""
 msgstr "Team \"{trimmedName}\" aangemaakt"
 
@@ -4290,6 +4330,9 @@ msgstr "Standaard ({defaultWorktreePath})"
 msgid "default browser"
 msgstr "standaardbrowser"
 
+msgid "Default Browser"
+msgstr "Standaardbrowser"
+
 msgid "Default effort"
 msgstr "Standaard-effort"
 
@@ -4398,6 +4441,9 @@ msgstr "Pagina verwijderen"
 
 msgid "Delete project"
 msgstr "Project verwijderen"
+
+msgid "Delete Project…"
+msgstr "Project verwijderen…"
 
 msgid "Delete script"
 msgstr "Script verwijderen"
@@ -4546,9 +4592,6 @@ msgstr "Losgekoppeld"
 msgid "Details"
 msgstr "Details"
 
-msgid "Detected in your agent configs"
-msgstr "Gevonden in je agentconfiguraties"
-
 msgid "Dev"
 msgstr "Dev"
 
@@ -4563,9 +4606,6 @@ msgstr "Ontwikkelaar"
 
 msgid "Developers"
 msgstr "Ontwikkelaars"
-
-msgid "Device"
-msgstr "Apparaat"
 
 msgid "Device: {selectedLabel}"
 msgstr "Apparaat: {selectedLabel}"
@@ -4611,9 +4651,6 @@ msgstr "Skill uitschakelen"
 
 msgid "Disabled"
 msgstr "Uitgeschakeld"
-
-msgid "Disabled — kept installed, but Superset writes nothing into your agent configs."
-msgstr "Uitgeschakeld — blijft geïnstalleerd, maar Superset schrijft niets in je agentconfiguraties."
 
 msgid "Disabled toggle"
 msgstr "Uitgeschakelde toggle"
@@ -4666,6 +4703,10 @@ msgstr "Verworpen — we vragen het niet meer"
 
 msgid "Disconnect"
 msgstr "Verbinding verbreken"
+
+#. placeholder {0}: connection.account ?? displayName
+msgid "Disconnect {0}"
+msgstr "{0} loskoppelen"
 
 msgid "Disconnect GitHub?"
 msgstr "GitHub loskoppelen?"
@@ -4977,6 +5018,9 @@ msgstr "Bestand bewerken..."
 msgid "editor"
 msgstr "editor"
 
+msgid "Editor"
+msgstr "Editor"
+
 msgid "Editor & Workflow"
 msgstr "Editor en workflow"
 
@@ -5041,9 +5085,6 @@ msgstr "Relaytoegang inschakelen…"
 msgid "Enable skill"
 msgstr "Skill inschakelen"
 
-msgid "Enabled — servers are written into your agent configs."
-msgstr "Ingeschakeld — servers worden in je agentconfiguraties geschreven."
-
 msgid "Engineering deep-dives and launches."
 msgstr "Technische verdiepingen en lanceringen."
 
@@ -5076,12 +5117,6 @@ msgstr "Enterprise"
 
 msgid "Enterprise ARR by account"
 msgstr "Enterprise-ARR per account"
-
-msgid "Entries you added yourself stay active in your agent config."
-msgstr "Items die je zelf hebt toegevoegd blijven actief in je agentconfiguratie."
-
-msgid "Entries you added yourself stay in your agent config."
-msgstr "Items die je zelf hebt toegevoegd blijven in je agentconfiguratie staan."
 
 msgid "Environment"
 msgstr "Omgeving"
@@ -5340,9 +5375,6 @@ msgstr "Controleren op updates mislukt: {message}"
 
 msgid "Failed to check for updates. Please try again later."
 msgstr "Controleren op updates mislukt. Probeer het later opnieuw."
-
-msgid "Failed to clear"
-msgstr "Wissen mislukt"
 
 #. placeholder {0}: errorMessage(error, "Unknown error")
 msgid "Failed to clear agent status: {0}"
@@ -5854,6 +5886,9 @@ msgstr "Agents filteren..."
 msgid "Filter by @{normalizedSearch}"
 msgstr "Filteren op @{normalizedSearch}"
 
+msgid "Filter by device"
+msgstr "Filteren op apparaat"
+
 msgid "Filter by reviews"
 msgstr "Filteren op reviews"
 
@@ -5916,6 +5951,9 @@ msgstr "Zoek recent gewijzigde code met zwakke dekking en test die goed."
 
 msgid "Find stale TODO/FIXME comments and resolve the quick ones."
 msgstr "Zoek verouderde TODO/FIXME-opmerkingen en los de snelle op."
+
+msgid "Finder"
+msgstr "Finder"
 
 msgid "Finish review"
 msgstr "Review afronden"
@@ -6379,6 +6417,10 @@ msgstr "Help en docs"
 msgid "Henry Ford"
 msgstr "Henry Ford"
 
+#. placeholder {0}: project.name
+msgid "Hid \"{0}\" from the sidebar"
+msgstr "\"{0}\" uit de zijbalk verborgen"
+
 msgid "Hidden"
 msgstr "Verborgen"
 
@@ -6726,6 +6768,9 @@ msgstr "Verbeterde diff-viewer"
 msgid "in a terminal on this host."
 msgstr "uit in een terminal op deze host."
 
+msgid "In all projects"
+msgstr "In alle projecten"
+
 msgid "In just a few months, <0>tens of thousands of engineers</0> run Superset as their primary IDE, at companies like Wix, DoorDash, and Netflix."
 msgstr "In een paar maanden tijd draaien <0>tienduizenden engineers</0> Superset als hun belangrijkste IDE, bij bedrijven als Wix, DoorDash en Netflix."
 
@@ -6743,6 +6788,9 @@ msgstr "Open in de Superset-desktopapp Instellingen → Externe toegang en zet �
 
 msgid "in-app browser"
 msgstr "ingebouwde browser"
+
+msgid "In-App Browser"
+msgstr "Ingebouwde browser"
 
 msgid "In-app PR merge"
 msgstr "PR's mergen in de app"
@@ -6770,6 +6818,9 @@ msgstr "Mediaan van de sector, onze schatting. Gestippeld is voorspelling. De ee
 
 msgid "Info"
 msgstr "Info"
+
+msgid "Information"
+msgstr "Informatie"
 
 msgid "Initialize Git"
 msgstr "Git initialiseren"
@@ -6817,9 +6868,6 @@ msgstr "Inzichten van het Superset-team over parallelle coding agents en product
 msgid "Inspecting {0}"
 msgstr "{0} inspecteren"
 
-msgid "Install"
-msgstr "Installeren"
-
 msgid "Install & restart"
 msgstr "Installeren en herstarten"
 
@@ -6847,9 +6895,9 @@ msgstr "Installeer, autoriseer en begrens MCP-servers voor al je werkruimtes van
 msgid "Installed"
 msgstr "Geïnstalleerd"
 
-#. placeholder {0}: record.installedAt.slice(0, 10)
-msgid "installed {0}"
-msgstr "geïnstalleerd {0}"
+#. js-lingui-explicit-id
+msgid "serverError.plugins.marketplaceHasInstalls"
+msgstr "Geïnstalleerde plugins komen uit {name}: {plugins}. Verwijder ze eerst."
 
 msgid "Installing..."
 msgstr "Installeren..."
@@ -6956,8 +7004,8 @@ msgstr "Zijn mijn gegevens veilig?"
 msgid "is now signed in here."
 msgstr "is nu hier ingelogd."
 
-msgid "is signed in and will show its quota here."
-msgstr "is ingelogd en toont hier zijn quotum."
+msgid "is signed in."
+msgstr "is ingelogd."
 
 msgid "Is Superset free to use?"
 msgstr "Is Superset gratis te gebruiken?"
@@ -7296,9 +7344,6 @@ msgstr "Team verlaten"
 msgid "Leave the leaderboard?"
 msgstr "Ranglijst verlaten?"
 
-msgid "Leave this empty if browser login finishes on its own."
-msgstr "Laat dit leeg als de browserlogin vanzelf wordt voltooid."
-
 msgid "Leaving organization..."
 msgstr "Organisatie verlaten..."
 
@@ -7319,6 +7364,9 @@ msgstr "minder dan een minuut geleden"
 
 msgid "Letter spacing (px)"
 msgstr "Letterafstand (px)"
+
+msgid "License"
+msgstr "Licentie"
 
 msgid "Lifecycle scripts"
 msgstr "Lifecycle-scripts"
@@ -7683,9 +7731,6 @@ msgstr "Plan beheren"
 msgid "Manage plugins"
 msgstr "Plugins beheren"
 
-msgid "Manage provider accounts, API keys, and overrides. Connecting Anthropic or OpenAI below is also what powers automatic workspace naming — without one connected, new workspaces fall back to a name derived from your prompt."
-msgstr "Beheer provideraccounts, API-sleutels en overrides. Anthropic of OpenAI hieronder verbinden zorgt ook voor de automatische naamgeving van werkruimtes — zonder verbinding krijgen nieuwe werkruimtes een naam die uit je prompt is afgeleid."
-
 msgid "Manage sessions"
 msgstr "Sessies beheren"
 
@@ -7781,9 +7826,6 @@ msgstr "MCP-beheer"
 
 msgid "MCP Server"
 msgstr "MCP-server"
-
-msgid "MCP servers"
-msgstr "MCP-servers"
 
 msgid "Mean"
 msgstr "Gemiddelde"
@@ -7944,6 +7986,10 @@ msgstr "Vereiste autorisatieparameters ontbreken."
 
 msgid "Missing required fields."
 msgstr "Verplichte velden ontbreken."
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.missingInput"
+msgstr "Verplichte invoer {input} ontbreekt"
 
 msgid "Mobile"
 msgstr "Mobiel"
@@ -8189,6 +8235,9 @@ msgstr "Nieuwe automatisering"
 
 msgid "New Browser"
 msgstr "Nieuwe browser"
+
+msgid "New Browser Tab"
+msgstr "Nieuw browsertabblad"
 
 msgid "New chat"
 msgstr "Nieuwe chat"
@@ -8544,6 +8593,9 @@ msgstr "Geen issues gevonden."
 msgid "No items"
 msgstr "Geen items"
 
+msgid "No known creators"
+msgstr "Geen bekende makers"
+
 msgid "No labels"
 msgstr "Geen labels"
 
@@ -8552,9 +8604,6 @@ msgstr "Geen actieve sessies"
 
 msgid "no logins"
 msgstr "geen logins"
-
-msgid "no longer in the catalog"
-msgstr "staat niet meer in de catalogus"
 
 msgid "No match"
 msgstr "Geen overeenkomst"
@@ -8615,6 +8664,9 @@ msgstr "Geen openstaande uitnodigingen"
 
 msgid "No people found."
 msgstr "Geen personen gevonden."
+
+msgid "No plugins available yet."
+msgstr "Nog geen plugins beschikbaar."
 
 #. placeholder {0}: search.trim()
 msgid "No plugins match \"{0}\""
@@ -8966,6 +9018,9 @@ msgstr "Inmiddels hebben we <0>$11M</0> opgehaald bij de beste investeerders in 
 msgid "Numbered list"
 msgstr "Genummerde lijst"
 
+msgid "OAuth 2.0"
+msgstr "OAuth 2.0"
+
 msgid "OAuth by default, API keys for CI"
 msgstr "OAuth standaard, API-sleutels voor CI"
 
@@ -9122,6 +9177,10 @@ msgstr "Open"
 msgid "Open {0}"
 msgstr "{0} openen"
 
+#. placeholder {0}: plugin.interface.displayName
+msgid "Open {0} website"
+msgstr "Website van {0} openen"
+
 msgid "Open {filePath}"
 msgstr "{filePath} openen"
 
@@ -9157,9 +9216,6 @@ msgstr "Branch openen op GitHub"
 
 msgid "Open Browser"
 msgstr "Browser openen"
-
-msgid "Open browser again"
-msgstr "Browser opnieuw openen"
 
 msgid "Open changes"
 msgstr "Wijzigingen openen"
@@ -9497,12 +9553,6 @@ msgstr "Werkruimte openen"
 msgid "Open workspace in external app (Cursor, VS Code, etc.)"
 msgstr "Werkruimte openen in een externe app (Cursor, VS Code, enz.)"
 
-msgid "OpenAI API key cleared"
-msgstr "OpenAI API-sleutel gewist"
-
-msgid "OpenAI API key updated"
-msgstr "OpenAI API-sleutel bijgewerkt"
-
 msgid "Opened"
 msgstr "Geopend"
 
@@ -9799,12 +9849,6 @@ msgstr "Afgelopen week"
 msgid "Paste"
 msgstr "Plakken"
 
-msgid "Paste callback URL"
-msgstr "Plak callback-URL"
-
-msgid "Paste callback URL or code#state"
-msgstr "Plak callback-URL of code#state"
-
 msgid "Paste this into Superset CLI:"
 msgstr "Plak dit in de Superset-CLI:"
 
@@ -10003,6 +10047,14 @@ msgstr "Kies een organisatie"
 msgid "Please try signing in again from the desktop app."
 msgstr "Probeer opnieuw in te loggen vanuit de desktop-app."
 
+#. js-lingui-explicit-id
+msgid "serverError.plugins.noApiKeyAuth"
+msgstr "Plugin {plugin} gebruikt geen api_key-authenticatie"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.notInstalled"
+msgstr "Plugin {plugin} is niet geïnstalleerd"
+
 msgid "Plugin marketplace"
 msgstr "Plugin-marketplace"
 
@@ -10100,12 +10152,6 @@ msgstr "Prefix"
 
 msgid "Preparing"
 msgstr "Voorbereiden"
-
-msgid "Preparing Anthropic browser login..."
-msgstr "Browserlogin voor Anthropic voorbereiden..."
-
-msgid "Preparing OpenAI browser login..."
-msgstr "Browserlogin voor OpenAI voorbereiden..."
 
 msgid "Preserve commit history"
 msgstr "Commitgeschiedenis behouden"
@@ -10366,9 +10412,6 @@ msgstr "Eigenschappen"
 msgid "Provide either id or slug"
 msgstr "Geef een id of een slug op"
 
-msgid "Provided by entries in your own agent config."
-msgstr "Geleverd door items in je eigen agentconfiguratie."
-
 #. placeholder {0}: sourceConfig?.label ?? binding.agentId
 msgid "Provider: {0}"
 msgstr "Provider: {0}"
@@ -10561,8 +10604,8 @@ msgstr "Lees de gids over parallelle coding agents"
 msgid "Read the setup guide"
 msgstr "Lees de installatiegids"
 
-msgid "Reading subscription usage…"
-msgstr "Abonnementsgebruik lezen…"
+msgid "Reading usage…"
+msgstr "Gebruik wordt gelezen…"
 
 msgid "Reading your local usage…"
 msgstr "Je lokale gebruik wordt gelezen…"
@@ -10685,6 +10728,9 @@ msgstr "Statistieken vernieuwen"
 msgid "Refresh pull requests"
 msgstr "Pull requests vernieuwen"
 
+msgid "Refreshes when Claude Code next runs."
+msgstr "Wordt vernieuwd zodra Claude Code opnieuw draait."
+
 msgid "Register any CLI agent alongside the built-ins, each with its own name, icon, and launch command."
 msgstr "Registreer elke CLI-agent naast de ingebouwde, elk met een eigen naam, icoon en startcommando."
 
@@ -10739,9 +10785,6 @@ msgstr "Externe toegang"
 msgid "Remote MCP server — connects over HTTP"
 msgstr "Externe MCP-server — verbindt via HTTP"
 
-msgid "Remote servers sign you in the first time an agent uses them."
-msgstr "Bij externe servers log je in zodra een agent ze voor het eerst gebruikt."
-
 msgid "Remote workspace"
 msgstr "Externe werkruimte"
 
@@ -10793,9 +10836,6 @@ msgstr "Vermelding {path} verwijderen"
 
 msgid "Remove PR Link"
 msgstr "PR-koppeling verwijderen"
-
-msgid "Remove project from sidebar?"
-msgstr "Project uit de zijbalk verwijderen?"
 
 msgid "Remove script"
 msgstr "Script verwijderen"
@@ -11010,6 +11050,9 @@ msgid "Reset worktree location"
 msgstr "Worktree-locatie resetten"
 
 msgid "Reset zoom"
+msgstr "Zoom resetten"
+
+msgid "Reset Zoom"
 msgstr "Zoom resetten"
 
 msgid "Resets in {countdown} · {absolute}"
@@ -11345,6 +11388,12 @@ msgstr "Opdrachten uitvoeren en door de app navigeren."
 msgid "Run History"
 msgstr "Runs"
 
+msgid "Run in a terminal on this host; paste your key when asked:"
+msgstr "Voer dit uit in een terminal op deze host en plak je sleutel wanneer daarom wordt gevraagd:"
+
+msgid "Run in a terminal on this host:"
+msgstr "Voer dit uit in een terminal op deze host:"
+
 msgid "Run in Workspace"
 msgstr "Uitvoeren in werkruimte"
 
@@ -11371,9 +11420,6 @@ msgstr "Terminalcommando's uitvoeren en met andere applicaties werken."
 
 msgid "Run the agent in the Workspace Setup terminal once setup finishes instead of starting a second terminal alongside it"
 msgstr "Draai de agent in de terminal van de werkruimte-setup zodra die klaar is, in plaats van er een tweede terminal naast te starten"
-
-msgid "Run this in any terminal on this host, then finish the sign-in in your browser:"
-msgstr "Voer dit uit in een terminal op deze host en rond de login daarna af in je browser:"
 
 msgid "Run workspace command"
 msgstr "Werkruimtecommando uitvoeren"
@@ -11474,15 +11520,6 @@ msgstr "Opgeslagen"
 #. placeholder {0}: created?.name
 msgid "Saved \"{0}\" as an environment"
 msgstr "\"{0}\" opgeslagen als omgeving"
-
-msgid "Saved Anthropic API key"
-msgstr "Opgeslagen Anthropic API-sleutel"
-
-msgid "Saved on blur."
-msgstr "Opgeslagen bij verlaten van het veld."
-
-msgid "Saved OpenAI API key"
-msgstr "Opgeslagen OpenAI API-sleutel"
 
 msgid "Saved to Downloads"
 msgstr "Opgeslagen in Downloads"
@@ -12260,20 +12297,11 @@ msgstr "Inloggen als lokale beheerder (dev)"
 msgid "Sign in to {0}"
 msgstr "Log in bij {0}"
 
-msgid "Sign in to a second subscription as a separate profile. Your current login is untouched, and the new profile shares your skills, plugins, MCP servers, and settings."
-msgstr "Log in op een tweede abonnement als apart profiel. Je huidige login blijft ongemoeid, en het nieuwe profiel deelt je skills, plugins, MCP-servers en instellingen."
-
 msgid "Sign in to continue to Superset"
 msgstr "Log in om verder te gaan naar Superset"
 
 msgid "Sign in to get started"
 msgstr "Log in om te beginnen"
-
-msgid "Sign in with ChatGPT or use an API key."
-msgstr "Log in met ChatGPT of gebruik een API-sleutel."
-
-msgid "Sign in with Claude or use an API key."
-msgstr "Log in met Claude of gebruik een API-sleutel."
 
 msgid "Sign in with email"
 msgstr "Inloggen met e-mail"
@@ -12838,6 +12866,9 @@ msgstr "ABONNEER"
 msgid "Subscribe on YouTube"
 msgstr "Abonneer op YouTube"
 
+msgid "Subscription"
+msgstr "Abonnement"
+
 msgid "Success"
 msgstr "Geslaagd"
 
@@ -13277,6 +13308,9 @@ msgstr "Bestandslinks in de terminal"
 msgid "Terminal font size"
 msgstr "Tekengrootte terminal"
 
+msgid "Terminal font size when a terminal is focused, page zoom in a browser pane, otherwise the whole app"
+msgstr "Tekengrootte van een terminal met focus, paginazoom in een browserpaneel, anders de hele app"
+
 msgid "terminal ID"
 msgstr "terminal-ID"
 
@@ -13556,6 +13590,9 @@ msgstr "De remote branch is uiteengelopen. Pull voordat je verdergaat."
 msgid "The renderer crashed during startup. Please check logs for details."
 msgstr "De renderer is tijdens het opstarten gecrasht. Bekijk de logs voor details."
 
+msgid "The repository folder itself is kept."
+msgstr "De repositorymap zelf blijft behouden."
+
 msgid "The request failed."
 msgstr "Het verzoek is mislukt."
 
@@ -13674,9 +13711,6 @@ msgstr "Hiermee worden alle terminalsessies gesloten — in deze werkruimte en i
 msgid "This closes every terminal session for your organization{runningCountSuffix} and starts a fresh daemon."
 msgstr "Hiermee wordt elke terminalsessie van je organisatie{runningCountSuffix} gesloten en start een verse daemon."
 
-msgid "This deletes the project and all of its workspaces from <0>every reachable device</0> where it is set up. This cannot be undone."
-msgstr "Hiermee worden het project en al zijn werkruimtes verwijderd van <0>elk bereikbaar apparaat</0> waarop het is ingesteld. Dit kan niet ongedaan worden gemaakt."
-
 msgid "This deletes the saved scrollback used for reboot/crash recovery."
 msgstr "Hiermee wordt de opgeslagen scrollback voor herstel na herstart of crash verwijderd."
 
@@ -13779,6 +13813,9 @@ msgstr "Dit pad bestaat, maar is geen map."
 msgid "This path is a directory"
 msgstr "Dit pad is een map"
 
+msgid "This plugin needs no account — its skills are ready to use."
+msgstr "Deze plugin heeft geen account nodig — de Skills zijn meteen klaar voor gebruik."
+
 msgid "This port is still in use"
 msgstr "Deze poort is nog in gebruik"
 
@@ -13799,6 +13836,9 @@ msgstr "Hiermee wordt elke geselecteerde worktree van schijf gehaald en het bijb
 
 msgid "This removes the host, its access, and its workspaces. Files on the machine stay. A running host may reappear. This can’t be undone."
 msgstr "Hiermee worden de host, de toegang en de werkruimtes verwijderd. Bestanden op de machine blijven staan. Een draaiende host kan weer verschijnen. Dit kan niet ongedaan worden gemaakt."
+
+msgid "This removes the project from every reachable device."
+msgstr "Dit verwijdert het project van elk bereikbaar apparaat."
 
 msgid "This removes the worktree from disk. The cloud workspace record will also be removed."
 msgstr "Hiermee wordt de worktree van schijf gehaald. Ook het cloudrecord van de werkruimte wordt verwijderd."
@@ -13872,9 +13912,6 @@ msgstr "Hiermee wordt de verbinding tussen je organisatie en Notion verwijderd. 
 
 msgid "This will remove the connection between your organization and Slack. You can reconnect at any time."
 msgstr "Hiermee wordt de verbinding tussen je organisatie en Slack verwijderd. Je kunt op elk moment opnieuw verbinden."
-
-msgid "This will remove workspaces from the sidebar and delete all project sections. The workspaces or projects won't be deleted."
-msgstr "Hiermee worden werkruimtes uit de zijbalk gehaald en alle projectsecties verwijderd. De werkruimtes of projecten zelf worden niet verwijderd."
 
 msgid "This will revert all changes to this file. This action cannot be undone."
 msgstr "Hiermee worden alle wijzigingen in dit bestand teruggedraaid. Dit kan niet ongedaan worden gemaakt."
@@ -14264,10 +14301,7 @@ msgstr "Groepering van geselecteerde werkruimtes opheffen"
 msgid "Unified view"
 msgstr "Gecombineerde weergave"
 
-msgid "Uninstall"
-msgstr "Verwijderen"
-
-#. placeholder {0}: plugin?.interface.displayName ?? entry.name
+#. placeholder {0}: plugin.interface.displayName
 msgid "Uninstall {0}"
 msgstr "{0} verwijderen"
 
@@ -14304,6 +14338,10 @@ msgstr "Onbekende host"
 
 msgid "Unknown Host"
 msgstr "Onbekende host"
+
+#. js-lingui-explicit-id
+msgid "serverError.plugins.unknownPlugin"
+msgstr "Onbekende plugin {plugin}"
 
 msgid "Unknown project"
 msgstr "Onbekend project"
@@ -14380,6 +14418,9 @@ msgstr "Straks aan de beurt"
 
 msgid "Up Next"
 msgstr "Hierna"
+
+msgid "Update"
+msgstr "Bijwerken"
 
 msgid "Update available"
 msgstr "Update beschikbaar"
@@ -14660,6 +14701,9 @@ msgstr "Releases bekijken op GitHub"
 msgid "View Superset repository on GitHub"
 msgstr "Superset-repository bekijken op GitHub"
 
+msgid "View usage"
+msgstr "Gebruik bekijken"
+
 msgid "Volume"
 msgstr "Volume"
 
@@ -14675,8 +14719,8 @@ msgstr "Wachten op checks"
 msgid "Waiting for Review"
 msgstr "Wachten op review"
 
-msgid "Waiting for the sign-in to complete — this updates automatically."
-msgstr "Wachten tot de login is afgerond — dit werkt automatisch bij."
+msgid "Waiting for sign-in…"
+msgstr "Wachten op login…"
 
 msgid "Want something sooner? <0>Tell us in Discord</0>. Much of what's here started as a user request."
 msgstr "Wil je iets eerder zien? <0>Laat het weten in Discord</0>. Veel van wat hier staat begon als gebruikersverzoek."
@@ -15044,6 +15088,9 @@ msgstr "Worktree niet in sync"
 msgid "Worktrees"
 msgstr "Worktrees"
 
+msgid "Worktrees with uncommitted changes are left on disk."
+msgstr "Worktrees met niet-gecommitte wijzigingen blijven op de schijf staan."
+
 msgid "Would you like to reassign it?"
 msgstr "Wil je hem opnieuw toewijzen?"
 
@@ -15103,9 +15150,6 @@ msgstr "Jij"
 
 msgid "YOU"
 msgstr "JIJ"
-
-msgid "You added these yourself — Superset never touches them, and never writes duplicates of servers you already have."
-msgstr "Deze heb je zelf toegevoegd — Superset raakt ze nooit aan en schrijft nooit duplicaten van servers die je al hebt."
 
 msgid "You appear to be offline"
 msgstr "Je lijkt offline te zijn"
@@ -15245,7 +15289,13 @@ msgstr "Zoom"
 msgid "Zoom in"
 msgstr "Inzoomen"
 
+msgid "Zoom In"
+msgstr "Inzoomen"
+
 msgid "Zoom out"
+msgstr "Uitzoomen"
+
+msgid "Zoom Out"
 msgstr "Uitzoomen"
 
 msgid "zsh"
