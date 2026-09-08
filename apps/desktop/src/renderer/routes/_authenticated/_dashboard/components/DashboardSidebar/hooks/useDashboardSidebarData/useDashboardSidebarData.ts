@@ -36,6 +36,7 @@ import {
 	getDashboardSidebarPullRequestQueryKey,
 	type PullRequestQueryTarget,
 } from "./derivePullRequestQueryTargets";
+import { pickGithubStatus } from "./pickGithubStatus";
 import { createPullRequestRefreshGate } from "./pullRequestRefreshCooldown";
 
 const MAIN_WORKSPACE_TAB_ORDER = Number.MIN_SAFE_INTEGER;
@@ -503,7 +504,7 @@ export function useDashboardSidebarData() {
 			// rendered through the outage; fetches resume when the URL returns.
 			enabled: target.hostUrl !== null,
 			queryFn: async () => {
-				if (!target.hostUrl) return { workspaces: [] };
+				if (!target.hostUrl) return { workspaces: [], github: null };
 				const client = getHostServiceClientByUrl(target.hostUrl);
 				return client.pullRequests.getByWorkspaces.query({
 					workspaceIds: target.workspaceIds,
@@ -526,6 +527,20 @@ export function useDashboardSidebarData() {
 		}
 		return rows;
 	}, [pullRequestQueries]);
+
+	// One notice for the whole sidebar: the hold is per host credential, not
+	// per workspace, and the local machine's is the one the user can fix.
+	const githubStatus = useMemo(
+		() =>
+			pickGithubStatus(
+				pullRequestQueries.map((query, index) => ({
+					machineId: pullRequestQueryTargets[index]?.machineId ?? "",
+					status: query.data?.github,
+				})),
+				machineId,
+			),
+		[machineId, pullRequestQueries, pullRequestQueryTargets],
+	);
 
 	const refreshWorkspacePullRequest = useCallback(
 		async (workspaceId: string) => {
@@ -624,6 +639,7 @@ export function useDashboardSidebarData() {
 		pinnedWorkspaces,
 		sessionWorkspaces,
 		sessionChildren: sessions.children,
+		githubStatus,
 		refreshWorkspacePullRequest,
 		toggleProjectCollapsed,
 	};

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "351cfe77-8784-4af1-be69-a8e611a74ded",
+  "id": "ca40890b-48df-49e8-9796-5fe9c9b1ac41",
   "prevId": "92bd0761-7bf4-4725-a1a6-59ca19dbc9e7",
   "tables": {
     "host_agent_configs": {
@@ -166,20 +166,6 @@
         },
         "default_codex_home": {
           "name": "default_codex_home",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_new_workspaces": {
-          "name": "sandbox_new_workspaces",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_provider": {
-          "name": "sandbox_provider",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -868,6 +854,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -901,12 +895,13 @@
         }
       },
       "compositePrimaryKeys": {
-        "workspace_tags_workspace_id_tag_pk": {
+        "workspace_tags_workspace_id_tag_created_by_user_id_pk": {
           "columns": [
             "workspace_id",
-            "tag"
+            "tag",
+            "created_by_user_id"
           ],
-          "name": "workspace_tags_workspace_id_tag_pk"
+          "name": "workspace_tags_workspace_id_tag_created_by_user_id_pk"
         }
       },
       "uniqueConstraints": {},
@@ -1050,29 +1045,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "sandbox_enabled": {
-          "name": "sandbox_enabled",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "sandbox_image_digest": {
-          "name": "sandbox_image_digest",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sandbox_port_map_json": {
-          "name": "sandbox_port_map_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
         }
       },
       "indexes": {
