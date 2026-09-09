@@ -676,6 +676,9 @@ msgstr "{hidden, plural, one {#行已隱藏} other {#行已隱藏}}"
 msgid "{hidden, plural, one {Show # hidden line} other {Show # hidden lines}}"
 msgstr "{hidden, plural, one {顯示#行隱藏內容} other {顯示#行隱藏內容}}"
 
+msgid "{hidden, plural, one {Show # reply} other {Show # replies}}"
+msgstr "{hidden, plural, one {顯示 # 則回覆} other {顯示 # 則回覆}}"
+
 msgid "{hiddenCount, plural, one {Show # more frame} other {Show # more frames}}"
 msgstr "{hiddenCount, plural, one {再顯示#個堆疊框架} other {再顯示#個堆疊框架}}"
 
@@ -1652,6 +1655,9 @@ msgstr "全部檢查通過"
 msgid "All checks skipped or cancelled"
 msgstr "所有檢查已跳過或取消"
 
+msgid "All comments"
+msgstr "所有評論"
+
 msgid "All commits"
 msgstr "所有提交"
 
@@ -2219,9 +2225,6 @@ msgstr "自動化（{myFailedCount}個失敗）"
 
 msgid "Automations & event triggers"
 msgstr "自動化與事件觸發"
-
-msgid "Automations docs"
-msgstr "自動化文件"
 
 msgid "Automations, {myFailedCount} failing"
 msgstr "自動化，{myFailedCount}個失敗"
@@ -3160,6 +3163,9 @@ msgstr "關閉聊天"
 msgid "Close Comment"
 msgstr "關閉評論"
 
+msgid "Close comments"
+msgstr "關閉評論"
+
 msgid "Close Diff"
 msgstr "關閉差異"
 
@@ -4009,6 +4015,9 @@ msgstr "無法連線到主機以載入此拉取請求。"
 msgid "Could not reach the host to start the update. Check that it is online and try again."
 msgstr "無法連線主機以開始更新。請確認主機在線上後重試。"
 
+msgid "Could not reach the server."
+msgstr "無法連線到伺服器。"
+
 msgid "Could not reach this workspace's machine"
 msgstr "無法連線到這個工作區所在的機器"
 
@@ -4254,11 +4263,11 @@ msgstr "建立團隊"
 msgid "Create a workspace for the auth feature on my MacBook"
 msgstr "在我的MacBook上為認證功能建立一個工作區"
 
+msgid "Create again"
+msgstr "再次建立"
+
 msgid "Create an account"
 msgstr "建立帳戶"
-
-msgid "Create an automation with an agent"
-msgstr "用代理程式建立自動化"
 
 msgid "Create failed: {message}"
 msgstr "建立失敗：{message}"
@@ -4879,6 +4888,9 @@ msgstr "語音輸入"
 msgid "Dictation is not available on this device"
 msgstr "此裝置不支援語音輸入"
 
+msgid "Didn't hear back"
+msgstr "未收到回應"
+
 msgid "diff"
 msgstr "差異"
 
@@ -5476,9 +5488,6 @@ msgstr "每個代理程式都跑在自己的Git worktree裡，十個代理程式
 msgid "Every axis is carrying its weight for the next tier. Hold it and the tier follows."
 msgstr "每個維度都在為下一等級出力。保持住，等級自然會來。"
 
-msgid "Every Friday at 4pm, draft release notes from this week's merged PRs"
-msgstr "每週五下午4點，根據本週合併的PR起草釋出說明"
-
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "每週五下午4點，根據本週合併的PR起草釋出說明。"
 
@@ -5499,9 +5508,6 @@ msgstr "每週三上午9點，回顧本週合併的PR，更新被它們改過時
 
 msgid "Every weekday at 9am, read new GitHub issues, apply labels, and draft a first reply for my review."
 msgstr "每個工作日上午9點，閱讀新的GitHub議題，打上標籤，並起草初步回覆供我審閱。"
-
-msgid "Every weekday at 9am, triage new GitHub issues and draft replies for my review"
-msgstr "每個工作日上午9點，分類新的GitHub議題並起草回覆供我審閱"
 
 msgid "Everyone argues about whether this generalizes. That argument is the sign the level was reached."
 msgstr "所有人都在爭論這能否推廣。這場爭論本身就說明這一級別已經達到了。"
@@ -6815,6 +6821,9 @@ msgstr "隱藏拉取請求列表"
 msgid "Hide pull request preview"
 msgstr "隱藏拉取請求預覽"
 
+msgid "Hide resolved ({resolvedCount})"
+msgstr "隱藏已解決 ({resolvedCount})"
+
 msgid "Hide review comments"
 msgstr "隱藏審查評論"
 
@@ -7916,6 +7925,9 @@ msgstr "載入狀態與進行中活動的指示器"
 msgid "Loading changes..."
 msgstr "正在載入更改..."
 
+msgid "Loading comments…"
+msgstr "正在載入評論…"
+
 msgid "Loading contributors…"
 msgstr "正在載入貢獻者…"
 
@@ -8464,6 +8476,9 @@ msgstr "更多{kindLower}主題"
 msgid "More actions"
 msgstr "更多操作"
 
+msgid "More options"
+msgstr "更多選項"
+
 msgid "More pages"
 msgstr "更多頁面"
 
@@ -8628,6 +8643,9 @@ msgstr "換對手"
 msgid "New chat"
 msgstr "新建聊天"
 
+msgid "New cloud workspace"
+msgstr "新建雲端工作區"
+
 msgid "New environment"
 msgstr "新增環境"
 
@@ -8770,9 +8788,6 @@ msgstr "下一級：{nextLabel}"
 msgid "Nice, open a PR when ready."
 msgstr "不錯，準備好就開個PR。"
 
-msgid "Nightly at 2am, find one small bug, fix it, and open a PR"
-msgstr "每晚2點，找一個小bug，修好它並提一個PR"
-
 #. placeholder {0}: AGENT_LABELS[agent]
 msgid "No {0} logins on this host — sign in and usage appears here."
 msgstr "此主機上沒有{0}登入——登入後用量會顯示在這裡。"
@@ -8889,6 +8904,9 @@ msgstr "沒有評論正文"
 msgid "No comments yet."
 msgstr "暫無評論。"
 
+msgid "No comments yet. Turn on comment mode and click anything on the page to start one."
+msgstr "還沒有評論。開啟評論模式，點擊頁面上的任何元素即可開始。"
+
 msgid "No commits on this branch yet."
 msgstr "此分支上還沒有提交。"
 
@@ -8987,6 +9005,9 @@ msgstr "無圖示"
 
 msgid "No Internet Connection"
 msgstr "無網路連線"
+
+msgid "No internet connection."
+msgstr "沒有網際網路連線。"
 
 msgid "No issues found."
 msgstr "未找到議題。"
@@ -9351,6 +9372,9 @@ msgstr "暫不"
 
 msgid "Not on the leaderboard. Opt in first."
 msgstr "不在排行榜中。請先加入。"
+
+msgid "Not on this version"
+msgstr "不在此版本中"
 
 msgid "Not receiving events yet: Microsoft Graph refused the notification subscriptions. Check the app's admin consent and protected API approval, then reconnect."
 msgstr "尚未接收到事件：Microsoft Graph拒絕了通知訂閱。請檢查應用的管理員同意和受保護API的審批，然後重新連線。"
@@ -10891,9 +10915,6 @@ msgstr "公開"
 
 msgid "Public leaderboard"
 msgstr "公開排行榜"
-
-msgid "Publish a page from an agent or the CLI and it will show up here."
-msgstr "從代理程式或CLI釋出一個頁面，它就會出現在這裡。"
 
 msgid "Published"
 msgstr "發布時間"
@@ -12637,6 +12658,9 @@ msgstr "深淺以該開發者最忙的一天為基準"
 msgid "Share"
 msgstr "分享"
 
+msgid "Share designs and reports. Let your agent handle the feedback."
+msgstr "分享設計和報告，讓你的代理程式處理回饋。"
+
 msgid "Share page"
 msgstr "分享頁面"
 
@@ -12684,6 +12708,9 @@ msgstr "顯示全部{count}條"
 
 msgid "Show all automations again"
 msgstr "重新顯示所有自動化"
+
+msgid "Show all comments"
+msgstr "顯示所有評論"
 
 msgid "Show all lines"
 msgstr "顯示所有行"
@@ -12774,6 +12801,9 @@ msgstr "顯示拉取請求列表"
 
 msgid "Show pull request preview"
 msgstr "顯示拉取請求預覽"
+
+msgid "Show resolved ({resolvedCount})"
+msgstr "顯示已解決 ({resolvedCount})"
 
 msgid "Show review comments"
 msgstr "顯示評審評論"
@@ -13339,6 +13369,9 @@ msgstr "第{0}步，共2步"
 msgid "Step {step}: {name}"
 msgstr "第{step}步：{name}"
 
+msgid "Still can't reach the host."
+msgstr "仍然無法連線到主機。"
+
 msgid "Still working — large repos can take a few minutes. You can leave; the workspace will appear on Home when it's ready."
 msgstr "仍在處理 — 大儲存庫可能需要幾分鐘。你可以離開；工作區就緒後會出現在首頁。"
 
@@ -13449,9 +13482,6 @@ msgstr "套件，以及共享應用元件。點選任意匯入路徑即可複製
 
 msgid "Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
 msgstr "Superset與受監控的終端處理程序樹佔用的CPU總和。超過100%表示有多個CPU核心處於繁忙狀態。持續偏高通常會導致介面卡頓和耗電增加。"
-
-msgid "Summarize failed CI runs every morning before standup"
-msgstr "每天早上站會前總結失敗的CI執行"
 
 msgid "Summary"
 msgstr "摘要"
@@ -14070,6 +14100,9 @@ msgstr "主機以 {0} 而非 {targetVersion} 恢復。"
 msgid "The host did not come back within fifteen minutes."
 msgstr "主機未在十五分鐘內恢復。"
 
+msgid "The host hasn't answered."
+msgstr "主機未回應。"
+
 msgid "The host isn't connected to the Superset relay. If it's this device, turn on \"Allow remote access to this device via relay\" in Settings > Remote Access, then try again."
 msgstr "該主機沒有連線到Superset中繼。如果就是此裝置，請在「設定>遠端存取」中開啟「允許遠端存取通過中繼存取此裝置」，然後重試。"
 
@@ -14236,6 +14269,9 @@ msgstr "網頁版代理程式介面目前是隻讀預覽。"
 msgid "The workspace is not ready yet. Try again."
 msgstr "工作區尚未就緒。請重試。"
 
+msgid "The workspace may still have been created. This screen opens it if it appears."
+msgstr "工作區可能仍已建立。如果出現，此畫面會開啟它。"
+
 msgid "The worktree and any uncommitted changes will be removed. This cannot be undone."
 msgstr "worktree及其中所有未提交的更改都會被移除。此操作無法復原。"
 
@@ -14286,6 +14322,13 @@ msgstr "該應用程式將能夠："
 
 msgid "This application will have access to data in the selected organization."
 msgstr "該應用程式將可以存取所選組織中的資料。"
+
+#. placeholder {0}: params?.organizationName
+msgid "This automation belongs to {0}. Switch to that organization to open it."
+msgstr "此自動化屬於 {0}。請切換到該組織後開啟。"
+
+msgid "This automation is in another organization"
+msgstr "此自動化位於其他組織"
 
 msgid "This cannot be undone."
 msgstr "此操作無法復原。"
@@ -14557,9 +14600,6 @@ msgstr "等級"
 
 msgid "Time range"
 msgstr "時間範圍"
-
-msgid "Timed out waiting for the host to create the workspace."
-msgstr "等待主機建立工作區逾時。"
 
 msgid "Title"
 msgstr "標題"
@@ -15604,6 +15644,9 @@ msgstr "Superset 是什麼、由誰打造、為誰而做。一支由三位前 YC
 
 msgid "What the content is doing: which pages sessions start on, and how much is being published."
 msgstr "內容的表現：工作階段從哪些頁面開始，以及發佈了多少。"
+
+msgid "What these were written against is no longer on the page, so they have no pin."
+msgstr "這些評論所針對的內容已不在頁面上，因此沒有標記。"
 
 msgid "What We're Building"
 msgstr "我們正在構建什麼"

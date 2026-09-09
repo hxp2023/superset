@@ -676,6 +676,9 @@ msgstr "{hidden, plural, one {# linha oculta} other {# linhas ocultas}}"
 msgid "{hidden, plural, one {Show # hidden line} other {Show # hidden lines}}"
 msgstr "{hidden, plural, one {Mostrar # linha oculta} other {Mostrar # linhas ocultas}}"
 
+msgid "{hidden, plural, one {Show # reply} other {Show # replies}}"
+msgstr "{hidden, plural, one {Mostrar # resposta} other {Mostrar # respostas}}"
+
 msgid "{hiddenCount, plural, one {Show # more frame} other {Show # more frames}}"
 msgstr "{hiddenCount, plural, one {Mostrar mais # frame} other {Mostrar mais # frames}}"
 
@@ -1652,6 +1655,9 @@ msgstr "Todas as verificações passaram"
 msgid "All checks skipped or cancelled"
 msgstr "Todas as verificações foram ignoradas ou canceladas"
 
+msgid "All comments"
+msgstr "Todos os comentários"
+
 msgid "All commits"
 msgstr "Todos os commits"
 
@@ -2219,9 +2225,6 @@ msgstr "Automações ({myFailedCount} falhando)"
 
 msgid "Automations & event triggers"
 msgstr "Automações e gatilhos de evento"
-
-msgid "Automations docs"
-msgstr "Documentação de automações"
 
 msgid "Automations, {myFailedCount} failing"
 msgstr "Automações, {myFailedCount} falhando"
@@ -3160,6 +3163,9 @@ msgstr "Fechar chat"
 msgid "Close Comment"
 msgstr "Fechar comentário"
 
+msgid "Close comments"
+msgstr "Fechar os comentários"
+
 msgid "Close Diff"
 msgstr "Fechar diff"
 
@@ -4009,6 +4015,9 @@ msgstr "Não foi possível acessar o host para carregar este pull request."
 msgid "Could not reach the host to start the update. Check that it is online and try again."
 msgstr "Não foi possível alcançar o host para iniciar a atualização. Verifique se ele está online e tente novamente."
 
+msgid "Could not reach the server."
+msgstr "Não foi possível acessar o servidor."
+
 msgid "Could not reach this workspace's machine"
 msgstr "Não foi possível acessar a máquina desta área de trabalho"
 
@@ -4254,11 +4263,11 @@ msgstr "Criar uma equipe"
 msgid "Create a workspace for the auth feature on my MacBook"
 msgstr "Crie uma área de trabalho para a funcionalidade de autenticação no meu MacBook"
 
+msgid "Create again"
+msgstr "Criar novamente"
+
 msgid "Create an account"
 msgstr "Criar uma conta"
-
-msgid "Create an automation with an agent"
-msgstr "Criar uma automação com um agente"
 
 msgid "Create failed: {message}"
 msgstr "Falha ao criar: {message}"
@@ -4879,6 +4888,9 @@ msgstr "Ditar"
 msgid "Dictation is not available on this device"
 msgstr "O ditado não está disponível neste dispositivo"
 
+msgid "Didn't hear back"
+msgstr "Sem resposta"
+
 msgid "diff"
 msgstr "diff"
 
@@ -5476,9 +5488,6 @@ msgstr "Cada agente roda na própria worktree do Git, então dez agentes podem t
 msgid "Every axis is carrying its weight for the next tier. Hold it and the tier follows."
 msgstr "Cada eixo está fazendo a sua parte para o próximo nível. Mantenha assim e o nível vem."
 
-msgid "Every Friday at 4pm, draft release notes from this week's merged PRs"
-msgstr "Toda sexta às 16h, escreva as notas de versão a partir dos PRs mesclados da semana"
-
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Toda sexta às 16h, escreva as notas de versão a partir dos PRs mesclados da semana."
 
@@ -5499,9 +5508,6 @@ msgstr "Toda quarta às 9h, revise os PRs mesclados da semana e atualize a docum
 
 msgid "Every weekday at 9am, read new GitHub issues, apply labels, and draft a first reply for my review."
 msgstr "Todo dia útil às 9h, leia as novas issues do GitHub, aplique labels e escreva uma primeira resposta para eu revisar."
-
-msgid "Every weekday at 9am, triage new GitHub issues and draft replies for my review"
-msgstr "Todo dia útil às 9h, faça a triagem das novas issues do GitHub e escreva respostas para eu revisar"
 
 msgid "Everyone argues about whether this generalizes. That argument is the sign the level was reached."
 msgstr "Todo mundo discute se isso generaliza. Essa discussão é o sinal de que o nível foi alcançado."
@@ -6815,6 +6821,9 @@ msgstr "Ocultar a lista de pull requests"
 msgid "Hide pull request preview"
 msgstr "Ocultar a prévia do pull request"
 
+msgid "Hide resolved ({resolvedCount})"
+msgstr "Ocultar os resolvidos ({resolvedCount})"
+
 msgid "Hide review comments"
 msgstr "Ocultar os comentários de revisão"
 
@@ -7916,6 +7925,9 @@ msgstr "Indicadores de carregamento e de atividade em andamento"
 msgid "Loading changes..."
 msgstr "Carregando as alterações..."
 
+msgid "Loading comments…"
+msgstr "Carregando os comentários…"
+
 msgid "Loading contributors…"
 msgstr "Carregando contribuidores…"
 
@@ -8464,6 +8476,9 @@ msgstr "Mais temas {kindLower}s"
 msgid "More actions"
 msgstr "Mais ações"
 
+msgid "More options"
+msgstr "Mais opções"
+
 msgid "More pages"
 msgstr "Mais páginas"
 
@@ -8628,6 +8643,9 @@ msgstr "novos desafiantes"
 msgid "New chat"
 msgstr "Novo chat"
 
+msgid "New cloud workspace"
+msgstr "Nova área de trabalho na nuvem"
+
 msgid "New environment"
 msgstr "Novo ambiente"
 
@@ -8770,9 +8788,6 @@ msgstr "Próximo: {nextLabel}"
 msgid "Nice, open a PR when ready."
 msgstr "Boa, abre um PR quando estiver pronto."
 
-msgid "Nightly at 2am, find one small bug, fix it, and open a PR"
-msgstr "Toda noite às 2h, ache um bug pequeno, corrija e abra um PR"
-
 #. placeholder {0}: AGENT_LABELS[agent]
 msgid "No {0} logins on this host — sign in and usage appears here."
 msgstr "Nenhum login {0} neste host — entre e o uso aparece aqui."
@@ -8889,6 +8904,9 @@ msgstr "Sem corpo no comentário"
 msgid "No comments yet."
 msgstr "Nenhum comentário ainda."
 
+msgid "No comments yet. Turn on comment mode and click anything on the page to start one."
+msgstr "Ainda não há comentários. Ative o modo de comentário e clique em qualquer elemento da página para começar um."
+
 msgid "No commits on this branch yet."
 msgstr "Nenhum commit nesta branch ainda."
 
@@ -8987,6 +9005,9 @@ msgstr "Sem ícone"
 
 msgid "No Internet Connection"
 msgstr "Sem conexão com a internet"
+
+msgid "No internet connection."
+msgstr "Sem conexão com a internet."
 
 msgid "No issues found."
 msgstr "Nenhuma issue encontrada."
@@ -9351,6 +9372,9 @@ msgstr "Agora não"
 
 msgid "Not on the leaderboard. Opt in first."
 msgstr "Fora do ranking. Participe primeiro."
+
+msgid "Not on this version"
+msgstr "Não está nesta versão"
 
 msgid "Not receiving events yet: Microsoft Graph refused the notification subscriptions. Check the app's admin consent and protected API approval, then reconnect."
 msgstr "Ainda não recebendo eventos: o Microsoft Graph recusou as assinaturas de notificação. Verifique o consentimento de administrador e a aprovação de API protegida do app e reconecte."
@@ -10891,9 +10915,6 @@ msgstr "Público"
 
 msgid "Public leaderboard"
 msgstr "Ranking público"
-
-msgid "Publish a page from an agent or the CLI and it will show up here."
-msgstr "Publique uma página por um agente ou pela CLI e ela aparecerá aqui."
 
 msgid "Published"
 msgstr "Publicado"
@@ -12637,6 +12658,9 @@ msgstr "A intensidade é relativa ao dia mais movimentado desta pessoa"
 msgid "Share"
 msgstr "Compartilhar"
 
+msgid "Share designs and reports. Let your agent handle the feedback."
+msgstr "Compartilhe designs e relatórios. Deixe seu agente cuidar do feedback."
+
 msgid "Share page"
 msgstr "Compartilhar página"
 
@@ -12684,6 +12708,9 @@ msgstr "Mostrar todos os {count}"
 
 msgid "Show all automations again"
 msgstr "Mostrar todas as automações de novo"
+
+msgid "Show all comments"
+msgstr "Mostrar todos os comentários"
 
 msgid "Show all lines"
 msgstr "Mostrar todas as linhas"
@@ -12774,6 +12801,9 @@ msgstr "Mostrar a lista de pull requests"
 
 msgid "Show pull request preview"
 msgstr "Mostrar a prévia do pull request"
+
+msgid "Show resolved ({resolvedCount})"
+msgstr "Mostrar os resolvidos ({resolvedCount})"
 
 msgid "Show review comments"
 msgstr "Mostrar os comentários de revisão"
@@ -13339,6 +13369,9 @@ msgstr "Etapa {0} de 2"
 msgid "Step {step}: {name}"
 msgstr "Etapa {step}: {name}"
 
+msgid "Still can't reach the host."
+msgstr "O host continua inacessível."
+
 msgid "Still working — large repos can take a few minutes. You can leave; the workspace will appear on Home when it's ready."
 msgstr "Ainda trabalhando — repositórios grandes podem levar alguns minutos. Você pode sair; a área de trabalho aparece no Início quando ficar pronta."
 
@@ -13449,9 +13482,6 @@ msgstr "para interfaces de agente e os componentes compartilhados do app. Clique
 
 msgid "Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
 msgstr "Soma da CPU usada pelo Superset e pelas árvores de processos de terminal monitoradas. Acima de 100% significa que vários núcleos estão ocupados. Valores altos e constantes costumam deixar a interface lenta e consumir mais bateria."
-
-msgid "Summarize failed CI runs every morning before standup"
-msgstr "Resuma as execuções de CI que falharam toda manhã antes da daily"
 
 msgid "Summary"
 msgstr "Resumo"
@@ -14070,6 +14100,9 @@ msgstr "O host voltou na {0}, não na {targetVersion}."
 msgid "The host did not come back within fifteen minutes."
 msgstr "O host não voltou a ficar disponível em quinze minutos."
 
+msgid "The host hasn't answered."
+msgstr "O host não respondeu."
+
 msgid "The host isn't connected to the Superset relay. If it's this device, turn on \"Allow remote access to this device via relay\" in Settings > Remote Access, then try again."
 msgstr "O host não está conectado ao relay do Superset. Se for este dispositivo, ative \"Permitir acesso remoto a este dispositivo via relay\" em Configurações > Acesso remoto e tente novamente."
 
@@ -14236,6 +14269,9 @@ msgstr "A interface web de agentes é uma prévia somente leitura por enquanto."
 msgid "The workspace is not ready yet. Try again."
 msgstr "A área de trabalho ainda não está pronta. Tente de novo."
 
+msgid "The workspace may still have been created. This screen opens it if it appears."
+msgstr "A área de trabalho pode ter sido criada mesmo assim. Esta tela a abre se ela aparecer."
+
 msgid "The worktree and any uncommitted changes will be removed. This cannot be undone."
 msgstr "A worktree e as alterações sem commit serão removidas. Não dá para desfazer."
 
@@ -14286,6 +14322,13 @@ msgstr "Este aplicativo vai poder:"
 
 msgid "This application will have access to data in the selected organization."
 msgstr "Este aplicativo terá acesso aos dados da organização selecionada."
+
+#. placeholder {0}: params?.organizationName
+msgid "This automation belongs to {0}. Switch to that organization to open it."
+msgstr "Esta automação pertence a {0}. Troque para essa organização para abri-la."
+
+msgid "This automation is in another organization"
+msgstr "Esta automação está em outra organização"
 
 msgid "This cannot be undone."
 msgstr "Não dá para desfazer."
@@ -14557,9 +14600,6 @@ msgstr "Plano"
 
 msgid "Time range"
 msgstr "Período"
-
-msgid "Timed out waiting for the host to create the workspace."
-msgstr "O tempo de espera para o host criar a área de trabalho esgotou."
 
 msgid "Title"
 msgstr "Título"
@@ -15604,6 +15644,9 @@ msgstr "O que é o Superset, quem o constrói e para quem ele é. Uma equipe de 
 
 msgid "What the content is doing: which pages sessions start on, and how much is being published."
 msgstr "O que o conteúdo está fazendo: em quais páginas as sessões começam e quanto está sendo publicado."
+
+msgid "What these were written against is no longer on the page, so they have no pin."
+msgstr "Aquilo a que se referiam não está mais na página, então não têm marcador."
 
 msgid "What We're Building"
 msgstr "O que estamos construindo"

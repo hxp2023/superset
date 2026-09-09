@@ -676,6 +676,9 @@ msgstr "{hidden, plural, one {# dòng ẩn} other {# dòng ẩn}}"
 msgid "{hidden, plural, one {Show # hidden line} other {Show # hidden lines}}"
 msgstr "{hidden, plural, one {Hiện # dòng ẩn} other {Hiện # dòng ẩn}}"
 
+msgid "{hidden, plural, one {Show # reply} other {Show # replies}}"
+msgstr "{hidden, plural, one {Hiển thị # phản hồi} other {Hiển thị # phản hồi}}"
+
 msgid "{hiddenCount, plural, one {Show # more frame} other {Show # more frames}}"
 msgstr "{hiddenCount, plural, one {Hiện thêm # frame} other {Hiện thêm # frame}}"
 
@@ -1652,6 +1655,9 @@ msgstr "Tất cả check đã qua"
 msgid "All checks skipped or cancelled"
 msgstr "Tất cả check bị bỏ qua hoặc hủy"
 
+msgid "All comments"
+msgstr "Tất cả bình luận"
+
 msgid "All commits"
 msgstr "Tất cả commit"
 
@@ -2219,9 +2225,6 @@ msgstr "Tự động hóa ({myFailedCount} đang lỗi)"
 
 msgid "Automations & event triggers"
 msgstr "Tự động hóa & trigger sự kiện"
-
-msgid "Automations docs"
-msgstr "Tài liệu tự động hóa"
 
 msgid "Automations, {myFailedCount} failing"
 msgstr "Tự động hóa, {myFailedCount} đang lỗi"
@@ -3160,6 +3163,9 @@ msgstr "Đóng chat"
 msgid "Close Comment"
 msgstr "Đóng bình luận"
 
+msgid "Close comments"
+msgstr "Đóng bình luận"
+
 msgid "Close Diff"
 msgstr "Đóng diff"
 
@@ -4009,6 +4015,9 @@ msgstr "Không kết nối được tới host để tải pull request này."
 msgid "Could not reach the host to start the update. Check that it is online and try again."
 msgstr "Không thể kết nối tới máy chủ để bắt đầu cập nhật. Hãy kiểm tra máy chủ đang trực tuyến rồi thử lại."
 
+msgid "Could not reach the server."
+msgstr "Không thể kết nối tới máy chủ."
+
 msgid "Could not reach this workspace's machine"
 msgstr "Không kết nối được tới máy của workspace này"
 
@@ -4254,11 +4263,11 @@ msgstr "Tạo một nhóm"
 msgid "Create a workspace for the auth feature on my MacBook"
 msgstr "Tạo một workspace cho tính năng xác thực trên MacBook của tôi"
 
+msgid "Create again"
+msgstr "Tạo lại"
+
 msgid "Create an account"
 msgstr "Tạo tài khoản"
-
-msgid "Create an automation with an agent"
-msgstr "Tạo tự động hóa với một agent"
 
 msgid "Create failed: {message}"
 msgstr "Tạo thất bại: {message}"
@@ -4879,6 +4888,9 @@ msgstr "Đọc chính tả"
 msgid "Dictation is not available on this device"
 msgstr "Đọc chính tả không khả dụng trên thiết bị này"
 
+msgid "Didn't hear back"
+msgstr "Không có phản hồi"
+
 msgid "diff"
 msgstr "diff"
 
@@ -5476,9 +5488,6 @@ msgstr "Mỗi agent chạy trong git worktree riêng, nên mười agent có th�
 msgid "Every axis is carrying its weight for the next tier. Hold it and the tier follows."
 msgstr "Mọi trục đều đang góp sức cho hạng tiếp theo. Giữ được như vậy thì hạng sẽ tới."
 
-msgid "Every Friday at 4pm, draft release notes from this week's merged PRs"
-msgstr "Mỗi thứ Sáu lúc 4h chiều, soạn ghi chú phát hành từ các PR đã merge trong tuần"
-
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Mỗi thứ Sáu lúc 4h chiều, soạn ghi chú phát hành từ các PR đã merge trong tuần."
 
@@ -5499,9 +5508,6 @@ msgstr "Mỗi thứ Tư lúc 9h sáng, xem lại các PR đã merge trong tuần
 
 msgid "Every weekday at 9am, read new GitHub issues, apply labels, and draft a first reply for my review."
 msgstr "Mỗi ngày trong tuần lúc 9h sáng, đọc issue GitHub mới, gán nhãn và soạn câu trả lời đầu tiên để tôi xem lại."
-
-msgid "Every weekday at 9am, triage new GitHub issues and draft replies for my review"
-msgstr "Mỗi ngày trong tuần lúc 9h sáng, phân loại issue GitHub mới và soạn câu trả lời để tôi xem lại"
 
 msgid "Everyone argues about whether this generalizes. That argument is the sign the level was reached."
 msgstr "Ai cũng tranh cãi liệu điều này có khái quát được không. Chính cuộc tranh cãi đó là dấu hiệu mức này đã đạt được."
@@ -6815,6 +6821,9 @@ msgstr "Ẩn danh sách pull request"
 msgid "Hide pull request preview"
 msgstr "Ẩn xem trước pull request"
 
+msgid "Hide resolved ({resolvedCount})"
+msgstr "Ẩn các mục đã xử lý ({resolvedCount})"
+
 msgid "Hide review comments"
 msgstr "Ẩn bình luận review"
 
@@ -7916,6 +7925,9 @@ msgstr "Chỉ báo đang tải và hoạt động đang diễn ra"
 msgid "Loading changes..."
 msgstr "Đang tải thay đổi..."
 
+msgid "Loading comments…"
+msgstr "Đang tải bình luận…"
+
 msgid "Loading contributors…"
 msgstr "Đang tải người đóng góp…"
 
@@ -8464,6 +8476,9 @@ msgstr "Thêm chủ đề {kindLower}"
 msgid "More actions"
 msgstr "Thêm hành động"
 
+msgid "More options"
+msgstr "Tùy chọn khác"
+
 msgid "More pages"
 msgstr "Thêm trang"
 
@@ -8628,6 +8643,9 @@ msgstr "đối thủ mới"
 msgid "New chat"
 msgstr "Chat mới"
 
+msgid "New cloud workspace"
+msgstr "Workspace cloud mới"
+
 msgid "New environment"
 msgstr "Environment mới"
 
@@ -8770,9 +8788,6 @@ msgstr "Tiếp: {nextLabel}"
 msgid "Nice, open a PR when ready."
 msgstr "Tốt, mở PR khi sẵn sàng nhé."
 
-msgid "Nightly at 2am, find one small bug, fix it, and open a PR"
-msgstr "Hằng đêm lúc 2h sáng, tìm một lỗi nhỏ, sửa nó và mở một PR"
-
 #. placeholder {0}: AGENT_LABELS[agent]
 msgid "No {0} logins on this host — sign in and usage appears here."
 msgstr "Chưa có lần đăng nhập {0} nào trên host này — hãy đăng nhập và mức sử dụng sẽ hiện ở đây."
@@ -8889,6 +8904,9 @@ msgstr "Không có nội dung bình luận"
 msgid "No comments yet."
 msgstr "Chưa có bình luận nào."
 
+msgid "No comments yet. Turn on comment mode and click anything on the page to start one."
+msgstr "Chưa có bình luận nào. Bật chế độ bình luận rồi nhấp vào bất kỳ phần nào của trang để bắt đầu."
+
 msgid "No commits on this branch yet."
 msgstr "Chưa có commit nào trên nhánh này."
 
@@ -8987,6 +9005,9 @@ msgstr "Không có biểu tượng"
 
 msgid "No Internet Connection"
 msgstr "Không có kết nối internet"
+
+msgid "No internet connection."
+msgstr "Không có kết nối Internet."
 
 msgid "No issues found."
 msgstr "Không tìm thấy issue nào."
@@ -9351,6 +9372,9 @@ msgstr "Để sau"
 
 msgid "Not on the leaderboard. Opt in first."
 msgstr "Chưa có trên bảng xếp hạng. Hãy tham gia trước."
+
+msgid "Not on this version"
+msgstr "Không có trong phiên bản này"
 
 msgid "Not receiving events yet: Microsoft Graph refused the notification subscriptions. Check the app's admin consent and protected API approval, then reconnect."
 msgstr "Chưa nhận được sự kiện: Microsoft Graph đã từ chối các đăng ký thông báo. Hãy kiểm tra phần cấp quyền quản trị và phê duyệt API bảo vệ của ứng dụng, rồi kết nối lại."
@@ -10891,9 +10915,6 @@ msgstr "Công khai"
 
 msgid "Public leaderboard"
 msgstr "Bảng xếp hạng công khai"
-
-msgid "Publish a page from an agent or the CLI and it will show up here."
-msgstr "Xuất bản một trang từ agent hoặc CLI và nó sẽ xuất hiện ở đây."
 
 msgid "Published"
 msgstr "Phát hành"
@@ -12637,6 +12658,9 @@ msgstr "Độ đậm được tính theo ngày bận rộn nhất của nhà ph�
 msgid "Share"
 msgstr "Chia sẻ"
 
+msgid "Share designs and reports. Let your agent handle the feedback."
+msgstr "Chia sẻ thiết kế và báo cáo. Hãy để agent của bạn xử lý phản hồi."
+
 msgid "Share page"
 msgstr "Chia sẻ trang"
 
@@ -12684,6 +12708,9 @@ msgstr "Hiện tất cả {count}"
 
 msgid "Show all automations again"
 msgstr "Hiện lại tất cả tự động hóa"
+
+msgid "Show all comments"
+msgstr "Hiển thị tất cả bình luận"
 
 msgid "Show all lines"
 msgstr "Hiện tất cả các dòng"
@@ -12774,6 +12801,9 @@ msgstr "Hiện danh sách pull request"
 
 msgid "Show pull request preview"
 msgstr "Hiện xem trước pull request"
+
+msgid "Show resolved ({resolvedCount})"
+msgstr "Hiện các mục đã xử lý ({resolvedCount})"
 
 msgid "Show review comments"
 msgstr "Hiện bình luận review"
@@ -13339,6 +13369,9 @@ msgstr "Bước {0} / 2"
 msgid "Step {step}: {name}"
 msgstr "Bước {step}: {name}"
 
+msgid "Still can't reach the host."
+msgstr "Vẫn không thể kết nối tới host."
+
 msgid "Still working — large repos can take a few minutes. You can leave; the workspace will appear on Home when it's ready."
 msgstr "Vẫn đang xử lý — repo lớn có thể mất vài phút. Bạn có thể rời đi; workspace sẽ xuất hiện ở Trang chủ khi sẵn sàng."
 
@@ -13449,9 +13482,6 @@ msgstr "cho giao diện agent, và các component dùng chung của ứng dụng
 
 msgid "Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
 msgstr "Tổng CPU mà Superset và các cây tiến trình terminal được theo dõi sử dụng. Trên 100% nghĩa là nhiều nhân CPU đang bận. Giá trị cao kéo dài thường làm giao diện chậm và hao pin hơn."
-
-msgid "Summarize failed CI runs every morning before standup"
-msgstr "Tóm tắt các lần chạy CI thất bại mỗi sáng trước standup"
 
 msgid "Summary"
 msgstr "Tóm tắt"
@@ -14070,6 +14100,9 @@ msgstr "Máy chủ đã trở lại với {0}, không phải {targetVersion}."
 msgid "The host did not come back within fifteen minutes."
 msgstr "Máy chủ không hoạt động trở lại trong vòng mười lăm phút."
 
+msgid "The host hasn't answered."
+msgstr "Host không phản hồi."
+
 msgid "The host isn't connected to the Superset relay. If it's this device, turn on \"Allow remote access to this device via relay\" in Settings > Remote Access, then try again."
 msgstr "Host chưa kết nối tới relay của Superset. Nếu đó là thiết bị này, hãy bật \"Cho phép truy cập từ xa vào thiết bị này qua relay\" trong Cài đặt > Truy cập từ xa, rồi thử lại."
 
@@ -14236,6 +14269,9 @@ msgstr "Giao diện agent trên web hiện chỉ là bản xem trước chỉ đ
 msgid "The workspace is not ready yet. Try again."
 msgstr "Workspace chưa sẵn sàng. Hãy thử lại."
 
+msgid "The workspace may still have been created. This screen opens it if it appears."
+msgstr "Workspace vẫn có thể đã được tạo. Màn hình này sẽ mở nó nếu xuất hiện."
+
 msgid "The worktree and any uncommitted changes will be removed. This cannot be undone."
 msgstr "Worktree và mọi thay đổi chưa commit sẽ bị gỡ. Không thể hoàn tác."
 
@@ -14286,6 +14322,13 @@ msgstr "Ứng dụng này sẽ có thể:"
 
 msgid "This application will have access to data in the selected organization."
 msgstr "Ứng dụng này sẽ truy cập được dữ liệu trong tổ chức đã chọn."
+
+#. placeholder {0}: params?.organizationName
+msgid "This automation belongs to {0}. Switch to that organization to open it."
+msgstr "Tự động hóa này thuộc về {0}. Chuyển sang tổ chức đó để mở."
+
+msgid "This automation is in another organization"
+msgstr "Tự động hóa này nằm trong một tổ chức khác"
 
 msgid "This cannot be undone."
 msgstr "Không thể hoàn tác."
@@ -14557,9 +14600,6 @@ msgstr "Hạng"
 
 msgid "Time range"
 msgstr "Khoảng thời gian"
-
-msgid "Timed out waiting for the host to create the workspace."
-msgstr "Quá thời gian chờ host tạo workspace."
 
 msgid "Title"
 msgstr "Tiêu đề"
@@ -15604,6 +15644,9 @@ msgstr "Superset là gì, ai xây dựng nó và dành cho ai. Một đội ngũ
 
 msgid "What the content is doing: which pages sessions start on, and how much is being published."
 msgstr "Nội dung đang làm gì: phiên bắt đầu ở trang nào và có bao nhiêu được xuất bản."
+
+msgid "What these were written against is no longer on the page, so they have no pin."
+msgstr "Nội dung mà chúng được viết cho đã không còn trên trang, nên chúng không có ghim."
 
 msgid "What We're Building"
 msgstr "Chúng tôi đang xây gì"

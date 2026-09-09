@@ -676,6 +676,9 @@ msgstr "{hidden, plural, one {# скрытая строка} few {# скрыты
 msgid "{hidden, plural, one {Show # hidden line} other {Show # hidden lines}}"
 msgstr "{hidden, plural, one {Показать # скрытую строку} few {Показать # скрытые строки} many {Показать # скрытых строк} other {Показать # скрытых строк}}"
 
+msgid "{hidden, plural, one {Show # reply} other {Show # replies}}"
+msgstr "{hidden, plural, one {Показать # ответ} few {Показать # ответа} many {Показать # ответов} other {Показать # ответа}}"
+
 msgid "{hiddenCount, plural, one {Show # more frame} other {Show # more frames}}"
 msgstr "{hiddenCount, plural, one {Показать ещё # кадр} few {Показать ещё # кадра} many {Показать ещё # кадров} other {Показать ещё # кадра}}"
 
@@ -1652,6 +1655,9 @@ msgstr "Все проверки пройдены"
 msgid "All checks skipped or cancelled"
 msgstr "Все проверки пропущены или отменены"
 
+msgid "All comments"
+msgstr "Все комментарии"
+
 msgid "All commits"
 msgstr "Все коммиты"
 
@@ -2219,9 +2225,6 @@ msgstr "Автоматизации (с ошибкой: {myFailedCount})"
 
 msgid "Automations & event triggers"
 msgstr "Автоматизации и триггеры по событиям"
-
-msgid "Automations docs"
-msgstr "Документация по автоматизациям"
 
 msgid "Automations, {myFailedCount} failing"
 msgstr "Автоматизации, с ошибкой: {myFailedCount}"
@@ -3160,6 +3163,9 @@ msgstr "Закрыть чат"
 msgid "Close Comment"
 msgstr "Закрыть комментарий"
 
+msgid "Close comments"
+msgstr "Закрыть комментарии"
+
 msgid "Close Diff"
 msgstr "Закрыть diff"
 
@@ -4009,6 +4015,9 @@ msgstr "Не удалось связаться с хостом, чтобы за�
 msgid "Could not reach the host to start the update. Check that it is online and try again."
 msgstr "Не удалось связаться с хостом, чтобы начать обновление. Убедитесь, что он в сети, и попробуйте снова."
 
+msgid "Could not reach the server."
+msgstr "Не удалось подключиться к серверу."
+
 msgid "Could not reach this workspace's machine"
 msgstr "Не удалось связаться с машиной этой рабочей области"
 
@@ -4254,11 +4263,11 @@ msgstr "Создать команду"
 msgid "Create a workspace for the auth feature on my MacBook"
 msgstr "Создай рабочую область для фичи авторизации на моём MacBook"
 
+msgid "Create again"
+msgstr "Создать заново"
+
 msgid "Create an account"
 msgstr "Создать аккаунт"
-
-msgid "Create an automation with an agent"
-msgstr "Создать автоматизацию с помощью агента"
 
 msgid "Create failed: {message}"
 msgstr "Не удалось создать: {message}"
@@ -4879,6 +4888,9 @@ msgstr "Диктовать"
 msgid "Dictation is not available on this device"
 msgstr "Диктовка недоступна на этом устройстве"
 
+msgid "Didn't hear back"
+msgstr "Ответа не поступило"
+
 msgid "diff"
 msgstr "diff"
 
@@ -5476,9 +5488,6 @@ msgstr "Каждый агент работает в собственном Git w
 msgid "Every axis is carrying its weight for the next tier. Hold it and the tier follows."
 msgstr "Каждая ось работает на следующий уровень. Удержите это — уровень придёт сам."
 
-msgid "Every Friday at 4pm, draft release notes from this week's merged PRs"
-msgstr "Каждую пятницу в 16:00 готовь черновик release notes по объединённым за неделю PR"
-
 msgid "Every Friday at 4pm, draft release notes from this week's merged PRs."
 msgstr "Каждую пятницу в 16:00 готовь черновик release notes по объединённым за неделю PR."
 
@@ -5499,9 +5508,6 @@ msgstr "Каждую среду в 9:00 просматривай объедин�
 
 msgid "Every weekday at 9am, read new GitHub issues, apply labels, and draft a first reply for my review."
 msgstr "Каждый будний день в 9:00 читай новые задачи GitHub, расставляй метки и готовь первый черновик ответа мне на проверку."
-
-msgid "Every weekday at 9am, triage new GitHub issues and draft replies for my review"
-msgstr "Каждый будний день в 9:00 разбирай новые задачи GitHub и готовь черновики ответов мне на проверку"
 
 msgid "Everyone argues about whether this generalizes. That argument is the sign the level was reached."
 msgstr "Все спорят, обобщается ли это. Сам спор — признак того, что уровень достигнут."
@@ -6815,6 +6821,9 @@ msgstr "Скрыть список пул-реквестов"
 msgid "Hide pull request preview"
 msgstr "Скрыть предпросмотр пул-реквеста"
 
+msgid "Hide resolved ({resolvedCount})"
+msgstr "Скрыть закрытые ({resolvedCount})"
+
 msgid "Hide review comments"
 msgstr "Скрыть комментарии ревью"
 
@@ -7916,6 +7925,9 @@ msgstr "Индикаторы загрузки и текущей активнос
 msgid "Loading changes..."
 msgstr "Загрузка изменений..."
 
+msgid "Loading comments…"
+msgstr "Загрузка комментариев…"
+
 msgid "Loading contributors…"
 msgstr "Загрузка контрибьюторов…"
 
@@ -8464,6 +8476,9 @@ msgstr "Ещё {kindLower} темы"
 msgid "More actions"
 msgstr "Ещё действия"
 
+msgid "More options"
+msgstr "Другие варианты"
+
 msgid "More pages"
 msgstr "Ещё страницы"
 
@@ -8628,6 +8643,9 @@ msgstr "другие соперники"
 msgid "New chat"
 msgstr "Новый чат"
 
+msgid "New cloud workspace"
+msgstr "Новая облачная рабочая область"
+
 msgid "New environment"
 msgstr "Новое окружение"
 
@@ -8770,9 +8788,6 @@ msgstr "Далее: {nextLabel}"
 msgid "Nice, open a PR when ready."
 msgstr "Отлично, открой PR, когда будет готово."
 
-msgid "Nightly at 2am, find one small bug, fix it, and open a PR"
-msgstr "Каждую ночь в 2:00 находи один мелкий баг, исправляй его и открывай PR"
-
 #. placeholder {0}: AGENT_LABELS[agent]
 msgid "No {0} logins on this host — sign in and usage appears here."
 msgstr "На этом хосте нет входов {0} — войдите, и данные появятся здесь."
@@ -8889,6 +8904,9 @@ msgstr "Нет текста комментария"
 msgid "No comments yet."
 msgstr "Комментариев пока нет."
 
+msgid "No comments yet. Turn on comment mode and click anything on the page to start one."
+msgstr "Комментариев пока нет. Включите режим комментирования и нажмите на любой элемент страницы, чтобы оставить комментарий."
+
 msgid "No commits on this branch yet."
 msgstr "В этой ветке пока нет коммитов."
 
@@ -8987,6 +9005,9 @@ msgstr "Без иконки"
 
 msgid "No Internet Connection"
 msgstr "Нет подключения к интернету"
+
+msgid "No internet connection."
+msgstr "Нет подключения к интернету."
 
 msgid "No issues found."
 msgstr "Задачи не найдены."
@@ -9351,6 +9372,9 @@ msgstr "Не сейчас"
 
 msgid "Not on the leaderboard. Opt in first."
 msgstr "Вас нет в рейтинге. Сначала присоединитесь."
+
+msgid "Not on this version"
+msgstr "Нет в этой версии"
 
 msgid "Not receiving events yet: Microsoft Graph refused the notification subscriptions. Check the app's admin consent and protected API approval, then reconnect."
 msgstr "События пока не приходят: Microsoft Graph отклонил подписки на уведомления. Проверьте согласие администратора и одобрение защищённого API, затем переподключитесь."
@@ -10891,9 +10915,6 @@ msgstr "Публичный"
 
 msgid "Public leaderboard"
 msgstr "Публичный рейтинг"
-
-msgid "Publish a page from an agent or the CLI and it will show up here."
-msgstr "Опубликуйте страницу из агента или CLI, и она появится здесь."
 
 msgid "Published"
 msgstr "Опубликовано"
@@ -12637,6 +12658,9 @@ msgstr "Насыщенность цвета отсчитывается от са
 msgid "Share"
 msgstr "Поделиться"
 
+msgid "Share designs and reports. Let your agent handle the feedback."
+msgstr "Делитесь дизайнами и отчётами. Пусть ваш агент обработает отзывы."
+
 msgid "Share page"
 msgstr "Поделиться страницей"
 
@@ -12684,6 +12708,9 @@ msgstr "Показать все {count}"
 
 msgid "Show all automations again"
 msgstr "Снова показать все автоматизации"
+
+msgid "Show all comments"
+msgstr "Показать все комментарии"
 
 msgid "Show all lines"
 msgstr "Показать все строки"
@@ -12774,6 +12801,9 @@ msgstr "Показать список пул-реквестов"
 
 msgid "Show pull request preview"
 msgstr "Показать предпросмотр пул-реквеста"
+
+msgid "Show resolved ({resolvedCount})"
+msgstr "Показать закрытые ({resolvedCount})"
 
 msgid "Show review comments"
 msgstr "Показать комментарии ревью"
@@ -13339,6 +13369,9 @@ msgstr "Шаг {0} из 2"
 msgid "Step {step}: {name}"
 msgstr "Шаг {step}: {name}"
 
+msgid "Still can't reach the host."
+msgstr "Хост по-прежнему недоступен."
+
 msgid "Still working — large repos can take a few minutes. You can leave; the workspace will appear on Home when it's ready."
 msgstr "Ещё работаем — большие репозитории могут занять несколько минут. Можно выйти; рабочая область появится на главной, когда будет готова."
 
@@ -13449,9 +13482,6 @@ msgstr "для интерфейсов агентов и общие компон�
 
 msgid "Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
 msgstr "Суммарная загрузка CPU от Superset и отслеживаемых деревьев процессов терминала. Больше 100% означает, что заняты несколько ядер. Долго держащиеся высокие значения обычно вызывают подтормаживание интерфейса и ускоренный разряд батареи."
-
-msgid "Summarize failed CI runs every morning before standup"
-msgstr "Каждое утро перед стендапом делай сводку упавших запусков CI"
 
 msgid "Summary"
 msgstr "Сводка"
@@ -14070,6 +14100,9 @@ msgstr "Хост вернулся с версией {0}, а не {targetVersion}
 msgid "The host did not come back within fifteen minutes."
 msgstr "Хост не восстановил работу в течение пятнадцати минут."
 
+msgid "The host hasn't answered."
+msgstr "Хост не ответил."
+
 msgid "The host isn't connected to the Superset relay. If it's this device, turn on \"Allow remote access to this device via relay\" in Settings > Remote Access, then try again."
 msgstr "Хост не подключён к реле Superset. Если это текущее устройство, включите «Разрешить удалённый доступ к этому устройству через реле» в Настройки > Удалённый доступ и повторите."
 
@@ -14236,6 +14269,9 @@ msgstr "Веб-интерфейс агентов пока доступен то�
 msgid "The workspace is not ready yet. Try again."
 msgstr "Рабочая область ещё не готова. Повторите."
 
+msgid "The workspace may still have been created. This screen opens it if it appears."
+msgstr "Рабочая область всё же могла быть создана. Этот экран откроет её, когда она появится."
+
 msgid "The worktree and any uncommitted changes will be removed. This cannot be undone."
 msgstr "Worktree и все незакоммиченные изменения будут удалены. Отменить нельзя."
 
@@ -14286,6 +14322,13 @@ msgstr "Это приложение сможет:"
 
 msgid "This application will have access to data in the selected organization."
 msgstr "Это приложение получит доступ к данным выбранной организации."
+
+#. placeholder {0}: params?.organizationName
+msgid "This automation belongs to {0}. Switch to that organization to open it."
+msgstr "Эта автоматизация принадлежит организации {0}. Смените организацию, чтобы открыть её."
+
+msgid "This automation is in another organization"
+msgstr "Эта автоматизация находится в другой организации"
 
 msgid "This cannot be undone."
 msgstr "Это нельзя отменить."
@@ -14557,9 +14600,6 @@ msgstr "Уровень"
 
 msgid "Time range"
 msgstr "Период"
-
-msgid "Timed out waiting for the host to create the workspace."
-msgstr "Истекло время ожидания, пока хост создаст рабочую область."
 
 msgid "Title"
 msgstr "Название"
@@ -15604,6 +15644,9 @@ msgstr "Что такое Superset, кто его создаёт и для ко�
 
 msgid "What the content is doing: which pages sessions start on, and how much is being published."
 msgstr "Что делает контент: с каких страниц начинаются сессии и сколько публикуется."
+
+msgid "What these were written against is no longer on the page, so they have no pin."
+msgstr "Того, к чему они были написаны, больше нет на странице, поэтому у них нет метки."
 
 msgid "What We're Building"
 msgstr "Что мы строим"
